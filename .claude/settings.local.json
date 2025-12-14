@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//e/caleidoscopio-manager/**)",
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(npx:*)",
+      "Read(//e/trader-evaluation/components/**)",
+      "Bash(npm install:*)",
+      "Bash(find:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

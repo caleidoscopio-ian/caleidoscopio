@@ -1,0 +1,390 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model agendamento {
+  id              String            @id @default(uuid())
+  pacienteId      String
+  profissionalId  String
+  data_hora       DateTime
+  duracao_minutos Int               @default(60)
+  sala            String?
+  status          StatusAgendamento @default(AGENDADO)
+  observacoes     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+  paciente        paciente          @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  profissional    profissional      @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@map("agendamentos")
+}
+
+model atividade {
+  id                    String                 @id @default(uuid())
+  tenantId              String // Referência ao tenant do Sistema 1 (não FK)
+  nome                  String
+  descricao             String?
+  tipo                  TipoAtividade
+  metodologia           String? // Ex: "ABA", "TEACCH", etc
+  objetivo              String?
+  ativo                 Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @default(now()) @updatedAt
+  instrucoes            atividadeInstrucao[]
+  atribuicoes           pacienteAtividade[]
+  sessoes               sessaoAtividade[]
+  progressoAtividades   progressoAtividade[]
+  trilhaAtividades      trilhaAtividade[]
+
+  @@map("atividades")
+}
+
+model atividadeInstrucao {
+  id          String              @id @default(uuid())
+  atividadeId String
+  ordem       Int
+  texto       String
+  observacao  String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @default(now()) @updatedAt
+  atividade   atividade           @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
+  avaliacoes  avaliacaoInstrucao[]
+
+  @@unique([atividadeId, ordem])
+  @@map("atividade_instrucoes")
+}
+
+model pacienteAtividade {
+  id            String    @id @default(uuid())
+  pacienteId    String
+  atividadeId   String
+  atribuida_em  DateTime  @default(now())
+  atribuida_por String // userId do terapeuta que atribuiu
+  ativa         Boolean   @default(true)
+  paciente      paciente  @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  atividade     atividade @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+
+  @@unique([pacienteId, atividadeId])
+  @@map("paciente_atividades")
+}
+
+model sessaoAtividade {
+  id                 String              @id @default(uuid())
+  pacienteId         String
+  atividadeId        String
+  profissionalId     String
+  iniciada_em        DateTime            @default(now())
+  finalizada_em      DateTime?
+  observacoes_gerais String?
+  status             StatusSessao        @default(EM_ANDAMENTO)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now()) @updatedAt
+  paciente           paciente            @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  atividade          atividade           @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
+  profissional       profissional        @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  avaliacoes         avaliacaoInstrucao[]
+
+  @@map("sessao_atividades")
+}
+
+model avaliacaoInstrucao {
+  id             String             @id @default(uuid())
+  sessaoId       String
+  instrucaoId    String
+  nota           Int                // 0 a 4
+  tipos_ajuda    String[]           // Array: ["-", "AFT", "AFP", "AI", "AG", "AVE", "AVG", "+"]
+  observacao     String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
+  sessao         sessaoAtividade    @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  instrucao      atividadeInstrucao @relation(fields: [instrucaoId], references: [id], onDelete: Cascade)
+
+  @@unique([sessaoId, instrucaoId])
+  @@map("avaliacoes_instrucoes")
+}
+
+model configuracaoGlobal {
+  id        String   @id @default(uuid())
+  chave     String   @unique
+  valor     String
+  descricao String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("configuracoes_globais")
+}
+
+model conquistaAluno {
+  id             String     @id @default(uuid())
+  pacienteId     String
+  recompensaId   String
+  conquistada_em DateTime   @default(now())
+  recompensa     recompensa @relation(fields: [recompensaId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+
+  @@unique([pacienteId, recompensaId])
+  @@map("conquista_alunos")
+}
+
+model paciente {
+  id                     String               @id @default(uuid())
+  tenantId               String               // Referência ao tenant do Sistema 1 (não FK)
+  nome                   String
+  cpf                    String?
+  nascimento             DateTime
+  foto                   String?
+  telefone               String?
+  email                  String?
+  endereco               String?
+  plano_saude            String?
+  matricula              String?
+  responsavel_financeiro String?
+  contato_emergencia     String?
+  cor_agenda             String?
+  ativo                  Boolean              @default(true)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @default(now()) @updatedAt
+  profissionalId         String?
+  agendamentos           agendamento[]
+  profissional           profissional?        @relation(fields: [profissionalId], references: [id])
+  progressoAtividades    progressoAtividade[]
+  prontuarios            prontuario[]
+  trilhaAlunos           trilhaAluno[]
+  atividadesAtribuidas   pacienteAtividade[]
+  sessoes                sessaoAtividade[]
+  anamneses              anamnese[]
+
+  @@unique([tenantId, cpf])
+  @@map("pacientes")
+}
+
+model profissional {
+  id                    String            @id @default(uuid())
+  tenantId              String            // Referência ao tenant do Sistema 1 (não FK)
+  nome                  String
+  cpf                   String?
+  telefone              String?
+  email                 String?
+  especialidade         String
+  registro_profissional String?
+  salas_acesso          String[]
+  ativo                 Boolean           @default(true)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @default(now()) @updatedAt
+  usuarioId             String?           @unique
+  agendamentos          agendamento[]
+  pacientes             paciente[]
+  prontuarios           prontuario[]
+  sessoes               sessaoAtividade[]
+
+  @@unique([tenantId, cpf])
+  @@map("profissionais")
+}
+
+model progressoAtividade {
+  id                   String          @id @default(uuid())
+  pacienteId           String
+  atividadeId          String
+  status               StatusProgresso @default(NAO_INICIADO)
+  tentativas           Int             @default(0)
+  tempo_gasto_segundos Int?
+  pontos_ganhos        Int             @default(0)
+  feedback_positivo    String?
+  observacoes          String?
+  iniciada_em          DateTime?
+  concluida_em         DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @default(now()) @updatedAt
+  atividade            atividade       @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
+  paciente             paciente        @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@unique([pacienteId, atividadeId])
+  @@map("progresso_atividades")
+}
+
+model prontuario {
+  id               String       @id @default(uuid())
+  pacienteId       String
+  profissionalId   String
+  data_sessao      DateTime
+  tipo_atendimento String
+  evolucao_clinica String
+  observacoes      String?
+  anexos           String[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
+  paciente         paciente     @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  profissional     profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@map("prontuarios")
+}
+
+model recompensa {
+  id                 String           @id @default(uuid())
+  nome               String
+  descricao          String?
+  tipo               TipoRecompensa
+  icone              String?
+  cor                String?
+  pontos_necessarios Int
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @default(now()) @updatedAt
+  conquistaAlunos    conquistaAluno[]
+
+  @@map("recompensas")
+}
+
+// Model tenant removido - tenants são gerenciados pelo Sistema 1
+// O Sistema 2 apenas referencia tenantId como String
+
+model trilhaAluno {
+  id           String    @id @default(uuid())
+  pacienteId   String
+  trilhaId     String
+  ativa        Boolean   @default(true)
+  concluida    Boolean   @default(false)
+  iniciada_em  DateTime  @default(now())
+  concluida_em DateTime?
+  paciente     paciente  @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  trilha       trilha    @relation(fields: [trilhaId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+
+  @@unique([pacienteId, trilhaId])
+  @@map("trilha_alunos")
+}
+
+model trilhaAtividade {
+  id          String    @id @default(uuid())
+  trilhaId    String
+  atividadeId String
+  ordem       Int
+  obrigatoria Boolean   @default(true)
+  atividade   atividade @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
+  trilha      trilha    @relation(fields: [trilhaId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+
+  @@unique([trilhaId, atividadeId])
+  @@map("trilha_atividades")
+}
+
+model trilha {
+  id               String            @id @default(uuid())
+  nome             String
+  descricao        String?
+  publico          Boolean           @default(false)
+  ativo            Boolean           @default(true)
+  ordem            Int?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @default(now()) @updatedAt
+  trilhaAlunos     trilhaAluno[]
+  trilhaAtividades trilhaAtividade[]
+
+  @@map("trilhas")
+}
+
+// Model usuario removido - usuários são gerenciados pelo Sistema 1
+// O Sistema 2 apenas referencia usuarioId como String em profissional.usuarioId
+
+model anamnese {
+  id                          String           @id @default(uuid())
+  pacienteId                  String
+  profissionalId              String           // Referência ao profissional/usuário do Sistema 1 (não FK)
+  tenantId                    String           // Referência ao tenant do Sistema 1 (não FK)
+
+  // Etapa 1: História do Desenvolvimento
+  historiaDesenvolvimento     Json?            // {gestacao, parto, marcos, desenvolvimento}
+
+  // Etapa 2: Comportamentos Excessivos e Deficitários
+  comportamentosExcessivos    String?          @db.Text
+  comportamentosDeficitarios  String?          @db.Text
+
+  // Etapa 3: Comportamentos-Problema (Análise Funcional ABC)
+  comportamentosProblema      Json?            // [{antecedente, comportamento, consequencia, frequencia}]
+
+  // Etapa 4: Rotina Diária
+  rotinaDiaria                Json?            // {acordar, cafe, escola, almoco, tarde, jantar, dormir}
+
+  // Etapa 5: Ambiente Familiar e Escolar
+  ambienteFamiliar            String?          @db.Text
+  ambienteEscolar             String?          @db.Text
+
+  // Etapa 6: Preferências (Reforçadores)
+  preferencias                Json?            // {reforçadores, interesses, motivadores}
+
+  // Etapa 7: Documentos e Vídeos
+  documentosAnexos            String[]         // URLs dos arquivos anexados
+
+  // Etapa 8: Habilidades Críticas
+  habilidadesCriticas         Json?            // [{area, habilidade, prioridade, observacoes}]
+
+  // Observações gerais
+  observacoesGerais           String?          @db.Text
+
+  // Controle
+  status                      StatusAnamnese   @default(RASCUNHO)
+  finalizadaEm                DateTime?
+  createdAt                   DateTime         @default(now())
+  updatedAt                   DateTime         @default(now()) @updatedAt
+
+  // Relações - apenas paciente tem FK porque pacientes vivem no Sistema 2
+  paciente                    paciente         @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@map("anamneses")
+}
+
+enum StatusAnamnese {
+  RASCUNHO
+  FINALIZADA
+}
+
+enum StatusAgendamento {
+  AGENDADO
+  CONFIRMADO
+  CANCELADO
+  ATENDIDO
+  FALTOU
+}
+
+enum StatusProgresso {
+  NAO_INICIADO
+  EM_PROGRESSO
+  CONCLUIDO
+  ABANDONADO
+}
+
+enum TipoAtividade {
+  JOGO_MEMORIA
+  QUEBRA_CABECA
+  ASSOCIACAO
+  SEQUENCIA
+  COLORIR
+  MATEMATICA
+  LEITURA
+  PROTOCOLO_ABA
+  AVALIACAO_CLINICA
+  CUSTOM
+}
+
+enum TipoRecompensa {
+  BADGE
+  AVATAR
+  MOEDA
+  TROFEU
+  PERSONALIZACAO
+}
+
+enum StatusSessao {
+  EM_ANDAMENTO
+  FINALIZADA
+  CANCELADA
+}
