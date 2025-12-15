@@ -207,15 +207,26 @@ class ManagerClient {
   }
 
   // ETAPA 3: Gerar token SSO (conforme protocolo real)
-  async generateSSOToken(): Promise<SSOTokenResponse | null> {
+  async generateSSOToken(authToken?: string): Promise<SSOTokenResponse | null> {
     try {
       console.log("🎫 [REAL] Gerando token SSO");
+
+      const headers: Record<string, string> = {
+        ...(DEFAULT_FETCH_OPTIONS.headers as Record<string, string>),
+      };
+
+      // Se tiver token de autenticação, enviar no header
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+        console.log("🔑 [REAL] Enviando token de autenticação");
+      }
 
       const response = await fetch(
         `${this.baseUrl}/api/products/sso/${this.productSlug}`,
         {
           ...DEFAULT_FETCH_OPTIONS,
           method: "POST",
+          headers,
         }
       );
 
@@ -300,8 +311,8 @@ class ManagerClient {
         throw new Error("Acesso negado ao módulo educacional");
       }
 
-      // ETAPA 3: Gerar token SSO
-      const ssoResult = await this.generateSSOToken();
+      // ETAPA 3: Gerar token SSO (passando o token de autenticação)
+      const ssoResult = await this.generateSSOToken(loginResult.token);
       if (!ssoResult?.token) {
         throw new Error("Erro ao gerar token de acesso");
       }
