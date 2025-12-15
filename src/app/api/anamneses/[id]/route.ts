@@ -5,10 +5,10 @@ import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 // GET - Buscar anamnese específica por ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     console.log(`🔍 API Anamnese - Buscando anamnese ${id}...`);
 
@@ -89,10 +89,10 @@ export async function GET(
 // PUT - Atualizar anamnese
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     console.log(`✏️ API Anamnese - Atualizando anamnese ${id}...`);
 
@@ -201,10 +201,10 @@ export async function PUT(
 // DELETE - Deletar anamnese (soft delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     console.log(`🗑️ API Anamnese - Deletando anamnese ${id}...`);
 

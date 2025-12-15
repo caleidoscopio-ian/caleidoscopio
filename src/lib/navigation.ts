@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   LayoutDashboard,
   Users,
@@ -23,14 +24,14 @@ import {
   ClipboardList,
   History,
   FileHeart,
-} from "lucide-react"
+} from "lucide-react";
 
 export interface SidebarItem {
-  title: string
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  badge?: string
-  roleFilter?: string[]
+  title: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+  roleFilter?: string[];
 }
 
 // Navegação completa baseada nos módulos do Sistema 2
@@ -41,9 +42,9 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
       href: "/dashboard",
       icon: LayoutDashboard,
     },
-  ]
+  ];
 
-  const roleSpecificItems: SidebarItem[] = []
+  const roleSpecificItems: SidebarItem[] = [];
 
   // Módulos específicos por perfil conforme documentação Sistema 2
   switch (userRole.toLowerCase()) {
@@ -71,8 +72,8 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           href: "/meu-progresso",
           icon: TrendingUp,
         }
-      )
-      break
+      );
+      break;
 
     case "user": // Role USER = Terapeuta
     case "terapeuta":
@@ -113,8 +114,8 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           href: "/historico-sessoes",
           icon: History,
         }
-      )
-      break
+      );
+      break;
 
     case "responsavel":
     case "tutor":
@@ -145,8 +146,8 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           href: "/comunicacao",
           icon: MessageSquare,
         }
-      )
-      break
+      );
+      break;
 
     case "admin":
     case "super_admin":
@@ -217,8 +218,8 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           href: "/configuracoes",
           icon: Settings,
         }
-      )
-      break
+      );
+      break;
 
     default:
       // Se a role não for reconhecida, usar perfil básico de usuário/aluno
@@ -238,8 +239,8 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           href: "/conquistas",
           icon: Trophy,
         }
-      )
-      break
+      );
+      break;
   }
 
   // Itens comuns no final
@@ -249,7 +250,7 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
       href: "/perfil",
       icon: User,
     },
-  ]
+  ];
 
-  return [...baseItems, ...roleSpecificItems, ...commonItems]
-}
+  return [...baseItems, ...roleSpecificItems, ...commonItems];
+};

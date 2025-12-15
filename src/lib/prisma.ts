@@ -32,7 +32,7 @@ export class TenantPrismaClient {
       client.$extends({
         query: {
           $allModels: {
-            async $allOperations({ model, operation, args, query }) {
+            async $allOperations({ model, args, query }) {
               // Para modelos tenant-specific, ajustar o schema
               const tenantModels = [
                 'Paciente',
@@ -74,7 +74,7 @@ export class TenantPrismaClient {
   }
 
   static async clearAllInstances() {
-    for (const [tenantId, instance] of this.instances) {
+    for (const [, instance] of this.instances) {
       await instance.$disconnect()
     }
     this.instances.clear()
@@ -82,7 +82,8 @@ export class TenantPrismaClient {
 }
 
 // Hook para operações multi-tenant
-export async function withTenant<T>(
+// TODO: Implementar quando o modelo Tenant for adicionado ao schema
+/* export async function withTenant<T>(
   tenantSlug: string,
   operation: (client: PrismaClient) => Promise<T>
 ): Promise<T> {
@@ -100,4 +101,4 @@ export async function withTenant<T>(
 
   // Executar operação
   return await operation(tenantClient)
-}
+} */

@@ -1,15 +1,23 @@
-'use client'
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
-import { MainLayout } from '@/components/main-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { MainLayout } from "@/components/main-layout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Play,
   Loader2,
@@ -19,134 +27,136 @@ import {
   ArrowLeft,
   ArrowRight,
   ClipboardCheck,
-} from 'lucide-react'
-import { Progress } from '@/components/ui/progress'
+} from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface Instrucao {
-  id: string
-  ordem: number
-  texto: string
-  observacao?: string
+  id: string;
+  ordem: number;
+  texto: string;
+  observacao?: string;
 }
 
 interface Atividade {
-  id: string
-  nome: string
-  tipo: string
-  metodologia?: string
-  instrucoes: Instrucao[]
+  id: string;
+  nome: string;
+  tipo: string;
+  metodologia?: string;
+  instrucoes: Instrucao[];
 }
 
 interface Paciente {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface Sessao {
-  id: string
-  pacienteId: string
-  atividadeId: string
-  status: string
-  iniciada_em: string
-  paciente: Paciente
-  atividade: Atividade
+  id: string;
+  pacienteId: string;
+  atividadeId: string;
+  status: string;
+  iniciada_em: string;
+  paciente: Paciente;
+  atividade: Atividade;
 }
 
 interface Avaliacao {
-  instrucaoId: string
-  nota: number
-  tipos_ajuda: string[]
-  observacao: string
+  instrucaoId: string;
+  nota: number;
+  tipos_ajuda: string[];
+  observacao: string;
 }
 
 export default function AplicarAtividadePage() {
-  const router = useRouter()
-  const params = useParams()
-  const sessaoId = params.sessaoId as string
-  const { user, isAuthenticated } = useAuth()
+  const router = useRouter();
+  const params = useParams();
+  const sessaoId = params.sessaoId as string;
+  const { user, isAuthenticated } = useAuth();
 
-  const [sessao, setSessao] = useState<Sessao | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [salvando, setSalvando] = useState(false)
-  const [finalizando, setFinalizando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [instrucaoAtual, setInstrucaoAtual] = useState(0)
-  const [avaliacoes, setAvaliacoes] = useState<Map<string, Avaliacao>>(new Map())
+  const [sessao, setSessao] = useState<Sessao | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [finalizando, setFinalizando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [instrucaoAtual, setInstrucaoAtual] = useState(0);
+  const [avaliacoes, setAvaliacoes] = useState<Map<string, Avaliacao>>(
+    new Map()
+  );
 
   // Estado da avaliação atual
-  const [nota, setNota] = useState<number>(0)
-  const [tiposAjuda, setTiposAjuda] = useState<string[]>([])
-  const [observacao, setObservacao] = useState('')
+  const [nota, setNota] = useState<number>(0);
+  const [tiposAjuda, setTiposAjuda] = useState<string[]>([]);
+  const [observacao, setObservacao] = useState("");
 
   const breadcrumbs = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Iniciar Sessão', href: '/iniciar-sessao' },
-    { label: 'Aplicar Atividade' }
-  ]
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Iniciar Sessão", href: "/iniciar-sessao" },
+    { label: "Aplicar Atividade" },
+  ];
 
   // Buscar dados da sessão
   const fetchSessao = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       if (!isAuthenticated || !user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
       const response = await fetch(`/api/sessoes?id=${sessaoId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
-        }
-      })
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar sessão')
+        throw new Error(result.error || "Erro ao buscar sessão");
       }
 
       if (result.success) {
-        setSessao(result.data)
+        setSessao(result.data);
       }
     } catch (err) {
-      console.error('❌ Erro ao buscar sessão:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao carregar sessão')
+      console.error("❌ Erro ao buscar sessão:", err);
+      setError(err instanceof Error ? err.message : "Erro ao carregar sessão");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Salvar avaliação da instrução atual
   const salvarAvaliacaoAtual = async () => {
     if (!sessao || nota === 0) {
-      setError('Selecione uma nota de 0 a 4')
-      return false
+      setError("Selecione uma nota de 0 a 4");
+      return false;
     }
 
     try {
-      setSalvando(true)
-      setError(null)
+      setSalvando(true);
+      setError(null);
 
-      const instrucao = sessao.atividade.instrucoes[instrucaoAtual]
+      const instrucao = sessao.atividade.instrucoes[instrucaoAtual];
 
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch('/api/sessoes/avaliar', {
-        method: 'POST',
+      const response = await fetch("/api/sessoes/avaliar", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
         },
         body: JSON.stringify({
           sessaoId: sessao.id,
@@ -154,13 +164,13 @@ export default function AplicarAtividadePage() {
           nota,
           tipos_ajuda: tiposAjuda,
           observacao: observacao || undefined,
-        })
-      })
+        }),
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao salvar avaliação')
+        throw new Error(result.error || "Erro ao salvar avaliação");
       }
 
       // Salvar no estado local
@@ -169,108 +179,108 @@ export default function AplicarAtividadePage() {
         nota,
         tipos_ajuda: tiposAjuda,
         observacao,
-      }
+      };
 
-      setAvaliacoes(prev => new Map(prev).set(instrucao.id, novaAvaliacao))
+      setAvaliacoes((prev) => new Map(prev).set(instrucao.id, novaAvaliacao));
 
-      return true
+      return true;
     } catch (err) {
-      console.error('❌ Erro ao salvar avaliação:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao salvar avaliação')
-      return false
+      console.error("❌ Erro ao salvar avaliação:", err);
+      setError(err instanceof Error ? err.message : "Erro ao salvar avaliação");
+      return false;
     } finally {
-      setSalvando(false)
+      setSalvando(false);
     }
-  }
+  };
 
   // Avançar para próxima instrução
   const proximaInstrucao = async () => {
-    const sucesso = await salvarAvaliacaoAtual()
+    const sucesso = await salvarAvaliacaoAtual();
 
     if (sucesso && sessao) {
       if (instrucaoAtual < sessao.atividade.instrucoes.length - 1) {
-        setInstrucaoAtual(prev => prev + 1)
+        setInstrucaoAtual((prev) => prev + 1);
         // Limpar campos
-        setNota(0)
-        setTiposAjuda([])
-        setObservacao('')
+        setNota(0);
+        setTiposAjuda([]);
+        setObservacao("");
       }
     }
-  }
+  };
 
   // Voltar para instrução anterior
   const instrucaoAnterior = () => {
     if (instrucaoAtual > 0) {
-      setInstrucaoAtual(prev => prev - 1)
+      setInstrucaoAtual((prev) => prev - 1);
 
       // Carregar avaliação salva
       if (sessao) {
-        const instrucao = sessao.atividade.instrucoes[instrucaoAtual - 1]
-        const avaliacaoSalva = avaliacoes.get(instrucao.id)
+        const instrucao = sessao.atividade.instrucoes[instrucaoAtual - 1];
+        const avaliacaoSalva = avaliacoes.get(instrucao.id);
 
         if (avaliacaoSalva) {
-          setNota(avaliacaoSalva.nota)
-          setTiposAjuda(avaliacaoSalva.tipos_ajuda)
-          setObservacao(avaliacaoSalva.observacao)
+          setNota(avaliacaoSalva.nota);
+          setTiposAjuda(avaliacaoSalva.tipos_ajuda);
+          setObservacao(avaliacaoSalva.observacao);
         }
       }
     }
-  }
+  };
 
   // Finalizar sessão
   const finalizarSessao = async () => {
-    if (!sessao) return
+    if (!sessao) return;
 
     // Verificar se todas as instruções foram avaliadas
     if (avaliacoes.size !== sessao.atividade.instrucoes.length) {
-      setError('Avalie todas as instruções antes de finalizar')
-      return
+      setError("Avalie todas as instruções antes de finalizar");
+      return;
     }
 
     try {
-      setFinalizando(true)
-      setError(null)
+      setFinalizando(true);
+      setError(null);
 
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch('/api/sessoes/finalizar', {
-        method: 'POST',
+      const response = await fetch("/api/sessoes/finalizar", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
         },
         body: JSON.stringify({
           sessaoId: sessao.id,
           observacoes_gerais: observacao || undefined,
-        })
-      })
+        }),
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao finalizar sessão')
+        throw new Error(result.error || "Erro ao finalizar sessão");
       }
 
       // Redirecionar para lista de sessões ou dashboard
-      router.push('/iniciar-sessao')
+      router.push("/iniciar-sessao");
     } catch (err) {
-      console.error('❌ Erro ao finalizar sessão:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao finalizar sessão')
+      console.error("❌ Erro ao finalizar sessão:", err);
+      setError(err instanceof Error ? err.message : "Erro ao finalizar sessão");
     } finally {
-      setFinalizando(false)
+      setFinalizando(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (isAuthenticated && user && sessaoId) {
-      fetchSessao()
+      fetchSessao();
     }
-  }, [isAuthenticated, user, sessaoId])
+  }, [isAuthenticated, user, sessaoId]);
 
   if (loading) {
     return (
@@ -280,7 +290,7 @@ export default function AplicarAtividadePage() {
           <p className="text-muted-foreground">Carregando sessão...</p>
         </div>
       </MainLayout>
-    )
+    );
   }
 
   if (error && !sessao) {
@@ -290,12 +300,12 @@ export default function AplicarAtividadePage() {
           <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">Erro ao carregar sessão</h3>
           <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={() => router.push('/iniciar-sessao')}>
+          <Button onClick={() => router.push("/iniciar-sessao")}>
             Voltar para Iniciar Sessão
           </Button>
         </div>
       </MainLayout>
-    )
+    );
   }
 
   if (!sessao) {
@@ -304,28 +314,32 @@ export default function AplicarAtividadePage() {
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">Sessão não encontrada</h3>
-          <Button onClick={() => router.push('/iniciar-sessao')}>
+          <Button onClick={() => router.push("/iniciar-sessao")}>
             Voltar para Iniciar Sessão
           </Button>
         </div>
       </MainLayout>
-    )
+    );
   }
 
-  const instrucao = sessao.atividade.instrucoes[instrucaoAtual]
-  const progresso = ((avaliacoes.size / sessao.atividade.instrucoes.length) * 100)
-  const isUltimaInstrucao = instrucaoAtual === sessao.atividade.instrucoes.length - 1
-  const todasAvaliadas = avaliacoes.size === sessao.atividade.instrucoes.length
+  const instrucao = sessao.atividade.instrucoes[instrucaoAtual];
+  const progresso =
+    (avaliacoes.size / sessao.atividade.instrucoes.length) * 100;
+  const isUltimaInstrucao =
+    instrucaoAtual === sessao.atividade.instrucoes.length - 1;
+  const todasAvaliadas = avaliacoes.size === sessao.atividade.instrucoes.length;
 
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header com informações da sessão */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Aplicar Atividade</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Aplicar Atividade
+          </h1>
           <p className="text-muted-foreground">
-            Paciente: <strong>{sessao.paciente.name}</strong> •
-            Atividade: <strong>{sessao.atividade.nome}</strong>
+            Paciente: <strong>{sessao.paciente.name}</strong> • Atividade:{" "}
+            <strong>{sessao.atividade.nome}</strong>
           </p>
         </div>
 
@@ -334,9 +348,12 @@ export default function AplicarAtividadePage() {
           <CardContent className="pt-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Progresso da Sessão</span>
+                <span className="text-muted-foreground">
+                  Progresso da Sessão
+                </span>
                 <span className="font-medium">
-                  {avaliacoes.size} de {sessao.atividade.instrucoes.length} instruções
+                  {avaliacoes.size} de {sessao.atividade.instrucoes.length}{" "}
+                  instruções
                 </span>
               </div>
               <Progress value={progresso} className="h-2" />
@@ -391,9 +408,9 @@ export default function AplicarAtividadePage() {
                     <Button
                       key={value}
                       type="button"
-                      variant={nota === value ? 'default' : 'outline'}
+                      variant={nota === value ? "default" : "outline"}
                       className={`h-16 text-lg font-bold ${
-                        nota === value ? '' : 'hover:bg-primary/10'
+                        nota === value ? "" : "hover:bg-primary/10"
                       }`}
                       onClick={() => setNota(value)}
                     >
@@ -417,24 +434,29 @@ export default function AplicarAtividadePage() {
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
-                    { codigo: '-', nome: 'Erro' },
-                    { codigo: 'AFT', nome: 'Ajuda Física Total' },
-                    { codigo: 'AFP', nome: 'Ajuda Física Parcial' },
-                    { codigo: 'AI', nome: 'Ajuda Imitativa' },
-                    { codigo: 'AG', nome: 'Ajuda Gestual' },
-                    { codigo: 'AVE', nome: 'Ajuda Verbal Específica' },
-                    { codigo: 'AVG', nome: 'Ajuda Verbal Geral' },
-                    { codigo: '+', nome: 'Independente' },
+                    { codigo: "-", nome: "Erro" },
+                    { codigo: "AFT", nome: "Ajuda Física Total" },
+                    { codigo: "AFP", nome: "Ajuda Física Parcial" },
+                    { codigo: "AI", nome: "Ajuda Imitativa" },
+                    { codigo: "AG", nome: "Ajuda Gestual" },
+                    { codigo: "AVE", nome: "Ajuda Verbal Específica" },
+                    { codigo: "AVG", nome: "Ajuda Verbal Geral" },
+                    { codigo: "+", nome: "Independente" },
                   ].map((tipo) => (
-                    <div key={tipo.codigo} className="flex items-start space-x-2">
+                    <div
+                      key={tipo.codigo}
+                      className="flex items-start space-x-2"
+                    >
                       <Checkbox
                         id={`tipo-${tipo.codigo}`}
                         checked={tiposAjuda.includes(tipo.codigo)}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setTiposAjuda(prev => [...prev, tipo.codigo])
+                            setTiposAjuda((prev) => [...prev, tipo.codigo]);
                           } else {
-                            setTiposAjuda(prev => prev.filter(t => t !== tipo.codigo))
+                            setTiposAjuda((prev) =>
+                              prev.filter((t) => t !== tipo.codigo)
+                            );
                           }
                         }}
                       />
@@ -442,7 +464,8 @@ export default function AplicarAtividadePage() {
                         htmlFor={`tipo-${tipo.codigo}`}
                         className="text-sm cursor-pointer leading-none pt-0.5"
                       >
-                        <span className="font-semibold">{tipo.codigo}</span> - {tipo.nome}
+                        <span className="font-semibold">{tipo.codigo}</span> -{" "}
+                        {tipo.nome}
                       </Label>
                     </div>
                   ))}
@@ -492,9 +515,9 @@ export default function AplicarAtividadePage() {
               ) : (
                 <Button
                   onClick={async () => {
-                    const sucesso = await salvarAvaliacaoAtual()
+                    const sucesso = await salvarAvaliacaoAtual();
                     if (sucesso && todasAvaliadas) {
-                      finalizarSessao()
+                      finalizarSessao();
                     }
                   }}
                   disabled={salvando || finalizando || nota === 0}
@@ -503,7 +526,7 @@ export default function AplicarAtividadePage() {
                   {salvando || finalizando ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {finalizando ? 'Finalizando...' : 'Salvando...'}
+                      {finalizando ? "Finalizando..." : "Salvando..."}
                     </>
                   ) : (
                     <>
@@ -518,5 +541,5 @@ export default function AplicarAtividadePage() {
         </Card>
       </div>
     </MainLayout>
-  )
+  );
 }

@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     // Calcular estatísticas da sessão
     const somaNotas = sessao.avaliacoes.reduce((acc, av) => acc + av.nota, 0);
     const mediaNotas = somaNotas / totalAvaliacoes;
-    const totalComAjuda = sessao.avaliacoes.filter(av => av.precisou_ajuda).length;
+    const totalComAjuda = sessao.avaliacoes.filter(av => av.tipos_ajuda && av.tipos_ajuda.length > 0).length;
     const percentualComAjuda = (totalComAjuda / totalAvaliacoes) * 100;
 
     console.log(`   Média de notas: ${mediaNotas.toFixed(2)}`);

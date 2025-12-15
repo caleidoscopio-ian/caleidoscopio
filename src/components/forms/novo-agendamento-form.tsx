@@ -34,7 +34,7 @@ const formSchema = z.object({
   pacienteId: z.string().min(1, 'Selecione um paciente'),
   profissionalId: z.string().min(1, 'Selecione um profissional'),
   data: z.date({
-    required_error: 'Selecione uma data',
+    message: 'Selecione uma data',
   }),
   horario: z.string().min(1, 'Informe o horário'),
   duracao_minutos: z.number().min(30, 'Duração mínima de 30 minutos'),
@@ -85,7 +85,7 @@ export function NovoAgendamentoForm({
   }
 
   // Gerar opções de horário (30 em 30 minutos)
-  const horarios = []
+  const horarios: string[] = []
   for (let hour = 8; hour <= 18; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
       if (hour === 18 && minute > 0) break

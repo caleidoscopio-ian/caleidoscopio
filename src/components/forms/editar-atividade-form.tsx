@@ -1,8 +1,9 @@
-'use client'
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 
-import { useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,90 +11,99 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Edit, Loader2, Plus, X, GripVertical } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scrollarea'
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Loader2, Plus, X, GripVertical } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scrollarea";
 
 interface Instrucao {
-  id: string
-  ordem: number
-  texto: string
-  observacao?: string
+  id: string;
+  ordem: number;
+  texto: string;
+  observacao?: string;
 }
 
 interface Atividade {
-  id: string
-  nome: string
-  descricao?: string
-  tipo: string
-  metodologia?: string
-  objetivo?: string
-  instrucoes: Instrucao[]
+  id: string;
+  nome: string;
+  descricao?: string;
+  tipo: string;
+  metodologia?: string;
+  objetivo?: string;
+  instrucoes: Instrucao[];
 }
 
 interface EditarAtividadeFormProps {
-  atividade: Atividade
-  onSuccess: () => void
+  atividade: Atividade;
+  onSuccess: () => void;
 }
 
-export function EditarAtividadeForm({ atividade, onSuccess }: EditarAtividadeFormProps) {
-  const { user } = useAuth()
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function EditarAtividadeForm({
+  atividade,
+  onSuccess,
+}: EditarAtividadeFormProps) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form state
-  const [nome, setNome] = useState(atividade.nome)
-  const [descricao, setDescricao] = useState(atividade.descricao || '')
-  const [tipo, setTipo] = useState(atividade.tipo)
-  const [metodologia, setMetodologia] = useState(atividade.metodologia || '')
-  const [objetivo, setObjetivo] = useState(atividade.objetivo || '')
-  const [instrucoes, setInstrucoes] = useState<Array<{ texto: string; observacao: string; id?: string }>>(
-    atividade.instrucoes.map(i => ({ id: i.id, texto: i.texto, observacao: i.observacao || '' }))
-  )
+  const [nome, setNome] = useState(atividade.nome);
+  const [descricao, setDescricao] = useState(atividade.descricao || "");
+  const [tipo, setTipo] = useState(atividade.tipo);
+  const [metodologia, setMetodologia] = useState(atividade.metodologia || "");
+  const [objetivo, setObjetivo] = useState(atividade.objetivo || "");
+  const [instrucoes, setInstrucoes] = useState<
+    Array<{ texto: string; observacao: string; id?: string }>
+  >(
+    atividade.instrucoes.map((i) => ({
+      id: i.id,
+      texto: i.texto,
+      observacao: i.observacao || "",
+    }))
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     try {
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
       // Validação básica
       if (!nome.trim()) {
-        throw new Error('Nome é obrigatório')
+        throw new Error("Nome é obrigatório");
       }
 
       if (instrucoes.length === 0) {
-        throw new Error('Adicione pelo menos uma instrução')
+        throw new Error("Adicione pelo menos uma instrução");
       }
 
-      if (instrucoes.some(i => !i.texto.trim())) {
-        throw new Error('Todas as instruções devem ter texto')
+      if (instrucoes.some((i) => !i.texto.trim())) {
+        throw new Error("Todas as instruções devem ter texto");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
       const response = await fetch(`/api/atividades?id=${atividade.id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
         },
         body: JSON.stringify({
           nome,
@@ -107,51 +117,63 @@ export function EditarAtividadeForm({ atividade, onSuccess }: EditarAtividadeFor
             ordem: index + 1,
           })),
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao atualizar atividade')
+        throw new Error(result.error || "Erro ao atualizar atividade");
       }
 
-      setOpen(false)
-      onSuccess()
+      setOpen(false);
+      onSuccess();
     } catch (err) {
-      console.error('Erro ao atualizar atividade:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar atividade')
+      console.error("Erro ao atualizar atividade:", err);
+      setError(
+        err instanceof Error ? err.message : "Erro ao atualizar atividade"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const adicionarInstrucao = () => {
-    setInstrucoes([...instrucoes, { texto: '', observacao: '' }])
-  }
+    setInstrucoes([...instrucoes, { texto: "", observacao: "" }]);
+  };
 
   const removerInstrucao = (index: number) => {
     if (instrucoes.length > 1) {
-      setInstrucoes(instrucoes.filter((_, i) => i !== index))
+      setInstrucoes(instrucoes.filter((_, i) => i !== index));
     }
-  }
+  };
 
-  const atualizarInstrucao = (index: number, field: 'texto' | 'observacao', value: string) => {
-    const novasInstrucoes = [...instrucoes]
-    novasInstrucoes[index][field] = value
-    setInstrucoes(novasInstrucoes)
-  }
+  const atualizarInstrucao = (
+    index: number,
+    field: "texto" | "observacao",
+    value: string
+  ) => {
+    const novasInstrucoes = [...instrucoes];
+    novasInstrucoes[index][field] = value;
+    setInstrucoes(novasInstrucoes);
+  };
 
-  const moverInstrucao = (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index > 0) {
-      const novasInstrucoes = [...instrucoes]
-      ;[novasInstrucoes[index - 1], novasInstrucoes[index]] = [novasInstrucoes[index], novasInstrucoes[index - 1]]
-      setInstrucoes(novasInstrucoes)
-    } else if (direction === 'down' && index < instrucoes.length - 1) {
-      const novasInstrucoes = [...instrucoes]
-      ;[novasInstrucoes[index], novasInstrucoes[index + 1]] = [novasInstrucoes[index + 1], novasInstrucoes[index]]
-      setInstrucoes(novasInstrucoes)
+  const moverInstrucao = (index: number, direction: "up" | "down") => {
+    if (direction === "up" && index > 0) {
+      const novasInstrucoes = [...instrucoes];
+      [novasInstrucoes[index - 1], novasInstrucoes[index]] = [
+        novasInstrucoes[index],
+        novasInstrucoes[index - 1],
+      ];
+      setInstrucoes(novasInstrucoes);
+    } else if (direction === "down" && index < instrucoes.length - 1) {
+      const novasInstrucoes = [...instrucoes];
+      [novasInstrucoes[index], novasInstrucoes[index + 1]] = [
+        novasInstrucoes[index + 1],
+        novasInstrucoes[index],
+      ];
+      setInstrucoes(novasInstrucoes);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -197,8 +219,12 @@ export function EditarAtividadeForm({ atividade, onSuccess }: EditarAtividadeFor
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PROTOCOLO_ABA">Protocolo ABA</SelectItem>
-                    <SelectItem value="AVALIACAO_CLINICA">Avaliação Clínica</SelectItem>
-                    <SelectItem value="JOGO_MEMORIA">Jogo de Memória</SelectItem>
+                    <SelectItem value="AVALIACAO_CLINICA">
+                      Avaliação Clínica
+                    </SelectItem>
+                    <SelectItem value="JOGO_MEMORIA">
+                      Jogo de Memória
+                    </SelectItem>
                     <SelectItem value="CUSTOM">Personalizada</SelectItem>
                   </SelectContent>
                 </Select>
@@ -266,7 +292,7 @@ export function EditarAtividadeForm({ atividade, onSuccess }: EditarAtividadeFor
                           type="button"
                           size="sm"
                           variant="ghost"
-                          onClick={() => moverInstrucao(index, 'up')}
+                          onClick={() => moverInstrucao(index, "up")}
                           disabled={index === 0}
                         >
                           ↑
@@ -275,7 +301,7 @@ export function EditarAtividadeForm({ atividade, onSuccess }: EditarAtividadeFor
                           type="button"
                           size="sm"
                           variant="ghost"
-                          onClick={() => moverInstrucao(index, 'down')}
+                          onClick={() => moverInstrucao(index, "down")}
                           disabled={index === instrucoes.length - 1}
                         >
                           ↓
@@ -297,13 +323,21 @@ export function EditarAtividadeForm({ atividade, onSuccess }: EditarAtividadeFor
                     <div className="space-y-2">
                       <Input
                         value={instrucao.texto}
-                        onChange={(e) => atualizarInstrucao(index, 'texto', e.target.value)}
+                        onChange={(e) =>
+                          atualizarInstrucao(index, "texto", e.target.value)
+                        }
                         placeholder="Ex: Desenhe um círculo"
                         required
                       />
                       <Input
                         value={instrucao.observacao}
-                        onChange={(e) => atualizarInstrucao(index, 'observacao', e.target.value)}
+                        onChange={(e) =>
+                          atualizarInstrucao(
+                            index,
+                            "observacao",
+                            e.target.value
+                          )
+                        }
                         placeholder="Observação (opcional)"
                       />
                     </div>
@@ -330,5 +364,5 @@ export function EditarAtividadeForm({ atividade, onSuccess }: EditarAtividadeFor
         </ScrollArea>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

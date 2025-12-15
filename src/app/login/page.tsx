@@ -39,13 +39,27 @@ export default function LoginPage() {
         password: formData.password,
       });
 
+      // Validar que o tenant existe
+      if (!ssoResult.tenant) {
+        throw new Error("Usuário não está associado a nenhuma clínica");
+      }
+
       // ETAPA 4: Salvar dados no localStorage conforme documentação
       const userData = {
         id: ssoResult.user.id,
         email: ssoResult.user.email,
         name: ssoResult.user.name,
         role: ssoResult.user.role,
-        tenant: ssoResult.tenant,
+        tenant: {
+          id: ssoResult.tenant.id,
+          name: ssoResult.tenant.name,
+          slug: ssoResult.tenant.slug,
+          cnpj: 'cnpj' in ssoResult.tenant ? ssoResult.tenant.cnpj : undefined,
+          plan: {
+            id: 'plan' in ssoResult.tenant ? ssoResult.tenant.plan.id : '',
+            name: 'plan' in ssoResult.tenant ? ssoResult.tenant.plan.name : '',
+          }
+        },
         config: ssoResult.config,
         token: ssoResult.token,
         loginTime: new Date().toISOString(),

@@ -1,20 +1,28 @@
-'use client'
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
-import { MainLayout } from '@/components/main-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { MainLayout } from "@/components/main-layout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,7 +30,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Play,
   Search,
@@ -30,217 +38,228 @@ import {
   User,
   ClipboardList,
   AlertCircle,
-} from 'lucide-react'
+} from "lucide-react";
 
 interface Paciente {
-  id: string
-  name: string
-  cpf?: string
-  birthDate: string
+  id: string;
+  name: string;
+  cpf?: string;
+  birthDate: string;
   profissional?: {
-    nome: string
-  }
+    nome: string;
+  };
 }
 
 interface Instrucao {
-  id: string
-  ordem: number
-  texto: string
-  observacao?: string
+  id: string;
+  ordem: number;
+  texto: string;
+  observacao?: string;
 }
 
 interface Atividade {
-  id: string
-  nome: string
-  descricao?: string
-  tipo: string
-  metodologia?: string
-  instrucoes: Instrucao[]
+  id: string;
+  nome: string;
+  descricao?: string;
+  tipo: string;
+  metodologia?: string;
+  instrucoes: Instrucao[];
 }
 
 interface AtividadeAtribuida {
-  id: string
-  atribuida_em: string
-  atividade: Atividade
+  id: string;
+  atribuida_em: string;
+  atividade: Atividade;
   _count?: {
-    sessoes: number
-  }
+    sessoes: number;
+  };
 }
 
 export default function IniciarSessaoPage() {
-  const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
-  const [pacientes, setPacientes] = useState<Paciente[]>([])
-  const [pacienteSelecionado, setPacienteSelecionado] = useState<string | null>(null)
-  const [atividades, setAtividades] = useState<AtividadeAtribuida[]>([])
-  const [loading, setLoading] = useState(false)
-  const [loadingAtividades, setLoadingAtividades] = useState(false)
-  const [iniciandoSessao, setIniciandoSessao] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [pacienteSelecionado, setPacienteSelecionado] = useState<string | null>(
+    null
+  );
+  const [atividades, setAtividades] = useState<AtividadeAtribuida[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingAtividades, setLoadingAtividades] = useState(false);
+  const [iniciandoSessao, setIniciandoSessao] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const breadcrumbs = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Iniciar Sessão' }
-  ]
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Iniciar Sessão" },
+  ];
 
   // Buscar pacientes
   const fetchPacientes = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       if (!isAuthenticated || !user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch('/api/pacientes', {
-        method: 'GET',
+      const response = await fetch("/api/pacientes", {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
-        }
-      })
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar pacientes')
+        throw new Error(result.error || "Erro ao buscar pacientes");
       }
 
       if (result.success) {
-        setPacientes(result.data)
+        setPacientes(result.data);
       }
     } catch (err) {
-      console.error('❌ Erro ao buscar pacientes:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao carregar pacientes')
+      console.error("❌ Erro ao buscar pacientes:", err);
+      setError(
+        err instanceof Error ? err.message : "Erro ao carregar pacientes"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Buscar atividades atribuídas ao paciente selecionado
   const fetchAtividades = async (pacienteId: string) => {
     try {
-      setLoadingAtividades(true)
-      setError(null)
+      setLoadingAtividades(true);
+      setError(null);
 
       if (!isAuthenticated || !user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch(`/api/atividades/atribuir?pacienteId=${pacienteId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
+      const response = await fetch(
+        `/api/atividades/atribuir?pacienteId=${pacienteId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-Data": userDataEncoded,
+            "X-Auth-Token": user.token,
+          },
         }
-      })
+      );
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar atividades')
+        throw new Error(result.error || "Erro ao buscar atividades");
       }
 
       if (result.success) {
-        setAtividades(result.data)
+        setAtividades(result.data);
       }
     } catch (err) {
-      console.error('❌ Erro ao buscar atividades:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao carregar atividades')
+      console.error("❌ Erro ao buscar atividades:", err);
+      setError(
+        err instanceof Error ? err.message : "Erro ao carregar atividades"
+      );
     } finally {
-      setLoadingAtividades(false)
+      setLoadingAtividades(false);
     }
-  }
+  };
 
   // Iniciar sessão
   const iniciarSessao = async (atividadeId: string) => {
     if (!pacienteSelecionado) {
-      setError('Selecione um paciente primeiro')
-      return
+      setError("Selecione um paciente primeiro");
+      return;
     }
 
     try {
-      setIniciandoSessao(true)
-      setError(null)
+      setIniciandoSessao(true);
+      setError(null);
 
       if (!isAuthenticated || !user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch('/api/sessoes', {
-        method: 'POST',
+      const response = await fetch("/api/sessoes", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
         },
         body: JSON.stringify({
           pacienteId: pacienteSelecionado,
           atividadeId,
-        })
-      })
+        }),
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao iniciar sessão')
+        throw new Error(result.error || "Erro ao iniciar sessão");
       }
 
       if (result.success) {
         // Redirecionar para página de aplicar atividade
-        router.push(`/aplicar-atividade/${result.data.id}`)
+        router.push(`/aplicar-atividade/${result.data.id}`);
       }
     } catch (err) {
-      console.error('❌ Erro ao iniciar sessão:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao iniciar sessão')
+      console.error("❌ Erro ao iniciar sessão:", err);
+      setError(err instanceof Error ? err.message : "Erro ao iniciar sessão");
     } finally {
-      setIniciandoSessao(false)
+      setIniciandoSessao(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchPacientes()
+      fetchPacientes();
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user]);
 
   // Quando seleciona paciente, buscar atividades
   useEffect(() => {
     if (pacienteSelecionado) {
-      fetchAtividades(pacienteSelecionado)
+      fetchAtividades(pacienteSelecionado);
     } else {
-      setAtividades([])
+      setAtividades([]);
     }
-  }, [pacienteSelecionado])
+  }, [pacienteSelecionado]);
 
   // Filtrar pacientes
-  const filteredPacientes = pacientes.filter(paciente =>
-    (paciente.name && paciente.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (paciente.cpf && paciente.cpf.includes(searchTerm))
-  )
+  const filteredPacientes = pacientes.filter(
+    (paciente) =>
+      (paciente.name &&
+        paciente.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (paciente.cpf && paciente.cpf.includes(searchTerm))
+  );
 
   // Traduzir tipo de atividade
   const traduzirTipo = (tipo: string) => {
     const tipos: Record<string, string> = {
-      'PROTOCOLO_ABA': 'Protocolo ABA',
-      'AVALIACAO_CLINICA': 'Avaliação Clínica',
-      'JOGO_MEMORIA': 'Jogo de Memória',
-      'CUSTOM': 'Personalizada',
-    }
-    return tipos[tipo] || tipo
-  }
+      PROTOCOLO_ABA: "Protocolo ABA",
+      AVALIACAO_CLINICA: "Avaliação Clínica",
+      JOGO_MEMORIA: "Jogo de Memória",
+      CUSTOM: "Personalizada",
+    };
+    return tipos[tipo] || tipo;
+  };
 
-  const pacienteAtual = pacientes.find(p => p.id === pacienteSelecionado)
+  const pacienteAtual = pacientes.find((p) => p.id === pacienteSelecionado);
 
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
@@ -286,7 +305,7 @@ export default function IniciarSessaoPage() {
                   </div>
                 </div>
                 <Select
-                  value={pacienteSelecionado || ''}
+                  value={pacienteSelecionado || ""}
                   onValueChange={setPacienteSelecionado}
                 >
                   <SelectTrigger className="w-[400px]">
@@ -307,7 +326,9 @@ export default function IniciarSessaoPage() {
                 <div className="p-4 border rounded-lg bg-muted/30">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-medium text-lg">{pacienteAtual.name}</div>
+                      <div className="font-medium text-lg">
+                        {pacienteAtual.name}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {pacienteAtual.profissional && (
                           <>Terapeuta: {pacienteAtual.profissional.nome}</>
@@ -338,18 +359,22 @@ export default function IniciarSessaoPage() {
               {loadingAtividades && (
                 <div className="text-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">Carregando atividades...</p>
+                  <p className="text-muted-foreground">
+                    Carregando atividades...
+                  </p>
                 </div>
               )}
 
               {!loadingAtividades && atividades.length === 0 && (
                 <div className="text-center py-8">
                   <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhuma atividade atribuída</h3>
+                  <h3 className="text-lg font-medium mb-2">
+                    Nenhuma atividade atribuída
+                  </h3>
                   <p className="text-muted-foreground mb-4">
                     Este paciente ainda não possui atividades atribuídas.
                   </p>
-                  <Button onClick={() => router.push('/atividades-clinicas')}>
+                  <Button onClick={() => router.push("/atividades-clinicas")}>
                     Gerenciar Atividades
                   </Button>
                 </div>
@@ -386,7 +411,7 @@ export default function IniciarSessaoPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {atribuicao.atividade.metodologia || '-'}
+                          {atribuicao.atividade.metodologia || "-"}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">
@@ -398,7 +423,9 @@ export default function IniciarSessaoPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
-                            onClick={() => iniciarSessao(atribuicao.atividade.id)}
+                            onClick={() =>
+                              iniciarSessao(atribuicao.atividade.id)
+                            }
                             disabled={iniciandoSessao}
                           >
                             {iniciandoSessao ? (
@@ -428,7 +455,9 @@ export default function IniciarSessaoPage() {
             <CardContent className="py-12">
               <div className="text-center">
                 <User className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Selecione um paciente</h3>
+                <h3 className="text-lg font-medium mb-2">
+                  Selecione um paciente
+                </h3>
                 <p className="text-muted-foreground">
                   Para iniciar uma sessão, primeiro selecione o paciente acima
                 </p>
@@ -438,5 +467,5 @@ export default function IniciarSessaoPage() {
         )}
       </div>
     </MainLayout>
-  )
+  );
 }

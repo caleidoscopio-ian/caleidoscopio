@@ -1,31 +1,32 @@
-'use client'
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Info } from 'lucide-react'
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 interface Profissional {
-  id: string
-  nome: string
-  especialidade: string
-  email?: string
+  id: string;
+  nome: string;
+  especialidade: string;
+  email?: string;
 }
 
 interface VincularUsuarioFormProps {
-  usuarioId: string
-  usuarioNome: string
-  profissionais: Profissional[]
-  onSubmit: (usuarioId: string, profissionalId: string) => Promise<void>
-  onCancel: () => void
+  usuarioId: string;
+  usuarioNome: string;
+  profissionais: Profissional[];
+  onSubmit: (usuarioId: string, profissionalId: string) => Promise<void>;
+  onCancel: () => void;
 }
 
 export function VincularUsuarioForm({
@@ -33,27 +34,29 @@ export function VincularUsuarioForm({
   usuarioNome,
   profissionais,
   onSubmit,
-  onCancel
+  onCancel,
 }: VincularUsuarioFormProps) {
-  const [selectedProfissional, setSelectedProfissional] = useState<string>('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedProfissional, setSelectedProfissional] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filtrar apenas profissionais sem vínculo (usuarioId null)
-  const profissionaisDisponiveis = profissionais.filter(p => !p.email || p.email === '')
+  const profissionaisDisponiveis = profissionais.filter(
+    (p) => !p.email || p.email === ""
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedProfissional) return
+    e.preventDefault();
+    if (!selectedProfissional) return;
 
     try {
-      setIsSubmitting(true)
-      await onSubmit(usuarioId, selectedProfissional)
+      setIsSubmitting(true);
+      await onSubmit(usuarioId, selectedProfissional);
     } catch (error) {
-      console.error('Erro ao vincular:', error)
+      console.error("Erro ao vincular:", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -66,7 +69,10 @@ export function VincularUsuarioForm({
 
       <div className="space-y-2">
         <Label htmlFor="profissional">Selecione o Profissional</Label>
-        <Select value={selectedProfissional} onValueChange={setSelectedProfissional}>
+        <Select
+          value={selectedProfissional}
+          onValueChange={setSelectedProfissional}
+        >
           <SelectTrigger id="profissional">
             <SelectValue placeholder="Selecione um profissional" />
           </SelectTrigger>
@@ -100,11 +106,15 @@ export function VincularUsuarioForm({
         </Button>
         <Button
           type="submit"
-          disabled={isSubmitting || !selectedProfissional || profissionaisDisponiveis.length === 0}
+          disabled={
+            isSubmitting ||
+            !selectedProfissional ||
+            profissionaisDisponiveis.length === 0
+          }
         >
-          {isSubmitting ? 'Vinculando...' : 'Vincular'}
+          {isSubmitting ? "Vinculando..." : "Vincular"}
         </Button>
       </div>
     </form>
-  )
+  );
 }

@@ -1,8 +1,9 @@
-'use client'
+/* eslint-disable react-hooks/exhaustive-deps */
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,171 +12,180 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { UserPlus, Loader2, Search, CheckCircle2 } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scrollarea'
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { UserPlus, Loader2, Search, CheckCircle2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scrollarea";
 
 interface Atividade {
-  id: string
-  nome: string
-  tipo: string
+  id: string;
+  nome: string;
+  tipo: string;
 }
 
 interface Paciente {
-  id: string
-  name: string
-  cpf?: string
+  id: string;
+  name: string;
+  cpf?: string;
   profissional?: {
-    nome: string
-  }
+    nome: string;
+  };
 }
 
 interface AtribuirAtividadeDialogProps {
-  atividade: Atividade
-  onSuccess: () => void
+  atividade: Atividade;
+  onSuccess: () => void;
 }
 
-export function AtribuirAtividadeDialog({ atividade, onSuccess }: AtribuirAtividadeDialogProps) {
-  const { user } = useAuth()
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [loadingPacientes, setLoadingPacientes] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [pacientes, setPacientes] = useState<Paciente[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedPacientes, setSelectedPacientes] = useState<string[]>([])
+export function AtribuirAtividadeDialog({
+  atividade,
+  onSuccess,
+}: AtribuirAtividadeDialogProps) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingPacientes, setLoadingPacientes] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPacientes, setSelectedPacientes] = useState<string[]>([]);
 
   // Buscar pacientes
   const fetchPacientes = async () => {
     try {
-      setLoadingPacientes(true)
-      setError(null)
+      setLoadingPacientes(true);
+      setError(null);
 
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch('/api/pacientes', {
-        method: 'GET',
+      const response = await fetch("/api/pacientes", {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
-        }
-      })
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar pacientes')
+        throw new Error(result.error || "Erro ao buscar pacientes");
       }
 
       if (result.success) {
-        setPacientes(result.data)
+        setPacientes(result.data);
       }
     } catch (err) {
-      console.error('Erro ao buscar pacientes:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao carregar pacientes')
+      console.error("Erro ao buscar pacientes:", err);
+      setError(
+        err instanceof Error ? err.message : "Erro ao carregar pacientes"
+      );
     } finally {
-      setLoadingPacientes(false)
+      setLoadingPacientes(false);
     }
-  }
+  };
 
   // Atribuir atividade aos pacientes selecionados
   const handleAtribuir = async () => {
     if (selectedPacientes.length === 0) {
-      setError('Selecione pelo menos um paciente')
-      return
+      setError("Selecione pelo menos um paciente");
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
       // Atribuir para cada paciente selecionado
-      const promises = selectedPacientes.map(pacienteId =>
-        fetch('/api/atividades/atribuir', {
-          method: 'POST',
+      const promises = selectedPacientes.map((pacienteId) =>
+        fetch("/api/atividades/atribuir", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'X-User-Data': userDataEncoded,
-            'X-Auth-Token': user.token,
+            "Content-Type": "application/json",
+            "X-User-Data": userDataEncoded,
+            "X-Auth-Token": user.token,
           },
           body: JSON.stringify({
             pacienteId,
             atividadeId: atividade.id,
-          })
+          }),
         })
-      )
+      );
 
-      const responses = await Promise.all(promises)
+      const responses = await Promise.all(promises);
 
       // Verificar se todas as requisições foram bem sucedidas
-      const errors = []
+      const errors = [];
       for (const response of responses) {
         if (!response.ok) {
-          const result = await response.json()
-          errors.push(result.error || 'Erro desconhecido')
+          const result = await response.json();
+          errors.push(result.error || "Erro desconhecido");
         }
       }
 
       if (errors.length > 0) {
-        throw new Error(errors[0])
+        throw new Error(errors[0]);
       }
 
-      setOpen(false)
-      setSelectedPacientes([])
-      onSuccess()
+      setOpen(false);
+      setSelectedPacientes([]);
+      onSuccess();
     } catch (err) {
-      console.error('Erro ao atribuir atividade:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao atribuir atividade')
+      console.error("Erro ao atribuir atividade:", err);
+      setError(
+        err instanceof Error ? err.message : "Erro ao atribuir atividade"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Quando abrir o dialog, buscar pacientes
   useEffect(() => {
     if (open) {
-      fetchPacientes()
+      fetchPacientes();
     }
-  }, [open])
+  }, [open]);
 
   // Filtrar pacientes
-  const filteredPacientes = pacientes.filter(paciente =>
-    (paciente.name && paciente.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (paciente.cpf && paciente.cpf.includes(searchTerm))
-  )
+  const filteredPacientes = pacientes.filter(
+    (paciente) =>
+      (paciente.name &&
+        paciente.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (paciente.cpf && paciente.cpf.includes(searchTerm))
+  );
 
   // Toggle seleção de paciente
   const togglePaciente = (pacienteId: string) => {
-    setSelectedPacientes(prev =>
+    setSelectedPacientes((prev) =>
       prev.includes(pacienteId)
-        ? prev.filter(id => id !== pacienteId)
+        ? prev.filter((id) => id !== pacienteId)
         : [...prev, pacienteId]
-    )
-  }
+    );
+  };
 
   const traduzirTipo = (tipo: string) => {
     const tipos: Record<string, string> = {
-      'PROTOCOLO_ABA': 'Protocolo ABA',
-      'AVALIACAO_CLINICA': 'Avaliação Clínica',
-      'JOGO_MEMORIA': 'Jogo de Memória',
-      'CUSTOM': 'Personalizada',
-    }
-    return tipos[tipo] || tipo
-  }
+      PROTOCOLO_ABA: "Protocolo ABA",
+      AVALIACAO_CLINICA: "Avaliação Clínica",
+      JOGO_MEMORIA: "Jogo de Memória",
+      CUSTOM: "Personalizada",
+    };
+    return tipos[tipo] || tipo;
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -232,13 +242,17 @@ export function AtribuirAtividadeDialog({ atividade, onSuccess }: AtribuirAtivid
             {loadingPacientes && (
               <div className="text-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground text-sm">Carregando pacientes...</p>
+                <p className="text-muted-foreground text-sm">
+                  Carregando pacientes...
+                </p>
               </div>
             )}
 
             {!loadingPacientes && filteredPacientes.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-muted-foreground text-sm">Nenhum paciente encontrado</p>
+                <p className="text-muted-foreground text-sm">
+                  Nenhum paciente encontrado
+                </p>
               </div>
             )}
 
@@ -248,7 +262,9 @@ export function AtribuirAtividadeDialog({ atividade, onSuccess }: AtribuirAtivid
                   <div
                     key={paciente.id}
                     className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${
-                      selectedPacientes.includes(paciente.id) ? 'bg-primary/5 border-primary' : ''
+                      selectedPacientes.includes(paciente.id)
+                        ? "bg-primary/5 border-primary"
+                        : ""
                     }`}
                     onClick={() => togglePaciente(paciente.id)}
                   >
@@ -301,5 +317,5 @@ export function AtribuirAtividadeDialog({ atividade, onSuccess }: AtribuirAtivid
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

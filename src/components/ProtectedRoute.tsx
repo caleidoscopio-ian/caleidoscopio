@@ -6,9 +6,10 @@ import { useEffect, ReactNode } from 'react'
 
 interface ProtectedRouteProps {
   children: ReactNode
+  requiredRole?: 'ADMIN' | 'SUPER_ADMIN' | 'USER'
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
   const router = useRouter()
 
@@ -16,7 +17,9 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     loading,
     user: !!user,
     userEmail: user?.email,
-    userName: user?.name
+    userName: user?.name,
+    role: user?.role,
+    requiredRole
   })
 
   useEffect(() => {
@@ -25,8 +28,19 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       router.push('/login')
     } else if (!loading && user) {
       console.log('✅ ProtectedRoute - Usuário encontrado:', user.email)
+
+      // Verificar permissão de role se especificada
+      if (requiredRole) {
+        const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(user.role)
+        const hasPermission = requiredRole === 'ADMIN' ? isAdmin : user.role === requiredRole
+
+        if (!hasPermission) {
+          console.log('❌ ProtectedRoute - Sem permissão, redirecionando para dashboard')
+          router.push('/dashboard')
+        }
+      }
     }
-  }, [user, loading, router])
+  }, [user, loading, router, requiredRole])
 
   if (loading) {
     console.log('⏳ ProtectedRoute - Ainda carregando...')

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -120,9 +121,8 @@ export default function AnamnesesPage() {
   }, [isAuthenticated, user]);
 
   // Filtrar anamneses baseado no termo de busca
-  const filteredAnamneses = anamneses.filter(
-    (anamnese) =>
-      anamnese.paciente.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAnamneses = anamneses.filter((anamnese) =>
+    anamnese.paciente.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Calcular estatísticas

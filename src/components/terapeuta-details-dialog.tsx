@@ -1,11 +1,21 @@
-'use client'
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 
-import { useState } from 'react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { Eye, User, Phone, Mail, Stethoscope, GraduationCap, MapPin, Clock } from 'lucide-react'
+import { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  Eye,
+  User,
+  Phone,
+  Mail,
+  Stethoscope,
+  GraduationCap,
+  MapPin,
+  Clock,
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,60 +23,64 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 interface Professional {
-  id: string
-  name: string
-  cpf: string
-  phone?: string
-  email?: string
-  specialty: string
-  professionalRegistration?: string
-  roomAccess: string[]
-  createdAt: string
-  updatedAt: string
+  id: string;
+  name: string;
+  cpf: string;
+  phone?: string;
+  email?: string;
+  specialty: string;
+  professionalRegistration?: string;
+  roomAccess: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface TerapeutaDetailsDialogProps {
-  professional: Professional
+  professional: Professional;
 }
 
-export function TerapeutaDetailsDialog({ professional }: TerapeutaDetailsDialogProps) {
-  const [open, setOpen] = useState(false)
+export function TerapeutaDetailsDialog({
+  professional,
+}: TerapeutaDetailsDialogProps) {
+  const [open, setOpen] = useState(false);
 
   // Formatar data para exibição
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR })
-  }
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+  };
 
   // Formatar data e hora para exibição
   const formatDateTime = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy \'às\' HH:mm', { locale: ptBR })
-  }
+    return format(new Date(dateString), "dd/MM/yyyy 'às' HH:mm", {
+      locale: ptBR,
+    });
+  };
 
   const formatCPF = (cpf: string) => {
-    if (!cpf) return '-'
-    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
-  }
+    if (!cpf) return "-";
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  };
 
   // Mapeamento das salas (simulado - em produção viria do backend)
   const salasMap: Record<string, string> = {
-    'sala-1': 'Sala 1 - Atendimento Individual',
-    'sala-2': 'Sala 2 - Terapia em Grupo',
-    'sala-3': 'Sala 3 - Atividades Motoras',
-    'sala-4': 'Sala 4 - Musicoterapia',
-    'sala-5': 'Sala 5 - Avaliação',
-    'consultorio-1': 'Consultório 1',
-    'consultorio-2': 'Consultório 2',
-    'consultorio-3': 'Consultório 3',
-  }
+    "sala-1": "Sala 1 - Atendimento Individual",
+    "sala-2": "Sala 2 - Terapia em Grupo",
+    "sala-3": "Sala 3 - Atividades Motoras",
+    "sala-4": "Sala 4 - Musicoterapia",
+    "sala-5": "Sala 5 - Avaliação",
+    "consultorio-1": "Consultório 1",
+    "consultorio-2": "Consultório 2",
+    "consultorio-3": "Consultório 3",
+  };
 
   const getSalasNomes = (salaIds: string[]) => {
-    return salaIds.map(id => salasMap[id] || id).filter(Boolean)
-  }
+    return salaIds.map((id) => salasMap[id] || id).filter(Boolean);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -111,16 +125,22 @@ export function TerapeutaDetailsDialog({ professional }: TerapeutaDetailsDialogP
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-muted-foreground">CPF</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  CPF
+                </label>
                 <p className="font-mono">{formatCPF(professional.cpf)}</p>
               </div>
 
               {professional.professionalRegistration && (
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-muted-foreground">Registro Profissional</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Registro Profissional
+                  </label>
                   <div className="flex items-center gap-2">
                     <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                    <p className="font-mono">{professional.professionalRegistration}</p>
+                    <p className="font-mono">
+                      {professional.professionalRegistration}
+                    </p>
                   </div>
                 </div>
               )}
@@ -140,7 +160,9 @@ export function TerapeutaDetailsDialog({ professional }: TerapeutaDetailsDialogP
               {professional.phone && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Telefone:</span>
+                  <span className="text-sm text-muted-foreground">
+                    Telefone:
+                  </span>
                   <span>{professional.phone}</span>
                 </div>
               )}
@@ -174,16 +196,24 @@ export function TerapeutaDetailsDialog({ professional }: TerapeutaDetailsDialogP
               <div className="p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <GraduationCap className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-blue-800">Área de Especialização</span>
+                  <span className="font-medium text-blue-800">
+                    Área de Especialização
+                  </span>
                 </div>
-                <p className="text-blue-700 text-lg font-semibold">{professional.specialty}</p>
+                <p className="text-blue-700 text-lg font-semibold">
+                  {professional.specialty}
+                </p>
               </div>
 
               {professional.professionalRegistration && (
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Registro:</span>
-                  <span className="font-mono">{professional.professionalRegistration}</span>
+                  <span className="text-sm text-muted-foreground">
+                    Registro:
+                  </span>
+                  <span className="font-mono">
+                    {professional.professionalRegistration}
+                  </span>
                 </div>
               )}
             </div>
@@ -202,7 +232,10 @@ export function TerapeutaDetailsDialog({ professional }: TerapeutaDetailsDialogP
               {professional.roomAccess && professional.roomAccess.length > 0 ? (
                 <div className="grid gap-2">
                   {getSalasNomes(professional.roomAccess).map((sala, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-md"
+                    >
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">{sala}</span>
                     </div>
@@ -227,17 +260,23 @@ export function TerapeutaDetailsDialog({ professional }: TerapeutaDetailsDialogP
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="space-y-1">
-                <label className="font-medium text-muted-foreground">Cadastrado em</label>
+                <label className="font-medium text-muted-foreground">
+                  Cadastrado em
+                </label>
                 <p>{formatDateTime(professional.createdAt)}</p>
               </div>
 
               <div className="space-y-1">
-                <label className="font-medium text-muted-foreground">Última atualização</label>
+                <label className="font-medium text-muted-foreground">
+                  Última atualização
+                </label>
                 <p>{formatDateTime(professional.updatedAt)}</p>
               </div>
 
               <div className="space-y-1 md:col-span-2">
-                <label className="font-medium text-muted-foreground">ID do Sistema</label>
+                <label className="font-medium text-muted-foreground">
+                  ID do Sistema
+                </label>
                 <p className="font-mono text-xs">{professional.id}</p>
               </div>
             </div>
@@ -252,5 +291,5 @@ export function TerapeutaDetailsDialog({ professional }: TerapeutaDetailsDialogP
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

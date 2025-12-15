@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth/server";
@@ -24,22 +25,22 @@ export async function GET(request: NextRequest) {
     }
 
     const tenantId = user.tenant.id;
-    const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(user.role);
+    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role);
 
     // Buscar estatísticas baseadas no perfil
     const stats: any = {};
 
     // 1. Total de Pacientes
     stats.totalPacientes = await prisma.paciente.count({
-      where: { tenantId }
+      where: { tenantId },
     });
 
     // 2. Sessões em Andamento
     stats.sessoesEmAndamento = await prisma.sessaoAtividade.count({
       where: {
         paciente: { tenantId },
-        status: 'EM_ANDAMENTO'
-      }
+        status: "EM_ANDAMENTO",
+      },
     });
 
     // 3. Sessões Finalizadas no Mês Atual
@@ -50,30 +51,30 @@ export async function GET(request: NextRequest) {
     stats.sessoesRealizadasMes = await prisma.sessaoAtividade.count({
       where: {
         paciente: { tenantId },
-        status: 'FINALIZADA',
+        status: "FINALIZADA",
         finalizada_em: {
-          gte: inicioMes
-        }
-      }
+          gte: inicioMes,
+        },
+      },
     });
 
     // 4. Anamneses Pendentes (Rascunho)
     stats.anamnesesPendentes = await prisma.anamnese.count({
       where: {
         tenantId,
-        status: 'RASCUNHO'
-      }
+        status: "RASCUNHO",
+      },
     });
 
     // 5. Total de Atividades Clínicas
     stats.atividadesCadastradas = await prisma.atividade.count({
-      where: { tenantId }
+      where: { tenantId },
     });
 
     // Se for Admin, buscar estatísticas adicionais
     if (isAdmin) {
       stats.totalTerapeutas = await prisma.profissional.count({
-        where: { tenantId }
+        where: { tenantId },
       });
     }
 
@@ -88,8 +89,8 @@ export async function GET(request: NextRequest) {
       data: stats,
       tenant: {
         id: user.tenant.id,
-        name: user.tenant.name
-      }
+        name: user.tenant.name,
+      },
     });
   } catch (error) {
     console.error("❌ Erro ao buscar estatísticas:", error);

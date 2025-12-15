@@ -1,17 +1,24 @@
-'use client'
+/* eslint-disable react-hooks/exhaustive-deps */
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { MainLayout } from '@/components/main-layout'
-import { NovaAtividadeForm } from '@/components/forms/nova-atividade-form'
-import { VisualizarAtividadeDialog } from '@/components/forms/visualizar-atividade-dialog'
-import { EditarAtividadeForm } from '@/components/forms/editar-atividade-form'
-import { ExcluirAtividadeDialog } from '@/components/forms/excluir-atividade-dialog'
-import { AtribuirAtividadeDialog } from '@/components/forms/atribuir-atividade-dialog'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { MainLayout } from "@/components/main-layout";
+import { NovaAtividadeForm } from "@/components/forms/nova-atividade-form";
+import { VisualizarAtividadeDialog } from "@/components/forms/visualizar-atividade-dialog";
+import { EditarAtividadeForm } from "@/components/forms/editar-atividade-form";
+import { ExcluirAtividadeDialog } from "@/components/forms/excluir-atividade-dialog";
+import { AtribuirAtividadeDialog } from "@/components/forms/atribuir-atividade-dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -19,119 +26,119 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import {
-  ClipboardList,
-  Search,
-  Plus,
-  Loader2,
-} from 'lucide-react'
+} from "@/components/ui/table";
+import { ClipboardList, Search, Plus, Loader2 } from "lucide-react";
 
 interface Instrucao {
-  id: string
-  ordem: number
-  texto: string
-  observacao?: string
+  id: string;
+  ordem: number;
+  texto: string;
+  observacao?: string;
 }
 
 interface Atividade {
-  id: string
-  nome: string
-  descricao?: string
-  tipo: string
-  metodologia?: string
-  objetivo?: string
-  createdAt: string
-  instrucoes: Instrucao[]
+  id: string;
+  nome: string;
+  descricao?: string;
+  tipo: string;
+  metodologia?: string;
+  objetivo?: string;
+  createdAt: string;
+  instrucoes: Instrucao[];
   _count?: {
-    atribuicoes: number
-    sessoes: number
-  }
+    atribuicoes: number;
+    sessoes: number;
+  };
 }
 
 export default function AtividadesClinicasPage() {
-  const { user, isAuthenticated } = useAuth()
-  const [atividades, setAtividades] = useState<Atividade[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const { user, isAuthenticated } = useAuth();
+  const [atividades, setAtividades] = useState<Atividade[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const breadcrumbs = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Atividades Clínicas' }
-  ]
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Atividades Clínicas" },
+  ];
 
   // Buscar atividades da API
   const fetchAtividades = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       if (!isAuthenticated || !user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      console.log('🔍 Buscando atividades clínicas...')
+      console.log("🔍 Buscando atividades clínicas...");
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch('/api/atividades', {
-        method: 'GET',
+      const response = await fetch("/api/atividades", {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
-        }
-      })
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar atividades')
+        throw new Error(result.error || "Erro ao buscar atividades");
       }
 
       if (result.success) {
-        setAtividades(result.data)
-        console.log(`✅ Carregadas ${result.data.length} atividades`)
+        setAtividades(result.data);
+        console.log(`✅ Carregadas ${result.data.length} atividades`);
       } else {
-        throw new Error(result.error || 'Erro desconhecido')
+        throw new Error(result.error || "Erro desconhecido");
       }
     } catch (err) {
-      console.error('❌ Erro ao buscar atividades:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao carregar atividades')
+      console.error("❌ Erro ao buscar atividades:", err);
+      setError(
+        err instanceof Error ? err.message : "Erro ao carregar atividades"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchAtividades()
+      fetchAtividades();
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user]);
 
   // Filtrar atividades baseado no termo de busca
-  const filteredAtividades = atividades.filter(atividade =>
-    atividade.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (atividade.descricao && atividade.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (atividade.metodologia && atividade.metodologia.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+  const filteredAtividades = atividades.filter(
+    (atividade) =>
+      atividade.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (atividade.descricao &&
+        atividade.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (atividade.metodologia &&
+        atividade.metodologia.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   // Formatar data para exibição
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
-  }
+    return new Date(dateString).toLocaleDateString("pt-BR");
+  };
 
   // Traduzir tipo de atividade
   const traduzirTipo = (tipo: string) => {
     const tipos: Record<string, string> = {
-      'PROTOCOLO_ABA': 'Protocolo ABA',
-      'AVALIACAO_CLINICA': 'Avaliação Clínica',
-      'JOGO_MEMORIA': 'Jogo de Memória',
-      'CUSTOM': 'Personalizada',
-    }
-    return tipos[tipo] || tipo
-  }
+      PROTOCOLO_ABA: "Protocolo ABA",
+      AVALIACAO_CLINICA: "Avaliação Clínica",
+      JOGO_MEMORIA: "Jogo de Memória",
+      CUSTOM: "Personalizada",
+    };
+    return tipos[tipo] || tipo;
+  };
 
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
@@ -139,7 +146,9 @@ export default function AtividadesClinicasPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Atividades Clínicas</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Atividades Clínicas
+            </h1>
             <p className="text-muted-foreground">
               Gerencie protocolos e atividades terapêuticas
             </p>
@@ -151,24 +160,30 @@ export default function AtividadesClinicasPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Atividades</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Atividades
+              </CardTitle>
               <ClipboardList className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {loading ? '...' : atividades.length}
+                {loading ? "..." : atividades.length}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Protocolos ABA</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Protocolos ABA
+              </CardTitle>
               <ClipboardList className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
-                {loading ? '...' : atividades.filter(a => a.tipo === 'PROTOCOLO_ABA').length}
+                {loading
+                  ? "..."
+                  : atividades.filter((a) => a.tipo === "PROTOCOLO_ABA").length}
               </div>
             </CardContent>
           </Card>
@@ -180,19 +195,30 @@ export default function AtividadesClinicasPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {loading ? '...' : atividades.filter(a => a._count && a._count.atribuicoes > 0).length}
+                {loading
+                  ? "..."
+                  : atividades.filter(
+                      (a) => a._count && a._count.atribuicoes > 0
+                    ).length}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sessões Realizadas</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Sessões Realizadas
+              </CardTitle>
               <ClipboardList className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-600">
-                {loading ? '...' : atividades.reduce((acc, a) => acc + (a._count?.sessoes || 0), 0)}
+                {loading
+                  ? "..."
+                  : atividades.reduce(
+                      (acc, a) => acc + (a._count?.sessoes || 0),
+                      0
+                    )}
               </div>
             </CardContent>
           </Card>
@@ -241,14 +267,18 @@ export default function AtividadesClinicasPage() {
             {loading && !error && (
               <div className="text-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Carregando atividades...</p>
+                <p className="text-muted-foreground">
+                  Carregando atividades...
+                </p>
               </div>
             )}
 
             {!loading && !error && atividades.length === 0 && (
               <div className="text-center py-8">
                 <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Nenhuma atividade encontrada</h3>
+                <h3 className="text-lg font-medium mb-2">
+                  Nenhuma atividade encontrada
+                </h3>
                 <p className="text-muted-foreground mb-4">
                   Comece criando a primeira atividade clínica.
                 </p>
@@ -291,9 +321,7 @@ export default function AtividadesClinicasPage() {
                           {traduzirTipo(atividade.tipo)}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {atividade.metodologia || '-'}
-                      </TableCell>
+                      <TableCell>{atividade.metodologia || "-"}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">
                           {atividade.instrucoes.length} itens
@@ -311,9 +339,18 @@ export default function AtividadesClinicasPage() {
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
                           <VisualizarAtividadeDialog atividade={atividade} />
-                          <AtribuirAtividadeDialog atividade={atividade} onSuccess={fetchAtividades} />
-                          <EditarAtividadeForm atividade={atividade} onSuccess={fetchAtividades} />
-                          <ExcluirAtividadeDialog atividade={atividade} onSuccess={fetchAtividades} />
+                          <AtribuirAtividadeDialog
+                            atividade={atividade}
+                            onSuccess={fetchAtividades}
+                          />
+                          <EditarAtividadeForm
+                            atividade={atividade}
+                            onSuccess={fetchAtividades}
+                          />
+                          <ExcluirAtividadeDialog
+                            atividade={atividade}
+                            onSuccess={fetchAtividades}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -322,18 +359,23 @@ export default function AtividadesClinicasPage() {
               </Table>
             )}
 
-            {!loading && !error && atividades.length > 0 && filteredAtividades.length === 0 && (
-              <div className="text-center py-8">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Nenhum resultado encontrado</h3>
-                <p className="text-muted-foreground">
-                  Tente ajustar os termos da sua busca.
-                </p>
-              </div>
-            )}
+            {!loading &&
+              !error &&
+              atividades.length > 0 &&
+              filteredAtividades.length === 0 && (
+                <div className="text-center py-8">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">
+                    Nenhum resultado encontrado
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Tente ajustar os termos da sua busca.
+                  </p>
+                </div>
+              )}
           </CardContent>
         </Card>
       </div>
     </MainLayout>
-  )
+  );
 }

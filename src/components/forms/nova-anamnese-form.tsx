@@ -1,13 +1,22 @@
-'use client'
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { useAuth } from '@/hooks/useAuth'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   Form,
   FormControl,
@@ -16,22 +25,28 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { ArrowLeft, ArrowRight, Save, CheckCircle, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+} from "@/components/ui/select";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Save,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 // Schema de validação
 const anamneseSchema = z.object({
-  pacienteId: z.string().min(1, 'Paciente é obrigatório'),
+  pacienteId: z.string().min(1, "Paciente é obrigatório"),
 
   // Etapa 1: História do Desenvolvimento
   gestacao: z.string().optional(),
@@ -65,149 +80,193 @@ const anamneseSchema = z.object({
 
   // Observações gerais
   observacoesGerais: z.string().optional(),
-})
+});
 
-type AnamneseFormData = z.infer<typeof anamneseSchema>
+type AnamneseFormData = z.infer<typeof anamneseSchema>;
 
 interface NovaAnamneseFormProps {
-  anamneseId?: string
-  initialData?: any
-  onSuccess?: () => void
-  onCancel?: () => void
+  anamneseId?: string;
+  initialData?: any;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 const ETAPAS = [
-  { numero: 1, titulo: 'História do Desenvolvimento', descricao: 'Gestação, parto e marcos do desenvolvimento' },
-  { numero: 2, titulo: 'Comportamentos', descricao: 'Comportamentos excessivos e deficitários' },
-  { numero: 3, titulo: 'Comportamentos-Problema', descricao: 'Análise funcional (ABC)' },
-  { numero: 4, titulo: 'Rotina Diária', descricao: 'Horários e atividades do dia a dia' },
-  { numero: 5, titulo: 'Ambientes', descricao: 'Familiar e escolar' },
-  { numero: 6, titulo: 'Preferências', descricao: 'Reforçadores e motivadores' },
-  { numero: 7, titulo: 'Documentos', descricao: 'Relatórios e vídeos' },
-  { numero: 8, titulo: 'Habilidades Críticas', descricao: 'Prioridades para intervenção' },
-]
+  {
+    numero: 1,
+    titulo: "História do Desenvolvimento",
+    descricao: "Gestação, parto e marcos do desenvolvimento",
+  },
+  {
+    numero: 2,
+    titulo: "Comportamentos",
+    descricao: "Comportamentos excessivos e deficitários",
+  },
+  {
+    numero: 3,
+    titulo: "Comportamentos-Problema",
+    descricao: "Análise funcional (ABC)",
+  },
+  {
+    numero: 4,
+    titulo: "Rotina Diária",
+    descricao: "Horários e atividades do dia a dia",
+  },
+  { numero: 5, titulo: "Ambientes", descricao: "Familiar e escolar" },
+  {
+    numero: 6,
+    titulo: "Preferências",
+    descricao: "Reforçadores e motivadores",
+  },
+  { numero: 7, titulo: "Documentos", descricao: "Relatórios e vídeos" },
+  {
+    numero: 8,
+    titulo: "Habilidades Críticas",
+    descricao: "Prioridades para intervenção",
+  },
+];
 
-export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel }: NovaAnamneseFormProps) {
-  const { user } = useAuth()
-  const { toast } = useToast()
-  const [etapaAtual, setEtapaAtual] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [pacientes, setPacientes] = useState<any[]>([])
+export function NovaAnamneseForm({
+  anamneseId,
+  initialData,
+  onSuccess,
+  onCancel,
+}: NovaAnamneseFormProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [etapaAtual, setEtapaAtual] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [pacientes, setPacientes] = useState<any[]>([]);
 
   const form = useForm<AnamneseFormData>({
     resolver: zodResolver(anamneseSchema),
     defaultValues: {
-      pacienteId: '',
-      gestacao: '',
-      parto: '',
-      marcos_desenvolvimento: '',
-      comportamentosExcessivos: '',
-      comportamentosDeficitarios: '',
-      comportamentos_problema_descricao: '',
-      rotina_acordar: '',
-      rotina_escola: '',
-      rotina_tarde: '',
-      rotina_noite: '',
-      ambienteFamiliar: '',
-      ambienteEscolar: '',
-      preferencias_descricao: '',
-      habilidades_criticas_descricao: '',
-      observacoesGerais: '',
+      pacienteId: "",
+      gestacao: "",
+      parto: "",
+      marcos_desenvolvimento: "",
+      comportamentosExcessivos: "",
+      comportamentosDeficitarios: "",
+      comportamentos_problema_descricao: "",
+      rotina_acordar: "",
+      rotina_escola: "",
+      rotina_tarde: "",
+      rotina_noite: "",
+      ambienteFamiliar: "",
+      ambienteEscolar: "",
+      preferencias_descricao: "",
+      habilidades_criticas_descricao: "",
+      observacoesGerais: "",
     },
-  })
+  });
 
   // Preencher formulário com dados iniciais em modo de edição
   useEffect(() => {
     if (initialData && pacientes.length > 0) {
       // Garantir que o paciente da anamnese esteja na lista
-      if (initialData.paciente && !pacientes.find(p => p.id === initialData.paciente.id)) {
-        setPacientes(prev => [...prev, {
-          id: initialData.paciente.id,
-          name: initialData.paciente.nome
-        }])
+      if (
+        initialData.paciente &&
+        !pacientes.find((p) => p.id === initialData.paciente.id)
+      ) {
+        setPacientes((prev) => [
+          ...prev,
+          {
+            id: initialData.paciente.id,
+            name: initialData.paciente.nome,
+          },
+        ]);
       }
 
       // Os campos JSON já vêm como objetos do Prisma, não como strings
-      const historiaDesenvolvimento = initialData.historiaDesenvolvimento || {}
-      const comportamentosProblema = Array.isArray(initialData.comportamentosProblema) && initialData.comportamentosProblema.length > 0
-        ? initialData.comportamentosProblema[0]
-        : {}
-      const rotinaDiaria = initialData.rotinaDiaria || {}
-      const preferencias = initialData.preferencias || {}
-      const habilidadesCriticas = Array.isArray(initialData.habilidadesCriticas) && initialData.habilidadesCriticas.length > 0
-        ? initialData.habilidadesCriticas[0]
-        : {}
+      const historiaDesenvolvimento = initialData.historiaDesenvolvimento || {};
+      const comportamentosProblema =
+        Array.isArray(initialData.comportamentosProblema) &&
+        initialData.comportamentosProblema.length > 0
+          ? initialData.comportamentosProblema[0]
+          : {};
+      const rotinaDiaria = initialData.rotinaDiaria || {};
+      const preferencias = initialData.preferencias || {};
+      const habilidadesCriticas =
+        Array.isArray(initialData.habilidadesCriticas) &&
+        initialData.habilidadesCriticas.length > 0
+          ? initialData.habilidadesCriticas[0]
+          : {};
 
       form.reset({
-        pacienteId: initialData.paciente?.id || '',
-        gestacao: historiaDesenvolvimento.gestacao || '',
-        parto: historiaDesenvolvimento.parto || '',
-        marcos_desenvolvimento: historiaDesenvolvimento.marcos || historiaDesenvolvimento.marcos_desenvolvimento || '',
-        comportamentosExcessivos: initialData.comportamentosExcessivos || '',
-        comportamentosDeficitarios: initialData.comportamentosDeficitarios || '',
-        comportamentos_problema_descricao: comportamentosProblema.descricao || '',
-        rotina_acordar: rotinaDiaria.acordar || '',
-        rotina_escola: rotinaDiaria.escola || '',
-        rotina_tarde: rotinaDiaria.tarde || '',
-        rotina_noite: rotinaDiaria.noite || '',
-        ambienteFamiliar: initialData.ambienteFamiliar || '',
-        ambienteEscolar: initialData.ambienteEscolar || '',
-        preferencias_descricao: preferencias.descricao || '',
-        habilidades_criticas_descricao: habilidadesCriticas.descricao || '',
-        observacoesGerais: initialData.observacoesGerais || '',
-      })
+        pacienteId: initialData.paciente?.id || "",
+        gestacao: historiaDesenvolvimento.gestacao || "",
+        parto: historiaDesenvolvimento.parto || "",
+        marcos_desenvolvimento:
+          historiaDesenvolvimento.marcos ||
+          historiaDesenvolvimento.marcos_desenvolvimento ||
+          "",
+        comportamentosExcessivos: initialData.comportamentosExcessivos || "",
+        comportamentosDeficitarios:
+          initialData.comportamentosDeficitarios || "",
+        comportamentos_problema_descricao:
+          comportamentosProblema.descricao || "",
+        rotina_acordar: rotinaDiaria.acordar || "",
+        rotina_escola: rotinaDiaria.escola || "",
+        rotina_tarde: rotinaDiaria.tarde || "",
+        rotina_noite: rotinaDiaria.noite || "",
+        ambienteFamiliar: initialData.ambienteFamiliar || "",
+        ambienteEscolar: initialData.ambienteEscolar || "",
+        preferencias_descricao: preferencias.descricao || "",
+        habilidades_criticas_descricao: habilidadesCriticas.descricao || "",
+        observacoesGerais: initialData.observacoesGerais || "",
+      });
     }
-  }, [initialData, pacientes])
+  }, [initialData, pacientes]);
 
   // Carregar lista de pacientes
   useEffect(() => {
     const loadPacientes = async () => {
-      if (!user) return
+      if (!user) return;
 
       try {
-        const userDataEncoded = btoa(JSON.stringify(user))
-        const response = await fetch('/api/pacientes', {
+        const userDataEncoded = btoa(JSON.stringify(user));
+        const response = await fetch("/api/pacientes", {
           headers: {
-            'X-User-Data': userDataEncoded,
-            'X-Auth-Token': user.token,
+            "X-User-Data": userDataEncoded,
+            "X-Auth-Token": user.token,
           },
-        })
+        });
 
-        const result = await response.json()
+        const result = await response.json();
         if (response.ok) {
-          setPacientes(result.data || [])
+          setPacientes(result.data || []);
         }
       } catch (error) {
-        console.error('Erro ao carregar pacientes:', error)
+        console.error("Erro ao carregar pacientes:", error);
       }
-    }
+    };
 
-    loadPacientes()
-  }, [user])
+    loadPacientes();
+  }, [user]);
 
-  const progresso = ((etapaAtual + 1) / ETAPAS.length) * 100
+  const progresso = ((etapaAtual + 1) / ETAPAS.length) * 100;
 
   const proximaEtapa = () => {
     if (etapaAtual < ETAPAS.length - 1) {
-      setEtapaAtual(etapaAtual + 1)
+      setEtapaAtual(etapaAtual + 1);
     }
-  }
+  };
 
   const etapaAnterior = () => {
     if (etapaAtual > 0) {
-      setEtapaAtual(etapaAtual - 1)
+      setEtapaAtual(etapaAtual - 1);
     }
-  }
+  };
 
   const salvarRascunho = async (data: AnamneseFormData) => {
     try {
-      setLoading(true)
+      setLoading(true);
 
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
       // Montar dados para envio
       const anamneseData = {
@@ -220,9 +279,9 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
         },
         comportamentosExcessivos: data.comportamentosExcessivos,
         comportamentosDeficitarios: data.comportamentosDeficitarios,
-        comportamentosProblema: data.comportamentos_problema_descricao ? [
-          { descricao: data.comportamentos_problema_descricao }
-        ] : undefined,
+        comportamentosProblema: data.comportamentos_problema_descricao
+          ? [{ descricao: data.comportamentos_problema_descricao }]
+          : undefined,
         rotinaDiaria: {
           acordar: data.rotina_acordar,
           escola: data.rotina_escola,
@@ -231,64 +290,71 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
         },
         ambienteFamiliar: data.ambienteFamiliar,
         ambienteEscolar: data.ambienteEscolar,
-        preferencias: data.preferencias_descricao ? {
-          descricao: data.preferencias_descricao
-        } : undefined,
-        habilidadesCriticas: data.habilidades_criticas_descricao ? [
-          { descricao: data.habilidades_criticas_descricao }
-        ] : undefined,
+        preferencias: data.preferencias_descricao
+          ? {
+              descricao: data.preferencias_descricao,
+            }
+          : undefined,
+        habilidadesCriticas: data.habilidades_criticas_descricao
+          ? [{ descricao: data.habilidades_criticas_descricao }]
+          : undefined,
         observacoesGerais: data.observacoesGerais,
-        status: 'RASCUNHO',
-      }
+        status: "RASCUNHO",
+      };
 
-      const url = anamneseId ? `/api/anamneses/${anamneseId}` : '/api/anamneses'
-      const method = anamneseId ? 'PUT' : 'POST'
+      const url = anamneseId
+        ? `/api/anamneses/${anamneseId}`
+        : "/api/anamneses";
+      const method = anamneseId ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
         },
         body: JSON.stringify(anamneseData),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao salvar rascunho')
+        throw new Error(result.error || "Erro ao salvar rascunho");
       }
 
       toast({
-        title: 'Rascunho salvo!',
-        description: anamneseId ? 'Anamnese atualizada com sucesso.' : 'Anamnese salva como rascunho com sucesso.',
-      })
+        title: "Rascunho salvo!",
+        description: anamneseId
+          ? "Anamnese atualizada com sucesso."
+          : "Anamnese salva como rascunho com sucesso.",
+      });
 
       if (onSuccess) {
-        onSuccess()
+        onSuccess();
       }
     } catch (error) {
-      console.error('Erro ao salvar rascunho:', error)
+      console.error("Erro ao salvar rascunho:", error);
       toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro ao salvar rascunho',
-        variant: 'destructive'
-      })
+        title: "Erro",
+        description:
+          error instanceof Error ? error.message : "Erro ao salvar rascunho",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const finalizar = async (data: AnamneseFormData) => {
     try {
-      setLoading(true)
+      setLoading(true);
 
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
       const anamneseData = {
         pacienteId: data.pacienteId,
@@ -300,9 +366,9 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
         },
         comportamentosExcessivos: data.comportamentosExcessivos,
         comportamentosDeficitarios: data.comportamentosDeficitarios,
-        comportamentosProblema: data.comportamentos_problema_descricao ? [
-          { descricao: data.comportamentos_problema_descricao }
-        ] : undefined,
+        comportamentosProblema: data.comportamentos_problema_descricao
+          ? [{ descricao: data.comportamentos_problema_descricao }]
+          : undefined,
         rotinaDiaria: {
           acordar: data.rotina_acordar,
           escola: data.rotina_escola,
@@ -311,77 +377,89 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
         },
         ambienteFamiliar: data.ambienteFamiliar,
         ambienteEscolar: data.ambienteEscolar,
-        preferencias: data.preferencias_descricao ? {
-          descricao: data.preferencias_descricao
-        } : undefined,
-        habilidadesCriticas: data.habilidades_criticas_descricao ? [
-          { descricao: data.habilidades_criticas_descricao }
-        ] : undefined,
+        preferencias: data.preferencias_descricao
+          ? {
+              descricao: data.preferencias_descricao,
+            }
+          : undefined,
+        habilidadesCriticas: data.habilidades_criticas_descricao
+          ? [{ descricao: data.habilidades_criticas_descricao }]
+          : undefined,
         observacoesGerais: data.observacoesGerais,
-        status: 'FINALIZADA',
-      }
+        status: "FINALIZADA",
+      };
 
-      const url = anamneseId ? `/api/anamneses/${anamneseId}` : '/api/anamneses'
-      const method = anamneseId ? 'PUT' : 'POST'
+      const url = anamneseId
+        ? `/api/anamneses/${anamneseId}`
+        : "/api/anamneses";
+      const method = anamneseId ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
         },
         body: JSON.stringify(anamneseData),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao finalizar anamnese')
+        throw new Error(result.error || "Erro ao finalizar anamnese");
       }
 
       toast({
-        title: 'Anamnese finalizada!',
-        description: anamneseId ? 'Anamnese atualizada e finalizada com sucesso.' : 'Anamnese criada e finalizada com sucesso.',
-      })
+        title: "Anamnese finalizada!",
+        description: anamneseId
+          ? "Anamnese atualizada e finalizada com sucesso."
+          : "Anamnese criada e finalizada com sucesso.",
+      });
 
       if (onSuccess) {
-        onSuccess()
+        onSuccess();
       }
     } catch (error) {
-      console.error('Erro ao finalizar anamnese:', error)
+      console.error("Erro ao finalizar anamnese:", error);
       toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro ao finalizar anamnese',
-        variant: 'destructive'
-      })
+        title: "Erro",
+        description:
+          error instanceof Error ? error.message : "Erro ao finalizar anamnese",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const onSubmit = (data: AnamneseFormData) => {
     // No último passo, finalizar
     if (etapaAtual === ETAPAS.length - 1) {
-      finalizar(data)
+      finalizar(data);
     } else {
       // Caso contrário, avançar para próxima etapa
-      proximaEtapa()
+      proximaEtapa();
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
       {/* Cabeçalho com progresso */}
       <Card>
         <CardHeader>
-          <CardTitle>{anamneseId ? 'Editar' : 'Nova'} Anamnese - {ETAPAS[etapaAtual].titulo}</CardTitle>
+          <CardTitle>
+            {anamneseId ? "Editar" : "Nova"} Anamnese -{" "}
+            {ETAPAS[etapaAtual].titulo}
+          </CardTitle>
           <CardDescription>{ETAPAS[etapaAtual].descricao}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Etapa {etapaAtual + 1} de {ETAPAS.length}</span>
+              <span>
+                Etapa {etapaAtual + 1} de {ETAPAS.length}
+              </span>
               <span>{Math.round(progresso)}%</span>
             </div>
             <Progress value={progresso} />
@@ -394,7 +472,6 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
         <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
               {/* Seleção de Paciente (sempre visível) */}
               {etapaAtual === 0 && (
                 <FormField
@@ -403,7 +480,11 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Paciente *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={!!anamneseId}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={!!anamneseId}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o paciente" />
@@ -417,7 +498,11 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                           ))}
                         </SelectContent>
                       </Select>
-                      {anamneseId && <FormDescription>O paciente não pode ser alterado durante a edição.</FormDescription>}
+                      {anamneseId && (
+                        <FormDescription>
+                          O paciente não pode ser alterado durante a edição.
+                        </FormDescription>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -477,7 +562,8 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                           />
                         </FormControl>
                         <FormDescription>
-                          Descreva os principais marcos do desenvolvimento motor, linguagem e autonomia
+                          Descreva os principais marcos do desenvolvimento
+                          motor, linguagem e autonomia
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -503,7 +589,8 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                           />
                         </FormControl>
                         <FormDescription>
-                          Liste os comportamentos que a criança apresenta em excesso
+                          Liste os comportamentos que a criança apresenta em
+                          excesso
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -524,7 +611,8 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                           />
                         </FormControl>
                         <FormDescription>
-                          Liste os comportamentos que estão em déficit ou ausentes
+                          Liste os comportamentos que estão em déficit ou
+                          ausentes
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -541,7 +629,9 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                     name="comportamentos_problema_descricao"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Comportamentos-Problema (Análise Funcional)</FormLabel>
+                        <FormLabel>
+                          Comportamentos-Problema (Análise Funcional)
+                        </FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Descreva os comportamentos-problema usando o modelo ABC:&#10;&#10;Antecedente (O que acontece antes?)&#10;Comportamento (O que a criança faz?)&#10;Consequência (O que acontece depois?)&#10;Frequência (Quantas vezes por dia/semana?)"
@@ -550,7 +640,8 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                           />
                         </FormControl>
                         <FormDescription>
-                          Descreva funcionalmente os principais comportamentos-problema
+                          Descreva funcionalmente os principais
+                          comportamentos-problema
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -694,7 +785,8 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                           />
                         </FormControl>
                         <FormDescription>
-                          Liste tudo que pode ser usado como reforçador nas intervenções
+                          Liste tudo que pode ser usado como reforçador nas
+                          intervenções
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -708,10 +800,12 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                 <div className="space-y-4">
                   <div className="text-center py-8 border-2 border-dashed rounded-lg">
                     <p className="text-muted-foreground">
-                      Funcionalidade de upload de documentos será implementada em breve.
+                      Funcionalidade de upload de documentos será implementada
+                      em breve.
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Por enquanto, você pode anexar documentos após finalizar a anamnese.
+                      Por enquanto, você pode anexar documentos após finalizar a
+                      anamnese.
                     </p>
                   </div>
                 </div>
@@ -725,7 +819,9 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                     name="habilidades_criticas_descricao"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Habilidades Críticas / Prioridades</FormLabel>
+                        <FormLabel>
+                          Habilidades Críticas / Prioridades
+                        </FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Quais habilidades são prioritárias para intervenção? Ex: comunicação, autonomia, socialização, acadêmicas..."
@@ -734,7 +830,8 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
                           />
                         </FormControl>
                         <FormDescription>
-                          Identifique as áreas e habilidades críticas que devem ser priorizadas
+                          Identifique as áreas e habilidades críticas que devem
+                          ser priorizadas
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -829,5 +926,5 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

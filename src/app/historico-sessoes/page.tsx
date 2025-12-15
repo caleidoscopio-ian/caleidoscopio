@@ -1,20 +1,29 @@
-'use client'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
-import { MainLayout } from '@/components/main-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { MainLayout } from "@/components/main-layout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,7 +31,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   History,
   Search,
@@ -42,251 +51,267 @@ import {
   CheckCircle2,
   AlertCircle,
   Play,
-} from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scrollarea'
+} from "lucide-react";
+import { ScrollArea } from "@/components/ui/scrollarea";
 
 interface Paciente {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 interface Avaliacao {
-  id: string
-  nota: number
-  tipos_ajuda: string[]
-  observacao?: string
+  id: string;
+  nota: number;
+  tipos_ajuda: string[];
+  observacao?: string;
   instrucao: {
-    ordem: number
-    texto: string
-  }
+    ordem: number;
+    texto: string;
+  };
 }
 
 interface Sessao {
-  id: string
-  iniciada_em: string
-  finalizada_em?: string
-  status: string
-  observacoes_gerais?: string
+  id: string;
+  iniciada_em: string;
+  finalizada_em?: string;
+  status: string;
+  observacoes_gerais?: string;
   paciente: {
-    id: string
-    nome: string
-  }
+    id: string;
+    nome: string;
+  };
   atividade: {
-    id: string
-    nome: string
-    tipo: string
-    metodologia?: string
-  }
+    id: string;
+    nome: string;
+    tipo: string;
+    metodologia?: string;
+  };
   profissional: {
-    nome: string
-  }
-  avaliacoes?: Avaliacao[]
+    nome: string;
+  };
+  avaliacoes?: Avaliacao[];
 }
 
 export default function HistoricoSessoesPage() {
-  const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
-  const [sessoes, setSessoes] = useState<Sessao[]>([])
-  const [pacientes, setPacientes] = useState<Paciente[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [pacienteFiltro, setPacienteFiltro] = useState<string>('all')
-  const [statusFiltro, setStatusFiltro] = useState<string>('FINALIZADA')
-  const [error, setError] = useState<string | null>(null)
-  const [sessaoDetalhes, setSessaoDetalhes] = useState<Sessao | null>(null)
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+  const [sessoes, setSessoes] = useState<Sessao[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [pacienteFiltro, setPacienteFiltro] = useState<string>("all");
+  const [statusFiltro, setStatusFiltro] = useState<string>("FINALIZADA");
+  const [error, setError] = useState<string | null>(null);
+  const [sessaoDetalhes, setSessaoDetalhes] = useState<Sessao | null>(null);
 
   const breadcrumbs = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Histórico de Sessões' }
-  ]
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Histórico de Sessões" },
+  ];
 
   // Buscar pacientes
   const fetchPacientes = async () => {
     try {
-      if (!user) return
+      if (!user) return;
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch('/api/pacientes', {
-        method: 'GET',
+      const response = await fetch("/api/pacientes", {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
-        }
-      })
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
-        setPacientes(result.data)
+        setPacientes(result.data);
       }
     } catch (err) {
-      console.error('Erro ao buscar pacientes:', err)
+      console.error("Erro ao buscar pacientes:", err);
     }
-  }
+  };
 
   // Buscar sessões
   const fetchSessoes = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       if (!isAuthenticated || !user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
       // Construir query params
-      const params = new URLSearchParams()
-      if (pacienteFiltro !== 'all') {
-        params.append('pacienteId', pacienteFiltro)
+      const params = new URLSearchParams();
+      if (pacienteFiltro !== "all") {
+        params.append("pacienteId", pacienteFiltro);
       }
       if (statusFiltro) {
-        params.append('status', statusFiltro)
+        params.append("status", statusFiltro);
       }
 
       const response = await fetch(`/api/sessoes?${params.toString()}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
-        }
-      })
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao buscar sessões')
+        throw new Error(result.error || "Erro ao buscar sessões");
       }
 
       if (result.success) {
-        setSessoes(result.data)
+        setSessoes(result.data);
       }
     } catch (err) {
-      console.error('❌ Erro ao buscar sessões:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao carregar sessões')
+      console.error("❌ Erro ao buscar sessões:", err);
+      setError(err instanceof Error ? err.message : "Erro ao carregar sessões");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Buscar detalhes de uma sessão
   const fetchSessaoDetalhes = async (sessaoId: string) => {
     try {
-      if (!user) return
+      if (!user) return;
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
       const response = await fetch(`/api/sessoes?id=${sessaoId}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
-        }
-      })
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
-        setSessaoDetalhes(result.data)
+        setSessaoDetalhes(result.data);
       }
     } catch (err) {
-      console.error('Erro ao buscar detalhes:', err)
+      console.error("Erro ao buscar detalhes:", err);
     }
-  }
+  };
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchPacientes()
-      fetchSessoes()
+      fetchPacientes();
+      fetchSessoes();
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchSessoes()
+      fetchSessoes();
     }
-  }, [pacienteFiltro, statusFiltro])
+  }, [pacienteFiltro, statusFiltro]);
 
   // Filtrar sessões por termo de busca
-  const filteredSessoes = sessoes.filter(sessao =>
-    sessao.paciente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sessao.atividade.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sessao.profissional.nome.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredSessoes = sessoes.filter(
+    (sessao) =>
+      sessao.paciente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sessao.atividade.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sessao.profissional.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Formatar data
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-  }
+    return new Date(dateString).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
+    return new Date(dateString).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   // Calcular duração da sessão
   const calcularDuracao = (inicio: string, fim?: string) => {
-    if (!fim) return '-'
-    const diff = new Date(fim).getTime() - new Date(inicio).getTime()
-    const minutos = Math.floor(diff / 60000)
-    return `${minutos} min`
-  }
+    if (!fim) return "-";
+    const diff = new Date(fim).getTime() - new Date(inicio).getTime();
+    const minutos = Math.floor(diff / 60000);
+    return `${minutos} min`;
+  };
 
   // Calcular estatísticas de uma sessão
   const calcularEstatisticas = (sessao: Sessao) => {
     if (!sessao.avaliacoes || sessao.avaliacoes.length === 0) {
-      return { media: 0, comAjuda: 0, total: 0 }
+      return { media: 0, comAjuda: 0, total: 0 };
     }
 
-    const total = sessao.avaliacoes.length
-    const somaNotas = sessao.avaliacoes.reduce((acc, av) => acc + av.nota, 0)
-    const media = somaNotas / total
-    const comAjuda = sessao.avaliacoes.filter(av => av.tipos_ajuda && av.tipos_ajuda.length > 0).length
+    const total = sessao.avaliacoes.length;
+    const somaNotas = sessao.avaliacoes.reduce((acc, av) => acc + av.nota, 0);
+    const media = somaNotas / total;
+    const comAjuda = sessao.avaliacoes.filter(
+      (av) => av.tipos_ajuda && av.tipos_ajuda.length > 0
+    ).length;
 
-    return { media: media.toFixed(1), comAjuda, total }
-  }
+    return { media: media.toFixed(1), comAjuda, total };
+  };
 
   // Traduzir tipo
   const traduzirTipo = (tipo: string) => {
     const tipos: Record<string, string> = {
-      'PROTOCOLO_ABA': 'Protocolo ABA',
-      'AVALIACAO_CLINICA': 'Avaliação Clínica',
-      'JOGO_MEMORIA': 'Jogo de Memória',
-      'CUSTOM': 'Personalizada',
-    }
-    return tipos[tipo] || tipo
-  }
+      PROTOCOLO_ABA: "Protocolo ABA",
+      AVALIACAO_CLINICA: "Avaliação Clínica",
+      JOGO_MEMORIA: "Jogo de Memória",
+      CUSTOM: "Personalizada",
+    };
+    return tipos[tipo] || tipo;
+  };
 
   // Traduzir status
   const traduzirStatus = (status: string) => {
-    const statuses: Record<string, { label: string; variant: 'default' | 'success' | 'destructive' | 'outline' | 'secondary' }> = {
-      'EM_ANDAMENTO': { label: 'Em Andamento', variant: 'default' },
-      'FINALIZADA': { label: 'Finalizada', variant: 'success' },
-      'CANCELADA': { label: 'Cancelada', variant: 'destructive' },
-    }
-    return statuses[status] || { label: status, variant: 'outline' }
-  }
+    const statuses: Record<
+      string,
+      {
+        label: string;
+        variant:
+          | "default"
+          | "success"
+          | "destructive"
+          | "outline"
+          | "secondary";
+      }
+    > = {
+      EM_ANDAMENTO: { label: "Em Andamento", variant: "default" },
+      FINALIZADA: { label: "Finalizada", variant: "success" },
+      CANCELADA: { label: "Cancelada", variant: "destructive" },
+    };
+    return statuses[status] || { label: status, variant: "outline" };
+  };
 
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Histórico de Sessões</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Histórico de Sessões
+          </h1>
           <p className="text-muted-foreground">
             Visualize e acompanhe todas as sessões realizadas
           </p>
@@ -334,12 +359,14 @@ export default function HistoricoSessoesPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Sessões</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total de Sessões
+              </CardTitle>
               <History className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {loading ? '...' : sessoes.length}
+                {loading ? "..." : sessoes.length}
               </div>
             </CardContent>
           </Card>
@@ -351,31 +378,41 @@ export default function HistoricoSessoesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {loading ? '...' : sessoes.filter(s => s.status === 'FINALIZADA').length}
+                {loading
+                  ? "..."
+                  : sessoes.filter((s) => s.status === "FINALIZADA").length}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Em Andamento</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Em Andamento
+              </CardTitle>
               <Clock className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
-                {loading ? '...' : sessoes.filter(s => s.status === 'EM_ANDAMENTO').length}
+                {loading
+                  ? "..."
+                  : sessoes.filter((s) => s.status === "EM_ANDAMENTO").length}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pacientes Atendidos</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Pacientes Atendidos
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-600">
-                {loading ? '...' : new Set(sessoes.map(s => s.paciente.id)).size}
+                {loading
+                  ? "..."
+                  : new Set(sessoes.map((s) => s.paciente.id)).size}
               </div>
             </CardContent>
           </Card>
@@ -417,14 +454,16 @@ export default function HistoricoSessoesPage() {
             {!loading && !error && filteredSessoes.length === 0 && (
               <div className="text-center py-8">
                 <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Nenhuma sessão encontrada</h3>
+                <h3 className="text-lg font-medium mb-2">
+                  Nenhuma sessão encontrada
+                </h3>
                 <p className="text-muted-foreground mb-4">
                   {sessoes.length === 0
-                    ? 'Ainda não há sessões registradas.'
-                    : 'Nenhuma sessão corresponde aos filtros selecionados.'}
+                    ? "Ainda não há sessões registradas."
+                    : "Nenhuma sessão corresponde aos filtros selecionados."}
                 </p>
                 {sessoes.length === 0 && (
-                  <Button onClick={() => router.push('/iniciar-sessao')}>
+                  <Button onClick={() => router.push("/iniciar-sessao")}>
                     Iniciar Nova Sessão
                   </Button>
                 )}
@@ -446,7 +485,7 @@ export default function HistoricoSessoesPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredSessoes.map((sessao) => {
-                    const status = traduzirStatus(sessao.status)
+                    const status = traduzirStatus(sessao.status);
                     return (
                       <TableRow key={sessao.id}>
                         <TableCell className="font-medium">
@@ -454,7 +493,9 @@ export default function HistoricoSessoesPage() {
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{sessao.atividade.nome}</div>
+                            <div className="font-medium">
+                              {sessao.atividade.nome}
+                            </div>
                             <Badge variant="outline" className="text-xs mt-1">
                               {traduzirTipo(sessao.atividade.tipo)}
                             </Badge>
@@ -465,7 +506,10 @@ export default function HistoricoSessoesPage() {
                           {formatDateTime(sessao.iniciada_em)}
                         </TableCell>
                         <TableCell>
-                          {calcularDuracao(sessao.iniciada_em, sessao.finalizada_em)}
+                          {calcularDuracao(
+                            sessao.iniciada_em,
+                            sessao.finalizada_em
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={status.variant as any}>
@@ -474,11 +518,13 @@ export default function HistoricoSessoesPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {sessao.status === 'EM_ANDAMENTO' && (
+                            {sessao.status === "EM_ANDAMENTO" && (
                               <Button
                                 size="sm"
                                 variant="default"
-                                onClick={() => router.push(`/aplicar-atividade/${sessao.id}`)}
+                                onClick={() =>
+                                  router.push(`/aplicar-atividade/${sessao.id}`)
+                                }
                               >
                                 <Play className="h-4 w-4 mr-1" />
                                 Continuar
@@ -494,178 +540,312 @@ export default function HistoricoSessoesPage() {
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </DialogTrigger>
-                            <DialogContent className="max-w-3xl max-h-[90vh]">
-                              <DialogHeader>
-                                <DialogTitle>Detalhes da Sessão</DialogTitle>
-                                <DialogDescription>
-                                  Informações completas e avaliações
-                                </DialogDescription>
-                              </DialogHeader>
-                              {sessaoDetalhes && sessaoDetalhes.id === sessao.id && (
-                                <ScrollArea className="max-h-[calc(90vh-150px)] pr-4">
-                                  <div className="space-y-4">
-                                    {/* Informações da Sessão */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Paciente</label>
-                                        <p className="font-medium">{sessaoDetalhes.paciente.nome}</p>
-                                      </div>
-                                      <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Terapeuta</label>
-                                        <p className="font-medium">{sessaoDetalhes.profissional.nome}</p>
-                                      </div>
-                                      <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Atividade</label>
-                                        <p className="font-medium">{sessaoDetalhes.atividade.nome}</p>
-                                      </div>
-                                      <div>
-                                        <label className="text-sm font-medium text-muted-foreground">Status</label>
-                                        <div className="mt-1">
-                                          <Badge variant={traduzirStatus(sessaoDetalhes.status).variant as any}>
-                                            {traduzirStatus(sessaoDetalhes.status).label}
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Estatísticas */}
-                                    {sessaoDetalhes.avaliacoes && sessaoDetalhes.avaliacoes.length > 0 && (
-                                      <div className="space-y-3">
-                                        <label className="text-sm font-medium text-muted-foreground">
-                                          Resumo do Desempenho
-                                        </label>
-                                        <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
-                                          <div className="grid grid-cols-4 gap-4 text-center">
-                                            <div>
-                                              <p className="text-3xl font-bold text-blue-600">
-                                                {calcularEstatisticas(sessaoDetalhes).media}
-                                              </p>
-                                              <p className="text-xs text-muted-foreground mt-1">Média Geral</p>
-                                              <p className="text-xs text-muted-foreground">(de 4.0)</p>
-                                            </div>
-                                            <div>
-                                              <p className="text-3xl font-bold text-green-600">
-                                                {sessaoDetalhes.avaliacoes.filter(a => a.nota >= 3).length}
-                                              </p>
-                                              <p className="text-xs text-muted-foreground mt-1">Acertos</p>
-                                              <p className="text-xs text-muted-foreground">(nota ≥ 3)</p>
-                                            </div>
-                                            <div>
-                                              <p className="text-3xl font-bold text-orange-600">
-                                                {calcularEstatisticas(sessaoDetalhes).comAjuda}
-                                              </p>
-                                              <p className="text-xs text-muted-foreground mt-1">Com Ajuda</p>
-                                              <p className="text-xs text-muted-foreground">
-                                                ({((calcularEstatisticas(sessaoDetalhes).comAjuda / calcularEstatisticas(sessaoDetalhes).total) * 100).toFixed(0)}%)
-                                              </p>
-                                            </div>
-                                            <div>
-                                              <p className="text-3xl font-bold text-purple-600">
-                                                {calcularEstatisticas(sessaoDetalhes).total}
-                                              </p>
-                                              <p className="text-xs text-muted-foreground mt-1">Total</p>
-                                              <p className="text-xs text-muted-foreground">instruções</p>
+                              <DialogContent className="max-w-3xl max-h-[90vh]">
+                                <DialogHeader>
+                                  <DialogTitle>Detalhes da Sessão</DialogTitle>
+                                  <DialogDescription>
+                                    Informações completas e avaliações
+                                  </DialogDescription>
+                                </DialogHeader>
+                                {sessaoDetalhes &&
+                                  sessaoDetalhes.id === sessao.id && (
+                                    <ScrollArea className="max-h-[calc(90vh-150px)] pr-4">
+                                      <div className="space-y-4">
+                                        {/* Informações da Sessão */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div>
+                                            <label className="text-sm font-medium text-muted-foreground">
+                                              Paciente
+                                            </label>
+                                            <p className="font-medium">
+                                              {sessaoDetalhes.paciente.nome}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <label className="text-sm font-medium text-muted-foreground">
+                                              Terapeuta
+                                            </label>
+                                            <p className="font-medium">
+                                              {sessaoDetalhes.profissional.nome}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <label className="text-sm font-medium text-muted-foreground">
+                                              Atividade
+                                            </label>
+                                            <p className="font-medium">
+                                              {sessaoDetalhes.atividade.nome}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <label className="text-sm font-medium text-muted-foreground">
+                                              Status
+                                            </label>
+                                            <div className="mt-1">
+                                              <Badge
+                                                variant={
+                                                  traduzirStatus(
+                                                    sessaoDetalhes.status
+                                                  ).variant as any
+                                                }
+                                              >
+                                                {
+                                                  traduzirStatus(
+                                                    sessaoDetalhes.status
+                                                  ).label
+                                                }
+                                              </Badge>
                                             </div>
                                           </div>
                                         </div>
 
-                                        {/* Distribuição de Notas */}
-                                        <div className="p-4 bg-muted/30 rounded-lg">
-                                          <p className="text-sm font-medium mb-3">Distribuição de Notas</p>
-                                          <div className="space-y-2">
-                                            {[4, 3, 2, 1, 0].map(nota => {
-                                              const count = sessaoDetalhes.avaliacoes!.filter(a => a.nota === nota).length
-                                              const percentage = (count / sessaoDetalhes.avaliacoes!.length) * 100
-                                              return (
-                                                <div key={nota} className="flex items-center gap-3">
-                                                  <span className="text-xs font-medium w-12">Nota {nota}:</span>
-                                                  <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
-                                                    <div
-                                                      className={`h-full ${
-                                                        nota === 4 ? 'bg-green-500' :
-                                                        nota === 3 ? 'bg-blue-500' :
-                                                        nota === 2 ? 'bg-yellow-500' :
-                                                        nota === 1 ? 'bg-orange-500' :
-                                                        'bg-red-500'
-                                                      }`}
-                                                      style={{ width: `${percentage}%` }}
-                                                    />
-                                                  </div>
-                                                  <span className="text-xs font-medium w-16 text-right">
-                                                    {count} ({percentage.toFixed(0)}%)
-                                                  </span>
-                                                </div>
-                                              )
-                                            })}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Avaliações */}
-                                    {sessaoDetalhes.avaliacoes && sessaoDetalhes.avaliacoes.length > 0 && (
-                                      <div>
-                                        <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                          Avaliações das Instruções
-                                        </label>
-                                        <div className="space-y-2">
-                                          {sessaoDetalhes.avaliacoes.map((avaliacao) => (
-                                            <div key={avaliacao.id} className="p-3 border rounded-lg">
-                                              <div className="flex items-start gap-3">
-                                                <Badge variant="secondary">
-                                                  {avaliacao.instrucao.ordem}
-                                                </Badge>
-                                                <div className="flex-1">
-                                                  <p className="text-sm font-medium mb-1">
-                                                    {avaliacao.instrucao.texto}
-                                                  </p>
-                                                  <div className="flex items-center gap-2 text-xs flex-wrap">
-                                                    <Badge variant={avaliacao.nota >= 3 ? 'default' : 'outline'}>
-                                                      Nota: {avaliacao.nota}/4
-                                                    </Badge>
-                                                    {avaliacao.tipos_ajuda && avaliacao.tipos_ajuda.length > 0 && (
-                                                      <>
-                                                        {avaliacao.tipos_ajuda.map((tipo, idx) => (
-                                                          <Badge key={idx} variant="secondary">
-                                                            {tipo}
-                                                          </Badge>
-                                                        ))}
-                                                      </>
-                                                    )}
-                                                  </div>
-                                                  {avaliacao.observacao && (
-                                                    <p className="text-xs text-muted-foreground mt-2">
-                                                      Obs: {avaliacao.observacao}
+                                        {/* Estatísticas */}
+                                        {sessaoDetalhes.avaliacoes &&
+                                          sessaoDetalhes.avaliacoes.length >
+                                            0 && (
+                                            <div className="space-y-3">
+                                              <label className="text-sm font-medium text-muted-foreground">
+                                                Resumo do Desempenho
+                                              </label>
+                                              <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
+                                                <div className="grid grid-cols-4 gap-4 text-center">
+                                                  <div>
+                                                    <p className="text-3xl font-bold text-blue-600">
+                                                      {
+                                                        calcularEstatisticas(
+                                                          sessaoDetalhes
+                                                        ).media
+                                                      }
                                                     </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                      Média Geral
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                      (de 4.0)
+                                                    </p>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-3xl font-bold text-green-600">
+                                                      {
+                                                        sessaoDetalhes.avaliacoes.filter(
+                                                          (a) => a.nota >= 3
+                                                        ).length
+                                                      }
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                      Acertos
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                      (nota ≥ 3)
+                                                    </p>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-3xl font-bold text-orange-600">
+                                                      {
+                                                        calcularEstatisticas(
+                                                          sessaoDetalhes
+                                                        ).comAjuda
+                                                      }
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                      Com Ajuda
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                      (
+                                                      {(
+                                                        (calcularEstatisticas(
+                                                          sessaoDetalhes
+                                                        ).comAjuda /
+                                                          calcularEstatisticas(
+                                                            sessaoDetalhes
+                                                          ).total) *
+                                                        100
+                                                      ).toFixed(0)}
+                                                      %)
+                                                    </p>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-3xl font-bold text-purple-600">
+                                                      {
+                                                        calcularEstatisticas(
+                                                          sessaoDetalhes
+                                                        ).total
+                                                      }
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                      Total
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                      instruções
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+
+                                              {/* Distribuição de Notas */}
+                                              <div className="p-4 bg-muted/30 rounded-lg">
+                                                <p className="text-sm font-medium mb-3">
+                                                  Distribuição de Notas
+                                                </p>
+                                                <div className="space-y-2">
+                                                  {[4, 3, 2, 1, 0].map(
+                                                    (nota) => {
+                                                      const count =
+                                                        sessaoDetalhes.avaliacoes!.filter(
+                                                          (a) => a.nota === nota
+                                                        ).length;
+                                                      const percentage =
+                                                        (count /
+                                                          sessaoDetalhes
+                                                            .avaliacoes!
+                                                            .length) *
+                                                        100;
+                                                      return (
+                                                        <div
+                                                          key={nota}
+                                                          className="flex items-center gap-3"
+                                                        >
+                                                          <span className="text-xs font-medium w-12">
+                                                            Nota {nota}:
+                                                          </span>
+                                                          <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div
+                                                              className={`h-full ${
+                                                                nota === 4
+                                                                  ? "bg-green-500"
+                                                                  : nota === 3
+                                                                    ? "bg-blue-500"
+                                                                    : nota === 2
+                                                                      ? "bg-yellow-500"
+                                                                      : nota ===
+                                                                          1
+                                                                        ? "bg-orange-500"
+                                                                        : "bg-red-500"
+                                                              }`}
+                                                              style={{
+                                                                width: `${percentage}%`,
+                                                              }}
+                                                            />
+                                                          </div>
+                                                          <span className="text-xs font-medium w-16 text-right">
+                                                            {count} (
+                                                            {percentage.toFixed(
+                                                              0
+                                                            )}
+                                                            %)
+                                                          </span>
+                                                        </div>
+                                                      );
+                                                    }
                                                   )}
                                                 </div>
                                               </div>
                                             </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
+                                          )}
 
-                                    {/* Observações Gerais */}
-                                    {sessaoDetalhes.observacoes_gerais && (
-                                      <div>
-                                        <label className="text-sm font-medium text-muted-foreground">
-                                          Observações Gerais
-                                        </label>
-                                        <p className="text-sm mt-1 p-3 bg-muted/30 rounded">
-                                          {sessaoDetalhes.observacoes_gerais}
-                                        </p>
+                                        {/* Avaliações */}
+                                        {sessaoDetalhes.avaliacoes &&
+                                          sessaoDetalhes.avaliacoes.length >
+                                            0 && (
+                                            <div>
+                                              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                                                Avaliações das Instruções
+                                              </label>
+                                              <div className="space-y-2">
+                                                {sessaoDetalhes.avaliacoes.map(
+                                                  (avaliacao) => (
+                                                    <div
+                                                      key={avaliacao.id}
+                                                      className="p-3 border rounded-lg"
+                                                    >
+                                                      <div className="flex items-start gap-3">
+                                                        <Badge variant="secondary">
+                                                          {
+                                                            avaliacao.instrucao
+                                                              .ordem
+                                                          }
+                                                        </Badge>
+                                                        <div className="flex-1">
+                                                          <p className="text-sm font-medium mb-1">
+                                                            {
+                                                              avaliacao
+                                                                .instrucao.texto
+                                                            }
+                                                          </p>
+                                                          <div className="flex items-center gap-2 text-xs flex-wrap">
+                                                            <Badge
+                                                              variant={
+                                                                avaliacao.nota >=
+                                                                3
+                                                                  ? "default"
+                                                                  : "outline"
+                                                              }
+                                                            >
+                                                              Nota:{" "}
+                                                              {avaliacao.nota}/4
+                                                            </Badge>
+                                                            {avaliacao.tipos_ajuda &&
+                                                              avaliacao
+                                                                .tipos_ajuda
+                                                                .length > 0 && (
+                                                                <>
+                                                                  {avaliacao.tipos_ajuda.map(
+                                                                    (
+                                                                      tipo,
+                                                                      idx
+                                                                    ) => (
+                                                                      <Badge
+                                                                        key={
+                                                                          idx
+                                                                        }
+                                                                        variant="secondary"
+                                                                      >
+                                                                        {tipo}
+                                                                      </Badge>
+                                                                    )
+                                                                  )}
+                                                                </>
+                                                              )}
+                                                          </div>
+                                                          {avaliacao.observacao && (
+                                                            <p className="text-xs text-muted-foreground mt-2">
+                                                              Obs:{" "}
+                                                              {
+                                                                avaliacao.observacao
+                                                              }
+                                                            </p>
+                                                          )}
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  )
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                        {/* Observações Gerais */}
+                                        {sessaoDetalhes.observacoes_gerais && (
+                                          <div>
+                                            <label className="text-sm font-medium text-muted-foreground">
+                                              Observações Gerais
+                                            </label>
+                                            <p className="text-sm mt-1 p-3 bg-muted/30 rounded">
+                                              {
+                                                sessaoDetalhes.observacoes_gerais
+                                              }
+                                            </p>
+                                          </div>
+                                        )}
                                       </div>
-                                    )}
-                                  </div>
-                                </ScrollArea>
-                              )}
-                            </DialogContent>
-                          </Dialog>
+                                    </ScrollArea>
+                                  )}
+                              </DialogContent>
+                            </Dialog>
                           </div>
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })}
                 </TableBody>
               </Table>
@@ -674,5 +854,5 @@ export default function HistoricoSessoesPage() {
         </Card>
       </div>
     </MainLayout>
-  )
+  );
 }

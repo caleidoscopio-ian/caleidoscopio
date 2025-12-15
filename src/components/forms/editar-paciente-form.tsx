@@ -1,14 +1,15 @@
-'use client'
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { CalendarIcon, Loader2, Edit } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CalendarIcon, Loader2, Edit } from "lucide-react";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -25,36 +26,42 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
-import { cn } from '@/lib/utils'
-import { useAuth } from '@/hooks/useAuth'
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 // Schema de validação
 const pacienteSchema = z.object({
-  nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome muito longo'),
+  nome: z
+    .string()
+    .min(2, "Nome deve ter pelo menos 2 caracteres")
+    .max(100, "Nome muito longo"),
   nascimento: z.date({
-    message: 'Data de nascimento é obrigatória',
+    message: "Data de nascimento é obrigatória",
   }),
-  cpf: z.string().optional().refine(
-    (val) => !val || /^\d{11}$/.test(val.replace(/\D/g, '')),
-    'CPF deve ter 11 dígitos'
-  ),
-  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  cpf: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || /^\d{11}$/.test(val.replace(/\D/g, "")),
+      "CPF deve ter 11 dígitos"
+    ),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
   telefone: z.string().optional(),
   endereco: z.string().optional(),
   responsavel_financeiro: z.string().optional(),
@@ -62,35 +69,38 @@ const pacienteSchema = z.object({
   plano_saude: z.string().optional(),
   matricula: z.string().optional(),
   cor_agenda: z.string().optional(),
-})
+});
 
-type PacienteFormData = z.infer<typeof pacienteSchema>
+type PacienteFormData = z.infer<typeof pacienteSchema>;
 
 interface Patient {
-  id: string
-  name: string
-  cpf: string
-  birthDate: string
-  email?: string
-  phone?: string
-  address?: string
-  guardianName?: string
-  guardianPhone?: string
-  healthInsurance?: string
-  healthInsuranceNumber?: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  name: string;
+  cpf: string;
+  birthDate: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  healthInsurance?: string;
+  healthInsuranceNumber?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface EditarPacienteFormProps {
-  patient: Patient
-  onSuccess?: () => void
+  patient: Patient;
+  onSuccess?: () => void;
 }
 
-export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormProps) {
-  const { user } = useAuth()
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
+export function EditarPacienteForm({
+  patient,
+  onSuccess,
+}: EditarPacienteFormProps) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const form = useForm<PacienteFormData>({
     resolver: zodResolver(pacienteSchema),
@@ -98,121 +108,123 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
       nome: patient.name,
       nascimento: new Date(patient.birthDate),
       cpf: patient.cpf,
-      email: patient.email || '',
-      telefone: patient.phone || '',
-      endereco: patient.address || '',
-      responsavel_financeiro: patient.guardianName || '',
-      contato_emergencia: patient.guardianPhone || '',
-      plano_saude: patient.healthInsurance || '',
-      matricula: patient.healthInsuranceNumber || '',
-      cor_agenda: '#4ECDC4',
+      email: patient.email || "",
+      telefone: patient.phone || "",
+      endereco: patient.address || "",
+      responsavel_financeiro: patient.guardianName || "",
+      contato_emergencia: patient.guardianPhone || "",
+      plano_saude: patient.healthInsurance || "",
+      matricula: patient.healthInsuranceNumber || "",
+      cor_agenda: "#4ECDC4",
     },
-  })
+  });
 
   // Cores predefinidas para a agenda
   const coresAgenda = [
-    { value: '#FF6B6B', label: 'Vermelho', color: '#FF6B6B' },
-    { value: '#4ECDC4', label: 'Verde Água', color: '#4ECDC4' },
-    { value: '#45B7D1', label: 'Azul', color: '#45B7D1' },
-    { value: '#9B59B6', label: 'Roxo', color: '#9B59B6' },
-    { value: '#F39C12', label: 'Laranja', color: '#F39C12' },
-    { value: '#E74C3C', label: 'Vermelho Escuro', color: '#E74C3C' },
-    { value: '#2ECC71', label: 'Verde', color: '#2ECC71' },
-    { value: '#3498DB', label: 'Azul Claro', color: '#3498DB' },
-  ]
+    { value: "#FF6B6B", label: "Vermelho", color: "#FF6B6B" },
+    { value: "#4ECDC4", label: "Verde Água", color: "#4ECDC4" },
+    { value: "#45B7D1", label: "Azul", color: "#45B7D1" },
+    { value: "#9B59B6", label: "Roxo", color: "#9B59B6" },
+    { value: "#F39C12", label: "Laranja", color: "#F39C12" },
+    { value: "#E74C3C", label: "Vermelho Escuro", color: "#E74C3C" },
+    { value: "#2ECC71", label: "Verde", color: "#2ECC71" },
+    { value: "#3498DB", label: "Azul Claro", color: "#3498DB" },
+  ];
 
   // Planos de saúde comuns
   const planosSaude = [
-    'Amil',
-    'Bradesco Saúde',
-    'SulAmérica',
-    'Unimed',
-    'Porto Seguro',
-    'Hapvida',
-    'Notre Dame Intermédica',
-    'Prevent Senior',
-    'Outro',
-  ]
+    "Amil",
+    "Bradesco Saúde",
+    "SulAmérica",
+    "Unimed",
+    "Porto Seguro",
+    "Hapvida",
+    "Notre Dame Intermédica",
+    "Prevent Senior",
+    "Outro",
+  ];
 
   const formatCPF = (value: string) => {
-    const numbers = value.replace(/\D/g, '')
+    const numbers = value.replace(/\D/g, "");
     if (numbers.length <= 11) {
-      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
     }
-    return value
-  }
+    return value;
+  };
 
   const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, '')
+    const numbers = value.replace(/\D/g, "");
     if (numbers.length === 11) {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
     } else if (numbers.length === 10) {
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3')
+      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
     }
-    return value
-  }
+    return value;
+  };
 
   const onSubmit = async (data: PacienteFormData) => {
     try {
-      setLoading(true)
+      setLoading(true);
 
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      console.log('✏️ Editando dados do paciente:', data)
+      console.log("✏️ Editando dados do paciente:", data);
 
       // Preparar dados para a API
       const patientData = {
         id: patient.id,
         name: data.nome,
-        cpf: data.cpf?.replace(/\D/g, ''),
+        cpf: data.cpf?.replace(/\D/g, ""),
         birthDate: data.nascimento.toISOString(),
         email: data.email || undefined,
         phone: data.telefone,
         address: data.endereco,
         guardianName: data.responsavel_financeiro,
         guardianPhone: data.contato_emergencia,
-        healthInsurance: data.plano_saude === 'particular' ? undefined : data.plano_saude,
+        healthInsurance:
+          data.plano_saude === "particular" ? undefined : data.plano_saude,
         healthInsuranceNumber: data.matricula,
-      }
+      };
 
       // Preparar headers com dados do usuário
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch('/api/pacientes', {
-        method: 'PUT',
+      const response = await fetch("/api/pacientes", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
         },
         body: JSON.stringify(patientData),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao atualizar paciente')
+        throw new Error(result.error || "Erro ao atualizar paciente");
       }
 
-      console.log('✅ Paciente atualizado com sucesso:', result.data.name)
+      console.log("✅ Paciente atualizado com sucesso:", result.data.name);
 
       // Fechar modal
-      setOpen(false)
+      setOpen(false);
 
       // Callback de sucesso (recarregar lista)
       if (onSuccess) {
-        onSuccess()
+        onSuccess();
       }
-
     } catch (error) {
-      console.error('❌ Erro ao atualizar paciente:', error)
-      alert(error instanceof Error ? error.message : 'Erro ao atualizar paciente')
+      console.error("❌ Erro ao atualizar paciente:", error);
+      alert(
+        error instanceof Error ? error.message : "Erro ao atualizar paciente"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -225,16 +237,18 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
         <DialogHeader>
           <DialogTitle>Editar Paciente</DialogTitle>
           <DialogDescription>
-            Atualize as informações do paciente. Campos marcados com * são obrigatórios.
+            Atualize as informações do paciente. Campos marcados com * são
+            obrigatórios.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
             {/* Seção: Dados Pessoais */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Dados Pessoais</h3>
+              <h3 className="text-lg font-semibold border-b pb-2">
+                Dados Pessoais
+              </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Nome */}
@@ -265,12 +279,14 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
                             <Button
                               variant="outline"
                               className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
                               )}
                             >
                               {field.value ? (
-                                format(field.value, 'dd/MM/yyyy', { locale: ptBR })
+                                format(field.value, "dd/MM/yyyy", {
+                                  locale: ptBR,
+                                })
                               ) : (
                                 <span>Selecione a data</span>
                               )}
@@ -284,7 +300,7 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
                             selected={field.value}
                             onSelect={field.onChange}
                             disabled={(date) =>
-                              date > new Date() || date < new Date('1900-01-01')
+                              date > new Date() || date < new Date("1900-01-01")
                             }
                             initialFocus
                             locale={ptBR}
@@ -308,8 +324,8 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
                           placeholder="000.000.000-00"
                           {...field}
                           onChange={(e) => {
-                            const formatted = formatCPF(e.target.value)
-                            field.onChange(formatted)
+                            const formatted = formatCPF(e.target.value);
+                            field.onChange(formatted);
                           }}
                           maxLength={14}
                         />
@@ -326,7 +342,10 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cor na Agenda</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione uma cor" />
@@ -355,7 +374,9 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
 
             {/* Seção: Contato */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Informações de Contato</h3>
+              <h3 className="text-lg font-semibold border-b pb-2">
+                Informações de Contato
+              </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Email */}
@@ -389,8 +410,8 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
                           placeholder="(11) 99999-9999"
                           {...field}
                           onChange={(e) => {
-                            const formatted = formatPhone(e.target.value)
-                            field.onChange(formatted)
+                            const formatted = formatPhone(e.target.value);
+                            field.onChange(formatted);
                           }}
                           maxLength={15}
                         />
@@ -423,7 +444,9 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
 
             {/* Seção: Responsáveis */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Responsáveis</h3>
+              <h3 className="text-lg font-semibold border-b pb-2">
+                Responsáveis
+              </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Responsável Financeiro */}
@@ -466,7 +489,9 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
 
             {/* Seção: Convênio */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Plano de Saúde</h3>
+              <h3 className="text-lg font-semibold border-b pb-2">
+                Plano de Saúde
+              </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Plano de Saúde */}
@@ -476,14 +501,19 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Plano de Saúde</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ""}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o plano" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="particular">Particular (sem convênio)</SelectItem>
+                          <SelectItem value="particular">
+                            Particular (sem convênio)
+                          </SelectItem>
                           {planosSaude.map((plano) => (
                             <SelectItem key={plano} value={plano}>
                               {plano}
@@ -530,7 +560,7 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
                     Salvando...
                   </>
                 ) : (
-                  'Salvar Alterações'
+                  "Salvar Alterações"
                 )}
               </Button>
             </div>
@@ -538,5 +568,5 @@ export function EditarPacienteForm({ patient, onSuccess }: EditarPacienteFormPro
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
