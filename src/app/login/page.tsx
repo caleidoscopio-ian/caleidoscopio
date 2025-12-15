@@ -271,6 +271,7 @@ export default function LoginPage() {
                 src="/Caleidoscopio_Banner_100x160cm.jpg"
                 alt="Caleidoscópio - Educar para incluir, aprender para transformar"
                 fill
+                sizes="(max-width: 768px) 0vw, 50vw"
                 className="object-cover"
                 priority
               />
