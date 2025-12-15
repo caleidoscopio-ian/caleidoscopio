@@ -210,6 +210,7 @@ class ManagerClient {
   async generateSSOToken(authToken?: string): Promise<SSOTokenResponse | null> {
     try {
       console.log("🎫 [REAL] Gerando token SSO");
+      console.log("🔍 [DEBUG] Token recebido:", authToken ? `${authToken.substring(0, 20)}...` : 'NENHUM');
 
       const headers: Record<string, string> = {
         ...(DEFAULT_FETCH_OPTIONS.headers as Record<string, string>),
@@ -218,8 +219,13 @@ class ManagerClient {
       // Se tiver token de autenticação, enviar no header
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
-        console.log("🔑 [REAL] Enviando token de autenticação");
+        console.log("🔑 [REAL] Enviando token de autenticação no header Authorization");
+        console.log("🔍 [DEBUG] Headers completos:", JSON.stringify(headers, null, 2));
+      } else {
+        console.warn("⚠️ [REAL] NENHUM token de autenticação foi fornecido!");
       }
+
+      console.log("🌐 [DEBUG] URL:", `${this.baseUrl}/api/products/sso/${this.productSlug}`);
 
       const response = await fetch(
         `${this.baseUrl}/api/products/sso/${this.productSlug}`,
