@@ -9,6 +9,7 @@ import { NovoPacienteForm } from "@/components/forms/novo-paciente-form";
 import { EditarPacienteForm } from "@/components/forms/editar-paciente-form";
 import { PacienteDetailsDialog } from "@/components/paciente-details-dialog";
 import { DeletePatientDialog } from "@/components/delete-patient-dialog";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Search, Filter, Calendar, Clock, Loader2 } from "lucide-react";
+import { Users, Search, Filter, Calendar, Clock, Loader2, FileText } from "lucide-react";
 
 interface Patient {
   id: string;
@@ -401,6 +402,11 @@ export default function PacientesPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
+                          <Link href={`/prontuario/${patient.id}`}>
+                            <Button variant="outline" size="sm" title="Visualizar Prontuário">
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <PacienteDetailsDialog patient={patient} />
                           <EditarPacienteForm
                             patient={patient}

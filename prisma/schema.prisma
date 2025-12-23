@@ -144,6 +144,8 @@ model paciente {
   telefone               String?
   email                  String?
   endereco               String?
+  escolaridade           Escolaridade?
+  estado_civil           EstadoCivil?
   plano_saude            String?
   matricula              String?
   responsavel_financeiro String?
@@ -161,6 +163,11 @@ model paciente {
   atividadesAtribuidas   pacienteAtividade[]
   sessoes                sessaoAtividade[]
   anamneses              anamnese[]
+  encaminhamentos        encaminhamento[]
+  prescricoes            prescricaoMedica[]
+  diagnosticos           diagnostico[]
+  relatorios             relatorioClinico[]
+  anexos                 anexoPaciente[]
 
   @@unique([tenantId, cpf])
   @@map("pacientes")
@@ -342,6 +349,164 @@ model anamnese {
   @@map("anamneses")
 }
 
+model encaminhamento {
+  id                  String   @id @default(uuid())
+  pacienteId          String
+  profissionalId      String   // Referência ao profissional do Sistema 1 (não FK)
+  tenantId            String   // Referência ao tenant do Sistema 1 (não FK)
+  data_encaminhamento DateTime @default(now())
+  tipo                TipoEncaminhamento
+  especialidade       String   // Ex: "Fonoaudiologia", "Psiquiatria", "Neurologia"
+  profissional_dest   String?  // Nome do profissional de destino
+  instituicao_dest    String?  // Nome da instituição de destino
+  motivo              String   @db.Text
+  observacoes         String?  @db.Text
+  status              StatusEncaminhamento @default(PENDENTE)
+  data_retorno        DateTime?
+  retorno_observacao  String?  @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @default(now()) @updatedAt
+  paciente            paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@map("encaminhamentos")
+}
+
+model prescricaoMedica {
+  id              String   @id @default(uuid())
+  pacienteId      String
+  profissionalId  String   // Referência ao profissional do Sistema 1 (não FK)
+  tenantId        String   // Referência ao tenant do Sistema 1 (não FK)
+  data_prescricao DateTime @default(now())
+  medicamento     String
+  dosagem         String
+  frequencia      String   // Ex: "1x ao dia", "2x ao dia (manhã e noite)"
+  via_admin       String?  // Ex: "Oral", "Injetável", "Tópica"
+  duracao         String?  // Ex: "30 dias", "Uso contínuo"
+  indicacao       String?  @db.Text
+  observacoes     String?  @db.Text
+  ativo           Boolean  @default(true)
+  data_inicio     DateTime?
+  data_fim        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+  paciente        paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@map("prescricoes_medicas")
+}
+
+model diagnostico {
+  id                String   @id @default(uuid())
+  pacienteId        String
+  profissionalId    String   // Referência ao profissional do Sistema 1 (não FK)
+  tenantId          String   // Referência ao tenant do Sistema 1 (não FK)
+  data_diagnostico  DateTime @default(now())
+  cid10             String?  // Código CID-10
+  descricao_cid     String?  // Descrição do CID
+  diagnostico_desc  String   @db.Text // Descrição detalhada do diagnóstico
+  hipotese          Boolean  @default(false) // Se é hipótese diagnóstica ou confirmado
+  observacoes       String?  @db.Text
+  anexos            String[] // URLs de laudos, exames, etc
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+  paciente          paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@map("diagnosticos")
+}
+
+model relatorioClinico {
+  id              String        @id @default(uuid())
+  pacienteId      String
+  profissionalId  String        // Referência ao profissional do Sistema 1 (não FK)
+  tenantId        String        // Referência ao tenant do Sistema 1 (não FK)
+  data_relatorio  DateTime      @default(now())
+  tipo            TipoRelatorio
+  titulo          String
+  periodo_inicio  DateTime?     // Período de referência do relatório
+  periodo_fim     DateTime?
+  conteudo        String        @db.Text // Conteúdo do relatório em markdown ou HTML
+  finalidade      String?       // Ex: "Escolar", "Plano de Saúde", "Judicial"
+  destinatario    String?       // Para quem é o relatório
+  assinado        Boolean       @default(false)
+  data_assinatura DateTime?
+  arquivo_pdf     String?       // URL do PDF gerado
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now()) @updatedAt
+  paciente        paciente      @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@map("relatorios_clinicos")
+}
+
+model anexoPaciente {
+  id             String       @id @default(uuid())
+  pacienteId     String
+  profissionalId String       // Referência ao profissional que anexou (não FK)
+  tenantId       String       // Referência ao tenant do Sistema 1 (não FK)
+  tipo           TipoAnexo
+  categoria      String?      // Ex: "Exames", "Laudos", "Documentos", "Fotos"
+  titulo         String
+  descricao      String?      @db.Text
+  arquivo_url    String       // URL do arquivo armazenado
+  arquivo_nome   String       // Nome original do arquivo
+  arquivo_tipo   String       // MIME type (application/pdf, image/jpeg, etc)
+  arquivo_size   Int          // Tamanho em bytes
+  data_documento DateTime?    // Data do documento (não do upload)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  paciente       paciente     @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@map("anexos_paciente")
+}
+
+enum Escolaridade {
+  FUNDAMENTAL_INCOMPLETO
+  FUNDAMENTAL_COMPLETO
+  MEDIO_INCOMPLETO
+  MEDIO_COMPLETO
+  SUPERIOR_INCOMPLETO
+  SUPERIOR_COMPLETO
+  POS_GRADUACAO
+  NAO_ALFABETIZADO
+}
+
+enum EstadoCivil {
+  SOLTEIRO
+  CASADO
+  DIVORCIADO
+  VIUVO
+  UNIAO_ESTAVEL
+}
+
+enum TipoEncaminhamento {
+  INTERNO    // Dentro da mesma clínica
+  EXTERNO    // Para outra instituição
+}
+
+enum StatusEncaminhamento {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum TipoRelatorio {
+  EVOLUCAO_CLINICA
+  AVALIACAO_PERIODICA
+  ALTA
+  ATESTADO
+  LAUDO
+  OUTROS
+}
+
+enum TipoAnexo {
+  DOCUMENTO
+  EXAME
+  LAUDO
+  FOTO
+  VIDEO
+  AUDIO
+  OUTROS
+}
+
 enum StatusAnamnese {
   RASCUNHO
   FINALIZADA
@@ -387,4 +552,94 @@ enum StatusSessao {
   EM_ANDAMENTO
   FINALIZADA
   CANCELADA
+}
+
+enum TipoAvaliacao {
+  AQUISICAO_HABILIDADES
+  REDUCAO_COMPORTAMENTOS
+}
+
+enum TipoPontuacao {
+  SEMPRE_100
+  FREQUENTEMENTE_75
+  AS_VEZES_50
+  RARAMENTE_25
+  NUNCA_0
+  NAO_SE_APLICA
+}
+
+// ========================================
+// SISTEMA DE AVALIAÇÕES ABA+
+// ========================================
+
+model Avaliacao {
+  id          String         @id @default(uuid())
+  tenantId    String         // Referência ao tenant do Sistema 1 (não FK)
+  tipo        TipoAvaliacao
+  nome        String
+  observacao  String?        @db.Text
+  ativo       Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @default(now()) @updatedAt
+
+  niveis      AvaliacaoNivel[]
+  habilidades AvaliacaoHabilidade[]
+  pontuacoes  AvaliacaoPontuacao[]
+  tarefas     AvaliacaoTarefa[]
+
+  @@map("avaliacoes")
+}
+
+model AvaliacaoNivel {
+  id           String   @id @default(uuid())
+  avaliacaoId  String
+  ordem        Int
+  descricao    String
+  faixa_etaria String?  // Ex: "0-2 anos", "3-5 anos"
+
+  avaliacao    Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  tarefas      AvaliacaoTarefa[]
+
+  @@map("avaliacao_niveis")
+}
+
+model AvaliacaoHabilidade {
+  id           String   @id @default(uuid())
+  avaliacaoId  String
+  ordem        Int
+  habilidade   String
+
+  avaliacao    Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  tarefas      AvaliacaoTarefa[]
+
+  @@map("avaliacao_habilidades")
+}
+
+model AvaliacaoPontuacao {
+  id           String         @id @default(uuid())
+  avaliacaoId  String
+  ordem        Int
+  tipo         TipoPontuacao
+  valor        Int            // Valor numérico (0, 25, 50, 75, 100, -1 para N/A)
+
+  avaliacao    Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+
+  @@map("avaliacao_pontuacoes")
+}
+
+model AvaliacaoTarefa {
+  id                      String   @id @default(uuid())
+  avaliacaoId             String
+  nivelId                 String?
+  habilidadeId            String?
+  pergunta                String   @db.Text
+  descricao               String?  @db.Text
+  criterios_pontuacao     String?  @db.Text
+  ordem                   Int?
+
+  avaliacao               Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  nivel                   AvaliacaoNivel? @relation(fields: [nivelId], references: [id], onDelete: SetNull)
+  habilidade              AvaliacaoHabilidade? @relation(fields: [habilidadeId], references: [id], onDelete: SetNull)
+
+  @@map("avaliacao_tarefas")
 }

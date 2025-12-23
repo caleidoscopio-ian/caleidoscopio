@@ -68,6 +68,8 @@ const pacienteSchema = z.object({
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   telefone: z.string().optional(),
   endereco: z.string().optional(),
+  escolaridade: z.string().optional(),
+  estado_civil: z.string().optional(),
 
   // Campos opcionais - Responsáveis
   responsavel_financeiro: z.string().optional(),
@@ -104,6 +106,8 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
       email: "",
       telefone: "",
       endereco: "",
+      escolaridade: "",
+      estado_civil: "",
       responsavel_financeiro: "",
       contato_emergencia: "",
       plano_saude: "",
@@ -249,6 +253,8 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
         email: data.email || undefined,
         phone: data.telefone,
         address: data.endereco,
+        escolaridade: data.escolaridade || undefined,
+        estado_civil: data.estado_civil || undefined,
         guardianName: data.responsavel_financeiro,
         guardianPhone: data.contato_emergencia,
         healthInsurance:
@@ -480,6 +486,69 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
                               </div>
                             </SelectItem>
                           ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Escolaridade */}
+                <FormField
+                  control={form.control}
+                  name="escolaridade"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Escolaridade</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a escolaridade" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="NAO_ALFABETIZADO">Não Alfabetizado</SelectItem>
+                          <SelectItem value="FUNDAMENTAL_INCOMPLETO">Fundamental Incompleto</SelectItem>
+                          <SelectItem value="FUNDAMENTAL_COMPLETO">Fundamental Completo</SelectItem>
+                          <SelectItem value="MEDIO_INCOMPLETO">Médio Incompleto</SelectItem>
+                          <SelectItem value="MEDIO_COMPLETO">Médio Completo</SelectItem>
+                          <SelectItem value="SUPERIOR_INCOMPLETO">Superior Incompleto</SelectItem>
+                          <SelectItem value="SUPERIOR_COMPLETO">Superior Completo</SelectItem>
+                          <SelectItem value="POS_GRADUACAO">Pós-Graduação</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Estado Civil */}
+                <FormField
+                  control={form.control}
+                  name="estado_civil"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estado Civil</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o estado civil" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="SOLTEIRO">Solteiro(a)</SelectItem>
+                          <SelectItem value="CASADO">Casado(a)</SelectItem>
+                          <SelectItem value="DIVORCIADO">Divorciado(a)</SelectItem>
+                          <SelectItem value="VIUVO">Viúvo(a)</SelectItem>
+                          <SelectItem value="UNIAO_ESTAVEL">União Estável</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
