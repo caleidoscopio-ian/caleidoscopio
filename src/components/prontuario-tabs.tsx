@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -73,15 +72,23 @@ const estadoCivilLabels: Record<string, string> = {
   UNIAO_ESTAVEL: "União Estável",
 };
 
-export function ProntuarioTabs({ patient, activeTab, setActiveTab, dialogOpen, onDialogChange }: ProntuarioTabsProps) {
-
+export function ProntuarioTabs({
+  patient,
+  activeTab,
+  setActiveTab,
+  dialogOpen,
+  onDialogChange,
+}: ProntuarioTabsProps) {
   // Calcular idade
   const calculateAge = (birthDate: string) => {
     const today = new Date();
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
       age--;
     }
     return age;
@@ -194,19 +201,25 @@ export function ProntuarioTabs({ patient, activeTab, setActiveTab, dialogOpen, o
                   <label className="text-sm font-medium text-muted-foreground">
                     E-mail
                   </label>
-                  <p className="text-base">{patient.email || "Não informado"}</p>
+                  <p className="text-base">
+                    {patient.email || "Não informado"}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Telefone
                   </label>
-                  <p className="text-base">{patient.phone || "Não informado"}</p>
+                  <p className="text-base">
+                    {patient.phone || "Não informado"}
+                  </p>
                 </div>
                 <div className="md:col-span-2 lg:col-span-3">
                   <label className="text-sm font-medium text-muted-foreground">
                     Endereço
                   </label>
-                  <p className="text-base">{patient.address || "Não informado"}</p>
+                  <p className="text-base">
+                    {patient.address || "Não informado"}
+                  </p>
                 </div>
               </div>
             </div>

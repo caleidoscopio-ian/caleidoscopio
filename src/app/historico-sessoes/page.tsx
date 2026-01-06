@@ -76,6 +76,7 @@ interface Sessao {
   finalizada_em?: string;
   status: string;
   observacoes_gerais?: string;
+  tipo?: "ATIVIDADE" | "AVALIACAO"; // Novo campo para diferenciar
   paciente: {
     id: string;
     nome: string;
@@ -90,6 +91,8 @@ interface Sessao {
     nome: string;
   };
   avaliacoes?: Avaliacao[];
+  respostas?: any[]; // Para sessões de avaliação
+  avaliacao?: any; // Para sessões de avaliação
 }
 
 export default function HistoricoSessoesPage() {
@@ -223,10 +226,17 @@ export default function HistoricoSessoesPage() {
 
   // Filtrar sessões por termo de busca
   const filteredSessoes = sessoes.filter(
-    (sessao) =>
-      sessao.paciente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sessao.atividade.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sessao.profissional.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    (sessao) => {
+      const nomeItem = sessao.tipo === "AVALIACAO"
+        ? (sessao.avaliacao?.nome || sessao.atividade?.nome || "")
+        : (sessao.atividade?.nome || "");
+
+      return (
+        sessao.paciente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        nomeItem.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sessao.profissional.nome.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
   );
 
   // Formatar data
@@ -256,7 +266,7 @@ export default function HistoricoSessoesPage() {
     return `${minutos} min`;
   };
 
-  // Calcular estatísticas de uma sessão
+  // Calcular estatísticas de uma sessão de ATIVIDADE
   const calcularEstatisticas = (sessao: Sessao) => {
     if (!sessao.avaliacoes || sessao.avaliacoes.length === 0) {
       return { media: 0, comAjuda: 0, total: 0 };
@@ -272,6 +282,32 @@ export default function HistoricoSessoesPage() {
     return { media: media.toFixed(1), comAjuda, total };
   };
 
+  // Calcular estatísticas de uma sessão de AVALIAÇÃO
+  const calcularEstatisticasAvaliacao = (sessao: Sessao) => {
+    if (!sessao.respostas || sessao.respostas.length === 0) {
+      return { media: 0, respondidas: 0, total: 0, naoAplicavel: 0 };
+    }
+
+    const total = sessao.respostas.length;
+    const respostasValidas = sessao.respostas.filter(
+      (r: any) => r.pontuacao !== null && r.pontuacao !== -1
+    );
+    const naoAplicavel = sessao.respostas.filter(
+      (r: any) => r.pontuacao === -1
+    ).length;
+
+    const somaPontuacoes = respostasValidas.reduce(
+      (acc: number, r: any) => acc + (r.pontuacao || 0),
+      0
+    );
+    const media = respostasValidas.length > 0 ? somaPontuacoes / respostasValidas.length : 0;
+    const respondidas = sessao.respostas.filter(
+      (r: any) => r.pontuacao !== null
+    ).length;
+
+    return { media: media.toFixed(1), respondidas, total, naoAplicavel };
+  };
+
   // Traduzir tipo
   const traduzirTipo = (tipo: string) => {
     const tipos: Record<string, string> = {
@@ -279,8 +315,18 @@ export default function HistoricoSessoesPage() {
       AVALIACAO_CLINICA: "Avaliação Clínica",
       JOGO_MEMORIA: "Jogo de Memória",
       CUSTOM: "Personalizada",
+      AQUISICAO_HABILIDADES: "Aquisição de Habilidades",
+      REDUCAO_COMPORTAMENTOS: "Redução de Comportamentos",
     };
     return tipos[tipo] || tipo;
+  };
+
+  // Obter label do tipo de sessão
+  const getTipoSessaoLabel = (sessao: Sessao) => {
+    if (sessao.tipo === "AVALIACAO") {
+      return "Avaliação";
+    }
+    return "Atividade";
   };
 
   // Traduzir status
@@ -475,7 +521,8 @@ export default function HistoricoSessoesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Paciente</TableHead>
-                    <TableHead>Atividade</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Atividade/Avaliação</TableHead>
                     <TableHead>Terapeuta</TableHead>
                     <TableHead>Data/Hora</TableHead>
                     <TableHead>Duração</TableHead>
@@ -486,18 +533,31 @@ export default function HistoricoSessoesPage() {
                 <TableBody>
                   {filteredSessoes.map((sessao) => {
                     const status = traduzirStatus(sessao.status);
+                    const tipoSessao = getTipoSessaoLabel(sessao);
                     return (
                       <TableRow key={sessao.id}>
                         <TableCell className="font-medium">
                           {sessao.paciente.nome}
                         </TableCell>
                         <TableCell>
+                          <Badge
+                            variant={
+                              sessao.tipo === "AVALIACAO" ? "default" : "secondary"
+                            }
+                            className="text-xs"
+                          >
+                            {tipoSessao}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <div>
                             <div className="font-medium">
-                              {sessao.atividade.nome}
+                              {sessao.tipo === "AVALIACAO"
+                                ? (sessao.avaliacao?.nome || sessao.atividade?.nome)
+                                : sessao.atividade?.nome}
                             </div>
                             <Badge variant="outline" className="text-xs mt-1">
-                              {traduzirTipo(sessao.atividade.tipo)}
+                              {traduzirTipo(sessao.atividade?.tipo || "")}
                             </Badge>
                           </div>
                         </TableCell>
@@ -522,9 +582,13 @@ export default function HistoricoSessoesPage() {
                               <Button
                                 size="sm"
                                 variant="default"
-                                onClick={() =>
-                                  router.push(`/aplicar-atividade/${sessao.id}`)
-                                }
+                                onClick={() => {
+                                  if (sessao.tipo === "AVALIACAO") {
+                                    router.push(`/aplicar-avaliacao/${sessao.id}`);
+                                  } else {
+                                    router.push(`/aplicar-atividade/${sessao.id}`);
+                                  }
+                                }}
                               >
                                 <Play className="h-4 w-4 mr-1" />
                                 Continuar
@@ -571,13 +635,33 @@ export default function HistoricoSessoesPage() {
                                           </div>
                                           <div>
                                             <label className="text-sm font-medium text-muted-foreground">
-                                              Atividade
+                                              {sessaoDetalhes.tipo === "AVALIACAO"
+                                                ? "Avaliação"
+                                                : "Atividade"}
                                             </label>
                                             <p className="font-medium">
-                                              {sessaoDetalhes.atividade.nome}
+                                              {sessaoDetalhes.tipo === "AVALIACAO"
+                                                ? sessaoDetalhes.avaliacao?.nome || sessaoDetalhes.atividade?.nome
+                                                : sessaoDetalhes.atividade?.nome}
                                             </p>
                                           </div>
                                           <div>
+                                            <label className="text-sm font-medium text-muted-foreground">
+                                              Tipo
+                                            </label>
+                                            <div className="mt-1">
+                                              <Badge
+                                                variant={
+                                                  sessaoDetalhes.tipo === "AVALIACAO"
+                                                    ? "default"
+                                                    : "secondary"
+                                                }
+                                              >
+                                                {getTipoSessaoLabel(sessaoDetalhes)}
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                          <div className="col-span-2">
                                             <label className="text-sm font-medium text-muted-foreground">
                                               Status
                                             </label>
@@ -599,8 +683,9 @@ export default function HistoricoSessoesPage() {
                                           </div>
                                         </div>
 
-                                        {/* Estatísticas */}
-                                        {sessaoDetalhes.avaliacoes &&
+                                        {/* Estatísticas - ATIVIDADES */}
+                                        {sessaoDetalhes.tipo !== "AVALIACAO" &&
+                                          sessaoDetalhes.avaliacoes &&
                                           sessaoDetalhes.avaliacoes.length >
                                             0 && (
                                             <div className="space-y-3">
@@ -743,8 +828,203 @@ export default function HistoricoSessoesPage() {
                                             </div>
                                           )}
 
-                                        {/* Avaliações */}
-                                        {sessaoDetalhes.avaliacoes &&
+                                        {/* Estatísticas - AVALIAÇÕES */}
+                                        {sessaoDetalhes.tipo === "AVALIACAO" &&
+                                          sessaoDetalhes.respostas &&
+                                          sessaoDetalhes.respostas.length > 0 && (
+                                            <div className="space-y-3">
+                                              <label className="text-sm font-medium text-muted-foreground">
+                                                Resumo do Desempenho
+                                              </label>
+                                              <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border">
+                                                <div className="grid grid-cols-4 gap-4 text-center">
+                                                  <div>
+                                                    <p className="text-3xl font-bold text-blue-600">
+                                                      {
+                                                        calcularEstatisticasAvaliacao(
+                                                          sessaoDetalhes
+                                                        ).media
+                                                      }%
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                      Média Geral
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                      (pontuação)
+                                                    </p>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-3xl font-bold text-green-600">
+                                                      {
+                                                        calcularEstatisticasAvaliacao(
+                                                          sessaoDetalhes
+                                                        ).respondidas
+                                                      }
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                      Respondidas
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                      (de{" "}
+                                                      {
+                                                        calcularEstatisticasAvaliacao(
+                                                          sessaoDetalhes
+                                                        ).total
+                                                      })
+                                                    </p>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-3xl font-bold text-orange-600">
+                                                      {
+                                                        calcularEstatisticasAvaliacao(
+                                                          sessaoDetalhes
+                                                        ).naoAplicavel
+                                                      }
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                      N/A
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                      (não aplicável)
+                                                    </p>
+                                                  </div>
+                                                  <div>
+                                                    <p className="text-3xl font-bold text-purple-600">
+                                                      {
+                                                        calcularEstatisticasAvaliacao(
+                                                          sessaoDetalhes
+                                                        ).total
+                                                      }
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                      Total
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                      tarefas
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              </div>
+
+                                              {/* Distribuição de Pontuações */}
+                                              <div className="p-4 bg-muted/30 rounded-lg">
+                                                <p className="text-sm font-medium mb-3">
+                                                  Distribuição de Pontuações
+                                                </p>
+                                                <div className="space-y-2">
+                                                  {[100, 75, 50, 25, 0, -1].map(
+                                                    (pontuacao) => {
+                                                      const count =
+                                                        sessaoDetalhes.respostas!.filter(
+                                                          (r: any) => r.pontuacao === pontuacao
+                                                        ).length;
+                                                      const percentage =
+                                                        (count /
+                                                          sessaoDetalhes
+                                                            .respostas!
+                                                            .length) *
+                                                        100;
+                                                      return (
+                                                        <div
+                                                          key={pontuacao}
+                                                          className="flex items-center gap-3"
+                                                        >
+                                                          <span className="text-xs font-medium w-16">
+                                                            {pontuacao === -1 ? "N/A" : `${pontuacao}%`}:
+                                                          </span>
+                                                          <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div
+                                                              className={`h-full ${
+                                                                pontuacao === 100
+                                                                  ? "bg-green-500"
+                                                                  : pontuacao === 75
+                                                                    ? "bg-blue-500"
+                                                                    : pontuacao === 50
+                                                                      ? "bg-yellow-500"
+                                                                      : pontuacao ===
+                                                                          25
+                                                                        ? "bg-orange-500"
+                                                                        : pontuacao === 0
+                                                                          ? "bg-red-500"
+                                                                          : "bg-gray-400"
+                                                              }`}
+                                                              style={{
+                                                                width: `${percentage}%`,
+                                                              }}
+                                                            />
+                                                          </div>
+                                                          <span className="text-xs font-medium w-16 text-right">
+                                                            {count} (
+                                                            {percentage.toFixed(
+                                                              0
+                                                            )}
+                                                            %)
+                                                          </span>
+                                                        </div>
+                                                      );
+                                                    }
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+
+                                        {/* Respostas de Avaliações (para sessões tipo AVALIACAO) */}
+                                        {sessaoDetalhes.tipo === "AVALIACAO" &&
+                                          sessaoDetalhes.respostas &&
+                                          sessaoDetalhes.respostas.length > 0 && (
+                                            <div>
+                                              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                                                Respostas das Tarefas
+                                              </label>
+                                              <div className="space-y-2">
+                                                {sessaoDetalhes.respostas.map(
+                                                  (resposta: any) => (
+                                                    <div
+                                                      key={resposta.id}
+                                                      className="p-3 border rounded-lg"
+                                                    >
+                                                      <div className="flex items-start gap-3">
+                                                        <Badge variant="secondary">
+                                                          {resposta.tarefa.ordem}
+                                                        </Badge>
+                                                        <div className="flex-1">
+                                                          <p className="text-sm font-medium mb-1">
+                                                            {resposta.tarefa.pergunta}
+                                                          </p>
+                                                          <div className="flex items-center gap-2 text-xs flex-wrap">
+                                                            <Badge
+                                                              variant={
+                                                                resposta.pontuacao !== null &&
+                                                                resposta.pontuacao !== -1
+                                                                  ? "default"
+                                                                  : "outline"
+                                                              }
+                                                            >
+                                                              {resposta.pontuacao === -1
+                                                                ? "N/A"
+                                                                : resposta.pontuacao !== null
+                                                                  ? `${resposta.pontuacao}%`
+                                                                  : "Não respondida"}
+                                                            </Badge>
+                                                          </div>
+                                                          {resposta.observacao && (
+                                                            <p className="text-xs text-muted-foreground mt-2">
+                                                              Obs: {resposta.observacao}
+                                                            </p>
+                                                          )}
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  )
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                        {/* Avaliações das Instruções (para sessões tipo ATIVIDADE) */}
+                                        {sessaoDetalhes.tipo !== "AVALIACAO" &&
+                                          sessaoDetalhes.avaliacoes &&
                                           sessaoDetalhes.avaliacoes.length >
                                             0 && (
                                             <div>

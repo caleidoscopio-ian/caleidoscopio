@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// API para listar sessões (histórico)
+// API para listar sessões (histórico) - ATIVIDADES + AVALIAÇÕES
 export async function GET(request: NextRequest) {
   try {
     console.log("🔍 API Sessões - Listando sessões...");
@@ -230,9 +230,10 @@ export async function GET(request: NextRequest) {
     const pacienteId = url.searchParams.get("pacienteId");
     const status = url.searchParams.get("status");
 
-    // Se buscar por ID específico, retornar sessão única
+    // Se buscar por ID específico, retornar sessão única (pode ser atividade ou avaliação)
     if (sessaoId) {
-      const sessao = await prisma.sessaoAtividade.findFirst({
+      // Tentar buscar como sessão de atividade
+      const sessaoAtividade = await prisma.sessaoAtividade.findFirst({
         where: {
           id: sessaoId,
           paciente: {
@@ -277,28 +278,98 @@ export async function GET(request: NextRequest) {
         },
       });
 
-      if (!sessao) {
-        return NextResponse.json(
-          { success: false, error: "Sessão não encontrada" },
-          { status: 404 }
-        );
+      if (sessaoAtividade) {
+        // Formatar resposta de atividade
+        return NextResponse.json({
+          success: true,
+          data: {
+            ...sessaoAtividade,
+            tipo: "ATIVIDADE",
+            paciente: {
+              id: sessaoAtividade.paciente.id,
+              name: sessaoAtividade.paciente.nome,
+            },
+          },
+        });
       }
 
-      // Formatar resposta
-      return NextResponse.json({
-        success: true,
-        data: {
-          ...sessao,
+      // Se não encontrou como atividade, buscar como avaliação
+      const sessaoAvaliacao = await prisma.sessaoAvaliacao.findFirst({
+        where: {
+          id: sessaoId,
           paciente: {
-            id: sessao.paciente.id,
-            name: sessao.paciente.nome,
+            tenantId: user.tenant.id,
+          },
+        },
+        include: {
+          paciente: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          avaliacao: {
+            include: {
+              tarefas: {
+                orderBy: { ordem: "asc" },
+                include: {
+                  nivel: true,
+                  habilidade: true,
+                },
+              },
+              pontuacoes: {
+                orderBy: { ordem: "asc" },
+              },
+            },
+          },
+          profissional: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          respostas: {
+            include: {
+              tarefa: {
+                select: {
+                  id: true,
+                  ordem: true,
+                  pergunta: true,
+                },
+              },
+            },
+            orderBy: {
+              tarefa: {
+                ordem: "asc",
+              },
+            },
           },
         },
       });
+
+      if (sessaoAvaliacao) {
+        // Formatar resposta de avaliação
+        return NextResponse.json({
+          success: true,
+          data: {
+            ...sessaoAvaliacao,
+            tipo: "AVALIACAO",
+            paciente: {
+              id: sessaoAvaliacao.paciente.id,
+              name: sessaoAvaliacao.paciente.nome,
+            },
+          },
+        });
+      }
+
+      return NextResponse.json(
+        { success: false, error: "Sessão não encontrada" },
+        { status: 404 }
+      );
     }
 
-    // Construir where clause
-    const where: any = {};
+    // Construir where clause para atividades
+    const whereAtividade: any = {};
 
     if (pacienteId) {
       // Verificar se o paciente pertence à clínica
@@ -317,17 +388,20 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      where.pacienteId = pacienteId;
+      whereAtividade.pacienteId = pacienteId;
     } else {
       // Se não especificar paciente, buscar apenas pacientes da clínica
-      where.paciente = {
+      whereAtividade.paciente = {
         tenantId: user.tenant.id,
       };
     }
 
     if (status) {
-      where.status = status;
+      whereAtividade.status = status;
     }
+
+    // Construir where clause para avaliações (mesmos critérios)
+    const whereAvaliacao = { ...whereAtividade };
 
     // 🔒 CRÍTICO: Se o usuário for terapeuta, filtrar apenas suas sessões
     const adminRoles = ['ADMIN', 'SUPER_ADMIN'];
@@ -342,7 +416,8 @@ export async function GET(request: NextRequest) {
       });
 
       if (profissional) {
-        where.profissionalId = profissional.id;
+        whereAtividade.profissionalId = profissional.id;
+        whereAvaliacao.profissionalId = profissional.id;
       } else {
         // Se não encontrou profissional, retornar vazio
         return NextResponse.json({
@@ -357,11 +432,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`🔍 Buscando sessões com filtros:`, where);
+    console.log(`🔍 Buscando sessões com filtros:`, whereAtividade);
 
-    // Buscar sessões
-    const sessoes = await prisma.sessaoAtividade.findMany({
-      where,
+    // Buscar sessões de ATIVIDADES
+    const sessoesAtividade = await prisma.sessaoAtividade.findMany({
+      where: whereAtividade,
       include: {
         paciente: {
           select: {
@@ -402,12 +477,87 @@ export async function GET(request: NextRequest) {
       take: 50, // Limitar a 50 últimas sessões
     });
 
-    console.log(`✅ Encontradas ${sessoes.length} sessões`);
+    // Buscar sessões de AVALIAÇÕES
+    const sessoesAvaliacao = await prisma.sessaoAvaliacao.findMany({
+      where: whereAvaliacao,
+      include: {
+        paciente: {
+          select: {
+            id: true,
+            nome: true,
+            cpf: true,
+          },
+        },
+        avaliacao: {
+          select: {
+            id: true,
+            nome: true,
+            tipo: true,
+          },
+        },
+        profissional: {
+          select: {
+            id: true,
+            nome: true,
+            especialidade: true,
+          },
+        },
+        respostas: {
+          include: {
+            tarefa: true,
+          },
+          orderBy: {
+            tarefa: {
+              ordem: "asc",
+            },
+          },
+        },
+      },
+      orderBy: {
+        iniciada_em: "desc",
+      },
+      take: 50,
+    });
+
+    // Combinar e formatar as sessões
+    const sessoesFormatadas = [
+      ...sessoesAtividade.map((s) => ({
+        ...s,
+        tipo: "ATIVIDADE" as const,
+        nome_item: s.atividade.nome,
+        tipo_item: s.atividade.tipo,
+      })),
+      ...sessoesAvaliacao.map((s) => ({
+        ...s,
+        tipo: "AVALIACAO" as const,
+        nome_item: s.avaliacao.nome,
+        tipo_item: s.avaliacao.tipo,
+        // Mapear estrutura para compatibilidade
+        atividade: {
+          id: s.avaliacao.id,
+          nome: s.avaliacao.nome,
+          tipo: s.avaliacao.tipo,
+          metodologia: null,
+        },
+      })),
+    ];
+
+    // Ordenar por data de início (mais recente primeiro)
+    sessoesFormatadas.sort(
+      (a, b) => new Date(b.iniciada_em).getTime() - new Date(a.iniciada_em).getTime()
+    );
+
+    // Limitar ao total de 50 sessões
+    const sessoesFinais = sessoesFormatadas.slice(0, 50);
+
+    console.log(
+      `✅ Encontradas ${sessoesAtividade.length} sessões de atividades + ${sessoesAvaliacao.length} sessões de avaliações = ${sessoesFinais.length} total`
+    );
 
     return NextResponse.json({
       success: true,
-      data: sessoes,
-      total: sessoes.length,
+      data: sessoesFinais,
+      total: sessoesFinais.length,
       tenant: {
         id: user.tenant.id,
         name: user.tenant.name,

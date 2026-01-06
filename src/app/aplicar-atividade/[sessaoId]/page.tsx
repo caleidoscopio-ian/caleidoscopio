@@ -84,7 +84,7 @@ export default function AplicarAtividadePage() {
   );
 
   // Estado da avaliação atual
-  const [nota, setNota] = useState<number>(0);
+  const [nota, setNota] = useState<number | null>(null);
   const [tiposAjuda, setTiposAjuda] = useState<string[]>([]);
   const [observacao, setObservacao] = useState("");
 
@@ -134,7 +134,7 @@ export default function AplicarAtividadePage() {
 
   // Salvar avaliação da instrução atual
   const salvarAvaliacaoAtual = async () => {
-    if (!sessao || nota === 0) {
+    if (!sessao || nota === null || nota === undefined) {
       setError("Selecione uma nota de 0 a 4");
       return false;
     }
@@ -201,7 +201,7 @@ export default function AplicarAtividadePage() {
       if (instrucaoAtual < sessao.atividade.instrucoes.length - 1) {
         setInstrucaoAtual((prev) => prev + 1);
         // Limpar campos
-        setNota(0);
+        setNota(null);
         setTiposAjuda([]);
         setObservacao("");
       }
@@ -222,6 +222,11 @@ export default function AplicarAtividadePage() {
           setNota(avaliacaoSalva.nota);
           setTiposAjuda(avaliacaoSalva.tipos_ajuda);
           setObservacao(avaliacaoSalva.observacao);
+        } else {
+          // Limpar campos se não houver avaliação salva
+          setNota(null);
+          setTiposAjuda([]);
+          setObservacao("");
         }
       }
     }
@@ -498,7 +503,7 @@ export default function AplicarAtividadePage() {
               {!isUltimaInstrucao ? (
                 <Button
                   onClick={proximaInstrucao}
-                  disabled={salvando || nota === 0}
+                  disabled={salvando || nota === null}
                 >
                   {salvando ? (
                     <>
@@ -520,7 +525,7 @@ export default function AplicarAtividadePage() {
                       finalizarSessao();
                     }
                   }}
-                  disabled={salvando || finalizando || nota === 0}
+                  disabled={salvando || finalizando || nota === null}
                   className="bg-green-600 hover:bg-green-700"
                 >
                   {salvando || finalizando ? (

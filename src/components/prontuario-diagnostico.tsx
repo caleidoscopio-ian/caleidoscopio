@@ -7,7 +7,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Stethoscope, Calendar, FileText, Paperclip, Edit, Trash2 } from "lucide-react";
+import {
+  Stethoscope,
+  Calendar,
+  FileText,
+  Paperclip,
+  Edit,
+  Trash2,
+} from "lucide-react";
 
 interface Diagnostico {
   id: string;
@@ -250,10 +256,10 @@ export function ProntuarioDiagnostico({
   };
 
   // Calcular estatísticas
-  const totalDiagnosticos = diagnosticos.length;
-  const confirmados = diagnosticos.filter((d) => !d.hipotese).length;
-  const hipoteses = diagnosticos.filter((d) => d.hipotese).length;
-  const comCID = diagnosticos.filter((d) => d.cid10).length;
+  //const totalDiagnosticos = diagnosticos.length;
+  //const confirmados = diagnosticos.filter((d) => !d.hipotese).length;
+  //const hipoteses = diagnosticos.filter((d) => d.hipotese).length;
+  //const comCID = diagnosticos.filter((d) => d.cid10).length;
 
   if (loading) {
     return (
@@ -374,8 +380,8 @@ export function ProntuarioDiagnostico({
               {saving
                 ? "Salvando..."
                 : editingId
-                ? "Atualizar Diagnóstico"
-                : "Salvar Diagnóstico"}
+                  ? "Atualizar Diagnóstico"
+                  : "Salvar Diagnóstico"}
             </Button>
           </DialogFooter>
         </DialogContent>

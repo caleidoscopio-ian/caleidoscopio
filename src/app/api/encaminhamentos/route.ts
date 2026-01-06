@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
@@ -26,7 +25,10 @@ export async function GET(request: NextRequest) {
 
     if (!hasPermission(user, "view_patients")) {
       return NextResponse.json(
-        { success: false, error: "Sem permissão para visualizar encaminhamentos" },
+        {
+          success: false,
+          error: "Sem permissão para visualizar encaminhamentos",
+        },
         { status: 403 }
       );
     }
@@ -118,7 +120,9 @@ export async function POST(request: NextRequest) {
     // Validações
     if (!pacienteId || !tipo || !especialidade || !motivo) {
       return NextResponse.json(
-        { error: "Campos obrigatórios: pacienteId, tipo, especialidade, motivo" },
+        {
+          error: "Campos obrigatórios: pacienteId, tipo, especialidade, motivo",
+        },
         { status: 400 }
       );
     }

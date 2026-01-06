@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
@@ -99,11 +100,19 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validações básicas
-    if (!pacienteId || !tipo || !titulo || !arquivo_url || !arquivo_nome || !arquivo_tipo) {
+    if (
+      !pacienteId ||
+      !tipo ||
+      !titulo ||
+      !arquivo_url ||
+      !arquivo_nome ||
+      !arquivo_tipo
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Paciente, tipo, título e informações do arquivo são obrigatórios",
+          error:
+            "Paciente, tipo, título e informações do arquivo são obrigatórios",
         },
         { status: 400 }
       );
@@ -176,14 +185,7 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
-    const {
-      id,
-      tipo,
-      categoria,
-      titulo,
-      descricao,
-      data_documento,
-    } = body;
+    const { id, tipo, categoria, titulo, descricao, data_documento } = body;
 
     // Validações básicas
     if (!id || !tipo || !titulo) {

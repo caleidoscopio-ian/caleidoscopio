@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -39,7 +40,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FileBarChart, Calendar, FileCheck, FileX, Edit, Trash2 } from "lucide-react";
+import {
+  FileBarChart,
+  Calendar,
+  FileCheck,
+  FileX,
+  Edit,
+  Trash2,
+} from "lucide-react";
 
 interface Relatorio {
   id: string;
@@ -328,7 +336,9 @@ export function ProntuarioRelatorios({
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingId ? "Editar Relatório Clínico" : "Novo Relatório Clínico"}
+              {editingId
+                ? "Editar Relatório Clínico"
+                : "Novo Relatório Clínico"}
             </DialogTitle>
             <DialogDescription>
               Adicione um novo relatório clínico para o paciente
@@ -467,8 +477,8 @@ export function ProntuarioRelatorios({
               {saving
                 ? "Salvando..."
                 : editingId
-                ? "Atualizar Relatório"
-                : "Salvar Relatório"}
+                  ? "Atualizar Relatório"
+                  : "Salvar Relatório"}
             </Button>
           </DialogFooter>
         </DialogContent>

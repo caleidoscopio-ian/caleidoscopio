@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
@@ -209,12 +210,27 @@ export async function PUT(request: NextRequest) {
         medicamento: medicamento || prescricaoExistente.medicamento,
         dosagem: dosagem || prescricaoExistente.dosagem,
         frequencia: frequencia || prescricaoExistente.frequencia,
-        via_admin: via_admin !== undefined ? via_admin : prescricaoExistente.via_admin,
+        via_admin:
+          via_admin !== undefined ? via_admin : prescricaoExistente.via_admin,
         duracao: duracao !== undefined ? duracao : prescricaoExistente.duracao,
-        indicacao: indicacao !== undefined ? indicacao : prescricaoExistente.indicacao,
-        observacoes: observacoes !== undefined ? observacoes : prescricaoExistente.observacoes,
-        data_inicio: data_inicio !== undefined ? (data_inicio ? new Date(data_inicio) : null) : prescricaoExistente.data_inicio,
-        data_fim: data_fim !== undefined ? (data_fim ? new Date(data_fim) : null) : prescricaoExistente.data_fim,
+        indicacao:
+          indicacao !== undefined ? indicacao : prescricaoExistente.indicacao,
+        observacoes:
+          observacoes !== undefined
+            ? observacoes
+            : prescricaoExistente.observacoes,
+        data_inicio:
+          data_inicio !== undefined
+            ? data_inicio
+              ? new Date(data_inicio)
+              : null
+            : prescricaoExistente.data_inicio,
+        data_fim:
+          data_fim !== undefined
+            ? data_fim
+              ? new Date(data_fim)
+              : null
+            : prescricaoExistente.data_fim,
         ativo: ativo !== undefined ? ativo : prescricaoExistente.ativo,
       },
       include: {
@@ -228,7 +244,10 @@ export async function PUT(request: NextRequest) {
   } catch (error: any) {
     console.error("Erro ao atualizar prescrição:", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Erro ao atualizar prescrição" },
+      {
+        success: false,
+        error: error.message || "Erro ao atualizar prescrição",
+      },
       { status: 500 }
     );
   }
@@ -276,7 +295,10 @@ export async function DELETE(request: NextRequest) {
 
     await prisma.prescricaoMedica.delete({ where: { id } });
 
-    return NextResponse.json({ success: true, message: "Prescrição excluída com sucesso" });
+    return NextResponse.json({
+      success: true,
+      message: "Prescrição excluída com sucesso",
+    });
   } catch (error: any) {
     console.error("Erro ao excluir prescrição:", error);
     return NextResponse.json(

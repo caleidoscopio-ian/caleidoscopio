@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Card,
@@ -42,7 +43,7 @@ import {
 import {
   Paperclip,
   FileText,
-  Image,
+  Image as ImageIcon,
   Video,
   Music,
   Download,
@@ -414,7 +415,10 @@ export function ProntuarioAnexos({
   };
 
   const getTipoBadge = (tipo: string) => {
-    const variants: Record<string, { variant: any; className?: string }> = {
+    const variants: Record<
+      string,
+      { variant: "default" | "outline" | "secondary" | "destructive"; className?: string }
+    > = {
       DOCUMENTO: { variant: "default", className: "bg-blue-600" },
       EXAME: { variant: "default", className: "bg-purple-600" },
       LAUDO: { variant: "default", className: "bg-indigo-600" },
@@ -424,7 +428,7 @@ export function ProntuarioAnexos({
       OUTROS: { variant: "outline" },
     };
 
-    const config = variants[tipo] || { variant: "outline" };
+    const config = variants[tipo] || { variant: "outline" as const };
 
     return (
       <Badge variant={config.variant} className={config.className}>
@@ -435,7 +439,7 @@ export function ProntuarioAnexos({
 
   const getFileIcon = (tipo: string, mimeType: string) => {
     if (tipo === "FOTO" || mimeType.startsWith("image/")) {
-      return <Image className="h-5 w-5" />;
+      return <ImageIcon className="h-5 w-5" />;
     }
     if (tipo === "VIDEO" || mimeType.startsWith("video/")) {
       return <Video className="h-5 w-5" />;
@@ -448,10 +452,13 @@ export function ProntuarioAnexos({
 
   // Calcular estatísticas
   const totalAnexos = anexos.length;
-  const porTipo = anexos.reduce((acc, anexo) => {
-    acc[anexo.tipo] = (acc[anexo.tipo] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const porTipo = anexos.reduce(
+    (acc, anexo) => {
+      acc[anexo.tipo] = (acc[anexo.tipo] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const totalSize = anexos.reduce((acc, anexo) => acc + anexo.arquivo_size, 0);
 
@@ -515,11 +522,13 @@ export function ProntuarioAnexos({
                     <div className="space-y-3">
                       {/* Preview de Imagem */}
                       {previewUrl && (
-                        <div className="relative">
-                          <img
+                        <div className="relative w-full max-h-48 flex justify-center">
+                          <Image
                             src={previewUrl}
-                            alt="Preview"
-                            className="max-h-48 mx-auto rounded-lg border"
+                            alt="Preview do anexo"
+                            width={300}
+                            height={192}
+                            className="max-h-48 w-auto rounded-lg border object-contain"
                           />
                         </div>
                       )}
@@ -528,7 +537,7 @@ export function ProntuarioAnexos({
                       <div className="flex items-center justify-between bg-muted p-3 rounded-lg">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           {selectedFile.type.startsWith("image/") ? (
-                            <Image className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                            <ImageIcon className="h-5 w-5 text-blue-600 flex-shrink-0" />
                           ) : selectedFile.type.startsWith("video/") ? (
                             <Video className="h-5 w-5 text-red-600 flex-shrink-0" />
                           ) : selectedFile.type.startsWith("audio/") ? (
@@ -584,7 +593,9 @@ export function ProntuarioAnexos({
                 </Label>
                 <Select
                   value={formData.tipo}
-                  onValueChange={(value) => setFormData({ ...formData, tipo: value })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, tipo: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
@@ -605,7 +616,9 @@ export function ProntuarioAnexos({
                 <Input
                   id="categoria"
                   value={formData.categoria}
-                  onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, categoria: e.target.value })
+                  }
                   placeholder="Ex: Exames de sangue"
                 />
               </div>
@@ -618,7 +631,9 @@ export function ProntuarioAnexos({
               <Input
                 id="titulo"
                 value={formData.titulo}
-                onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, titulo: e.target.value })
+                }
                 placeholder="Título do documento"
               />
             </div>
@@ -629,7 +644,9 @@ export function ProntuarioAnexos({
                 id="data_documento"
                 type="date"
                 value={formData.data_documento}
-                onChange={(e) => setFormData({ ...formData, data_documento: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, data_documento: e.target.value })
+                }
               />
             </div>
 
@@ -638,7 +655,9 @@ export function ProntuarioAnexos({
               <Textarea
                 id="descricao"
                 value={formData.descricao}
-                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, descricao: e.target.value })
+                }
                 placeholder="Descrição do anexo"
                 rows={3}
               />
@@ -660,7 +679,11 @@ export function ProntuarioAnexos({
               Cancelar
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Salvando..." : editingId ? "Atualizar Anexo" : "Salvar Anexo"}
+              {saving
+                ? "Salvando..."
+                : editingId
+                  ? "Atualizar Anexo"
+                  : "Salvar Anexo"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -693,7 +716,9 @@ export function ProntuarioAnexos({
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Tamanho Total</CardDescription>
-            <CardTitle className="text-2xl">{formatFileSize(totalSize)}</CardTitle>
+            <CardTitle className="text-2xl">
+              {formatFileSize(totalSize)}
+            </CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -718,7 +743,10 @@ export function ProntuarioAnexos({
                     <div className="flex items-center gap-2 flex-wrap">
                       {getTipoBadge(anexo.tipo)}
                       {anexo.categoria && (
-                        <Badge variant="outline" className="flex items-center gap-1">
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1"
+                        >
                           <FolderOpen className="h-3 w-3" />
                           {anexo.categoria}
                         </Badge>
@@ -729,7 +757,8 @@ export function ProntuarioAnexos({
                       {anexo.titulo}
                     </CardTitle>
                     <CardDescription>
-                      {anexo.arquivo_nome} • {formatFileSize(anexo.arquivo_size)}
+                      {anexo.arquivo_nome} •{" "}
+                      {formatFileSize(anexo.arquivo_size)}
                     </CardDescription>
                   </div>
                   <div className="flex gap-1 ml-4">
@@ -792,13 +821,15 @@ export function ProntuarioAnexos({
                 )}
 
                 {/* Preview para imagens */}
-                {(anexo.tipo === "FOTO" || anexo.arquivo_tipo.startsWith("image/")) && (
-                  <div className="mt-3">
-                    <img
+                {(anexo.tipo === "FOTO" ||
+                  anexo.arquivo_tipo.startsWith("image/")) && (
+                  <div className="mt-3 flex justify-center">
+                    <Image
                       src={anexo.arquivo_url}
                       alt={anexo.titulo}
-                      className="max-w-full h-auto max-h-64 rounded-lg border"
-                      loading="lazy"
+                      width={400}
+                      height={256}
+                      className="max-w-full h-auto max-h-64 rounded-lg border object-contain"
                     />
                   </div>
                 )}

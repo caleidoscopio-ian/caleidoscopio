@@ -24,6 +24,7 @@ import {
   ClipboardList,
   History,
   FileHeart,
+  ClipboardCheck,
 } from "lucide-react";
 
 export interface SidebarItem {
@@ -103,6 +104,11 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           title: "Atividades Clínicas",
           href: "/atividades-clinicas",
           icon: ClipboardList,
+        },
+        {
+          title: "Avaliações",
+          href: "/avaliacoes",
+          icon: ClipboardCheck,
         },
         {
           title: "Iniciar Sessão",
@@ -192,6 +198,11 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           title: "Atividades Clínicas",
           href: "/atividades-clinicas",
           icon: ClipboardList,
+        },
+        {
+          title: "Avaliações",
+          href: "/avaliacoes",
+          icon: ClipboardCheck,
         },
         {
           title: "Iniciar Sessão",

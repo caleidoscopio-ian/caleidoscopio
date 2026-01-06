@@ -161,7 +161,9 @@ model paciente {
   prontuarios            prontuario[]
   trilhaAlunos           trilhaAluno[]
   atividadesAtribuidas   pacienteAtividade[]
+  avaliacoesAtribuidas   PacienteAvaliacao[]
   sessoes                sessaoAtividade[]
+  sessoesAvaliacao       SessaoAvaliacao[]
   anamneses              anamnese[]
   encaminhamentos        encaminhamento[]
   prescricoes            prescricaoMedica[]
@@ -191,6 +193,7 @@ model profissional {
   pacientes             paciente[]
   prontuarios           prontuario[]
   sessoes               sessaoAtividade[]
+  sessoesAvaliacao      SessaoAvaliacao[]
 
   @@unique([tenantId, cpf])
   @@map("profissionais")
@@ -586,6 +589,8 @@ model Avaliacao {
   habilidades AvaliacaoHabilidade[]
   pontuacoes  AvaliacaoPontuacao[]
   tarefas     AvaliacaoTarefa[]
+  atribuicoes PacienteAvaliacao[]
+  sessoes     SessaoAvaliacao[]
 
   @@map("avaliacoes")
 }
@@ -640,6 +645,60 @@ model AvaliacaoTarefa {
   avaliacao               Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
   nivel                   AvaliacaoNivel? @relation(fields: [nivelId], references: [id], onDelete: SetNull)
   habilidade              AvaliacaoHabilidade? @relation(fields: [habilidadeId], references: [id], onDelete: SetNull)
+  respostas               RespostaTarefa[]
 
   @@map("avaliacao_tarefas")
+}
+
+model PacienteAvaliacao {
+  id            String   @id @default(uuid())
+  pacienteId    String
+  avaliacaoId   String
+  atribuida_em  DateTime @default(now())
+  atribuida_por String   // userId do terapeuta que atribuiu
+  ativa         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  paciente      paciente  @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  avaliacao     Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+
+  @@unique([pacienteId, avaliacaoId])
+  @@map("paciente_avaliacoes")
+}
+
+model SessaoAvaliacao {
+  id                 String          @id @default(uuid())
+  pacienteId         String
+  avaliacaoId        String
+  profissionalId     String
+  iniciada_em        DateTime        @default(now())
+  finalizada_em      DateTime?
+  observacoes_gerais String?         @db.Text
+  status             StatusSessao    @default(EM_ANDAMENTO)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @default(now()) @updatedAt
+
+  paciente           paciente        @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  avaliacao          Avaliacao       @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+  profissional       profissional    @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  respostas          RespostaTarefa[]
+
+  @@map("sessao_avaliacoes")
+}
+
+model RespostaTarefa {
+  id           String           @id @default(uuid())
+  sessaoId     String
+  tarefaId     String
+  pontuacao    Int?             // Valor da pontuação selecionada
+  observacao   String?          @db.Text
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @default(now()) @updatedAt
+
+  sessao       SessaoAvaliacao  @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  tarefa       AvaliacaoTarefa  @relation(fields: [tarefaId], references: [id], onDelete: Cascade)
+
+  @@unique([sessaoId, tarefaId])
+  @@map("resposta_tarefas")
 }

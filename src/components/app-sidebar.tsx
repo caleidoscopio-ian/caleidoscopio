@@ -80,8 +80,8 @@ const getGroupedNavigation = (userRole: string) => {
         "Gestão Clínica": allItems.filter((item) =>
           ["Meus Pacientes", "Agenda", "Prontuários", "Anamneses"].includes(item.title)
         ),
-        "Atividades ABA": allItems.filter((item) =>
-          ["Atividades Clínicas", "Iniciar Sessão", "Histórico de Sessões"].includes(item.title)
+        "Atendimento": allItems.filter((item) =>
+          ["Atividades Clínicas", "Avaliações", "Iniciar Sessão", "Histórico de Sessões"].includes(item.title)
         ),
         Perfil: allItems.filter((item) => item.title === "Meu Perfil"),
       };
@@ -100,8 +100,8 @@ const getGroupedNavigation = (userRole: string) => {
         "Sistema Clínico": allItems.filter((item) =>
           ["Agenda Global", "Prontuários", "Anamneses"].includes(item.title)
         ),
-        "Atividades ABA": allItems.filter((item) =>
-          ["Atividades Clínicas", "Iniciar Sessão", "Histórico de Sessões"].includes(item.title)
+        "Atendimento": allItems.filter((item) =>
+          ["Atividades Clínicas", "Avaliações", "Iniciar Sessão", "Histórico de Sessões"].includes(item.title)
         ),
         Administração: allItems.filter((item) =>
           ["Relatórios e Indicadores", "Permissões", "Configurações"].includes(

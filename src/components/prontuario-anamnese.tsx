@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,7 +19,11 @@ import {
   Eye,
   Edit,
 } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface AnamneseDetalhes {
   id: string;
@@ -146,7 +151,9 @@ export function ProntuarioAnamnese({ pacienteId }: ProntuarioAnamneseProps) {
     return (
       <div className="text-center py-12">
         <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">Nenhuma anamnese encontrada</h3>
+        <h3 className="text-lg font-medium mb-2">
+          Nenhuma anamnese encontrada
+        </h3>
         <p className="text-muted-foreground">
           Este paciente ainda não possui anamnese cadastrada.
         </p>
@@ -233,7 +240,9 @@ export function ProntuarioAnamnese({ pacienteId }: ProntuarioAnamneseProps) {
                   {anamnese.finalizadaEm && (
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span>Finalizada: {formatDate(anamnese.finalizadaEm)}</span>
+                      <span>
+                        Finalizada: {formatDate(anamnese.finalizadaEm)}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -331,19 +340,22 @@ export function ProntuarioAnamnese({ pacienteId }: ProntuarioAnamneseProps) {
                   <>
                     <Separator />
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-base">4. Rotina Diária</h4>
+                      <h4 className="font-semibold text-base">
+                        4. Rotina Diária
+                      </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-4">
-                        {Object.entries(anamnese.rotinaDiaria).map(([key, value]) =>
-                          value ? (
-                            <div key={key}>
-                              <label className="text-sm font-medium text-muted-foreground capitalize">
-                                {key}
-                              </label>
-                              <p className="text-sm mt-1 whitespace-pre-wrap">
-                                {value as string}
-                              </p>
-                            </div>
-                          ) : null
+                        {Object.entries(anamnese.rotinaDiaria).map(
+                          ([key, value]) =>
+                            value ? (
+                              <div key={key}>
+                                <label className="text-sm font-medium text-muted-foreground capitalize">
+                                  {key}
+                                </label>
+                                <p className="text-sm mt-1 whitespace-pre-wrap">
+                                  {value as string}
+                                </p>
+                              </div>
+                            ) : null
                         )}
                       </div>
                     </div>
@@ -389,7 +401,9 @@ export function ProntuarioAnamnese({ pacienteId }: ProntuarioAnamneseProps) {
                   <>
                     <Separator />
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-base">Observações Gerais</h4>
+                      <h4 className="font-semibold text-base">
+                        Observações Gerais
+                      </h4>
                       <p className="text-sm whitespace-pre-wrap pl-4">
                         {anamnese.observacoesGerais}
                       </p>

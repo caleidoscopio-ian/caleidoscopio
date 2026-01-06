@@ -18,20 +18,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Pill,
-  Calendar,
-  Clock,
-  AlertCircle,
-  Plus,
-  Edit,
-  Trash2,
-} from "lucide-react";
+import { Pill, Calendar, Clock, AlertCircle, Edit, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -289,7 +280,11 @@ export function ProntuarioPrescricao({
       }
     }
 
-    return <Badge variant="default" className="bg-green-600">Em uso</Badge>;
+    return (
+      <Badge variant="default" className="bg-green-600">
+        Em uso
+      </Badge>
+    );
   };
 
   if (loading) {
@@ -308,161 +303,163 @@ export function ProntuarioPrescricao({
     <div className="space-y-4">
       {/* Dialog (sem botão trigger aqui) */}
       <Dialog open={dialogOpen ?? open} onOpenChange={onOpenDialog ?? setOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? "Editar Prescrição Médica" : "Nova Prescrição Médica"}
-              </DialogTitle>
-              <DialogDescription>
-                Adicione uma nova prescrição médica para o paciente
-              </DialogDescription>
-            </DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId
+                ? "Editar Prescrição Médica"
+                : "Nova Prescrição Médica"}
+            </DialogTitle>
+            <DialogDescription>
+              Adicione uma nova prescrição médica para o paciente
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="grid gap-4 py-4">
-              {/* Medicamento */}
+          <div className="grid gap-4 py-4">
+            {/* Medicamento */}
+            <div className="grid gap-2">
+              <Label htmlFor="medicamento">
+                Medicamento <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="medicamento"
+                value={formData.medicamento}
+                onChange={(e) =>
+                  setFormData({ ...formData, medicamento: e.target.value })
+                }
+                placeholder="Nome do medicamento"
+              />
+            </div>
+
+            {/* Dosagem e Frequência */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="medicamento">
-                  Medicamento <span className="text-red-500">*</span>
+                <Label htmlFor="dosagem">
+                  Dosagem <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  id="medicamento"
-                  value={formData.medicamento}
+                  id="dosagem"
+                  value={formData.dosagem}
                   onChange={(e) =>
-                    setFormData({ ...formData, medicamento: e.target.value })
+                    setFormData({ ...formData, dosagem: e.target.value })
                   }
-                  placeholder="Nome do medicamento"
+                  placeholder="Ex: 500mg"
                 />
               </div>
-
-              {/* Dosagem e Frequência */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="dosagem">
-                    Dosagem <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="dosagem"
-                    value={formData.dosagem}
-                    onChange={(e) =>
-                      setFormData({ ...formData, dosagem: e.target.value })
-                    }
-                    placeholder="Ex: 500mg"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="frequencia">
-                    Frequência <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="frequencia"
-                    value={formData.frequencia}
-                    onChange={(e) =>
-                      setFormData({ ...formData, frequencia: e.target.value })
-                    }
-                    placeholder="Ex: 2x ao dia"
-                  />
-                </div>
-              </div>
-
-              {/* Via Admin e Duração */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="via_admin">Via de Administração</Label>
-                  <Input
-                    id="via_admin"
-                    value={formData.via_admin}
-                    onChange={(e) =>
-                      setFormData({ ...formData, via_admin: e.target.value })
-                    }
-                    placeholder="Ex: Oral, Injetável"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="duracao">Duração</Label>
-                  <Input
-                    id="duracao"
-                    value={formData.duracao}
-                    onChange={(e) =>
-                      setFormData({ ...formData, duracao: e.target.value })
-                    }
-                    placeholder="Ex: 30 dias"
-                  />
-                </div>
-              </div>
-
-              {/* Data Início e Fim */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="data_inicio">Data de Início</Label>
-                  <Input
-                    id="data_inicio"
-                    type="date"
-                    value={formData.data_inicio}
-                    onChange={(e) =>
-                      setFormData({ ...formData, data_inicio: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="data_fim">Data de Término</Label>
-                  <Input
-                    id="data_fim"
-                    type="date"
-                    value={formData.data_fim}
-                    onChange={(e) =>
-                      setFormData({ ...formData, data_fim: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* Indicação */}
               <div className="grid gap-2">
-                <Label htmlFor="indicacao">Indicação</Label>
-                <Textarea
-                  id="indicacao"
-                  value={formData.indicacao}
+                <Label htmlFor="frequencia">
+                  Frequência <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="frequencia"
+                  value={formData.frequencia}
                   onChange={(e) =>
-                    setFormData({ ...formData, indicacao: e.target.value })
+                    setFormData({ ...formData, frequencia: e.target.value })
                   }
-                  placeholder="Para que é indicado este medicamento"
-                  rows={3}
-                />
-              </div>
-
-              {/* Observações */}
-              <div className="grid gap-2">
-                <Label htmlFor="observacoes">Observações</Label>
-                <Textarea
-                  id="observacoes"
-                  value={formData.observacoes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, observacoes: e.target.value })
-                  }
-                  placeholder="Observações adicionais"
-                  rows={3}
+                  placeholder="Ex: 2x ao dia"
                 />
               </div>
             </div>
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setOpen(false)}
-                disabled={saving}
-              >
-                Cancelar
-              </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving
-                  ? "Salvando..."
-                  : editingId
+            {/* Via Admin e Duração */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="via_admin">Via de Administração</Label>
+                <Input
+                  id="via_admin"
+                  value={formData.via_admin}
+                  onChange={(e) =>
+                    setFormData({ ...formData, via_admin: e.target.value })
+                  }
+                  placeholder="Ex: Oral, Injetável"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="duracao">Duração</Label>
+                <Input
+                  id="duracao"
+                  value={formData.duracao}
+                  onChange={(e) =>
+                    setFormData({ ...formData, duracao: e.target.value })
+                  }
+                  placeholder="Ex: 30 dias"
+                />
+              </div>
+            </div>
+
+            {/* Data Início e Fim */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="data_inicio">Data de Início</Label>
+                <Input
+                  id="data_inicio"
+                  type="date"
+                  value={formData.data_inicio}
+                  onChange={(e) =>
+                    setFormData({ ...formData, data_inicio: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="data_fim">Data de Término</Label>
+                <Input
+                  id="data_fim"
+                  type="date"
+                  value={formData.data_fim}
+                  onChange={(e) =>
+                    setFormData({ ...formData, data_fim: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Indicação */}
+            <div className="grid gap-2">
+              <Label htmlFor="indicacao">Indicação</Label>
+              <Textarea
+                id="indicacao"
+                value={formData.indicacao}
+                onChange={(e) =>
+                  setFormData({ ...formData, indicacao: e.target.value })
+                }
+                placeholder="Para que é indicado este medicamento"
+                rows={3}
+              />
+            </div>
+
+            {/* Observações */}
+            <div className="grid gap-2">
+              <Label htmlFor="observacoes">Observações</Label>
+              <Textarea
+                id="observacoes"
+                value={formData.observacoes}
+                onChange={(e) =>
+                  setFormData({ ...formData, observacoes: e.target.value })
+                }
+                placeholder="Observações adicionais"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving
+                ? "Salvando..."
+                : editingId
                   ? "Atualizar Prescrição"
                   : "Salvar Prescrição"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Lista de Prescrições */}
       {prescricoes.length === 0 ? (
