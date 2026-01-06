@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,7 +20,8 @@ import {
 interface Sessao {
   id: string;
   pacienteId: string;
-  atividadeId: string;
+  atividadeId?: string;
+  avaliacaoId?: string;
   profissionalId: string;
   iniciada_em: string;
   finalizada_em?: string;
@@ -27,18 +29,24 @@ interface Sessao {
   status: "EM_ANDAMENTO" | "FINALIZADA" | "CANCELADA";
   createdAt: string;
   updatedAt: string;
-  atividade: {
+  tipo?: "ATIVIDADE" | "AVALIACAO";
+  atividade?: {
     id: string;
     nome: string;
     tipo: string;
     metodologia?: string;
+  };
+  avaliacao?: {
+    id: string;
+    nome: string;
+    tipo: string;
   };
   profissional: {
     id: string;
     nome: string;
     especialidade: string;
   };
-  avaliacoes: Array<{
+  avaliacoes?: Array<{
     id: string;
     nota: number;
     tipos_ajuda: string[];
@@ -47,6 +55,17 @@ interface Sessao {
       id: string;
       texto: string;
       ordem: number;
+    };
+  }>;
+  respostas?: Array<{
+    id: string;
+    tarefaId: string;
+    pontuacao: number | null;
+    observacao?: string;
+    tarefa: {
+      id: string;
+      ordem: number;
+      pergunta: string;
     };
   }>;
 }
@@ -89,11 +108,13 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
         }
 
         if (result.success) {
-          // Filtrar sessões do paciente e ordenar por data (mais recente primeiro)
+          // Filtrar sessões do paciente (ATIVIDADES + AVALIAÇÕES) e ordenar por data (mais recente primeiro)
           const sessoesDoPaciente = result.data
-            .filter((s: Sessao) => s.pacienteId === pacienteId)
-            .sort((a: Sessao, b: Sessao) =>
-              new Date(b.iniciada_em).getTime() - new Date(a.iniciada_em).getTime()
+            .filter((s: any) => s.pacienteId === pacienteId)
+            .sort(
+              (a: Sessao, b: Sessao) =>
+                new Date(b.iniciada_em).getTime() -
+                new Date(a.iniciada_em).getTime()
             );
           setSessoes(sessoesDoPaciente);
         } else {
@@ -148,10 +169,27 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
   };
 
   const calcularMediaNotas = (avaliacoes: Sessao["avaliacoes"]) => {
-    if (avaliacoes.length === 0) return null;
+    if (!avaliacoes || avaliacoes.length === 0) return null;
 
     const soma = avaliacoes.reduce((acc, av) => acc + av.nota, 0);
     const media = soma / avaliacoes.length;
+    return media.toFixed(1);
+  };
+
+  const calcularMediaAvaliacoes = (respostas: Sessao["respostas"]) => {
+    if (!respostas || respostas.length === 0) return null;
+
+    const respostasValidas = respostas.filter(
+      (r) => r.pontuacao !== null && r.pontuacao !== -1
+    );
+
+    if (respostasValidas.length === 0) return null;
+
+    const soma = respostasValidas.reduce(
+      (acc, r) => acc + (r.pontuacao || 0),
+      0
+    );
+    const media = soma / respostasValidas.length;
     return media.toFixed(1);
   };
 
@@ -187,7 +225,9 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando evolução clínica...</p>
+          <p className="text-muted-foreground">
+            Carregando evolução clínica...
+          </p>
         </div>
       </div>
     );
@@ -260,8 +300,20 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
       {/* Lista de Sessões */}
       <div className="space-y-4">
         {sessoes.map((sessao) => {
-          const media = calcularMediaNotas(sessao.avaliacoes);
-          const duracao = calcularDuracao(sessao.iniciada_em, sessao.finalizada_em);
+          const isAvaliacao = sessao.tipo === "AVALIACAO";
+          const media = isAvaliacao
+            ? calcularMediaAvaliacoes(sessao.respostas)
+            : calcularMediaNotas(sessao.avaliacoes);
+          const duracao = calcularDuracao(
+            sessao.iniciada_em,
+            sessao.finalizada_em
+          );
+          const nomeItem = isAvaliacao
+            ? sessao.avaliacao?.nome || sessao.atividade?.nome
+            : sessao.atividade?.nome;
+          const tipoItem = isAvaliacao
+            ? sessao.avaliacao?.tipo || sessao.atividade?.tipo
+            : sessao.atividade?.tipo;
 
           return (
             <Card key={sessao.id}>
@@ -269,9 +321,13 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                      <CardTitle className="text-lg">
-                        {sessao.atividade.nome}
-                      </CardTitle>
+                      <Badge
+                        variant={isAvaliacao ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {isAvaliacao ? "Avaliação" : "Atividade"}
+                      </Badge>
+                      <CardTitle className="text-lg">{nomeItem}</CardTitle>
                       {getStatusBadge(sessao.status)}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -288,7 +344,10 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
                   </div>
                   {media && (
                     <div className="text-right">
-                      <div className="text-2xl font-bold">{media}</div>
+                      <div className="text-2xl font-bold">
+                        {media}
+                        {isAvaliacao ? "%" : ""}
+                      </div>
                       <div className="text-sm text-muted-foreground">Média</div>
                     </div>
                   )}
@@ -296,15 +355,15 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                {/* Informações da Atividade */}
+                {/* Informações da Atividade/Avaliação */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <label className="font-medium text-muted-foreground">
-                      Tipo de Atividade
+                      {isAvaliacao ? "Tipo de Avaliação" : "Tipo de Atividade"}
                     </label>
-                    <p>{sessao.atividade.tipo.replace(/_/g, " ")}</p>
+                    <p>{tipoItem?.replace(/_/g, " ")}</p>
                   </div>
-                  {sessao.atividade.metodologia && (
+                  {!isAvaliacao && sessao.atividade?.metodologia && (
                     <div>
                       <label className="font-medium text-muted-foreground">
                         Metodologia
@@ -348,36 +407,81 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
                   )}
                 </div>
 
-                {/* Avaliações */}
-                {sessao.avaliacoes.length > 0 && (
-                  <>
-                    <Separator />
-                    <div>
-                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
-                        <FileText className="h-4 w-4" />
-                        <span>Avaliações ({sessao.avaliacoes.length} instruções)</span>
+                {/* Avaliações de Atividades (Instruções) */}
+                {!isAvaliacao &&
+                  sessao.avaliacoes &&
+                  sessao.avaliacoes.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
+                          <FileText className="h-4 w-4" />
+                          <span>
+                            Avaliações ({sessao.avaliacoes.length} instruções)
+                          </span>
+                        </div>
+                        <div className="space-y-2 pl-6">
+                          {sessao.avaliacoes.slice(0, 3).map((av) => (
+                            <div
+                              key={av.id}
+                              className="flex items-center justify-between text-sm border-l-2 border-muted pl-3 py-1"
+                            >
+                              <span className="text-muted-foreground">
+                                {av.instrucao.texto}
+                              </span>
+                              <Badge variant="outline">Nota: {av.nota}</Badge>
+                            </div>
+                          ))}
+                          {sessao.avaliacoes.length > 3 && (
+                            <p className="text-sm text-muted-foreground italic">
+                              + {sessao.avaliacoes.length - 3} avaliações
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="space-y-2 pl-6">
-                        {sessao.avaliacoes.slice(0, 3).map((av) => (
-                          <div
-                            key={av.id}
-                            className="flex items-center justify-between text-sm border-l-2 border-muted pl-3 py-1"
-                          >
-                            <span className="text-muted-foreground">
-                              {av.instrucao.texto}
-                            </span>
-                            <Badge variant="outline">Nota: {av.nota}</Badge>
-                          </div>
-                        ))}
-                        {sessao.avaliacoes.length > 3 && (
-                          <p className="text-sm text-muted-foreground italic">
-                            + {sessao.avaliacoes.length - 3} avaliações
-                          </p>
-                        )}
+                    </>
+                  )}
+
+                {/* Respostas de Avaliações (Tarefas) */}
+                {isAvaliacao &&
+                  sessao.respostas &&
+                  sessao.respostas.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
+                          <FileText className="h-4 w-4" />
+                          <span>
+                            Respostas ({sessao.respostas.length} tarefas)
+                          </span>
+                        </div>
+                        <div className="space-y-2 pl-6">
+                          {sessao.respostas.slice(0, 3).map((resp) => (
+                            <div
+                              key={resp.id}
+                              className="flex items-center justify-between text-sm border-l-2 border-muted pl-3 py-1"
+                            >
+                              <span className="text-muted-foreground">
+                                {resp.tarefa.pergunta}
+                              </span>
+                              <Badge variant="outline">
+                                {resp.pontuacao === -1
+                                  ? "N/A"
+                                  : resp.pontuacao !== null
+                                    ? `${resp.pontuacao}%`
+                                    : "Não respondida"}
+                              </Badge>
+                            </div>
+                          ))}
+                          {sessao.respostas.length > 3 && (
+                            <p className="text-sm text-muted-foreground italic">
+                              + {sessao.respostas.length - 3} tarefas
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
+                    </>
+                  )}
 
                 {/* Observações */}
                 {sessao.observacoes_gerais && (
