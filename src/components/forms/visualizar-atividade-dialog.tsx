@@ -18,18 +18,29 @@ interface Instrucao {
   id: string
   ordem: number
   texto: string
+  como_aplicar?: string
   observacao?: string
+}
+
+interface Pontuacao {
+  id: string
+  ordem: number
+  sigla: string
+  grau: string
 }
 
 interface Atividade {
   id: string
   nome: string
-  descricao?: string
-  tipo: string
-  metodologia?: string
-  objetivo?: string
+  protocolo?: string
+  habilidade?: string
+  marco_codificacao?: string
+  tipo_ensino?: string
+  qtd_alvos_sessao?: number
+  qtd_tentativas_alvo?: number
   createdAt: string
   instrucoes: Instrucao[]
+  pontuacoes?: Pontuacao[]
   _count?: {
     atribuicoes: number
     sessoes: number
@@ -42,16 +53,6 @@ interface VisualizarAtividadeDialogProps {
 
 export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDialogProps) {
   const [open, setOpen] = useState(false)
-
-  const traduzirTipo = (tipo: string) => {
-    const tipos: Record<string, string> = {
-      'PROTOCOLO_ABA': 'Protocolo ABA',
-      'AVALIACAO_CLINICA': 'Avaliação Clínica',
-      'JOGO_MEMORIA': 'Jogo de Memória',
-      'CUSTOM': 'Personalizada',
-    }
-    return tipos[tipo] || tipo
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -87,40 +88,64 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                 <p className="text-lg font-semibold">{atividade.nome}</p>
               </div>
 
-              {atividade.descricao && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Descrição</label>
-                  <p className="text-sm">{atividade.descricao}</p>
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Tipo</label>
-                  <div className="mt-1">
-                    <Badge variant="outline">{traduzirTipo(atividade.tipo)}</Badge>
-                  </div>
-                </div>
-
-                {atividade.metodologia && (
+                {atividade.protocolo && (
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Metodologia</label>
-                    <p className="text-sm mt-1">{atividade.metodologia}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Protocolo</label>
+                    <div className="mt-1">
+                      <Badge variant="outline">{atividade.protocolo}</Badge>
+                    </div>
+                  </div>
+                )}
+
+                {atividade.marco_codificacao && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Marco/Codificação</label>
+                    <p className="text-sm mt-1">{atividade.marco_codificacao}</p>
                   </div>
                 )}
               </div>
 
-              {atividade.objetivo && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Objetivo</label>
-                  <p className="text-sm">{atividade.objetivo}</p>
-                </div>
-              )}
+              <div className="grid grid-cols-2 gap-4">
+                {atividade.habilidade && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Habilidade</label>
+                    <p className="text-sm">{atividade.habilidade}</p>
+                  </div>
+                )}
 
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+                {atividade.tipo_ensino && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Tipo de Ensino</label>
+                    <p className="text-sm">{atividade.tipo_ensino}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {atividade.qtd_alvos_sessao && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Alvos por Sessão</label>
+                    <p className="text-sm">{atividade.qtd_alvos_sessao}</p>
+                  </div>
+                )}
+
+                {atividade.qtd_tentativas_alvo && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Tentativas por Alvo</label>
+                    <p className="text-sm">{atividade.qtd_tentativas_alvo}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-4 gap-4 pt-4 border-t">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Instruções</label>
-                  <p className="text-2xl font-bold">{atividade.instrucoes.length}</p>
+                  <p className="text-2xl font-bold">{atividade.instrucoes?.length || 0}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Pontuações</label>
+                  <p className="text-2xl font-bold">{atividade.pontuacoes?.length || 0}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Atribuída a</label>
@@ -135,34 +160,74 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
               </div>
             </div>
 
-            {/* Lista de instruções */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                Instruções ({atividade.instrucoes.length})
-              </label>
+            {/* Lista de pontuações */}
+            {atividade.pontuacoes && atividade.pontuacoes.length > 0 && (
               <div className="space-y-2">
-                {atividade.instrucoes.map((instrucao) => (
-                  <div
-                    key={instrucao.id}
-                    className="p-3 border rounded-lg bg-muted/30"
-                  >
-                    <div className="flex items-start gap-3">
-                      <Badge variant="secondary" className="shrink-0 mt-0.5">
-                        {instrucao.ordem}
-                      </Badge>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{instrucao.texto}</p>
-                        {instrucao.observacao && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Obs: {instrucao.observacao}
-                          </p>
-                        )}
+                <label className="text-sm font-medium text-muted-foreground">
+                  Pontuações/Dicas ({atividade.pontuacoes.length})
+                </label>
+                <div className="space-y-2">
+                  {atividade.pontuacoes.map((pontuacao) => (
+                    <div
+                      key={pontuacao.id}
+                      className="p-3 border rounded-lg bg-muted/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="shrink-0">
+                          {pontuacao.ordem}
+                        </Badge>
+                        <div className="flex gap-4">
+                          <div>
+                            <span className="text-xs text-muted-foreground">Sigla:</span>
+                            <span className="text-sm font-medium ml-2">{pontuacao.sigla}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground">Grau:</span>
+                            <span className="text-sm font-medium ml-2">{pontuacao.grau}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Lista de instruções */}
+            {atividade.instrucoes && atividade.instrucoes.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Instruções ({atividade.instrucoes.length})
+                </label>
+                <div className="space-y-2">
+                  {atividade.instrucoes.map((instrucao) => (
+                    <div
+                      key={instrucao.id}
+                      className="p-3 border rounded-lg bg-muted/30"
+                    >
+                      <div className="flex items-start gap-3">
+                        <Badge variant="secondary" className="shrink-0 mt-0.5">
+                          {instrucao.ordem}
+                        </Badge>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-sm font-medium">{instrucao.texto}</p>
+                          {instrucao.como_aplicar && (
+                            <p className="text-xs text-muted-foreground">
+                              <strong>Como aplicar:</strong> {instrucao.como_aplicar}
+                            </p>
+                          )}
+                          {instrucao.observacao && (
+                            <p className="text-xs text-muted-foreground">
+                              <strong>Obs:</strong> {instrucao.observacao}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Metadados */}
             <div className="pt-4 border-t text-xs text-muted-foreground">

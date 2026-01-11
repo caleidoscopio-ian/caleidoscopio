@@ -35,20 +35,20 @@ export async function GET(request: NextRequest) {
       where: { tenantId },
     });
 
-    // 2. Sessões em Andamento
-    stats.sessoesEmAndamento = await prisma.sessaoAtividade.count({
+    // 2. Sessões em Andamento (Curriculum)
+    stats.sessoesEmAndamento = await prisma.sessaoCurriculum.count({
       where: {
         paciente: { tenantId },
         status: "EM_ANDAMENTO",
       },
     });
 
-    // 3. Sessões Finalizadas no Mês Atual
+    // 3. Sessões Finalizadas no Mês Atual (Curriculum)
     const inicioMes = new Date();
     inicioMes.setDate(1);
     inicioMes.setHours(0, 0, 0, 0);
 
-    stats.sessoesRealizadasMes = await prisma.sessaoAtividade.count({
+    stats.sessoesRealizadasMes = await prisma.sessaoCurriculum.count({
       where: {
         paciente: { tenantId },
         status: "FINALIZADA",

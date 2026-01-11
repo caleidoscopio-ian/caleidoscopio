@@ -34,6 +34,15 @@ import {
   ClipboardCheck,
   AlertCircle,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Paciente {
   id: string;
@@ -61,13 +70,23 @@ interface Atividade {
   instrucoes: Instrucao[];
 }
 
-interface AtividadeAtribuida {
+interface CurriculumAtividade {
+  id: string;
+  ordem: number;
+  atividade: Atividade;
+}
+
+interface Curriculum {
+  id: string;
+  nome: string;
+  descricao?: string;
+  atividades: CurriculumAtividade[];
+}
+
+interface CurriculumAtribuido {
   id: string;
   atribuida_em: string;
-  atividade: Atividade;
-  _count?: {
-    sessoes: number;
-  };
+  curriculum: Curriculum;
 }
 
 interface Avaliacao {
@@ -90,14 +109,17 @@ export default function IniciarSessaoPage() {
   const [pacienteSelecionado, setPacienteSelecionado] = useState<string | null>(
     null
   );
-  const [atividades, setAtividades] = useState<AtividadeAtribuida[]>([]);
+  const [curriculums, setCurriculums] = useState<CurriculumAtribuido[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoAtribuida[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingAtividades, setLoadingAtividades] = useState(false);
+  const [loadingCurriculums, setLoadingCurriculums] = useState(false);
   const [loadingAvaliacoes, setLoadingAvaliacoes] = useState(false);
   const [iniciandoSessao, setIniciandoSessao] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [sessaoExistenteDialog, setSessaoExistenteDialog] = useState(false);
+  const [sessaoExistenteId, setSessaoExistenteId] = useState<string | null>(null);
+  const [sessaoExistenteMensagem, setSessaoExistenteMensagem] = useState("");
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
@@ -144,10 +166,10 @@ export default function IniciarSessaoPage() {
     }
   };
 
-  // Buscar atividades atribuídas ao paciente selecionado
-  const fetchAtividades = async (pacienteId: string) => {
+  // Buscar curriculums atribuídos ao paciente selecionado
+  const fetchCurriculums = async (pacienteId: string) => {
     try {
-      setLoadingAtividades(true);
+      setLoadingCurriculums(true);
       setError(null);
 
       if (!isAuthenticated || !user) {
@@ -157,7 +179,7 @@ export default function IniciarSessaoPage() {
       const userDataEncoded = btoa(JSON.stringify(user));
 
       const response = await fetch(
-        `/api/atividades/atribuir?pacienteId=${pacienteId}`,
+        `/api/curriculum/atribuir?pacienteId=${pacienteId}`,
         {
           method: "GET",
           headers: {
@@ -171,19 +193,19 @@ export default function IniciarSessaoPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Erro ao buscar atividades");
+        throw new Error(result.error || "Erro ao buscar curriculums");
       }
 
       if (result.success) {
-        setAtividades(result.data);
+        setCurriculums(result.data);
       }
     } catch (err) {
-      console.error("❌ Erro ao buscar atividades:", err);
+      console.error("❌ Erro ao buscar curriculums:", err);
       setError(
-        err instanceof Error ? err.message : "Erro ao carregar atividades"
+        err instanceof Error ? err.message : "Erro ao carregar curriculums"
       );
     } finally {
-      setLoadingAtividades(false);
+      setLoadingCurriculums(false);
     }
   };
 
@@ -230,8 +252,8 @@ export default function IniciarSessaoPage() {
     }
   };
 
-  // Iniciar sessão de atividade
-  const iniciarSessao = async (atividadeId: string) => {
+  // Iniciar sessão de curriculum
+  const iniciarSessaoCurriculum = async (curriculumId: string) => {
     if (!pacienteSelecionado) {
       setError("Selecione um paciente primeiro");
       return;
@@ -247,7 +269,7 @@ export default function IniciarSessaoPage() {
 
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch("/api/sessoes", {
+      const response = await fetch("/api/sessoes-curriculum", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -256,7 +278,7 @@ export default function IniciarSessaoPage() {
         },
         body: JSON.stringify({
           pacienteId: pacienteSelecionado,
-          atividadeId,
+          curriculumId,
         }),
       });
 
@@ -267,8 +289,15 @@ export default function IniciarSessaoPage() {
       }
 
       if (result.success) {
-        // Redirecionar para página de aplicar atividade
-        router.push(`/aplicar-atividade/${result.data.id}`);
+        // Se já existia uma sessão, mostrar dialog
+        if (result.existente) {
+          setSessaoExistenteId(result.data.id);
+          setSessaoExistenteMensagem(result.message || "Já existe uma sessão em andamento para este paciente.");
+          setSessaoExistenteDialog(true);
+        } else {
+          // Sessão nova criada, redirecionar diretamente
+          router.push(`/aplicar-curriculum/${result.data.id}`);
+        }
       }
     } catch (err) {
       console.error("❌ Erro ao iniciar sessão:", err);
@@ -334,13 +363,13 @@ export default function IniciarSessaoPage() {
     }
   }, [isAuthenticated, user]);
 
-  // Quando seleciona paciente, buscar atividades e avaliações
+  // Quando seleciona paciente, buscar curriculums e avaliações
   useEffect(() => {
     if (pacienteSelecionado) {
-      fetchAtividades(pacienteSelecionado);
+      fetchCurriculums(pacienteSelecionado);
       fetchAvaliacoes(pacienteSelecionado);
     } else {
-      setAtividades([]);
+      setCurriculums([]);
       setAvaliacoes([]);
     }
   }, [pacienteSelecionado]);
@@ -352,17 +381,6 @@ export default function IniciarSessaoPage() {
         paciente.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (paciente.cpf && paciente.cpf.includes(searchTerm))
   );
-
-  // Traduzir tipo de atividade
-  const traduzirTipo = (tipo: string) => {
-    const tipos: Record<string, string> = {
-      PROTOCOLO_ABA: "Protocolo ABA",
-      AVALIACAO_CLINICA: "Avaliação Clínica",
-      JOGO_MEMORIA: "Jogo de Memória",
-      CUSTOM: "Personalizada",
-    };
-    return tipos[tipo] || tipo;
-  };
 
   // Traduzir tipo de avaliação
   const traduzirTipoAvaliacao = (tipo: string) => {
@@ -563,88 +581,81 @@ export default function IniciarSessaoPage() {
           </CardContent>
         </Card>
 
-        {/* Lista de Atividades */}
+        {/* Lista de Curriculums */}
         {pacienteSelecionado && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5" />
-                Atividades Atribuídas
+                Curriculums Atribuídos
               </CardTitle>
               <CardDescription>
-                Escolha a atividade que será aplicada nesta sessão
+                Escolha o curriculum que será aplicado nesta sessão
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loadingAtividades && (
+              {loadingCurriculums && (
                 <div className="text-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                   <p className="text-muted-foreground">
-                    Carregando atividades...
+                    Carregando curriculums...
                   </p>
                 </div>
               )}
 
-              {!loadingAtividades && atividades.length === 0 && (
+              {!loadingCurriculums && curriculums.length === 0 && (
                 <div className="text-center py-8">
                   <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">
-                    Nenhuma atividade atribuída
+                    Nenhum curriculum atribuído
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    Este paciente ainda não possui atividades atribuídas.
+                    Este paciente ainda não possui curriculums atribuídos.
                   </p>
-                  <Button onClick={() => router.push("/atividades-clinicas")}>
-                    Gerenciar Atividades
+                  <Button onClick={() => router.push("/curriculum")}>
+                    Gerenciar Curriculums
                   </Button>
                 </div>
               )}
 
-              {!loadingAtividades && atividades.length > 0 && (
+              {!loadingCurriculums && curriculums.length > 0 && (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Metodologia</TableHead>
-                      <TableHead>Instruções</TableHead>
-                      <TableHead>Sessões Realizadas</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Atividades</TableHead>
+                      <TableHead>Atribuído em</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {atividades.map((atribuicao) => (
+                    {curriculums.map((atribuicao) => (
                       <TableRow key={atribuicao.id}>
                         <TableCell className="font-medium">
-                          <div>
-                            <div>{atribuicao.atividade.nome}</div>
-                            {atribuicao.atividade.descricao && (
-                              <div className="text-xs text-muted-foreground line-clamp-1">
-                                {atribuicao.atividade.descricao}
-                              </div>
-                            )}
-                          </div>
+                          {atribuicao.curriculum.nome}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {traduzirTipo(atribuicao.atividade.tipo)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {atribuicao.atividade.metodologia || "-"}
+                        <TableCell className="text-sm text-muted-foreground max-w-md">
+                          {atribuicao.curriculum.descricao
+                            ? atribuicao.curriculum.descricao.length > 80
+                              ? `${atribuicao.curriculum.descricao.substring(0, 80)}...`
+                              : atribuicao.curriculum.descricao
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">
-                            {atribuicao.atividade.instrucoes.length} itens
+                            {atribuicao.curriculum.atividades.length} atividade(s)
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          {atribuicao._count?.sessoes || 0} sessões
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(atribuicao.atribuida_em).toLocaleDateString(
+                            "pt-BR"
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
                             onClick={() =>
-                              iniciarSessao(atribuicao.atividade.id)
+                              iniciarSessaoCurriculum(atribuicao.curriculum.id)
                             }
                             disabled={iniciandoSessao}
                           >
@@ -785,6 +796,36 @@ export default function IniciarSessaoPage() {
           </Card>
         )}
       </div>
+
+      {/* Alert Dialog - Sessão Existente */}
+      <AlertDialog open={sessaoExistenteDialog} onOpenChange={setSessaoExistenteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
+              Sessão em Andamento
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base pt-2">
+              {sessaoExistenteMensagem}
+            </AlertDialogDescription>
+            <div className="pt-2 text-sm text-muted-foreground">
+              Você será direcionado para continuar esta sessão de onde parou. Todas as avaliações já realizadas serão mantidas.
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                setSessaoExistenteDialog(false);
+                if (sessaoExistenteId) {
+                  router.push(`/aplicar-curriculum/${sessaoExistenteId}`);
+                }
+              }}
+            >
+              Continuar Sessão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }

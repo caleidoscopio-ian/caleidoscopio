@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
@@ -221,10 +222,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// API para buscar sessão de avaliação por ID
+// API para buscar sessão(ões) de avaliação
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 API Sessões Avaliação - Buscando sessão...");
+    console.log("🔍 API Sessões Avaliação - Buscando sessão(ões)...");
 
     const user = await getAuthenticatedUser(request);
 
@@ -252,21 +253,107 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url);
     const sessaoId = url.searchParams.get("id");
+    const pacienteId = url.searchParams.get("pacienteId");
+    const status = url.searchParams.get("status");
 
-    if (!sessaoId) {
-      return NextResponse.json(
-        { error: "ID da sessão é obrigatório" },
-        { status: 400 }
-      );
+    // Se tem ID, buscar sessão específica
+    if (sessaoId) {
+      const sessao = await prisma.sessaoAvaliacao.findFirst({
+        where: {
+          id: sessaoId,
+          paciente: {
+            tenantId: user.tenant.id, // 🔒 CRÍTICO: Verificar tenant
+          },
+        },
+        include: {
+          paciente: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          avaliacao: {
+            include: {
+              tarefas: {
+                orderBy: { ordem: "asc" },
+                include: {
+                  nivel: true,
+                  habilidade: true,
+                },
+              },
+              niveis: {
+                orderBy: { ordem: "asc" },
+              },
+              habilidades: {
+                orderBy: { ordem: "asc" },
+              },
+              pontuacoes: {
+                orderBy: { ordem: "asc" },
+              },
+            },
+          },
+          profissional: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          respostas: {
+            include: {
+              tarefa: {
+                select: {
+                  id: true,
+                  ordem: true,
+                  pergunta: true,
+                },
+              },
+            },
+            orderBy: {
+              tarefa: {
+                ordem: "asc",
+              },
+            },
+          },
+        },
+      });
+
+      if (!sessao) {
+        return NextResponse.json(
+          { success: false, error: "Sessão não encontrada" },
+          { status: 404 }
+        );
+      }
+
+      // Formatar resposta
+      return NextResponse.json({
+        success: true,
+        data: {
+          ...sessao,
+          paciente: {
+            id: sessao.paciente.id,
+            nome: sessao.paciente.nome,
+          },
+        },
+      });
     }
 
-    const sessao = await prisma.sessaoAvaliacao.findFirst({
-      where: {
-        id: sessaoId,
-        paciente: {
-          tenantId: user.tenant.id, // 🔒 CRÍTICO: Verificar tenant
-        },
+    // Listar sessões com filtros
+    const whereClause: any = {
+      paciente: {
+        tenantId: user.tenant.id,
       },
+    };
+
+    if (pacienteId) {
+      whereClause.pacienteId = pacienteId;
+    }
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const sessoes = await prisma.sessaoAvaliacao.findMany({
+      where: whereClause,
       include: {
         paciente: {
           select: {
@@ -275,70 +362,33 @@ export async function GET(request: NextRequest) {
           },
         },
         avaliacao: {
-          include: {
-            tarefas: {
-              orderBy: { ordem: "asc" },
-              include: {
-                nivel: true,
-                habilidade: true,
-              },
-            },
-            niveis: {
-              orderBy: { ordem: "asc" },
-            },
-            habilidades: {
-              orderBy: { ordem: "asc" },
-            },
-            pontuacoes: {
-              orderBy: { ordem: "asc" },
-            },
-          },
-        },
-        profissional: {
           select: {
             id: true,
             nome: true,
           },
         },
-        respostas: {
-          include: {
-            tarefa: {
-              select: {
-                id: true,
-                ordem: true,
-                pergunta: true,
-              },
-            },
-          },
-          orderBy: {
-            tarefa: {
-              ordem: "asc",
-            },
+        profissional: {
+          select: {
+            nome: true,
           },
         },
+        respostas: true,
+      },
+      orderBy: {
+        iniciada_em: "desc",
       },
     });
 
-    if (!sessao) {
-      return NextResponse.json(
-        { success: false, error: "Sessão não encontrada" },
-        { status: 404 }
-      );
-    }
-
-    // Formatar resposta
     return NextResponse.json({
       success: true,
-      data: {
-        ...sessao,
-        paciente: {
-          id: sessao.paciente.id,
-          name: sessao.paciente.nome,
-        },
+      data: sessoes,
+      tenant: {
+        id: user.tenant.id,
+        name: user.tenant.name,
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar sessão de avaliação:", error);
+    console.error("❌ Erro ao buscar sessão(ões) de avaliação:", error);
     return NextResponse.json(
       {
         success: false,

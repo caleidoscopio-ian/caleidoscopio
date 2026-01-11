@@ -25,6 +25,7 @@ import {
   History,
   FileHeart,
   ClipboardCheck,
+  BookMarked,
 } from "lucide-react";
 
 export interface SidebarItem {
@@ -101,7 +102,17 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           icon: FileHeart,
         },
         {
-          title: "Atividades Clínicas",
+          title: "Iniciar Sessão",
+          href: "/iniciar-sessao",
+          icon: Play,
+        },
+        {
+          title: "Curriculum",
+          href: "/curriculum",
+          icon: BookMarked,
+        },
+        {
+          title: "Atividades",
           href: "/atividades-clinicas",
           icon: ClipboardList,
         },
@@ -109,11 +120,6 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           title: "Avaliações",
           href: "/avaliacoes",
           icon: ClipboardCheck,
-        },
-        {
-          title: "Iniciar Sessão",
-          href: "/iniciar-sessao",
-          icon: Play,
         },
         {
           title: "Histórico de Sessões",
@@ -195,7 +201,17 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           icon: FileHeart,
         },
         {
-          title: "Atividades Clínicas",
+          title: "Iniciar Sessão",
+          href: "/iniciar-sessao",
+          icon: Play,
+        },
+        {
+          title: "Curriculum",
+          href: "/curriculum",
+          icon: BookMarked,
+        },
+        {
+          title: "Atividades",
           href: "/atividades-clinicas",
           icon: ClipboardList,
         },
@@ -203,11 +219,6 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           title: "Avaliações",
           href: "/avaliacoes",
           icon: ClipboardCheck,
-        },
-        {
-          title: "Iniciar Sessão",
-          href: "/iniciar-sessao",
-          icon: Play,
         },
         {
           title: "Histórico de Sessões",

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'edit_sessions')) {
+    if (!hasPermission(user, "edit_sessions")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para finalizar sessões" },
         { status: 403 }
@@ -49,22 +49,22 @@ export async function POST(request: NextRequest) {
         paciente: {
           select: {
             tenantId: true,
-            nome: true
-          }
+            nome: true,
+          },
         },
         atividade: {
           include: {
-            instrucoes: true
-          }
+            instrucoes: true,
+          },
         },
         profissional: {
           select: {
             usuarioId: true,
-            nome: true
-          }
+            nome: true,
+          },
         },
-        avaliacoes: true
-      }
+        avaliacoes: true,
+      },
     });
 
     if (!sessao) {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se a sessão está em andamento
-    if (sessao.status !== 'EM_ANDAMENTO') {
+    if (sessao.status !== "EM_ANDAMENTO") {
       return NextResponse.json(
         { error: "Esta sessão já foi finalizada ou cancelada" },
         { status: 400 }
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário tem permissão para finalizar esta sessão
     // Admins podem finalizar qualquer sessão, terapeutas só as suas próprias
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN'];
+    const adminRoles = ["ADMIN", "SUPER_ADMIN"];
     const isAdmin = adminRoles.includes(user.role);
 
     if (!isAdmin && sessao.profissional.usuarioId !== user.id) {
@@ -112,29 +112,35 @@ export async function POST(request: NextRequest) {
           error: `Nem todas as instruções foram avaliadas. Avaliadas: ${totalAvaliacoes}/${totalInstrucoes}`,
           instrucoesAvaliadas: totalAvaliacoes,
           totalInstrucoes: totalInstrucoes,
-          instrucoesPendentes: totalInstrucoes - totalAvaliacoes
+          instrucoesPendentes: totalInstrucoes - totalAvaliacoes,
         },
         { status: 400 }
       );
     }
 
-    console.log(`📝 Finalizando sessão: Paciente "${sessao.paciente.nome}" | Atividade "${sessao.atividade.nome}"`);
+    console.log(
+      `📝 Finalizando sessão: Paciente "${sessao.paciente.nome}" | Atividade "${sessao.atividade.nome}"`
+    );
     console.log(`   Total de instruções avaliadas: ${totalAvaliacoes}`);
 
     // Calcular estatísticas da sessão
     const somaNotas = sessao.avaliacoes.reduce((acc, av) => acc + av.nota, 0);
     const mediaNotas = somaNotas / totalAvaliacoes;
-    const totalComAjuda = sessao.avaliacoes.filter(av => av.tipos_ajuda && av.tipos_ajuda.length > 0).length;
+    const totalComAjuda = sessao.avaliacoes.filter(
+      (av) => av.tipos_ajuda && av.tipos_ajuda.length > 0
+    ).length;
     const percentualComAjuda = (totalComAjuda / totalAvaliacoes) * 100;
 
     console.log(`   Média de notas: ${mediaNotas.toFixed(2)}`);
-    console.log(`   Precisou de ajuda: ${totalComAjuda}/${totalAvaliacoes} (${percentualComAjuda.toFixed(1)}%)`);
+    console.log(
+      `   Precisou de ajuda: ${totalComAjuda}/${totalAvaliacoes} (${percentualComAjuda.toFixed(1)}%)`
+    );
 
     // Finalizar sessão
     const sessaoFinalizada = await prisma.sessaoAtividade.update({
       where: { id: sessaoId },
       data: {
-        status: 'FINALIZADA',
+        status: "FINALIZADA",
         finalizada_em: new Date(),
         observacoes_gerais: observacoes_gerais || null,
       },
@@ -143,32 +149,31 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             nome: true,
-          }
+          },
         },
         atividade: {
           select: {
             id: true,
             nome: true,
-            tipo: true,
-          }
+          },
         },
         profissional: {
           select: {
             id: true,
             nome: true,
-          }
+          },
         },
         avaliacoes: {
           include: {
-            instrucao: true
+            instrucao: true,
           },
           orderBy: {
             instrucao: {
-              ordem: 'asc'
-            }
-          }
-        }
-      }
+              ordem: "asc",
+            },
+          },
+        },
+      },
     });
 
     console.log(`✅ Sessão finalizada com sucesso`);
@@ -181,14 +186,14 @@ export async function POST(request: NextRequest) {
         mediaNotas: parseFloat(mediaNotas.toFixed(2)),
         totalComAjuda,
         percentualComAjuda: parseFloat(percentualComAjuda.toFixed(1)),
-        notaMaxima: Math.max(...sessao.avaliacoes.map(av => av.nota)),
-        notaMinima: Math.min(...sessao.avaliacoes.map(av => av.nota)),
+        notaMaxima: Math.max(...sessao.avaliacoes.map((av) => av.nota)),
+        notaMinima: Math.min(...sessao.avaliacoes.map((av) => av.nota)),
       },
       message: "Sessão finalizada com sucesso",
       tenant: {
         id: user.tenant.id,
-        name: user.tenant.name
-      }
+        name: user.tenant.name,
+      },
     });
   } catch (error) {
     console.error("❌ Erro ao finalizar sessão:", error);

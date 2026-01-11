@@ -4,11 +4,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import { NovaAtividadeForm } from "@/components/forms/nova-atividade-form";
 import { VisualizarAtividadeDialog } from "@/components/forms/visualizar-atividade-dialog";
-import { EditarAtividadeForm } from "@/components/forms/editar-atividade-form";
 import { ExcluirAtividadeDialog } from "@/components/forms/excluir-atividade-dialog";
 import { AtribuirAtividadeDialog } from "@/components/forms/atribuir-atividade-dialog";
+import { Edit } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -28,23 +27,35 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ClipboardList, Search, Plus, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Instrucao {
   id: string;
   ordem: number;
   texto: string;
+  como_aplicar?: string;
   observacao?: string;
+}
+
+interface Pontuacao {
+  id: string;
+  ordem: number;
+  sigla: string;
+  grau: string;
 }
 
 interface Atividade {
   id: string;
   nome: string;
-  descricao?: string;
-  tipo: string;
-  metodologia?: string;
-  objetivo?: string;
+  protocolo?: string;
+  habilidade?: string;
+  marco_codificacao?: string;
+  tipo_ensino?: string;
+  qtd_alvos_sessao?: number;
+  qtd_tentativas_alvo?: number;
   createdAt: string;
   instrucoes: Instrucao[];
+  pontuacoes?: Pontuacao[];
   _count?: {
     atribuicoes: number;
     sessoes: number;
@@ -52,6 +63,7 @@ interface Atividade {
 }
 
 export default function AtividadesClinicasPage() {
+  const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [atividades, setAtividades] = useState<Atividade[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +72,7 @@ export default function AtividadesClinicasPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Atividades Clínicas" },
+    { label: "Atividades" },
   ];
 
   // Buscar atividades da API
@@ -118,26 +130,19 @@ export default function AtividadesClinicasPage() {
   const filteredAtividades = atividades.filter(
     (atividade) =>
       atividade.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (atividade.descricao &&
-        atividade.descricao.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (atividade.metodologia &&
-        atividade.metodologia.toLowerCase().includes(searchTerm.toLowerCase()))
+      (atividade.protocolo &&
+        atividade.protocolo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (atividade.habilidade &&
+        atividade.habilidade
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())) ||
+      (atividade.tipo_ensino &&
+        atividade.tipo_ensino.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   // Formatar data para exibição
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR");
-  };
-
-  // Traduzir tipo de atividade
-  const traduzirTipo = (tipo: string) => {
-    const tipos: Record<string, string> = {
-      PROTOCOLO_ABA: "Protocolo ABA",
-      AVALIACAO_CLINICA: "Avaliação Clínica",
-      JOGO_MEMORIA: "Jogo de Memória",
-      CUSTOM: "Personalizada",
-    };
-    return tipos[tipo] || tipo;
   };
 
   return (
@@ -147,13 +152,16 @@ export default function AtividadesClinicasPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Atividades Clínicas
+              Atividades
             </h1>
             <p className="text-muted-foreground">
               Gerencie protocolos e atividades terapêuticas
             </p>
           </div>
-          <NovaAtividadeForm onSuccess={fetchAtividades} />
+          <Button onClick={() => router.push("/atividades-clinicas/nova")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Atividade
+          </Button>
         </div>
 
         {/* Estatísticas */}
@@ -175,15 +183,13 @@ export default function AtividadesClinicasPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Protocolos ABA
+                Com Protocolo
               </CardTitle>
               <ClipboardList className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
-                {loading
-                  ? "..."
-                  : atividades.filter((a) => a.tipo === "PROTOCOLO_ABA").length}
+                {loading ? "..." : atividades.filter((a) => a.protocolo).length}
               </div>
             </CardContent>
           </Card>
@@ -230,7 +236,7 @@ export default function AtividadesClinicasPage() {
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome, descrição ou metodologia..."
+                placeholder="Buscar por nome, protocolo, habilidade ou tipo de ensino..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -294,9 +300,10 @@ export default function AtividadesClinicasPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Metodologia</TableHead>
+                    <TableHead>Protocolo</TableHead>
+                    <TableHead>Habilidade</TableHead>
                     <TableHead>Instruções</TableHead>
+                    <TableHead>Pontuações</TableHead>
                     <TableHead>Atribuída</TableHead>
                     <TableHead>Sessões</TableHead>
                     <TableHead>Criada em</TableHead>
@@ -309,22 +316,31 @@ export default function AtividadesClinicasPage() {
                       <TableCell className="font-medium">
                         <div>
                           <div>{atividade.nome}</div>
-                          {atividade.descricao && (
-                            <div className="text-xs text-muted-foreground line-clamp-1">
-                              {atividade.descricao}
+                          {atividade.marco_codificacao && (
+                            <div className="text-xs text-muted-foreground">
+                              {atividade.marco_codificacao}
                             </div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
-                          {traduzirTipo(atividade.tipo)}
-                        </Badge>
+                        {atividade.protocolo ? (
+                          <Badge variant="outline">{atividade.protocolo}</Badge>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
-                      <TableCell>{atividade.metodologia || "-"}</TableCell>
+                      <TableCell className="text-sm">
+                        {atividade.habilidade || "-"}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {atividade.instrucoes.length} itens
+                          {atividade.instrucoes?.length || 0} itens
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {atividade.pontuacoes?.length || 0} itens
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -343,10 +359,17 @@ export default function AtividadesClinicasPage() {
                             atividade={atividade}
                             onSuccess={fetchAtividades}
                           />
-                          <EditarAtividadeForm
-                            atividade={atividade}
-                            onSuccess={fetchAtividades}
-                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              router.push(
+                                `/atividades-clinicas/editar/${atividade.id}`
+                              )
+                            }
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
                           <ExcluirAtividadeDialog
                             atividade={atividade}
                             onSuccess={fetchAtividades}

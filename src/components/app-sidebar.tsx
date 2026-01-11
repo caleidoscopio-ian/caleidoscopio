@@ -77,11 +77,12 @@ const getGroupedNavigation = (userRole: string) => {
     case "user": // Role USER = Terapeuta
     case "terapeuta":
       return {
+        Principal: allItems.filter((item) => item.title === "Dashboard"),
         "Gestão Clínica": allItems.filter((item) =>
           ["Meus Pacientes", "Agenda", "Prontuários", "Anamneses"].includes(item.title)
         ),
         "Atendimento": allItems.filter((item) =>
-          ["Atividades Clínicas", "Avaliações", "Iniciar Sessão", "Histórico de Sessões"].includes(item.title)
+          ["Iniciar Sessão", "Curriculum", "Atividades", "Avaliações", "Histórico de Sessões"].includes(item.title)
         ),
         Perfil: allItems.filter((item) => item.title === "Meu Perfil"),
       };
@@ -89,6 +90,7 @@ const getGroupedNavigation = (userRole: string) => {
     case "admin":
     case "super_admin":
       return {
+        Principal: allItems.filter((item) => item.title === "Dashboard"),
         "Gestão de Usuários": allItems.filter((item) =>
           [
             "Usuários",
@@ -101,7 +103,7 @@ const getGroupedNavigation = (userRole: string) => {
           ["Agenda Global", "Prontuários", "Anamneses"].includes(item.title)
         ),
         "Atendimento": allItems.filter((item) =>
-          ["Atividades Clínicas", "Avaliações", "Iniciar Sessão", "Histórico de Sessões"].includes(item.title)
+          ["Iniciar Sessão", "Curriculum", "Atividades", "Avaliações", "Histórico de Sessões"].includes(item.title)
         ),
         Administração: allItems.filter((item) =>
           ["Relatórios e Indicadores", "Permissões", "Configurações"].includes(

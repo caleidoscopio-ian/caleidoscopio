@@ -37,7 +37,50 @@ export async function GET(request: NextRequest) {
       `🔍 Buscando atividades para clínica: ${user.tenant.name} (${user.tenant.id})`
     );
 
-    // Buscar atividades da clínica
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    // Se buscar por ID específico, retornar atividade única com todas as relações
+    if (id) {
+      const atividade = await prisma.atividade.findFirst({
+        where: {
+          id,
+          tenantId: user.tenant.id, // 🔒 CRÍTICO: Filtrar por tenant
+        },
+        include: {
+          instrucoes: {
+            orderBy: {
+              ordem: "asc",
+            },
+          },
+          pontuacoes: {
+            orderBy: {
+              ordem: "asc",
+            },
+          },
+          _count: {
+            select: {
+              atribuicoes: true,
+              sessoes: true,
+            },
+          },
+        },
+      });
+
+      if (!atividade) {
+        return NextResponse.json(
+          { success: false, error: "Atividade não encontrada" },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: atividade,
+      });
+    }
+
+    // Buscar todas as atividades da clínica
     const atividades = await prisma.atividade.findMany({
       where: {
         tenantId: user.tenant.id, // 🔒 CRÍTICO: Filtrar por tenant
@@ -45,6 +88,11 @@ export async function GET(request: NextRequest) {
       },
       include: {
         instrucoes: {
+          orderBy: {
+            ordem: "asc",
+          },
+        },
+        pontuacoes: {
           orderBy: {
             ordem: "asc",
           },
@@ -115,28 +163,29 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { nome, descricao, tipo, metodologia, objetivo, instrucoes } = body;
+    const {
+      nome,
+      protocolo,
+      habilidade,
+      marco_codificacao,
+      tipo_ensino,
+      qtd_alvos_sessao,
+      qtd_tentativas_alvo,
+      instrucoes,
+      pontuacoes,
+    } = body;
 
     // Validações básicas
-    if (!nome || !tipo) {
+    if (!nome) {
       return NextResponse.json(
-        { error: "Nome e tipo são obrigatórios" },
+        { error: "Nome é obrigatório" },
         { status: 400 }
       );
     }
 
-    if (!instrucoes || !Array.isArray(instrucoes) || instrucoes.length === 0) {
-      return NextResponse.json(
-        { error: "A atividade deve ter pelo menos uma instrução" },
-        { status: 400 }
-      );
-    }
+    console.log(`📝 Criando atividade "${nome}"`);
 
-    console.log(
-      `📝 Criando atividade "${nome}" com ${instrucoes.length} instruções`
-    );
-
-    // Criar atividade com instruções em uma transação
+    // Criar atividade com instruções e pontuações em uma transação
     const novaAtividade = await prisma.$transaction(async (tx) => {
       // Criar a atividade
       const atividade = await tx.atividade.create({
@@ -144,38 +193,57 @@ export async function POST(request: NextRequest) {
           id: randomUUID(),
           tenantId: user.tenant!.id, // 🔒 CRÍTICO: Associar ao tenant
           nome,
-          descricao,
-          tipo,
-          metodologia,
-          objetivo,
+          protocolo: protocolo || null,
+          habilidade: habilidade || null,
+          marco_codificacao: marco_codificacao || null,
+          tipo_ensino: tipo_ensino || null,
+          qtd_alvos_sessao: qtd_alvos_sessao || null,
+          qtd_tentativas_alvo: qtd_tentativas_alvo || null,
           ativo: true,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
       });
 
-      // Criar as instruções
-      const instrucoesData = instrucoes.map(
-        (instrucao: any, index: number) => ({
-          id: randomUUID(),
-          atividadeId: atividade.id,
-          ordem: index + 1,
-          texto: instrucao.texto,
-          observacao: instrucao.observacao || null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-      );
+      // Criar instruções (se houver)
+      if (instrucoes && Array.isArray(instrucoes) && instrucoes.length > 0) {
+        await tx.atividadeInstrucao.createMany({
+          data: instrucoes.map((inst: any, index: number) => ({
+            id: randomUUID(),
+            atividadeId: atividade.id,
+            ordem: inst.ordem || index + 1,
+            texto: inst.texto,
+            como_aplicar: inst.como_aplicar || null,
+            observacao: inst.observacao || null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })),
+        });
+      }
 
-      await tx.atividadeInstrucao.createMany({
-        data: instrucoesData,
-      });
+      // Criar pontuações (se houver)
+      if (pontuacoes && Array.isArray(pontuacoes) && pontuacoes.length > 0) {
+        await tx.atividadePontuacao.createMany({
+          data: pontuacoes.map((pont: any) => ({
+            id: randomUUID(),
+            atividadeId: atividade.id,
+            ordem: pont.ordem,
+            sigla: pont.sigla,
+            grau: pont.grau,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })),
+        });
+      }
 
-      // Retornar atividade com instruções
+      // Retornar atividade completa com instruções e pontuações
       return await tx.atividade.findUnique({
         where: { id: atividade.id },
         include: {
           instrucoes: {
+            orderBy: { ordem: "asc" },
+          },
+          pontuacoes: {
             orderBy: { ordem: "asc" },
           },
         },
@@ -235,13 +303,23 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, nome, descricao, tipo, metodologia, objetivo, instrucoes } =
-      body;
+    const {
+      id,
+      nome,
+      protocolo,
+      habilidade,
+      marco_codificacao,
+      tipo_ensino,
+      qtd_alvos_sessao,
+      qtd_tentativas_alvo,
+      instrucoes,
+      pontuacoes,
+    } = body;
 
     // Validações básicas
-    if (!id || !nome || !tipo) {
+    if (!id) {
       return NextResponse.json(
-        { error: "ID, nome e tipo são obrigatórios" },
+        { error: "ID é obrigatório" },
         { status: 400 }
       );
     }
@@ -262,20 +340,31 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    console.log(`✏️ Atualizando atividade "${nome}"`);
+    console.log(`✏️ Atualizando atividade ${id}`);
 
     // Atualizar atividade e instruções em uma transação
     const atividadeAtualizada = await prisma.$transaction(async (tx) => {
+      // Preparar dados de atualização (apenas campos fornecidos)
+      const updateData: any = {
+        updatedAt: new Date(),
+      };
+
+      if (nome !== undefined) updateData.nome = nome;
+      if (protocolo !== undefined) updateData.protocolo = protocolo || null;
+      if (habilidade !== undefined) updateData.habilidade = habilidade || null;
+      if (marco_codificacao !== undefined)
+        updateData.marco_codificacao = marco_codificacao || null;
+      if (tipo_ensino !== undefined)
+        updateData.tipo_ensino = tipo_ensino || null;
+      if (qtd_alvos_sessao !== undefined)
+        updateData.qtd_alvos_sessao = qtd_alvos_sessao || null;
+      if (qtd_tentativas_alvo !== undefined)
+        updateData.qtd_tentativas_alvo = qtd_tentativas_alvo || null;
+
       // Atualizar a atividade
       const atividade = await tx.atividade.update({
         where: { id },
-        data: {
-          nome,
-          descricao,
-          tipo,
-          metodologia,
-          objetivo,
-        },
+        data: updateData,
       });
 
       // Se instruções foram fornecidas, atualizar
@@ -286,28 +375,53 @@ export async function PUT(request: NextRequest) {
         });
 
         // Criar novas instruções
-        const instrucoesData = instrucoes.map(
-          (instrucao: any, index: number) => ({
-            id: randomUUID(),
-            atividadeId: atividade.id,
-            ordem: index + 1,
-            texto: instrucao.texto,
-            observacao: instrucao.observacao || null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })
-        );
-
-        await tx.atividadeInstrucao.createMany({
-          data: instrucoesData,
-        });
+        if (instrucoes.length > 0) {
+          await tx.atividadeInstrucao.createMany({
+            data: instrucoes.map((instrucao: any, index: number) => ({
+              id: randomUUID(),
+              atividadeId: atividade.id,
+              ordem: instrucao.ordem || index + 1,
+              texto: instrucao.texto,
+              como_aplicar: instrucao.como_aplicar || null,
+              observacao: instrucao.observacao || null,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            })),
+          });
+        }
       }
 
-      // Retornar atividade com instruções
+      // Se pontuações foram fornecidas, atualizar
+      if (pontuacoes && Array.isArray(pontuacoes)) {
+        // Deletar pontuações antigas
+        await tx.atividadePontuacao.deleteMany({
+          where: { atividadeId: id },
+        });
+
+        // Criar novas pontuações
+        if (pontuacoes.length > 0) {
+          await tx.atividadePontuacao.createMany({
+            data: pontuacoes.map((pont: any) => ({
+              id: randomUUID(),
+              atividadeId: atividade.id,
+              ordem: pont.ordem,
+              sigla: pont.sigla,
+              grau: pont.grau,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            })),
+          });
+        }
+      }
+
+      // Retornar atividade completa com instruções e pontuações
       return await tx.atividade.findUnique({
         where: { id: atividade.id },
         include: {
           instrucoes: {
+            orderBy: { ordem: "asc" },
+          },
+          pontuacoes: {
             orderBy: { ordem: "asc" },
           },
         },

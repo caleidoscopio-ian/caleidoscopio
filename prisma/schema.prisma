@@ -25,38 +25,93 @@ model agendamento {
 }
 
 model atividade {
-  id                    String                 @id @default(uuid())
-  tenantId              String // Referência ao tenant do Sistema 1 (não FK)
-  nome                  String
-  descricao             String?
-  tipo                  TipoAtividade
-  metodologia           String? // Ex: "ABA", "TEACCH", etc
-  objetivo              String?
-  ativo                 Boolean                @default(true)
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @default(now()) @updatedAt
-  instrucoes            atividadeInstrucao[]
-  atribuicoes           pacienteAtividade[]
-  sessoes               sessaoAtividade[]
-  progressoAtividades   progressoAtividade[]
-  trilhaAtividades      trilhaAtividade[]
+  id                         String                 @id @default(uuid())
+  tenantId                   String // Referência ao tenant do Sistema 1 (não FK)
+  nome                       String
+
+  // Campos da aba Geral
+  protocolo                  String?                // VB-MAPP, AFLS, etc
+  habilidade                 String?                // Competências Sociais, etc
+  marco_codificacao          String?                // Campo livre
+  tipo_ensino                String?                // Tentativa Discreta, etc
+  qtd_alvos_sessao           Int?                   // 1-50
+  qtd_tentativas_alvo        Int?                   // 1-50
+
+  ativo                      Boolean                @default(true)
+  createdAt                  DateTime               @default(now())
+  updatedAt                  DateTime               @default(now()) @updatedAt
+
+  instrucoes                 atividadeInstrucao[]
+  pontuacoes                 atividadePontuacao[]
+  atribuicoes                pacienteAtividade[]
+  sessoes                    sessaoAtividade[]
+  progressoAtividades        progressoAtividade[]
+  trilhaAtividades           trilhaAtividade[]
+  curriculums                curriculumAtividade[]
 
   @@map("atividades")
 }
 
 model atividadeInstrucao {
-  id          String              @id @default(uuid())
-  atividadeId String
-  ordem       Int
-  texto       String
-  observacao  String?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @default(now()) @updatedAt
-  atividade   atividade           @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
-  avaliacoes  avaliacaoInstrucao[]
+  id            String              @id @default(uuid())
+  atividadeId   String
+  ordem         Int
+  texto         String              @db.Text // Instrução (o que fazer)
+  como_aplicar  String?             @db.Text // Como aplicar (descrição)
+  observacao    String?             @db.Text
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @default(now()) @updatedAt
+  atividade     atividade           @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
+  avaliacoes    avaliacaoInstrucao[]
 
   @@unique([atividadeId, ordem])
   @@map("atividade_instrucoes")
+}
+
+model atividadePontuacao {
+  id           String   @id @default(uuid())
+  atividadeId  String
+  ordem        Int
+  sigla        String   // -, AFT, AFP, AI, AG, AVE, AVG, +
+  grau         String   // Erro, Independente, Alta, Média, Baixa
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  atividade    atividade @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
+
+  @@unique([atividadeId, ordem])
+  @@map("atividade_pontuacoes")
+}
+
+model curriculum {
+  id          String               @id @default(uuid())
+  tenantId    String               // Referência ao tenant do Sistema 1 (não FK)
+  nome        String
+  descricao   String?              @db.Text
+  observacao  String?              @db.Text
+  ativo       Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @default(now()) @updatedAt
+
+  atividades  curriculumAtividade[]
+  atribuicoes PacienteCurriculum[]
+  sessoes     SessaoCurriculum[]
+
+  @@map("curriculums")
+}
+
+model curriculumAtividade {
+  id           String     @id @default(uuid())
+  curriculumId String
+  atividadeId  String
+  ordem        Int        // Ordem da atividade dentro do curriculum
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
+
+  curriculum   curriculum @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  atividade    atividade  @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
+
+  @@unique([curriculumId, atividadeId])
+  @@map("curriculum_atividades")
 }
 
 model pacienteAtividade {
@@ -92,6 +147,44 @@ model sessaoAtividade {
   avaliacoes         avaliacaoInstrucao[]
 
   @@map("sessao_atividades")
+}
+
+model SessaoCurriculum {
+  id                 String              @id @default(uuid())
+  pacienteId         String
+  curriculumId       String
+  profissionalId     String
+  iniciada_em        DateTime            @default(now())
+  finalizada_em      DateTime?
+  observacoes_gerais String?
+  status             StatusSessao        @default(EM_ANDAMENTO)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now()) @updatedAt
+
+  paciente           paciente            @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  curriculum         curriculum          @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  profissional       profissional        @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  avaliacoes         AvaliacaoInstrucaoCurriculum[]
+
+  @@map("sessao_curriculums")
+}
+
+model AvaliacaoInstrucaoCurriculum {
+  id             String             @id @default(uuid())
+  sessaoId       String
+  atividadeId    String             // Qual atividade do curriculum
+  instrucaoId    String
+  tentativa      Int                @default(1) // Número da tentativa (1 a qtd_tentativas_alvo)
+  nota           Int                // 0 a 4
+  tipos_ajuda    String[]           // Array: ["-", "AFT", "AFP", "AI", "AG", "AVE", "AVG", "+"]
+  observacao     String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
+
+  sessao         SessaoCurriculum   @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+
+  @@unique([sessaoId, atividadeId, instrucaoId, tentativa])
+  @@map("avaliacao_instrucao_curriculums")
 }
 
 model avaliacaoInstrucao {
@@ -162,7 +255,9 @@ model paciente {
   trilhaAlunos           trilhaAluno[]
   atividadesAtribuidas   pacienteAtividade[]
   avaliacoesAtribuidas   PacienteAvaliacao[]
+  curriculumsAtribuidos  PacienteCurriculum[]
   sessoes                sessaoAtividade[]
+  sessoesCurriculum      SessaoCurriculum[]
   sessoesAvaliacao       SessaoAvaliacao[]
   anamneses              anamnese[]
   encaminhamentos        encaminhamento[]
@@ -193,6 +288,7 @@ model profissional {
   pacientes             paciente[]
   prontuarios           prontuario[]
   sessoes               sessaoAtividade[]
+  sessoesCurriculum     SessaoCurriculum[]
   sessoesAvaliacao      SessaoAvaliacao[]
 
   @@unique([tenantId, cpf])
@@ -665,6 +761,23 @@ model PacienteAvaliacao {
 
   @@unique([pacienteId, avaliacaoId])
   @@map("paciente_avaliacoes")
+}
+
+model PacienteCurriculum {
+  id            String     @id @default(uuid())
+  pacienteId    String
+  curriculumId  String
+  atribuida_em  DateTime   @default(now())
+  atribuida_por String     // userId do terapeuta que atribuiu
+  ativa         Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
+
+  paciente     paciente   @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  curriculum   curriculum @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+
+  @@unique([pacienteId, curriculumId])
+  @@map("paciente_curriculums")
 }
 
 model SessaoAvaliacao {

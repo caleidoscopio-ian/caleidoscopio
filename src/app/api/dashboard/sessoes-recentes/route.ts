@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
 
     const tenantId = user.tenant.id;
 
-    // Buscar sessões pendentes (EM_ANDAMENTO)
-    const sessoesPendentes = await prisma.sessaoAtividade.findMany({
+    // Buscar sessões de curriculum pendentes (EM_ANDAMENTO)
+    const sessoesPendentes = await prisma.sessaoCurriculum.findMany({
       where: {
         paciente: { tenantId },
         status: 'EM_ANDAMENTO'
@@ -38,10 +38,9 @@ export async function GET(request: NextRequest) {
             nome: true
           }
         },
-        atividade: {
+        curriculum: {
           select: {
-            nome: true,
-            tipo: true
+            nome: true
           }
         }
       },
@@ -51,8 +50,8 @@ export async function GET(request: NextRequest) {
       take: 5
     });
 
-    // Buscar últimas sessões finalizadas
-    const sessoesRecentes = await prisma.sessaoAtividade.findMany({
+    // Buscar últimas sessões de curriculum finalizadas
+    const sessoesRecentes = await prisma.sessaoCurriculum.findMany({
       where: {
         paciente: { tenantId },
         status: 'FINALIZADA'
@@ -64,16 +63,14 @@ export async function GET(request: NextRequest) {
             nome: true
           }
         },
-        atividade: {
+        curriculum: {
           select: {
-            nome: true,
-            tipo: true
+            nome: true
           }
         },
         avaliacoes: {
           select: {
-            nota: true,
-            tipos_ajuda: true
+            nota: true
           }
         }
       },
@@ -83,7 +80,7 @@ export async function GET(request: NextRequest) {
       take: 5
     });
 
-    console.log(`✅ Encontradas ${sessoesPendentes.length} sessões pendentes e ${sessoesRecentes.length} sessões recentes`);
+    console.log(`✅ Encontradas ${sessoesPendentes.length} sessões de curriculum pendentes e ${sessoesRecentes.length} sessões recentes`);
 
     return NextResponse.json({
       success: true,

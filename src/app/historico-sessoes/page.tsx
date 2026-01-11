@@ -76,16 +76,21 @@ interface Sessao {
   finalizada_em?: string;
   status: string;
   observacoes_gerais?: string;
-  tipo?: "ATIVIDADE" | "AVALIACAO"; // Novo campo para diferenciar
+  tipo?: "ATIVIDADE" | "AVALIACAO" | "CURRICULUM"; // Adicionado CURRICULUM
   paciente: {
     id: string;
     nome: string;
   };
-  atividade: {
+  atividade?: {
     id: string;
     nome: string;
     tipo: string;
     metodologia?: string;
+  };
+  curriculum?: {
+    id: string;
+    nome: string;
+    atividades?: any[];
   };
   profissional: {
     nome: string;
@@ -103,7 +108,7 @@ export default function HistoricoSessoesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [pacienteFiltro, setPacienteFiltro] = useState<string>("all");
-  const [statusFiltro, setStatusFiltro] = useState<string>("FINALIZADA");
+  const [statusFiltro, setStatusFiltro] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
   const [sessaoDetalhes, setSessaoDetalhes] = useState<Sessao | null>(null);
 
@@ -138,7 +143,7 @@ export default function HistoricoSessoesPage() {
     }
   };
 
-  // Buscar sessões
+  // Buscar sessões (curriculum + avaliações)
   const fetchSessoes = async () => {
     try {
       setLoading(true);
@@ -155,11 +160,12 @@ export default function HistoricoSessoesPage() {
       if (pacienteFiltro !== "all") {
         params.append("pacienteId", pacienteFiltro);
       }
-      if (statusFiltro) {
+      if (statusFiltro !== "all") {
         params.append("status", statusFiltro);
       }
 
-      const response = await fetch(`/api/sessoes?${params.toString()}`, {
+      // Buscar sessões de CURRICULUM
+      const responseCurriculum = await fetch(`/api/sessoes-curriculum?${params.toString()}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -168,15 +174,37 @@ export default function HistoricoSessoesPage() {
         },
       });
 
-      const result = await response.json();
+      // Buscar sessões de AVALIAÇÃO
+      const responseAvaliacoes = await fetch(`/api/sessoes-avaliacao?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
 
-      if (!response.ok) {
-        throw new Error(result.error || "Erro ao buscar sessões");
-      }
+      const resultCurriculum = await responseCurriculum.json();
+      const resultAvaliacoes = await responseAvaliacoes.json();
 
-      if (result.success) {
-        setSessoes(result.data);
-      }
+      // Marcar curriculums
+      const sessoesCurriculum = resultCurriculum.success ? resultCurriculum.data.map((s: any) => ({
+        ...s,
+        tipo: "CURRICULUM"
+      })) : [];
+
+      // Marcar avaliações
+      const sessoesAvaliacoes = resultAvaliacoes.success ? resultAvaliacoes.data.map((s: any) => ({
+        ...s,
+        tipo: "AVALIACAO"
+      })) : [];
+
+      // Unir e ordenar por data
+      const todasSessoes = [...sessoesCurriculum, ...sessoesAvaliacoes].sort((a, b) => {
+        return new Date(b.iniciada_em).getTime() - new Date(a.iniciada_em).getTime();
+      });
+
+      setSessoes(todasSessoes);
     } catch (err) {
       console.error("❌ Erro ao buscar sessões:", err);
       setError(err instanceof Error ? err.message : "Erro ao carregar sessões");
@@ -186,13 +214,18 @@ export default function HistoricoSessoesPage() {
   };
 
   // Buscar detalhes de uma sessão
-  const fetchSessaoDetalhes = async (sessaoId: string) => {
+  const fetchSessaoDetalhes = async (sessaoId: string, tipo?: string) => {
     try {
       if (!user) return;
 
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch(`/api/sessoes?id=${sessaoId}`, {
+      // Escolher API baseado no tipo
+      const apiUrl = tipo === "CURRICULUM"
+        ? `/api/sessoes-curriculum?id=${sessaoId}`
+        : `/api/sessoes-avaliacao?id=${sessaoId}`;
+
+      const response = await fetch(apiUrl, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -204,7 +237,7 @@ export default function HistoricoSessoesPage() {
       const result = await response.json();
 
       if (result.success) {
-        setSessaoDetalhes(result.data);
+        setSessaoDetalhes({...result.data, tipo: tipo || result.data.tipo});
       }
     } catch (err) {
       console.error("Erro ao buscar detalhes:", err);
@@ -227,9 +260,9 @@ export default function HistoricoSessoesPage() {
   // Filtrar sessões por termo de busca
   const filteredSessoes = sessoes.filter(
     (sessao) => {
-      const nomeItem = sessao.tipo === "AVALIACAO"
-        ? (sessao.avaliacao?.nome || sessao.atividade?.nome || "")
-        : (sessao.atividade?.nome || "");
+      const nomeItem = sessao.tipo === "CURRICULUM"
+        ? (sessao.curriculum?.nome || "")
+        : (sessao.avaliacao?.nome || sessao.atividade?.nome || "");
 
       return (
         sessao.paciente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -326,7 +359,7 @@ export default function HistoricoSessoesPage() {
     if (sessao.tipo === "AVALIACAO") {
       return "Avaliação";
     }
-    return "Atividade";
+    return "Curriculum";
   };
 
   // Traduzir status
@@ -369,7 +402,7 @@ export default function HistoricoSessoesPage() {
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por paciente, atividade ou terapeuta..."
+                placeholder="Buscar por paciente, curriculum/avaliação ou terapeuta..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -394,6 +427,7 @@ export default function HistoricoSessoesPage() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="FINALIZADA">Finalizadas</SelectItem>
               <SelectItem value="EM_ANDAMENTO">Em Andamento</SelectItem>
               <SelectItem value="CANCELADA">Canceladas</SelectItem>
@@ -522,7 +556,7 @@ export default function HistoricoSessoesPage() {
                   <TableRow>
                     <TableHead>Paciente</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Atividade/Avaliação</TableHead>
+                    <TableHead>Curriculum/Avaliação</TableHead>
                     <TableHead>Terapeuta</TableHead>
                     <TableHead>Data/Hora</TableHead>
                     <TableHead>Duração</TableHead>
@@ -550,15 +584,10 @@ export default function HistoricoSessoesPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <div className="font-medium">
-                              {sessao.tipo === "AVALIACAO"
-                                ? (sessao.avaliacao?.nome || sessao.atividade?.nome)
-                                : sessao.atividade?.nome}
-                            </div>
-                            <Badge variant="outline" className="text-xs mt-1">
-                              {traduzirTipo(sessao.atividade?.tipo || "")}
-                            </Badge>
+                          <div className="font-medium">
+                            {sessao.tipo === "CURRICULUM"
+                              ? sessao.curriculum?.nome
+                              : (sessao.avaliacao?.nome || sessao.atividade?.nome)}
                           </div>
                         </TableCell>
                         <TableCell>{sessao.profissional.nome}</TableCell>
@@ -583,10 +612,10 @@ export default function HistoricoSessoesPage() {
                                 size="sm"
                                 variant="default"
                                 onClick={() => {
-                                  if (sessao.tipo === "AVALIACAO") {
+                                  if (sessao.tipo === "CURRICULUM") {
+                                    router.push(`/aplicar-curriculum/${sessao.id}`);
+                                  } else if (sessao.tipo === "AVALIACAO") {
                                     router.push(`/aplicar-avaliacao/${sessao.id}`);
-                                  } else {
-                                    router.push(`/aplicar-atividade/${sessao.id}`);
                                   }
                                 }}
                               >
@@ -599,7 +628,7 @@ export default function HistoricoSessoesPage() {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => fetchSessaoDetalhes(sessao.id)}
+                                  onClick={() => fetchSessaoDetalhes(sessao.id, sessao.tipo)}
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
@@ -635,14 +664,14 @@ export default function HistoricoSessoesPage() {
                                           </div>
                                           <div>
                                             <label className="text-sm font-medium text-muted-foreground">
-                                              {sessaoDetalhes.tipo === "AVALIACAO"
-                                                ? "Avaliação"
-                                                : "Atividade"}
+                                              {sessaoDetalhes.tipo === "CURRICULUM"
+                                                ? "Curriculum"
+                                                : "Avaliação"}
                                             </label>
                                             <p className="font-medium">
-                                              {sessaoDetalhes.tipo === "AVALIACAO"
-                                                ? sessaoDetalhes.avaliacao?.nome || sessaoDetalhes.atividade?.nome
-                                                : sessaoDetalhes.atividade?.nome}
+                                              {sessaoDetalhes.tipo === "CURRICULUM"
+                                                ? sessaoDetalhes.curriculum?.nome
+                                                : (sessaoDetalhes.avaliacao?.nome || sessaoDetalhes.atividade?.nome)}
                                             </p>
                                           </div>
                                           <div>
@@ -652,7 +681,7 @@ export default function HistoricoSessoesPage() {
                                             <div className="mt-1">
                                               <Badge
                                                 variant={
-                                                  sessaoDetalhes.tipo === "AVALIACAO"
+                                                  sessaoDetalhes.tipo === "CURRICULUM"
                                                     ? "default"
                                                     : "secondary"
                                                 }
@@ -683,8 +712,42 @@ export default function HistoricoSessoesPage() {
                                           </div>
                                         </div>
 
-                                        {/* Estatísticas - ATIVIDADES */}
-                                        {sessaoDetalhes.tipo !== "AVALIACAO" &&
+                                        {/* Atividades do Curriculum */}
+                                        {sessaoDetalhes.tipo === "CURRICULUM" &&
+                                          sessaoDetalhes.curriculum?.atividades && (
+                                            <div className="space-y-3">
+                                              <label className="text-sm font-medium text-muted-foreground">
+                                                Atividades do Curriculum
+                                              </label>
+                                              <div className="grid grid-cols-1 gap-2">
+                                                {sessaoDetalhes.curriculum.atividades.map(
+                                                  (atv: any, idx: number) => (
+                                                    <div
+                                                      key={atv.id}
+                                                      className="p-3 bg-muted/30 rounded-lg"
+                                                    >
+                                                      <div className="flex items-center gap-3">
+                                                        <Badge variant="outline">
+                                                          {idx + 1}
+                                                        </Badge>
+                                                        <div className="flex-1">
+                                                          <p className="text-sm font-medium">
+                                                            {atv.atividade.nome}
+                                                          </p>
+                                                          <p className="text-xs text-muted-foreground">
+                                                            {atv.atividade.instrucoes?.length || 0} instruções
+                                                          </p>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  )
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                        {/* Estatísticas - CURRICULUM */}
+                                        {sessaoDetalhes.tipo === "CURRICULUM" &&
                                           sessaoDetalhes.avaliacoes &&
                                           sessaoDetalhes.avaliacoes.length >
                                             0 && (
@@ -761,7 +824,7 @@ export default function HistoricoSessoesPage() {
                                                       Total
                                                     </p>
                                                     <p className="text-xs text-muted-foreground">
-                                                      instruções
+                                                      avaliações
                                                     </p>
                                                   </div>
                                                 </div>
@@ -1022,83 +1085,80 @@ export default function HistoricoSessoesPage() {
                                             </div>
                                           )}
 
-                                        {/* Avaliações das Instruções (para sessões tipo ATIVIDADE) */}
-                                        {sessaoDetalhes.tipo !== "AVALIACAO" &&
+                                        {/* Avaliações das Instruções (para sessões tipo CURRICULUM) */}
+                                        {sessaoDetalhes.tipo === "CURRICULUM" &&
                                           sessaoDetalhes.avaliacoes &&
-                                          sessaoDetalhes.avaliacoes.length >
-                                            0 && (
+                                          sessaoDetalhes.avaliacoes.length > 0 &&
+                                          sessaoDetalhes.curriculum?.atividades && (
                                             <div>
                                               <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                                Avaliações das Instruções
+                                                Avaliações do Curriculum
                                               </label>
                                               <div className="space-y-2">
                                                 {sessaoDetalhes.avaliacoes.map(
-                                                  (avaliacao) => (
-                                                    <div
-                                                      key={avaliacao.id}
-                                                      className="p-3 border rounded-lg"
-                                                    >
-                                                      <div className="flex items-start gap-3">
-                                                        <Badge variant="secondary">
-                                                          {
-                                                            avaliacao.instrucao
-                                                              .ordem
-                                                          }
-                                                        </Badge>
-                                                        <div className="flex-1">
-                                                          <p className="text-sm font-medium mb-1">
-                                                            {
-                                                              avaliacao
-                                                                .instrucao.texto
-                                                            }
-                                                          </p>
-                                                          <div className="flex items-center gap-2 text-xs flex-wrap">
-                                                            <Badge
-                                                              variant={
-                                                                avaliacao.nota >=
-                                                                3
-                                                                  ? "default"
-                                                                  : "outline"
-                                                              }
-                                                            >
-                                                              Nota:{" "}
-                                                              {avaliacao.nota}/4
-                                                            </Badge>
-                                                            {avaliacao.tipos_ajuda &&
-                                                              avaliacao
-                                                                .tipos_ajuda
-                                                                .length > 0 && (
-                                                                <>
-                                                                  {avaliacao.tipos_ajuda.map(
-                                                                    (
-                                                                      tipo,
-                                                                      idx
-                                                                    ) => (
-                                                                      <Badge
-                                                                        key={
-                                                                          idx
-                                                                        }
-                                                                        variant="secondary"
-                                                                      >
-                                                                        {tipo}
-                                                                      </Badge>
-                                                                    )
-                                                                  )}
-                                                                </>
-                                                              )}
-                                                          </div>
-                                                          {avaliacao.observacao && (
-                                                            <p className="text-xs text-muted-foreground mt-2">
-                                                              Obs:{" "}
-                                                              {
-                                                                avaliacao.observacao
-                                                              }
+                                                  (avaliacao: any) => {
+                                                    // Encontrar a atividade e instrução correspondentes
+                                                    const atividade = sessaoDetalhes.curriculum?.atividades?.find(
+                                                      (a: any) => a.atividade.id === avaliacao.atividadeId
+                                                    );
+                                                    const instrucao = atividade?.atividade?.instrucoes?.find(
+                                                      (i: any) => i.id === avaliacao.instrucaoId
+                                                    );
+
+                                                    if (!instrucao) return null;
+
+                                                    return (
+                                                      <div
+                                                        key={avaliacao.id}
+                                                        className="p-3 border rounded-lg"
+                                                      >
+                                                        <div className="flex items-start gap-3">
+                                                          <Badge variant="secondary">
+                                                            {instrucao.ordem}
+                                                          </Badge>
+                                                          <div className="flex-1">
+                                                            <p className="text-sm font-medium mb-1">
+                                                              {instrucao.texto}
                                                             </p>
-                                                          )}
+                                                            <div className="flex items-center gap-2 text-xs flex-wrap">
+                                                              <Badge variant="outline" className="text-xs">
+                                                                Tentativa {avaliacao.tentativa}
+                                                              </Badge>
+                                                              <Badge
+                                                                variant={
+                                                                  avaliacao.nota >= 3
+                                                                    ? "default"
+                                                                    : "outline"
+                                                                }
+                                                              >
+                                                                Nota: {avaliacao.nota}/4
+                                                              </Badge>
+                                                              {avaliacao.tipos_ajuda &&
+                                                                avaliacao.tipos_ajuda.length > 0 && (
+                                                                  <>
+                                                                    {avaliacao.tipos_ajuda.map(
+                                                                      (tipo: string, idx: number) => (
+                                                                        <Badge
+                                                                          key={idx}
+                                                                          variant="secondary"
+                                                                        >
+                                                                          {tipo}
+                                                                        </Badge>
+                                                                      )
+                                                                    )}
+                                                                  </>
+                                                                )}
+                                                            </div>
+                                                            {avaliacao.observacao && (
+                                                              <p className="text-xs text-muted-foreground mt-2">
+                                                                Obs: {avaliacao.observacao}
+                                                              </p>
+                                                            )}
+                                                          </div>
                                                         </div>
                                                       </div>
-                                                    </div>
-                                                  )
+                                                    );
+                                                  }
                                                 )}
                                               </div>
                                             </div>

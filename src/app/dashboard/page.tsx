@@ -48,13 +48,11 @@ interface Sessao {
     id: string;
     nome: string;
   };
-  atividade: {
+  curriculum: {
     nome: string;
-    tipo: string;
   };
   avaliacoes?: Array<{
     nota: number;
-    tipos_ajuda: string[];
   }>;
 }
 
@@ -481,7 +479,7 @@ export default function DashboardPage() {
                       <div className="flex-1">
                         <p className="font-medium">{sessao.paciente.nome}</p>
                         <p className="text-sm text-muted-foreground">
-                          {sessao.atividade.nome}
+                          {sessao.curriculum.nome}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Iniciada em: {formatDate(sessao.iniciada_em)}
@@ -490,7 +488,7 @@ export default function DashboardPage() {
                       <Button
                         size="sm"
                         onClick={() =>
-                          router.push(`/aplicar-atividade/${sessao.id}`)
+                          router.push(`/aplicar-curriculum/${sessao.id}`)
                         }
                       >
                         <Play className="h-4 w-4 mr-1" />
@@ -502,13 +500,13 @@ export default function DashboardPage() {
               </Card>
             )}
 
-            {/* Atividades Recentes */}
+            {/* Sessões Recentes */}
             {sessoesRecentes.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-green-600" />
-                    Atividades Recentes
+                    Sessões Recentes
                   </CardTitle>
                   <CardDescription>Últimas sessões realizadas</CardDescription>
                 </CardHeader>
@@ -519,7 +517,7 @@ export default function DashboardPage() {
                         <div className="flex-1">
                           <p className="font-medium">{sessao.paciente.nome}</p>
                           <p className="text-sm text-muted-foreground">
-                            {sessao.atividade.nome}
+                            {sessao.curriculum.nome}
                           </p>
                         </div>
                         <Badge variant="default" className="bg-green-600">
