@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -58,7 +59,9 @@ export default function EditarCurriculumPage() {
   };
 
   const handleVoltar = () => {
-    if (confirm("Deseja realmente sair? Alterações não salvas serão perdidas.")) {
+    if (
+      confirm("Deseja realmente sair? Alterações não salvas serão perdidas.")
+    ) {
       router.push("/curriculum");
     }
   };

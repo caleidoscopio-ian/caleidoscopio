@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -235,9 +236,7 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
                 <SelectItem value="Independência Pessoal:Adultos">
                   Independência Pessoal:Adultos
                 </SelectItem>
-                <SelectItem value="Imitação Motora">
-                  Imitação Motora
-                </SelectItem>
+                <SelectItem value="Imitação Motora">Imitação Motora</SelectItem>
                 <SelectItem value="Outros">Outros</SelectItem>
               </SelectContent>
             </Select>

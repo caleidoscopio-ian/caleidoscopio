@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -418,9 +417,7 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() =>
-                deleteIndex !== null && handleDeletar(deleteIndex)
-              }
+              onClick={() => deleteIndex !== null && handleDeletar(deleteIndex)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir

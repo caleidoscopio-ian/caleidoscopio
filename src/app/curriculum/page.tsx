@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BookMarked, Search, Plus, Loader2, Edit, Eye, Trash2 } from "lucide-react";
+import { BookMarked, Search, Plus, Loader2, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { VisualizarCurriculumDialog } from "@/components/curriculum/visualizar-curriculum-dialog";
 import { ExcluirCurriculumDialog } from "@/components/curriculum/excluir-curriculum-dialog";

@@ -449,7 +449,6 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             nome: true,
-            metodologia: true,
           },
         },
         profissional: {
@@ -524,19 +523,15 @@ export async function GET(request: NextRequest) {
         ...s,
         tipo: "ATIVIDADE" as const,
         nome_item: s.atividade.nome,
-        tipo_item: s.atividade.tipo,
       })),
       ...sessoesAvaliacao.map((s) => ({
         ...s,
         tipo: "AVALIACAO" as const,
         nome_item: s.avaliacao.nome,
-        tipo_item: s.avaliacao.tipo,
         // Mapear estrutura para compatibilidade
         atividade: {
           id: s.avaliacao.id,
           nome: s.avaliacao.nome,
-          tipo: s.avaliacao.tipo,
-          metodologia: null,
         },
       })),
     ];

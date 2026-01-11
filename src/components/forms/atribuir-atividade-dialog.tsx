@@ -13,7 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { UserPlus, Loader2, Search, CheckCircle2 } from "lucide-react";
@@ -22,7 +21,6 @@ import { ScrollArea } from "@/components/ui/scrollarea";
 interface Atividade {
   id: string;
   nome: string;
-  tipo: string;
 }
 
 interface Paciente {
@@ -177,16 +175,6 @@ export function AtribuirAtividadeDialog({
     );
   };
 
-  const traduzirTipo = (tipo: string) => {
-    const tipos: Record<string, string> = {
-      PROTOCOLO_ABA: "Protocolo ABA",
-      AVALIACAO_CLINICA: "Avaliação Clínica",
-      JOGO_MEMORIA: "Jogo de Memória",
-      CUSTOM: "Personalizada",
-    };
-    return tipos[tipo] || tipo;
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -207,9 +195,6 @@ export function AtribuirAtividadeDialog({
           {/* Informações da atividade */}
           <div className="p-4 border rounded-lg bg-muted/30">
             <div className="font-medium">{atividade.nome}</div>
-            <div className="text-sm text-muted-foreground mt-1">
-              <Badge variant="outline">{traduzirTipo(atividade.tipo)}</Badge>
-            </div>
           </div>
 
           {error && (

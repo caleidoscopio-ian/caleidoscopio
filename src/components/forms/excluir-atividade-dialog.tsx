@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,79 +11,72 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
-import { Trash2, Loader2, AlertTriangle } from 'lucide-react'
+} from "@/components/ui/dialog";
+import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 
 interface Atividade {
-  id: string
-  nome: string
-  tipo: string
+  id: string;
+  nome: string;
   _count?: {
-    atribuicoes: number
-    sessoes: number
-  }
+    atribuicoes: number;
+    sessoes: number;
+  };
 }
 
 interface ExcluirAtividadeDialogProps {
-  atividade: Atividade
-  onSuccess: () => void
+  atividade: Atividade;
+  onSuccess: () => void;
 }
 
-export function ExcluirAtividadeDialog({ atividade, onSuccess }: ExcluirAtividadeDialogProps) {
-  const { user } = useAuth()
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function ExcluirAtividadeDialog({
+  atividade,
+  onSuccess,
+}: ExcluirAtividadeDialogProps) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       if (!user) {
-        throw new Error('Usuário não autenticado')
+        throw new Error("Usuário não autenticado");
       }
 
-      const userDataEncoded = btoa(JSON.stringify(user))
+      const userDataEncoded = btoa(JSON.stringify(user));
 
       const response = await fetch(`/api/atividades?id=${atividade.id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
-          'X-User-Data': userDataEncoded,
-          'X-Auth-Token': user.token,
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
         },
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao excluir atividade')
+        throw new Error(result.error || "Erro ao excluir atividade");
       }
 
-      setOpen(false)
-      onSuccess()
+      setOpen(false);
+      onSuccess();
     } catch (err) {
-      console.error('Erro ao excluir atividade:', err)
-      setError(err instanceof Error ? err.message : 'Erro ao excluir atividade')
+      console.error("Erro ao excluir atividade:", err);
+      setError(
+        err instanceof Error ? err.message : "Erro ao excluir atividade"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const temAtribuicoes = atividade._count && atividade._count.atribuicoes > 0
-  const temSessoes = atividade._count && atividade._count.sessoes > 0
-
-  const traduzirTipo = (tipo: string) => {
-    const tipos: Record<string, string> = {
-      'PROTOCOLO_ABA': 'Protocolo ABA',
-      'AVALIACAO_CLINICA': 'Avaliação Clínica',
-      'JOGO_MEMORIA': 'Jogo de Memória',
-      'CUSTOM': 'Personalizada',
-    }
-    return tipos[tipo] || tipo
-  }
+  const temAtribuicoes = atividade._count && atividade._count.atribuicoes > 0;
+  const temSessoes = atividade._count && atividade._count.sessoes > 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -99,7 +92,8 @@ export function ExcluirAtividadeDialog({ atividade, onSuccess }: ExcluirAtividad
             Excluir Atividade
           </DialogTitle>
           <DialogDescription>
-            Esta ação não pode ser desfeita. A atividade será permanentemente removida.
+            Esta ação não pode ser desfeita. A atividade será permanentemente
+            removida.
           </DialogDescription>
         </DialogHeader>
 
@@ -113,9 +107,6 @@ export function ExcluirAtividadeDialog({ atividade, onSuccess }: ExcluirAtividad
           <div className="space-y-2">
             <div className="p-4 border rounded-lg bg-muted/30">
               <div className="font-medium">{atividade.nome}</div>
-              <div className="text-sm text-muted-foreground mt-1">
-                <Badge variant="outline">{traduzirTipo(atividade.tipo)}</Badge>
-              </div>
             </div>
 
             {(temAtribuicoes || temSessoes) && (
@@ -127,18 +118,25 @@ export function ExcluirAtividadeDialog({ atividade, onSuccess }: ExcluirAtividad
                     <ul className="list-disc list-inside space-y-1">
                       {temAtribuicoes && (
                         <li>
-                          Esta atividade está atribuída a{' '}
-                          <strong>{atividade._count?.atribuicoes} paciente(s)</strong>
+                          Esta atividade está atribuída a{" "}
+                          <strong>
+                            {atividade._count?.atribuicoes} paciente(s)
+                          </strong>
                         </li>
                       )}
                       {temSessoes && (
                         <li>
-                          Possui <strong>{atividade._count?.sessoes} sessão(ões)</strong> registradas
+                          Possui{" "}
+                          <strong>
+                            {atividade._count?.sessoes} sessão(ões)
+                          </strong>{" "}
+                          registradas
                         </li>
                       )}
                     </ul>
                     <p className="mt-2">
-                      Ao excluir, todas as atribuições e sessões relacionadas também serão removidas.
+                      Ao excluir, todas as atribuições e sessões relacionadas
+                      também serão removidas.
                     </p>
                   </div>
                 </div>
@@ -172,5 +170,5 @@ export function ExcluirAtividadeDialog({ atividade, onSuccess }: ExcluirAtividad
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
