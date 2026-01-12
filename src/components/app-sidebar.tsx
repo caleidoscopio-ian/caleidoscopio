@@ -100,7 +100,7 @@ const getGroupedNavigation = (userRole: string) => {
           ].includes(item.title)
         ),
         "Sistema Clínico": allItems.filter((item) =>
-          ["Agenda Global", "Prontuários", "Anamneses"].includes(item.title)
+          ["Agenda Global", "Salas", "Prontuários", "Anamneses"].includes(item.title)
         ),
         "Atendimento": allItems.filter((item) =>
           ["Iniciar Sessão", "Curriculum", "Atividades", "Avaliações", "Histórico de Sessões"].includes(item.title)

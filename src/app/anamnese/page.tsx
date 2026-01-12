@@ -411,17 +411,15 @@ export default function AnamnesesPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {anamnese.status === "RASCUNHO" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  handleEditarAnamnese(anamnese.id)
-                                }
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                handleEditarAnamnese(anamnese.id)
+                              }
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"

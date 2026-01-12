@@ -36,7 +36,7 @@ Never commit .env files or database dumps
 # Development server
 npm run dev
 
-# Build for production
+# Build for production (includes type checking and linting)
 npm run build
 
 # Start production server
@@ -45,6 +45,21 @@ npm start
 # Lint code
 npm run lint
 ```
+
+### Build verification
+
+**ALWAYS run `npm run build` before committing** to ensure:
+- No TypeScript errors
+- No ESLint errors (not just warnings)
+- All types are correctly defined
+- No missing imports or unused variables
+
+The build process includes:
+1. TypeScript compilation with strict mode
+2. ESLint validation with `@typescript-eslint` rules
+3. Next.js optimization and bundling
+
+**If build fails, fix ALL errors before committing.** Warnings can be addressed later, but errors must be resolved.
 
 ## Architecture & Multi-Tenancy
 
@@ -137,6 +152,174 @@ Wrap protected pages with `<ProtectedRoute>` component which handles authenticat
 - Use `npx prisma db push` for development database updates
 - Use `npx prisma migrate dev` for production-ready migrations
 
+## TypeScript Best Practices
+
+### Avoid using `any` type
+
+The project has strict TypeScript configuration with `@typescript-eslint/no-explicit-any` enabled. **NEVER use `any` type**.
+
+#### ✅ Correct approach for Prisma queries:
+
+Prisma generates multiple type definitions for each model. **Always use the appropriate Prisma-generated type** instead of `any`:
+
+```typescript
+import { Prisma } from '@prisma/client';
+
+// WHERE clauses - use ModelWhereInput
+const whereClause: Prisma.SessaoCurriculumWhereInput = {};
+const patientFilter: Prisma.PacienteWhereInput = {};
+
+// SELECT clauses - use ModelSelect
+const selectFields: Prisma.AtividadeSelect = {
+  id: true,
+  nome: true,
+  instrucoes: true,
+};
+
+// INCLUDE clauses - use ModelInclude
+const includeRelations: Prisma.SessaoCurriculumInclude = {
+  paciente: true,
+  curriculum: true,
+  avaliacoes: true,
+};
+
+// CREATE/UPDATE data - use ModelCreateInput or ModelUpdateInput
+const createData: Prisma.SessaoCurriculumCreateInput = {
+  status: 'EM_ANDAMENTO',
+  paciente: { connect: { id: pacienteId } },
+  curriculum: { connect: { id: curriculumId } },
+};
+
+const updateData: Prisma.SessaoCurriculumUpdateInput = {
+  status: 'FINALIZADA',
+  finalizada_em: new Date(),
+};
+
+// ORDER BY - use ModelOrderByWithRelationInput
+const orderBy: Prisma.SessaoCurriculumOrderByWithRelationInput = {
+  iniciada_em: 'desc',
+};
+```
+
+**Common Prisma type patterns:**
+- `Model` + `WhereInput` → Filtering (WHERE clauses)
+- `Model` + `Select` → Field selection (SELECT)
+- `Model` + `Include` → Relation inclusion (JOIN)
+- `Model` + `CreateInput` → Creating records
+- `Model` + `UpdateInput` → Updating records
+- `Model` + `OrderByWithRelationInput` → Sorting
+- `Model` + `WhereUniqueInput` → Finding by unique fields
+
+**How to find the right type:**
+1. Type `Prisma.` in your IDE
+2. Start typing your model name (e.g., `SessaoCurriculum`)
+3. IDE autocomplete will show all available types
+4. Choose the one that matches your use case
+
+#### ✅ Correct approach for enum validation:
+
+When receiving enum values from query parameters (string type), always validate before assigning:
+
+```typescript
+// Get status from query params (string type)
+const status = searchParams.get('status');
+
+// Validate before using (avoid TypeScript errors)
+if (status && ['EM_ANDAMENTO', 'FINALIZADA', 'CANCELADA'].includes(status)) {
+  whereClause.status = status as StatusSessao;
+}
+```
+
+**Why this pattern?**
+- Query params are always strings
+- Prisma expects specific enum types
+- Validation prevents invalid values from breaking the database query
+- Type assertion is safe after validation
+
+#### ❌ Wrong approaches:
+
+```typescript
+// ❌ NEVER do this
+const whereClause: any = {};
+
+// ❌ NEVER skip validation
+whereClause.status = status; // TypeScript error!
+
+// ❌ NEVER use blind type assertion without validation
+whereClause.status = status as StatusSessao; // Unsafe!
+```
+
+### Interface definitions
+
+Always define interfaces for component props and data structures. Remove fields that don't exist in the database schema:
+
+```typescript
+// ✅ Correct - only existing fields
+interface Atividade {
+  id: string;
+  nome: string;
+  instrucoes: Instrucao[];
+}
+
+// ❌ Wrong - includes non-existent field
+interface Atividade {
+  id: string;
+  nome: string;
+  tipo: string; // This field was removed from schema
+}
+```
+
+### Type-safe alternatives to `any`
+
+If the exact type is unknown, use these alternatives **in order of preference**:
+
+1. **Use Prisma-generated types** (BEST):
+   - For queries: `Prisma.ModelWhereInput`, `Prisma.ModelSelect`, `Prisma.ModelInclude`
+   - For mutations: `Prisma.ModelCreateInput`, `Prisma.ModelUpdateInput`
+   - For sorting: `Prisma.ModelOrderByWithRelationInput`
+   - For unique queries: `Prisma.ModelWhereUniqueInput`
+
+2. **Create specific interfaces** (RECOMMENDED):
+   ```typescript
+   interface SessaoResponse {
+     id: string;
+     status: StatusSessao;
+     paciente: {
+       nome: string;
+     };
+   }
+   ```
+
+3. **Use `Record<string, unknown>`** (ACCEPTABLE):
+   ```typescript
+   // For generic key-value objects
+   const config: Record<string, unknown> = {};
+   ```
+
+4. **Use `unknown`** (LAST RESORT):
+   ```typescript
+   // Requires type guards before using
+   const data: unknown = await response.json();
+   if (isValidData(data)) {
+     // Now safe to use
+   }
+   ```
+
+**Never use `any` - it defeats the purpose of TypeScript!**
+
+### Common enum types in this project
+
+```typescript
+// Session status
+type StatusSessao = 'EM_ANDAMENTO' | 'FINALIZADA' | 'CANCELADA';
+
+// Always validate enums from external sources:
+const validStatuses: StatusSessao[] = ['EM_ANDAMENTO', 'FINALIZADA', 'CANCELADA'];
+if (validStatuses.includes(value as StatusSessao)) {
+  // Safe to use
+}
+```
+
 Performance Requirements
 
 LCP < 2.5s (Largest Contentful Paint)
@@ -170,6 +353,7 @@ Encrypted sensitive data at rest
 
 Forbidden Practices
 
+NEVER use `any` type - use Prisma-generated types instead
 NEVER query without tenantId for isolated models
 NEVER expose internal IDs in URLs (use slugs/UUIDs)
 NEVER trust client-side tenant/user data
@@ -180,6 +364,8 @@ NEVER use synchronous operations that block UI
 NEVER import from src/ - use aliases (@/)
 NEVER mutate props or state directly
 NEVER skip error boundaries for async operations
+NEVER reference database fields that don't exist in the schema
+NEVER assign unvalidated query params to enum fields
 
 Educational Module Specific
 Activity System

@@ -20,12 +20,12 @@ interface AgendaSemanalProps {
   onAgendamentoClick: (agendamento: Agendamento) => void;
 }
 
-// Gerar slots de 30 minutos das 08:00 às 18:00
+// Gerar slots de 30 minutos das 05:00 às 22:00
 const generateTimeSlots = () => {
   const slots: string[] = [];
-  for (let hour = 8; hour <= 18; hour++) {
+  for (let hour = 5; hour <= 22; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      if (hour === 18 && minute > 0) break;
+      if (hour === 22 && minute > 0) break;
       const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
       slots.push(time);
     }
@@ -262,9 +262,15 @@ export function AgendaSemanal({
                           {agendamento.duracao_minutos}min
                         </div>
 
-                        {slotsOcupados > 1 && agendamento.sala && (
-                          <div className="text-[10px] text-muted-foreground">
-                            {agendamento.sala}
+                        {slotsOcupados > 1 && agendamento.salaRelacao && (
+                          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            {agendamento.salaRelacao.cor && (
+                              <div
+                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: agendamento.salaRelacao.cor }}
+                              />
+                            )}
+                            <span className="truncate">{agendamento.salaRelacao.nome}</span>
                           </div>
                         )}
                       </div>

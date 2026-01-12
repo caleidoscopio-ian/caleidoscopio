@@ -17,6 +17,7 @@ import {
   Stethoscope,
   FileBarChart,
   Paperclip,
+  FolderOpen,
 } from "lucide-react";
 import { ProntuarioAnamnese } from "./prontuario-anamnese";
 import { ProntuarioEvolucao } from "./prontuario-evolucao";
@@ -25,6 +26,7 @@ import { ProntuarioPrescricao } from "./prontuario-prescricao";
 import { ProntuarioDiagnostico } from "./prontuario-diagnostico";
 import { ProntuarioRelatorios } from "./prontuario-relatorios";
 import { ProntuarioAnexos } from "./prontuario-anexos";
+import { ProntuarioHistorico } from "./prontuario-historico";
 
 interface Patient {
   id: string;
@@ -96,7 +98,7 @@ export function ProntuarioTabs({
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
         <TabsTrigger value="dados" className="flex items-center gap-1">
           <User className="h-4 w-4" />
           <span className="hidden sm:inline">Dados</span>
@@ -124,6 +126,10 @@ export function ProntuarioTabs({
         <TabsTrigger value="relatorios" className="flex items-center gap-1">
           <FileBarChart className="h-4 w-4" />
           <span className="hidden sm:inline">Relatórios</span>
+        </TabsTrigger>
+        <TabsTrigger value="prontuarios" className="flex items-center gap-1">
+          <FolderOpen className="h-4 w-4" />
+          <span className="hidden sm:inline">Prontuários</span>
         </TabsTrigger>
         <TabsTrigger value="anexos" className="flex items-center gap-1">
           <Paperclip className="h-4 w-4" />
@@ -321,6 +327,11 @@ export function ProntuarioTabs({
           dialogOpen={dialogOpen}
           onOpenDialog={onDialogChange}
         />
+      </TabsContent>
+
+      {/* ABA: Prontuários */}
+      <TabsContent value="prontuarios">
+        <ProntuarioHistorico pacienteId={patient.id} />
       </TabsContent>
 
       {/* ABA: Anexos */}

@@ -252,14 +252,20 @@ export function AgendamentoDetailsDialog({
           </div>
 
           {/* Sala */}
-          {agendamento.sala && (
+          {agendamento.salaRelacao && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 Local
               </h3>
-              <div className="flex items-center gap-2 p-3 border rounded-lg">
+              <div className="flex items-center gap-3 p-3 border rounded-lg">
                 <MapPin className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">{agendamento.sala}</span>
+                {agendamento.salaRelacao.cor && (
+                  <div
+                    className="w-4 h-4 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: agendamento.salaRelacao.cor }}
+                  />
+                )}
+                <span className="font-medium">{agendamento.salaRelacao.nome}</span>
               </div>
             </div>
           )}

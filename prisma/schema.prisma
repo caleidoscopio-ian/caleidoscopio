@@ -11,17 +11,35 @@ model agendamento {
   id              String            @id @default(uuid())
   pacienteId      String
   profissionalId  String
+  salaId          String?
   data_hora       DateTime
   duracao_minutos Int               @default(60)
-  sala            String?
+  sala            String?           // Campo antigo, manter por compatibilidade
   status          StatusAgendamento @default(AGENDADO)
   observacoes     String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @default(now()) @updatedAt
   paciente        paciente          @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
   profissional    profissional      @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  salaRelacao     Sala?             @relation(fields: [salaId], references: [id], onDelete: SetNull)
 
   @@map("agendamentos")
+}
+
+model Sala {
+  id           String        @id @default(uuid())
+  tenantId     String        // Referência ao tenant do Sistema 1 (não FK)
+  nome         String
+  descricao    String?       @db.Text
+  capacidade   Int?          // Número de pessoas que a sala comporta
+  recursos     String[]      @default([]) // Ex: ["Projetor", "Computador", "Mesa sensorial"]
+  cor          String?       // Cor para identificação visual na agenda (hex)
+  ativo        Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+  agendamentos agendamento[]
+
+  @@map("salas")
 }
 
 model atividade {

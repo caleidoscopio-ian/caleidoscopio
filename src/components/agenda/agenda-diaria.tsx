@@ -19,12 +19,12 @@ interface AgendaDiariaProps {
   showMultipleProfessionals?: boolean;
 }
 
-// Gerar slots de 30 minutos das 08:00 às 18:00
+// Gerar slots de 30 minutos das 05:00 às 22:00
 const generateTimeSlots = () => {
   const slots: string[] = [];
-  for (let hour = 8; hour <= 18; hour++) {
+  for (let hour = 5; hour <= 22; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      if (hour === 18 && minute > 0) break; // Parar em 18:00
+      if (hour === 22 && minute > 0) break; // Parar em 22:00
       const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
       slots.push(time);
     }
@@ -283,9 +283,15 @@ export function AgendaDiaria({
                           </span>
                         </div>
 
-                        {agendamento.sala && slotsOcupados > 1 && (
-                          <div className="text-xs text-muted-foreground truncate">
-                            {agendamento.sala}
+                        {agendamento.salaRelacao && slotsOcupados > 1 && (
+                          <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                            {agendamento.salaRelacao.cor && (
+                              <div
+                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: agendamento.salaRelacao.cor }}
+                              />
+                            )}
+                            <span className="truncate">{agendamento.salaRelacao.nome}</span>
                           </div>
                         )}
 

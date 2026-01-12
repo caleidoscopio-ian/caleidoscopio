@@ -34,6 +34,11 @@ export interface Agendamento {
     especialidade: string
     email?: string | null
   }
+  salaRelacao?: {
+    id: string
+    nome: string
+    cor?: string | null
+  } | null
 }
 
 export interface CreateAgendamentoInput {

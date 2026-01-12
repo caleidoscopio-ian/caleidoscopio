@@ -62,6 +62,9 @@ export default function AgendaPage() {
   const [profissionais, setProfissionais] = useState<
     Array<{ id: string; nome: string; especialidade: string }>
   >([]);
+  const [salas, setSalas] = useState<
+    Array<{ id: string; nome: string; cor?: string }>
+  >([]);
   const [selectedProfissional, setSelectedProfissional] =
     useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -96,6 +99,7 @@ export default function AgendaPage() {
         loadAgendamentos(),
         loadPacientes(),
         loadProfissionais(),
+        loadSalas(),
       ]);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -229,6 +233,47 @@ export default function AgendaPage() {
     }
   };
 
+  const loadSalas = async () => {
+    try {
+      // Verificar autenticação
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      // Preparar headers com dados do usuário
+      const userDataEncoded = btoa(JSON.stringify(user));
+
+      const response = await fetch("/api/salas", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
+
+      if (!response.ok) throw new Error("Erro ao buscar salas");
+
+      const result = await response.json();
+      const data = result.success ? result.data : result;
+
+      // Filtrar apenas salas ativas
+      const salasAtivas = data.filter((s: any) => s.ativo !== false);
+
+      setSalas(
+        salasAtivas.map((s: any) => ({
+          id: s.id,
+          nome: s.nome,
+          cor: s.cor,
+        }))
+      );
+    } catch (error) {
+      console.error("Erro ao carregar salas:", error);
+      // Não propagar erro para não bloquear o carregamento da agenda
+      setSalas([]);
+    }
+  };
+
   const handleNovoAgendamento = async (data: any) => {
     try {
       // Verificar autenticação
@@ -236,41 +281,87 @@ export default function AgendaPage() {
         throw new Error("Usuário não autenticado");
       }
 
-      // Combinar data e horário
-      const [hour, minute] = data.horario.split(":").map(Number);
-      const dataHora = new Date(data.data);
-      dataHora.setHours(hour, minute, 0, 0);
-
-      // Preparar headers com dados do usuário
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch("/api/agendamentos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-Data": userDataEncoded,
-          "X-Auth-Token": user.token,
-        },
-        body: JSON.stringify({
-          pacienteId: data.pacienteId,
-          profissionalId: data.profissionalId,
-          data_hora: dataHora.toISOString(),
-          duracao_minutos: data.duracao_minutos,
-          sala: data.sala,
-          status: data.status,
-          observacoes: data.observacoes,
-        }),
-      });
+      // Verificar se é agendamento em massa (múltiplas datas)
+      const temDatasAdicionais = data.datasAdicionais && data.datasAdicionais.length > 0;
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erro ao criar agendamento");
+      if (temDatasAdicionais) {
+        // Agendamento em massa
+        const todasDatas = [data.data, ...data.datasAdicionais].map((d: Date) => d.toISOString());
+
+        const response = await fetch("/api/agendamentos/batch", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-Data": userDataEncoded,
+            "X-Auth-Token": user.token,
+          },
+          body: JSON.stringify({
+            pacienteId: data.pacienteId,
+            profissionalId: data.profissionalId,
+            datas: todasDatas,
+            horario: data.horario,
+            duracao_minutos: data.duracao_minutos,
+            salaId: data.sala,
+            status: data.status,
+            observacoes: data.observacoes,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Erro ao criar agendamentos");
+        }
+
+        const result = await response.json();
+
+        // Mostrar resumo
+        toast({
+          title: "Agendamento em Massa Concluído",
+          description: `${result.resumo.sucessos} agendamento(s) criado(s), ${result.resumo.falhas} falha(s)`,
+          variant: result.resumo.falhas > 0 ? "destructive" : "default",
+        });
+
+        // Mostrar detalhes das falhas
+        if (result.resumo.falhas > 0) {
+          const falhas = result.resultados.filter((r: any) => !r.success);
+          console.warn("Falhas no agendamento em massa:", falhas);
+        }
+      } else {
+        // Agendamento único (comportamento original)
+        const [hour, minute] = data.horario.split(":").map(Number);
+        const dataHora = new Date(data.data);
+        dataHora.setHours(hour, minute, 0, 0);
+
+        const response = await fetch("/api/agendamentos", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-Data": userDataEncoded,
+            "X-Auth-Token": user.token,
+          },
+          body: JSON.stringify({
+            pacienteId: data.pacienteId,
+            profissionalId: data.profissionalId,
+            data_hora: dataHora.toISOString(),
+            duracao_minutos: data.duracao_minutos,
+            sala: data.sala,
+            status: data.status,
+            observacoes: data.observacoes,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Erro ao criar agendamento");
+        }
+
+        toast({
+          title: "Sucesso",
+          description: "Agendamento criado com sucesso",
+        });
       }
-
-      toast({
-        title: "Sucesso",
-        description: "Agendamento criado com sucesso",
-      });
 
       setShowNovoAgendamento(false);
       loadAgendamentos();
@@ -681,6 +772,7 @@ export default function AgendaPage() {
           <NovoAgendamentoForm
             pacientes={pacientes}
             profissionais={profissionais}
+            salas={salas}
             onSubmit={handleNovoAgendamento}
             onCancel={() => setShowNovoAgendamento(false)}
             defaultValues={novoAgendamentoDefaults}

@@ -26,6 +26,7 @@ import {
   FileHeart,
   ClipboardCheck,
   BookMarked,
+  Building2,
 } from "lucide-react";
 
 export interface SidebarItem {
@@ -189,6 +190,11 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           title: "Agenda Global",
           href: "/agenda",
           icon: Calendar,
+        },
+        {
+          title: "Salas",
+          href: "/salas",
+          icon: Building2,
         },
         {
           title: "Prontuários",

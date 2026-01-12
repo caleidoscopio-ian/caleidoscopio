@@ -152,6 +152,13 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
+        salaRelacao: {
+          select: {
+            id: true,
+            nome: true,
+            cor: true,
+          },
+        },
       },
       orderBy: {
         data_hora: "asc",
@@ -275,25 +282,29 @@ export async function POST(request: NextRequest) {
     const dataHora = new Date(data_hora);
     const dataFim = new Date(dataHora.getTime() + duracao_minutos * 60000);
 
-    const conflito = await prisma.agendamento.findFirst({
+    // Buscar agendamentos que possam conflitar
+    const agendamentosExistentes = await prisma.agendamento.findMany({
       where: {
         profissionalId,
         status: {
           notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.FALTOU],
         },
-        AND: [
-          {
-            data_hora: {
-              lt: dataFim,
-            },
-          },
-          {
-            data_hora: {
-              gte: dataHora,
-            },
-          },
-        ],
       },
+      select: {
+        id: true,
+        data_hora: true,
+        duracao_minutos: true,
+      },
+    });
+
+    // Verificar sobreposição de intervalos
+    const conflito = agendamentosExistentes.find((ag) => {
+      const agInicio = new Date(ag.data_hora);
+      const agFim = new Date(agInicio.getTime() + ag.duracao_minutos * 60000);
+
+      // Dois intervalos se sobrepõem se:
+      // (NovoInicio < ExistenteVim) E (NovoFim > ExistenteInicio)
+      return dataHora < agFim && dataFim > agInicio;
     });
 
     if (conflito) {
@@ -304,6 +315,59 @@ export async function POST(request: NextRequest) {
         },
         { status: 409 }
       );
+    }
+
+    // Verificar disponibilidade da sala (se sala foi informada)
+    if (sala) {
+      // Verificar se sala existe e pertence à clínica
+      const salaExistente = await prisma.sala.findFirst({
+        where: {
+          id: sala,
+          tenantId: user.tenant.id,
+          ativo: true,
+        },
+      });
+
+      if (!salaExistente) {
+        return NextResponse.json(
+          { error: "Sala não encontrada ou não pertence a esta clínica" },
+          { status: 404 }
+        );
+      }
+
+      // Verificar conflito de horário na sala
+      const agendamentosSala = await prisma.agendamento.findMany({
+        where: {
+          salaId: sala,
+          status: {
+            notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.FALTOU],
+          },
+        },
+        select: {
+          id: true,
+          data_hora: true,
+          duracao_minutos: true,
+        },
+      });
+
+      // Verificar sobreposição de intervalos para sala
+      const conflitoSala = agendamentosSala.find((ag) => {
+        const agInicio = new Date(ag.data_hora);
+        const agFim = new Date(agInicio.getTime() + ag.duracao_minutos * 60000);
+
+        // Dois intervalos se sobrepõem se:
+        // (NovoInicio < ExistenteVim) E (NovoFim > ExistenteInicio)
+        return dataHora < agFim && dataFim > agInicio;
+      });
+
+      if (conflitoSala) {
+        return NextResponse.json(
+          {
+            error: "Sala já está ocupada neste horário",
+          },
+          { status: 409 }
+        );
+      }
     }
 
     console.log(
@@ -317,7 +381,8 @@ export async function POST(request: NextRequest) {
         profissionalId,
         data_hora: dataHora,
         duracao_minutos,
-        sala,
+        salaId: sala || null, // Salvar como relacionamento
+        sala: sala || null, // Manter campo antigo por compatibilidade
         status,
         observacoes,
       },
@@ -337,6 +402,13 @@ export async function POST(request: NextRequest) {
             nome: true,
             especialidade: true,
             email: true,
+          },
+        },
+        salaRelacao: {
+          select: {
+            id: true,
+            nome: true,
+            cor: true,
           },
         },
       },
