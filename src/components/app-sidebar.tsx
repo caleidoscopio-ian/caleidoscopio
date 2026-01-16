@@ -79,7 +79,7 @@ const getGroupedNavigation = (userRole: string) => {
       return {
         Principal: allItems.filter((item) => item.title === "Dashboard"),
         "Gestão Clínica": allItems.filter((item) =>
-          ["Meus Pacientes", "Agenda", "Prontuários", "Anamneses"].includes(item.title)
+          ["Meus Pacientes", "Agenda", "Registro de Sessão", "Anamneses"].includes(item.title)
         ),
         "Atendimento": allItems.filter((item) =>
           ["Iniciar Sessão", "Curriculum", "Atividades", "Avaliações", "Histórico de Sessões"].includes(item.title)
@@ -94,13 +94,13 @@ const getGroupedNavigation = (userRole: string) => {
         "Gestão de Usuários": allItems.filter((item) =>
           [
             "Usuários",
-            "Terapeutas",
+            "Profissionais",
             "Responsáveis",
             "Pacientes",
           ].includes(item.title)
         ),
         "Sistema Clínico": allItems.filter((item) =>
-          ["Agenda Global", "Salas", "Prontuários", "Anamneses"].includes(item.title)
+          ["Agenda Global", "Salas", "Registro de Sessão", "Anamneses"].includes(item.title)
         ),
         "Atendimento": allItems.filter((item) =>
           ["Iniciar Sessão", "Curriculum", "Atividades", "Avaliações", "Histórico de Sessões"].includes(item.title)

@@ -36,6 +36,7 @@ interface Instrucao {
   id: string;
   ordem: number;
   texto: string;
+  como_aplicar?: string;
   observacao?: string;
 }
 
@@ -535,7 +536,7 @@ export default function AplicarCurriculumPage() {
                   Progresso Geral da Sessão
                 </span>
                 <span className="font-medium">
-                  {avaliacoes.size} de {totalAvaliacoes} avaliações
+                  {avaliacoes.size} de {totalAvaliacoes} atividades
                 </span>
               </div>
               <Progress value={progresso} className="h-2" />
@@ -570,13 +571,25 @@ export default function AplicarCurriculumPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Texto da instrução */}
-            <div className="p-4 bg-primary/5 border-l-4 border-primary rounded">
-              <p className="text-lg font-medium">{instrucao.texto}</p>
+            {/* Informações da instrução */}
+            <div className="space-y-3">
+              <div className="p-4 bg-primary/5 border-l-4 border-primary rounded">
+                <p className="text-sm font-semibold text-primary mb-1">Instrução:</p>
+                <p className="text-lg font-medium">{instrucao.texto}</p>
+              </div>
+
+              {instrucao.como_aplicar && (
+                <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                  <p className="text-sm font-semibold text-blue-700 mb-1">Como Aplicar:</p>
+                  <p className="text-sm text-gray-700">{instrucao.como_aplicar}</p>
+                </div>
+              )}
+
               {instrucao.observacao && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Obs: {instrucao.observacao}
-                </p>
+                <div className="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
+                  <p className="text-sm font-semibold text-yellow-700 mb-1">Observação:</p>
+                  <p className="text-sm text-gray-700">{instrucao.observacao}</p>
+                </div>
               )}
             </div>
 
@@ -597,9 +610,9 @@ export default function AplicarCurriculumPage() {
                       )}
                     </div>
 
-                    {/* Notas de Desempenho */}
+                    {/* Respostas */}
                     <div className="space-y-2">
-                      <Label className="text-base">Nota de Desempenho *</Label>
+                      <Label className="text-base">Resposta *</Label>
                       {atividade.atividade.pontuacoes && atividade.atividade.pontuacoes.length > 0 ? (
                         <>
                           <div className={`grid gap-2 ${

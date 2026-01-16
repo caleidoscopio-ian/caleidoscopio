@@ -28,8 +28,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, X } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -42,6 +41,8 @@ const formSchema = z.object({
     message: "Selecione uma data",
   }),
   datasAdicionais: z.array(z.date()).optional(),
+  dataLimite: z.date().optional(),
+  diasDaSemana: z.array(z.number()).optional(),
   horario: z.string().min(1, "Informe o horário"),
   duracao_minutos: z.number().min(30, "Duração mínima de 30 minutos"),
   sala: z.string().optional(),
@@ -70,7 +71,7 @@ export function NovoAgendamentoForm({
 }: NovoAgendamentoFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modoRecorrente, setModoRecorrente] = useState(false);
-  const [datasAdicionais, setDatasAdicionais] = useState<Date[]>([]);
+  const [diasSemana, setDiasSemana] = useState<number[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -80,13 +81,51 @@ export function NovoAgendamentoForm({
       sala: "",
       observacoes: "",
       datasAdicionais: [],
+      dataLimite: undefined,
+      diasDaSemana: [],
       ...defaultValues,
     },
   });
 
+  // Função para gerar datas baseado em dias da semana e data limite
+  const gerarDatasRecorrentes = (
+    dataInicial: Date,
+    dataLimite: Date,
+    diasDaSemana: number[],
+  ): Date[] => {
+    const datas: Date[] = [];
+    const dataAtual = new Date(dataInicial);
+    dataAtual.setDate(dataAtual.getDate() + 1); // Começar do dia seguinte à data inicial
+
+    while (dataAtual <= dataLimite) {
+      const diaSemana = dataAtual.getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
+      if (diasDaSemana.includes(diaSemana)) {
+        datas.push(new Date(dataAtual));
+      }
+      dataAtual.setDate(dataAtual.getDate() + 1);
+    }
+
+    return datas;
+  };
+
   const handleSubmit = async (data: FormValues) => {
     try {
       setIsSubmitting(true);
+
+      // Se tem data limite e dias da semana, gerar as datas automaticamente
+      if (
+        data.dataLimite &&
+        data.diasDaSemana &&
+        data.diasDaSemana.length > 0
+      ) {
+        const datasGeradas = gerarDatasRecorrentes(
+          data.data,
+          data.dataLimite,
+          data.diasDaSemana,
+        );
+        data.datasAdicionais = datasGeradas;
+      }
+
       await onSubmit(data);
     } catch (error) {
       console.error("Erro ao criar agendamento:", error);
@@ -95,10 +134,10 @@ export function NovoAgendamentoForm({
     }
   };
 
-  // Gerar opções de horário (30 em 30 minutos)
+  // Gerar opções de horário (10 em 10 minutos)
   const horarios: string[] = [];
   for (let hour = 5; hour <= 22; hour++) {
-    for (let minute = 0; minute < 60; minute += 30) {
+    for (let minute = 0; minute < 60; minute += 10) {
       if (hour === 22 && minute > 0) break;
       const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
       horarios.push(time);
@@ -172,7 +211,7 @@ export function NovoAgendamentoForm({
                         variant="outline"
                         className={cn(
                           "pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
+                          !field.value && "text-muted-foreground",
                         )}
                       >
                         {field.value ? (
@@ -244,81 +283,149 @@ export function NovoAgendamentoForm({
             onCheckedChange={(checked) => {
               setModoRecorrente(checked);
               if (!checked) {
-                setDatasAdicionais([]);
+                setDiasSemana([]);
                 form.setValue("datasAdicionais", []);
+                form.setValue("dataLimite", undefined);
+                form.setValue("diasDaSemana", []);
               }
             }}
           />
         </div>
 
-        {/* Seleção de Datas Adicionais */}
+        {/* Configuração de Recorrência por Dias da Semana */}
         {modoRecorrente && (
-          <div className="space-y-3 p-4 border rounded-lg">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Datas Adicionais</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    Adicionar Data
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    mode="single"
-                    onSelect={(date) => {
-                      if (
-                        date &&
-                        !datasAdicionais.some(
-                          (d) => d.getTime() === date.getTime()
-                        )
-                      ) {
-                        const novasDatas = [...datasAdicionais, date];
-                        setDatasAdicionais(novasDatas);
-                        form.setValue("datasAdicionais", novasDatas);
-                      }
-                    }}
-                    disabled={(date) =>
-                      date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                      (form.watch("data") &&
-                        date.getTime() === form.watch("data").getTime())
-                    }
-                    initialFocus
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
+          <div className="space-y-4 p-4 border rounded-lg">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Data Limite</label>
+              <FormField
+                control={form.control}
+                name="dataLimite"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "dd/MM/yyyy", {
+                                locale: ptBR,
+                              })
+                            ) : (
+                              <span>Selecione a data final</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < form.watch("data") ||
+                            date < new Date(new Date().setHours(0, 0, 0, 0))
+                          }
+                          initialFocus
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            {datasAdicionais.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {datasAdicionais.map((data, index) => (
-                  <Badge key={index} variant="secondary" className="gap-1">
-                    {format(data, "dd/MM/yyyy", { locale: ptBR })}
-                    <button
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Dias da Semana</label>
+              <div className="grid grid-cols-7 gap-2">
+                {[
+                  { label: "Dom", value: 0 },
+                  { label: "Seg", value: 1 },
+                  { label: "Ter", value: 2 },
+                  { label: "Qua", value: 3 },
+                  { label: "Qui", value: 4 },
+                  { label: "Sex", value: 5 },
+                  { label: "Sáb", value: 6 },
+                ].map((dia) => {
+                  const isSelected = diasSemana.includes(dia.value);
+                  return (
+                    <Button
+                      key={dia.value}
                       type="button"
+                      variant={isSelected ? "default" : "outline"}
+                      size="sm"
+                      className="w-full"
                       onClick={() => {
-                        const novasDatas = datasAdicionais.filter(
-                          (_, i) => i !== index
-                        );
-                        setDatasAdicionais(novasDatas);
-                        form.setValue("datasAdicionais", novasDatas);
+                        let novosDias: number[];
+                        if (isSelected) {
+                          novosDias = diasSemana.filter((d) => d !== dia.value);
+                        } else {
+                          novosDias = [...diasSemana, dia.value].sort();
+                        }
+                        setDiasSemana(novosDias);
+                        form.setValue("diasDaSemana", novosDias);
                       }}
-                      className="ml-1 hover:text-red-600"
                     >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
+                      {dia.label}
+                    </Button>
+                  );
+                })}
               </div>
-            )}
+            </div>
 
-            {datasAdicionais.length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                Nenhuma data adicional selecionada. Clique em &quot;Adicionar
-                Data&quot; para escolher.
-              </p>
-            )}
+            {form.watch("dataLimite") &&
+              diasSemana.length > 0 &&
+              form.watch("data") && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900 mb-1">
+                    Resumo da Recorrência
+                  </p>
+                  <p className="text-xs text-blue-700">
+                    O agendamento será replicado nos seguintes dias da semana:{" "}
+                    <strong>
+                      {diasSemana
+                        .map(
+                          (d) =>
+                            [
+                              "Domingo",
+                              "Segunda",
+                              "Terça",
+                              "Quarta",
+                              "Quinta",
+                              "Sexta",
+                              "Sábado",
+                            ][d],
+                        )
+                        .join(", ")}
+                    </strong>
+                    , desde{" "}
+                    {format(form.watch("data"), "dd/MM/yyyy", { locale: ptBR })}{" "}
+                    até{" "}
+                    {format(form.watch("dataLimite")!, "dd/MM/yyyy", {
+                      locale: ptBR,
+                    })}
+                    .
+                  </p>
+                  <p className="text-xs text-blue-600 mt-2">
+                    ℹ️ Aproximadamente{" "}
+                    {Math.ceil(
+                      ((form.watch("dataLimite")!.getTime() -
+                        form.watch("data").getTime()) /
+                        (1000 * 60 * 60 * 24 * 7)) *
+                        diasSemana.length,
+                    )}{" "}
+                    agendamento(s) serão criados (conflitos serão ignorados).
+                  </p>
+                </div>
+              )}
           </div>
         )}
 

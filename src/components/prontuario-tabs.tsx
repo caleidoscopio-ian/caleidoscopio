@@ -129,7 +129,7 @@ export function ProntuarioTabs({
         </TabsTrigger>
         <TabsTrigger value="prontuarios" className="flex items-center gap-1">
           <FolderOpen className="h-4 w-4" />
-          <span className="hidden sm:inline">Prontuários</span>
+          <span className="hidden sm:inline">Registros</span>
         </TabsTrigger>
         <TabsTrigger value="anexos" className="flex items-center gap-1">
           <Paperclip className="h-4 w-4" />
@@ -329,7 +329,7 @@ export function ProntuarioTabs({
         />
       </TabsContent>
 
-      {/* ABA: Prontuários */}
+      {/* ABA: Registros de Sessão */}
       <TabsContent value="prontuarios">
         <ProntuarioHistorico pacienteId={patient.id} />
       </TabsContent>

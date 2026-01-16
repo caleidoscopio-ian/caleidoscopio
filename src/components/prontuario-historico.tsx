@@ -128,7 +128,7 @@ export function ProntuarioHistorico({ pacienteId }: ProntuarioHistoricoProps) {
         {loading && (
           <div className="text-center py-8">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando prontuários...</p>
+            <p className="text-muted-foreground">Carregando registros...</p>
           </div>
         )}
 
@@ -136,7 +136,7 @@ export function ProntuarioHistorico({ pacienteId }: ProntuarioHistoricoProps) {
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">
-              Erro ao carregar prontuários
+              Erro ao carregar registros
             </h3>
             <p className="text-muted-foreground">{error}</p>
           </div>
@@ -146,10 +146,10 @@ export function ProntuarioHistorico({ pacienteId }: ProntuarioHistoricoProps) {
           <div className="text-center py-8">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">
-              Nenhum prontuário encontrado
+              Nenhum registro encontrado
             </h3>
             <p className="text-muted-foreground">
-              Este paciente ainda não possui prontuários cadastrados.
+              Este paciente ainda não possui registros cadastrados.
             </p>
           </div>
         )}

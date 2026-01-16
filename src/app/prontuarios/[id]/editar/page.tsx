@@ -74,8 +74,8 @@ export default function EditarProntuario() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Prontuários", href: "/prontuarios" },
-    { label: "Editar Prontuário" },
+    { label: "Registro de Sessão", href: "/prontuarios" },
+    { label: "Editar Registro" },
   ];
 
   const form = useForm<ProntuarioFormData>({
@@ -250,7 +250,7 @@ export default function EditarProntuario() {
 
       toast({
         title: "Sucesso",
-        description: "Prontuário atualizado com sucesso!",
+        description: "Registro atualizado com sucesso!",
       });
 
       router.push("/prontuarios");
@@ -280,7 +280,7 @@ export default function EditarProntuario() {
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Carregando prontuário...</p>
+              <p className="text-muted-foreground">Carregando registro...</p>
             </div>
           </div>
         </MainLayout>
@@ -300,7 +300,7 @@ export default function EditarProntuario() {
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
-                Editar Prontuário
+                Editar Registro de Sessão
               </h1>
               <p className="text-muted-foreground mt-1">
                 Atualize as informações do registro clínico
@@ -315,7 +315,7 @@ export default function EditarProntuario() {
           {/* Form */}
           <Card>
             <CardHeader>
-              <CardTitle>Informações do Prontuário</CardTitle>
+              <CardTitle>Informações do Registro</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>

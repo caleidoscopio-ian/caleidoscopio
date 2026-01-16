@@ -61,7 +61,7 @@ export default function TerapeutasPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Terapeutas" },
+    { label: "Profissionais" },
   ];
 
   // Buscar terapeutas da API
@@ -169,7 +169,7 @@ export default function TerapeutasPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Gestão de Terapeutas
+              Gestão de Profissionais
             </h1>
             <p className="text-muted-foreground">
               Gerencie os profissionais da clínica e suas especialidades
@@ -182,7 +182,7 @@ export default function TerapeutasPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Terapeutas
+                Total Profissionais
               </CardTitle>
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -203,7 +203,7 @@ export default function TerapeutasPage() {
                 {loading ? "..." : professionals.length}
               </div>
               <p className="text-xs text-muted-foreground">
-                Todos os terapeutas estão ativos
+                Todos os profissionais estão ativos
               </p>
             </CardContent>
           </Card>
@@ -297,7 +297,7 @@ export default function TerapeutasPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Lista de Terapeutas
+              Lista de Profissionais
               {!loading && (
                 <Badge variant="secondary" className="ml-2">
                   {filteredProfessionals.length} de {professionals.length}
@@ -319,7 +319,7 @@ export default function TerapeutasPage() {
               <div className="text-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                 <p className="text-muted-foreground">
-                  Carregando terapeutas...
+                  Carregando profissionais...
                 </p>
               </div>
             )}
@@ -328,10 +328,10 @@ export default function TerapeutasPage() {
               <div className="text-center py-8">
                 <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">
-                  Nenhum terapeuta encontrado
+                  Nenhum profissional encontrado
                 </h3>
                 <p className="text-muted-foreground">
-                  Os terapeutas devem ser criados através da página de Usuários.
+                  Os profissionais devem ser criados através da página de Usuários.
                 </p>
               </div>
             )}

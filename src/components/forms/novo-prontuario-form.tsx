@@ -203,7 +203,7 @@ export function NovoProntuarioForm({ onSuccess }: NovoProntuarioFormProps) {
       <DialogTrigger asChild>
         <Button className="bg-blue-600 hover:bg-blue-700">
           <Plus className="mr-2 h-4 w-4" />
-          Novo Prontuário
+          Novo Registro
         </Button>
       </DialogTrigger>
       <DialogContent className="!w-[90vw] !max-w-none max-h-[90vh] overflow-y-auto">

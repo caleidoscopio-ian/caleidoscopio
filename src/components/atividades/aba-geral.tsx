@@ -266,21 +266,14 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
                 <SelectValue placeholder="Selecione o tipo de ensino" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Tentativa Discreta-Estruturada">
-                  Tentativa Discreta-Estruturada
-                </SelectItem>
-                <SelectItem value="Análise de Tarefas">
-                  Análise de Tarefas
+                <SelectItem value="Ensino Estruturado">
+                  Ensino Estruturado
                 </SelectItem>
                 <SelectItem value="Ensino Naturalístico">
                   Ensino Naturalístico
                 </SelectItem>
-                <SelectItem value="Tentativa Discreta-Intercalada">
-                  Tentativa Discreta-Intercalada
-                </SelectItem>
-                <SelectItem value="Frequência">Frequência</SelectItem>
                 <SelectItem value="Duração">Duração</SelectItem>
-                <SelectItem value="Outros">Outros</SelectItem>
+                <SelectItem value="Frequência">Frequência</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -288,7 +281,7 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="qtd_alvos_sessao">
-                Quantidade de Alvos por Sessão
+                Quantidade de Instruções por Sessão
               </Label>
               <Input
                 id="qtd_alvos_sessao"

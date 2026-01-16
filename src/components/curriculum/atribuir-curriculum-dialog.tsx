@@ -16,7 +16,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { UserPlus, Loader2, Search, CheckCircle2 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scrollarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Curriculum {
   id: string;
@@ -184,7 +184,7 @@ export function AtribuirCurriculumDialog({
           Atribuir
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Atribuir Curriculum a Pacientes</DialogTitle>
           <DialogDescription>
@@ -192,7 +192,7 @@ export function AtribuirCurriculumDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-auto flex-1">
           {/* Informações do curriculum */}
           <div className="p-4 border rounded-lg bg-muted/30">
             <div className="font-medium">{curriculum.nome}</div>

@@ -93,7 +93,7 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           icon: Calendar,
         },
         {
-          title: "Prontuários",
+          title: "Registro de Sessão",
           href: "/prontuarios",
           icon: FileText,
         },
@@ -172,7 +172,7 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           icon: Users,
         },
         {
-          title: "Terapeutas",
+          title: "Profissionais",
           href: "/terapeutas",
           icon: UserCheck,
         },
@@ -197,7 +197,7 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           icon: Building2,
         },
         {
-          title: "Prontuários",
+          title: "Registro de Sessão",
           href: "/prontuarios",
           icon: FileText,
         },

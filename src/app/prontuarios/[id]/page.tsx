@@ -61,7 +61,7 @@ export default function ProntuarioDetalhesPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Prontuários", href: "/prontuarios" },
+    { label: "Registro de Sessão", href: "/prontuarios" },
     { label: "Detalhes" },
   ];
 
@@ -174,7 +174,7 @@ export default function ProntuarioDetalhesPage() {
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Carregando prontuário...</p>
+              <p className="text-muted-foreground">Carregando registro...</p>
             </div>
           </div>
         </MainLayout>
@@ -190,10 +190,10 @@ export default function ProntuarioDetalhesPage() {
             <div className="text-center">
               <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">
-                Erro ao carregar prontuário
+                Erro ao carregar registro
               </h3>
               <p className="text-muted-foreground mb-4">
-                {error || "Prontuário não encontrado"}
+                {error || "Registro não encontrado"}
               </p>
               <Button onClick={handleVoltar} variant="outline">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -215,7 +215,7 @@ export default function ProntuarioDetalhesPage() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold tracking-tight">
-                  Prontuário
+                  Registro de Sessão
                 </h1>
                 <Badge variant="default" className="bg-primary">
                   <FileCheck className="h-3 w-3 mr-1" />

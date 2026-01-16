@@ -80,7 +80,7 @@ export default function ProntuariosPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Prontuários" },
+    { label: "Registro de Sessão" },
   ];
 
   // Buscar prontuários da API
@@ -220,7 +220,7 @@ export default function ProntuariosPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Prontuários e Evolução
+              Registros de Sessão
             </h1>
             <p className="text-muted-foreground">
               Histórico de atendimentos, evoluções clínicas e registros
@@ -377,7 +377,7 @@ export default function ProntuariosPage() {
               <div className="text-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                 <p className="text-muted-foreground">
-                  Carregando prontuários...
+                  Carregando registros...
                 </p>
               </div>
             )}
@@ -386,7 +386,7 @@ export default function ProntuariosPage() {
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">
-                  Nenhum prontuário encontrado
+                  Nenhum registro encontrado
                 </h3>
                 <p className="text-muted-foreground mb-4">
                   Comece registrando o primeiro atendimento.
