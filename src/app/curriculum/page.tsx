@@ -57,7 +57,7 @@ export default function CurriculumPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Curriculum" },
+    { label: "Plano Terapêutico" },
   ];
 
   const fetchCurriculums = async () => {
@@ -83,7 +83,7 @@ export default function CurriculumPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Erro ao buscar curriculums");
+        throw new Error(result.error || "Erro ao buscar planos terapêuticos");
       }
 
       if (result.success) {
@@ -92,9 +92,9 @@ export default function CurriculumPage() {
         throw new Error(result.error || "Erro desconhecido");
       }
     } catch (err) {
-      console.error("❌ Erro ao buscar curriculums:", err);
+      console.error("❌ Erro ao buscar planos terapêuticos:", err);
       setError(
-        err instanceof Error ? err.message : "Erro ao carregar curriculums"
+        err instanceof Error ? err.message : "Erro ao carregar planos terapêuticos"
       );
     } finally {
       setLoading(false);
@@ -124,14 +124,14 @@ export default function CurriculumPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Curriculum</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Plano Terapêutico</h1>
             <p className="text-muted-foreground">
               Gerencie conjuntos de atividades organizadas
             </p>
           </div>
           <Button onClick={() => router.push("/curriculum/novo")}>
             <Plus className="mr-2 h-4 w-4" />
-            Novo Curriculum
+            Novo Plano Terapêutico
           </Button>
         </div>
 
@@ -140,7 +140,7 @@ export default function CurriculumPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Curriculums
+                Total de Planos
               </CardTitle>
               <BookMarked className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -213,7 +213,7 @@ export default function CurriculumPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Lista de Curriculums
+              Lista de Planos Terapêuticos
               {!loading && (
                 <Badge variant="secondary" className="ml-2">
                   {filteredCurriculums.length} de {curriculums.length}
@@ -221,7 +221,7 @@ export default function CurriculumPage() {
               )}
             </CardTitle>
             <CardDescription>
-              Curriculums cadastrados na clínica
+              Planos Terapêuticos cadastrados na clínica
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -238,7 +238,7 @@ export default function CurriculumPage() {
               <div className="text-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                 <p className="text-muted-foreground">
-                  Carregando curriculums...
+                  Carregando planos...
                 </p>
               </div>
             )}
@@ -247,14 +247,14 @@ export default function CurriculumPage() {
               <div className="text-center py-8">
                 <BookMarked className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">
-                  Nenhum curriculum encontrado
+                  Nenhum plano terapêutico encontrado
                 </h3>
                 <p className="text-muted-foreground mb-4">
-                  Comece criando o primeiro curriculum.
+                  Comece criando o primeiro plano terapêutico.
                 </p>
                 <Button onClick={() => router.push("/curriculum/novo")}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Novo Curriculum
+                  Novo Plano Terapêutico
                 </Button>
               </div>
             )}

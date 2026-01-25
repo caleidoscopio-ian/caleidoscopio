@@ -16,8 +16,8 @@ export default function NovoCurriculumPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Curriculum", href: "/curriculum" },
-    { label: "Novo Curriculum" },
+    { label: "Plano Terapêutico", href: "/curriculum" },
+    { label: "Novo Plano Terapêutico" },
   ];
 
   const handleCurriculumCriado = (id: string) => {
@@ -44,10 +44,10 @@ export default function NovoCurriculumPage() {
               </Button>
             </div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Novo Curriculum
+              Novo Plano Terapêutico
             </h1>
             <p className="text-muted-foreground">
-              Crie um novo curriculum e adicione atividades
+              Crie um novo plano e adicione atividades
             </p>
           </div>
 

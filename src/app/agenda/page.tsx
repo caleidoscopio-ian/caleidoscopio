@@ -65,18 +65,25 @@ export default function AgendaPage() {
   const [salas, setSalas] = useState<
     Array<{ id: string; nome: string; cor?: string }>
   >([]);
+  const [procedimentos, setProcedimentos] = useState<
+    Array<{ id: string; nome: string; codigo?: string }>
+  >([]);
   const [selectedProfissional, setSelectedProfissional] =
     useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
 
   // Dialogs
   const [showNovoAgendamento, setShowNovoAgendamento] = useState(false);
+  const [showEditarAgendamento, setShowEditarAgendamento] = useState(false);
   const [selectedAgendamento, setSelectedAgendamento] =
     useState<Agendamento | null>(null);
   const [showDetalhes, setShowDetalhes] = useState(false);
 
-  // Form defaults para novo agendamento
+  // Form defaults para novo/editar agendamento
   const [novoAgendamentoDefaults, setNovoAgendamentoDefaults] = useState<any>(
+    {}
+  );
+  const [editarAgendamentoDefaults, setEditarAgendamentoDefaults] = useState<any>(
     {}
   );
 
@@ -100,6 +107,7 @@ export default function AgendaPage() {
         loadPacientes(),
         loadProfissionais(),
         loadSalas(),
+        loadProcedimentos(),
       ]);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -274,6 +282,52 @@ export default function AgendaPage() {
     }
   };
 
+  const loadProcedimentos = async () => {
+    try {
+      // Verificar autenticação
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      // Preparar headers com dados do usuário
+      const userDataEncoded = btoa(JSON.stringify(user));
+
+      const response = await fetch("/api/procedimentos", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+      });
+
+      if (!response.ok) {
+        console.warn("API de procedimentos retornou erro, usando lista vazia");
+        setProcedimentos([]);
+        return;
+      }
+
+      const result = await response.json();
+      const data = result.success ? result.data : result;
+
+      if (Array.isArray(data)) {
+        setProcedimentos(
+          data.map((p: any) => ({
+            id: p.id,
+            nome: p.nome,
+            codigo: p.codigo,
+          }))
+        );
+      } else {
+        setProcedimentos([]);
+      }
+    } catch (error) {
+      console.warn("Erro ao carregar procedimentos, usando lista vazia:", error);
+      // Não propagar erro para não bloquear o carregamento da agenda
+      setProcedimentos([]);
+    }
+  };
+
   const handleNovoAgendamento = async (data: any) => {
     try {
       // Verificar autenticação
@@ -302,8 +356,9 @@ export default function AgendaPage() {
             profissionalId: data.profissionalId,
             datas: todasDatas,
             horario: data.horario,
-            duracao_minutos: data.duracao_minutos,
+            horario_fim: data.horario_fim,
             salaId: data.sala,
+            procedimento: data.procedimento,
             status: data.status,
             observacoes: data.observacoes,
           }),
@@ -330,9 +385,14 @@ export default function AgendaPage() {
         }
       } else {
         // Agendamento único (comportamento original)
-        const [hour, minute] = data.horario.split(":").map(Number);
+        const [hourInicio, minuteInicio] = data.horario.split(":").map(Number);
+        const [hourFim, minuteFim] = data.horario_fim.split(":").map(Number);
+
         const dataHora = new Date(data.data);
-        dataHora.setHours(hour, minute, 0, 0);
+        dataHora.setHours(hourInicio, minuteInicio, 0, 0);
+
+        const dataHoraFim = new Date(data.data);
+        dataHoraFim.setHours(hourFim, minuteFim, 0, 0);
 
         const response = await fetch("/api/agendamentos", {
           method: "POST",
@@ -345,8 +405,9 @@ export default function AgendaPage() {
             pacienteId: data.pacienteId,
             profissionalId: data.profissionalId,
             data_hora: dataHora.toISOString(),
-            duracao_minutos: data.duracao_minutos,
+            horario_fim: dataHoraFim.toISOString(),
             sala: data.sala,
+            procedimento: data.procedimento,
             status: data.status,
             observacoes: data.observacoes,
           }),
@@ -527,6 +588,91 @@ export default function AgendaPage() {
   const handleAgendamentoClick = (agendamento: Agendamento) => {
     setSelectedAgendamento(agendamento);
     setShowDetalhes(true);
+  };
+
+  const handleEditarAgendamento = (agendamento: Agendamento) => {
+    // Extrair horário de início
+    const dataHora = new Date(agendamento.data_hora);
+    const horarioInicio = `${dataHora.getHours().toString().padStart(2, "0")}:${dataHora.getMinutes().toString().padStart(2, "0")}`;
+
+    // Extrair horário de fim
+    const dataFim = new Date(agendamento.horario_fim);
+    const horarioFim = `${dataFim.getHours().toString().padStart(2, "0")}:${dataFim.getMinutes().toString().padStart(2, "0")}`;
+
+    setEditarAgendamentoDefaults({
+      id: agendamento.id,
+      pacienteId: agendamento.pacienteId,
+      profissionalId: agendamento.profissionalId,
+      data: new Date(agendamento.data_hora),
+      horario: horarioInicio,
+      horario_fim: horarioFim,
+      sala: agendamento.salaId,
+      procedimento: agendamento.procedimentoId || undefined,
+      status: agendamento.status,
+      observacoes: agendamento.observacoes || "",
+    });
+    setSelectedAgendamento(agendamento);
+    setShowEditarAgendamento(true);
+  };
+
+  const handleUpdateAgendamento = async (data: any) => {
+    try {
+      // Verificar autenticação
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      const userDataEncoded = btoa(JSON.stringify(user));
+
+      // Criar DateTime para início e fim
+      const [hourInicio, minuteInicio] = data.horario.split(":").map(Number);
+      const [hourFim, minuteFim] = data.horario_fim.split(":").map(Number);
+
+      const dataHora = new Date(data.data);
+      dataHora.setHours(hourInicio, minuteInicio, 0, 0);
+
+      const dataHoraFim = new Date(data.data);
+      dataHoraFim.setHours(hourFim, minuteFim, 0, 0);
+
+      const response = await fetch(`/api/agendamentos/${data.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+        body: JSON.stringify({
+          pacienteId: data.pacienteId,
+          profissionalId: data.profissionalId,
+          data_hora: dataHora.toISOString(),
+          horario_fim: dataHoraFim.toISOString(),
+          sala: data.sala,
+          procedimento: data.procedimento,
+          status: data.status,
+          observacoes: data.observacoes,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erro ao atualizar agendamento");
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Agendamento atualizado com sucesso",
+      });
+
+      setShowEditarAgendamento(false);
+      loadAgendamentos();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const navigateDate = (direction: "prev" | "next") => {
@@ -773,6 +919,7 @@ export default function AgendaPage() {
             pacientes={pacientes}
             profissionais={profissionais}
             salas={salas}
+            procedimentos={procedimentos}
             onSubmit={handleNovoAgendamento}
             onCancel={() => setShowNovoAgendamento(false)}
             defaultValues={novoAgendamentoDefaults}
@@ -788,8 +935,27 @@ export default function AgendaPage() {
         onConfirmar={handleConfirmarAgendamento}
         onCancelar={handleCancelarAgendamento}
         onIniciarAtendimento={handleIniciarAtendimento}
+        onEditar={handleEditarAgendamento}
         onDeletar={handleDeletarAgendamento}
       />
+
+      {/* Dialog: Editar Agendamento */}
+      <Dialog open={showEditarAgendamento} onOpenChange={setShowEditarAgendamento}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Agendamento</DialogTitle>
+          </DialogHeader>
+          <NovoAgendamentoForm
+            pacientes={pacientes}
+            profissionais={profissionais}
+            salas={salas}
+            procedimentos={procedimentos}
+            onSubmit={handleUpdateAgendamento}
+            onCancel={() => setShowEditarAgendamento(false)}
+            defaultValues={editarAgendamentoDefaults}
+          />
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

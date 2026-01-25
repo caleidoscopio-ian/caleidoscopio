@@ -59,9 +59,12 @@ export function AgendaDiaria({
     return map;
   }, [agendamentos, profissionais]);
 
-  // Calcular quantos slots de 30min o agendamento ocupa
-  const calculateSlots = (duracao_minutos: number) => {
-    return Math.ceil(duracao_minutos / 30);
+  // Calcular quantos slots de 10min o agendamento ocupa
+  const calculateSlots = (inicio: Date | string, fim: Date | string) => {
+    const dataInicio = new Date(inicio);
+    const dataFim = new Date(fim);
+    const duracaoMinutos = (dataFim.getTime() - dataInicio.getTime()) / 60000;
+    return Math.ceil(duracaoMinutos / 10); // Slots de 10 minutos
   };
 
   // Verificar se um slot está ocupado
@@ -78,9 +81,7 @@ export function AgendaDiaria({
 
     for (const agendamento of agendamentosDoProfissional) {
       const agendamentoDate = new Date(agendamento.data_hora);
-      const agendamentoEnd = new Date(
-        agendamentoDate.getTime() + agendamento.duracao_minutos * 60000
-      );
+      const agendamentoEnd = new Date(agendamento.horario_fim);
 
       if (slotDate >= agendamentoDate && slotDate < agendamentoEnd) {
         return agendamento;
@@ -220,7 +221,8 @@ export function AgendaDiaria({
               // Se é o slot inicial, renderizar o card do agendamento
               if (agendamento && isStart) {
                 const slotsOcupados = calculateSlots(
-                  agendamento.duracao_minutos
+                  agendamento.data_hora,
+                  agendamento.horario_fim
                 );
                 const altura = slotsOcupados * 60; // cada slot tem ~60px
 
@@ -279,7 +281,14 @@ export function AgendaDiaria({
                                 minute: "2-digit",
                               }
                             )}{" "}
-                            - {agendamento.duracao_minutos}min
+                            -{" "}
+                            {new Date(agendamento.horario_fim).toLocaleTimeString(
+                              "pt-BR",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
                           </span>
                         </div>
 

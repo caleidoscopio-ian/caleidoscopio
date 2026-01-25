@@ -79,9 +79,7 @@ export function AgendaSemanal({
 
     for (const agendamento of agendamentosDoDia) {
       const agendamentoDate = new Date(agendamento.data_hora);
-      const agendamentoEnd = new Date(
-        agendamentoDate.getTime() + agendamento.duracao_minutos * 60000
-      );
+      const agendamentoEnd = new Date(agendamento.horario_fim);
 
       if (slotDate >= agendamentoDate && slotDate < agendamentoEnd) {
         return agendamento;
@@ -107,8 +105,11 @@ export function AgendaSemanal({
     );
   };
 
-  const calculateSlots = (duracao_minutos: number) => {
-    return Math.ceil(duracao_minutos / 30);
+  const calculateSlots = (inicio: Date | string, fim: Date | string) => {
+    const dataInicio = new Date(inicio);
+    const dataFim = new Date(fim);
+    const duracaoMinutos = (dataFim.getTime() - dataInicio.getTime()) / 60000;
+    return Math.ceil(duracaoMinutos / 10); // Slots de 10 minutos
   };
 
   const getStatusColor = (status: StatusAgendamento) => {
@@ -208,7 +209,8 @@ export function AgendaSemanal({
               // Se é o slot inicial, renderizar o card do agendamento
               if (agendamento && isStart) {
                 const slotsOcupados = calculateSlots(
-                  agendamento.duracao_minutos
+                  agendamento.data_hora,
+                  agendamento.horario_fim
                 );
                 const altura = slotsOcupados * 48;
 
@@ -258,8 +260,7 @@ export function AgendaSemanal({
                         </div>
 
                         <div className="text-[10px] text-muted-foreground">
-                          {format(new Date(agendamento.data_hora), "HH:mm")} -{" "}
-                          {agendamento.duracao_minutos}min
+                          {format(new Date(agendamento.data_hora), "HH:mm")} - {format(new Date(agendamento.horario_fim), "HH:mm")}
                         </div>
 
                         {slotsOcupados > 1 && agendamento.salaRelacao && (

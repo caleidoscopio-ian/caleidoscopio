@@ -232,16 +232,17 @@ export async function POST(request: NextRequest) {
       pacienteId,
       profissionalId,
       data_hora,
-      duracao_minutos = 60,
+      horario_fim,
       sala,
+      procedimento,
       status = StatusAgendamento.AGENDADO,
       observacoes,
     } = body;
 
     // Validações
-    if (!pacienteId || !profissionalId || !data_hora) {
+    if (!pacienteId || !profissionalId || !data_hora || !horario_fim || !sala) {
       return NextResponse.json(
-        { error: "Paciente, profissional e data/hora são obrigatórios" },
+        { error: "Paciente, profissional, sala, horário de início e fim são obrigatórios" },
         { status: 400 }
       );
     }
@@ -280,7 +281,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar conflito de horário para o profissional
     const dataHora = new Date(data_hora);
-    const dataFim = new Date(dataHora.getTime() + duracao_minutos * 60000);
+    const dataFim = new Date(horario_fim);
 
     // Buscar agendamentos que possam conflitar
     const agendamentosExistentes = await prisma.agendamento.findMany({
@@ -293,14 +294,14 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         data_hora: true,
-        duracao_minutos: true,
+        horario_fim: true,
       },
     });
 
     // Verificar sobreposição de intervalos
     const conflito = agendamentosExistentes.find((ag) => {
       const agInicio = new Date(ag.data_hora);
-      const agFim = new Date(agInicio.getTime() + ag.duracao_minutos * 60000);
+      const agFim = new Date(ag.horario_fim);
 
       // Dois intervalos se sobrepõem se:
       // (NovoInicio < ExistenteVim) E (NovoFim > ExistenteInicio)
@@ -317,55 +318,67 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar disponibilidade da sala (se sala foi informada)
-    if (sala) {
-      // Verificar se sala existe e pertence à clínica
-      const salaExistente = await prisma.sala.findFirst({
+    // Verificar disponibilidade da sala (obrigatória agora)
+    const salaExistente = await prisma.sala.findFirst({
+      where: {
+        id: sala,
+        tenantId: user.tenant.id,
+        ativo: true,
+      },
+    });
+
+    if (!salaExistente) {
+      return NextResponse.json(
+        { error: "Sala não encontrada ou não pertence a esta clínica" },
+        { status: 404 }
+      );
+    }
+
+    // Verificar conflito de horário na sala
+    const agendamentosSala = await prisma.agendamento.findMany({
+      where: {
+        salaId: sala,
+        status: {
+          notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.FALTOU],
+        },
+      },
+      select: {
+        id: true,
+        data_hora: true,
+        horario_fim: true,
+      },
+    });
+
+    // Verificar sobreposição de intervalos para sala
+    const conflitoSala = agendamentosSala.find((ag) => {
+      const agInicio = new Date(ag.data_hora);
+      const agFim = new Date(ag.horario_fim);
+      return dataHora < agFim && dataFim > agInicio;
+    });
+
+    if (conflitoSala) {
+      return NextResponse.json(
+        {
+          error: "Sala já está ocupada neste horário",
+        },
+        { status: 409 }
+      );
+    }
+
+    // Verificar procedimento se fornecido
+    if (procedimento) {
+      const procedimentoExistente = await prisma.procedimento.findFirst({
         where: {
-          id: sala,
+          id: procedimento,
           tenantId: user.tenant.id,
           ativo: true,
         },
       });
 
-      if (!salaExistente) {
+      if (!procedimentoExistente) {
         return NextResponse.json(
-          { error: "Sala não encontrada ou não pertence a esta clínica" },
+          { error: "Procedimento não encontrado ou não pertence a esta clínica" },
           { status: 404 }
-        );
-      }
-
-      // Verificar conflito de horário na sala
-      const agendamentosSala = await prisma.agendamento.findMany({
-        where: {
-          salaId: sala,
-          status: {
-            notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.FALTOU],
-          },
-        },
-        select: {
-          id: true,
-          data_hora: true,
-          duracao_minutos: true,
-        },
-      });
-
-      // Verificar sobreposição de intervalos para sala
-      const conflitoSala = agendamentosSala.find((ag) => {
-        const agInicio = new Date(ag.data_hora);
-        const agFim = new Date(agInicio.getTime() + ag.duracao_minutos * 60000);
-
-        // Dois intervalos se sobrepõem se:
-        // (NovoInicio < ExistenteVim) E (NovoFim > ExistenteInicio)
-        return dataHora < agFim && dataFim > agInicio;
-      });
-
-      if (conflitoSala) {
-        return NextResponse.json(
-          {
-            error: "Sala já está ocupada neste horário",
-          },
-          { status: 409 }
         );
       }
     }
@@ -380,9 +393,11 @@ export async function POST(request: NextRequest) {
         pacienteId,
         profissionalId,
         data_hora: dataHora,
-        duracao_minutos,
-        salaId: sala || null, // Salvar como relacionamento
-        sala: sala || null, // Manter campo antigo por compatibilidade
+        horario_fim: dataFim,
+        duracao_minutos: Math.round((dataFim.getTime() - dataHora.getTime()) / 60000), // Calcular para compatibilidade
+        salaId: sala, // Obrigatório agora
+        sala: sala, // Manter campo antigo por compatibilidade
+        procedimentoId: procedimento || null,
         status,
         observacoes,
       },
@@ -408,6 +423,14 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             nome: true,
+            cor: true,
+          },
+        },
+        procedimento: {
+          select: {
+            id: true,
+            nome: true,
+            codigo: true,
             cor: true,
           },
         },

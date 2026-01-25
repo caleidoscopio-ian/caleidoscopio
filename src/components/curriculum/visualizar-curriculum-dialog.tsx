@@ -61,9 +61,9 @@ export function VisualizarCurriculumDialog({ curriculum }: VisualizarCurriculumD
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Detalhes do Curriculum</DialogTitle>
+          <DialogTitle>Detalhes do Plano Terapêutico</DialogTitle>
           <DialogDescription>
-            Visualize as informações completas do curriculum
+            Visualize as informações completas do plano terapêutico
           </DialogDescription>
         </DialogHeader>
 
@@ -131,7 +131,7 @@ export function VisualizarCurriculumDialog({ curriculum }: VisualizarCurriculumD
 
             {curriculum.atividades?.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                <p className="text-sm">Nenhuma atividade adicionada a este curriculum</p>
+                <p className="text-sm">Nenhuma atividade adicionada a este plano</p>
               </div>
             )}
 

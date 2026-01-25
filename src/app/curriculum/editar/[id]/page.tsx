@@ -22,8 +22,8 @@ export default function EditarCurriculumPage() {
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Curriculum", href: "/curriculum" },
-    { label: "Editar Curriculum" },
+    { label: "Plano Terapêutico", href: "/curriculum" },
+    { label: "Editar Plano Terapêutico" },
   ];
 
   useEffect(() => {

@@ -59,7 +59,7 @@ export function AbaGeral({ curriculumId, onSave }: AbaGeralProps) {
         });
       }
     } catch (error) {
-      console.error("Erro ao carregar curriculum:", error);
+      console.error("Erro ao carregar plano terapêutico:", error);
     }
   };
 
@@ -106,7 +106,7 @@ export function AbaGeral({ curriculumId, onSave }: AbaGeralProps) {
       }
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar curriculum");
+      alert("Erro ao salvar plano terapêutico");
     } finally {
       setSaving(false);
     }
@@ -117,14 +117,14 @@ export function AbaGeral({ curriculumId, onSave }: AbaGeralProps) {
       <CardHeader>
         <CardTitle>Informações Gerais</CardTitle>
         <CardDescription>
-          Defina as informações básicas do curriculum
+          Defina as informações básicas do plano terapêutico
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="nome">
-              Nome do Curriculum <span className="text-red-500">*</span>
+              Nome do Plano Terapêutico <span className="text-red-500">*</span>
             </Label>
             <Input
               id="nome"
@@ -140,7 +140,7 @@ export function AbaGeral({ curriculumId, onSave }: AbaGeralProps) {
             <Label htmlFor="descricao">Descrição</Label>
             <Textarea
               id="descricao"
-              placeholder="Descrição do curriculum..."
+              placeholder="Descrição do plano..."
               rows={4}
               value={formData.descricao}
               onChange={(e) =>
@@ -172,13 +172,13 @@ export function AbaGeral({ curriculumId, onSave }: AbaGeralProps) {
             ? "Salvando..."
             : curriculumId
               ? "Salvar Alterações"
-              : "Criar Curriculum"}
+              : "Criar Plano Terapêutico"}
         </Button>
 
         {curriculumId && (
           <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
             <p className="text-sm">
-              ✓ Curriculum salvo! Agora você pode adicionar Atividades usando a
+              ✓ Plano Terapêutico salvo! Agora você pode adicionar Atividades usando a
               aba acima.
             </p>
           </div>

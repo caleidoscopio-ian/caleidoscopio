@@ -34,6 +34,7 @@ import {
   X,
   ArrowLeft,
   ArrowRight,
+  ClipboardList,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
@@ -203,6 +204,13 @@ export default function AplicarAvaliacaoPage() {
     salvarResposta(tarefa.id, novasRespostas[tarefa.id].pontuacao, observacao);
   };
 
+  // Navegar para uma tarefa específica
+  const navegarParaTarefa = (indice: number) => {
+    if (!sessao) return;
+    if (indice < 0 || indice >= tarefas.length) return;
+    setTarefaAtual(indice);
+  };
+
   const finalizarSessao = async () => {
     try {
       setSaving(true);
@@ -246,7 +254,43 @@ export default function AplicarAvaliacaoPage() {
   }
 
   const tarefas = sessao.avaliacao.tarefas;
+
+  // Validar se a tarefa existe
+  if (!tarefas || tarefas.length === 0) {
+    return (
+      <MainLayout breadcrumbs={breadcrumbs}>
+        <div className="text-center py-12">
+          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">Nenhuma tarefa encontrada</h3>
+          <p className="text-muted-foreground mb-4">
+            Esta avaliação não possui tarefas cadastradas.
+          </p>
+          <Button onClick={() => router.push("/iniciar-sessao")}>
+            Voltar para Iniciar Sessão
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
   const tarefa = tarefas[tarefaAtual];
+  if (!tarefa) {
+    return (
+      <MainLayout breadcrumbs={breadcrumbs}>
+        <div className="text-center py-12">
+          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">Tarefa não encontrada</h3>
+          <p className="text-muted-foreground mb-4">
+            Índice de tarefa inválido para esta avaliação.
+          </p>
+          <Button onClick={() => router.push("/iniciar-sessao")}>
+            Voltar para Iniciar Sessão
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
   const progresso = Math.round(((tarefaAtual + 1) / tarefas.length) * 100);
   const respostasPreenchidas = Object.keys(respostas).filter(
     (k) => respostas[k].pontuacao !== null
@@ -265,6 +309,45 @@ export default function AplicarAvaliacaoPage() {
             <strong>{sessao.avaliacao.nome}</strong>
           </p>
         </div>
+
+        {/* Painel de Navegação de Tarefas */}
+        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              Tarefas da Avaliação ({tarefas.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {tarefas.map((trf, idx) => {
+                const tarefaRespondida = respostas[trf.id]?.pontuacao !== null && respostas[trf.id]?.pontuacao !== undefined;
+                const isAtual = idx === tarefaAtual;
+
+                return (
+                  <Button
+                    key={trf.id}
+                    variant={isAtual ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => navegarParaTarefa(idx)}
+                    className={`flex-shrink-0 min-w-[100px] justify-between ${
+                      tarefaRespondida && !isAtual
+                        ? "border-green-500 bg-green-50 hover:bg-green-100"
+                        : ""
+                    }`}
+                  >
+                    <span className="text-xs font-medium">
+                      Tarefa {idx + 1}
+                    </span>
+                    {tarefaRespondida && (
+                      <CheckCircle2 className="h-4 w-4 ml-1 flex-shrink-0 text-green-600" />
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Progresso */}
         <Card>

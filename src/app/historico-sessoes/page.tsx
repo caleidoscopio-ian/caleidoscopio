@@ -359,7 +359,7 @@ export default function HistoricoSessoesPage() {
     if (sessao.tipo === "AVALIACAO") {
       return "Avaliação";
     }
-    return "Curriculum";
+    return "Plano Terapêutico";
   };
 
   // Traduzir status
@@ -402,7 +402,7 @@ export default function HistoricoSessoesPage() {
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por paciente, curriculum/avaliação ou terapeuta..."
+                placeholder="Buscar por paciente, plano terapêutico/avaliação ou terapeuta..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -665,7 +665,7 @@ export default function HistoricoSessoesPage() {
                                           <div>
                                             <label className="text-sm font-medium text-muted-foreground">
                                               {sessaoDetalhes.tipo === "CURRICULUM"
-                                                ? "Curriculum"
+                                                ? "Plano Terapêutico"
                                                 : "Avaliação"}
                                             </label>
                                             <p className="font-medium">

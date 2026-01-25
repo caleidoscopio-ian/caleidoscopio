@@ -108,7 +108,7 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           icon: Play,
         },
         {
-          title: "Curriculum",
+          title: "Plano Terapêutico",
           href: "/curriculum",
           icon: BookMarked,
         },
@@ -177,11 +177,6 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           icon: UserCheck,
         },
         {
-          title: "Responsáveis",
-          href: "/responsaveis",
-          icon: UserSquareIcon,
-        },
-        {
           title: "Pacientes",
           href: "/pacientes",
           icon: GraduationCap,
@@ -212,7 +207,7 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           icon: Play,
         },
         {
-          title: "Curriculum",
+          title: "Plano Terapêutico",
           href: "/curriculum",
           icon: BookMarked,
         },
@@ -232,7 +227,7 @@ export const getSidebarItems = (userRole: string): SidebarItem[] => {
           icon: History,
         },
         {
-          title: "Relatórios e Indicadores",
+          title: "Relatórios",
           href: "/relatorios",
           icon: BarChart3,
         },

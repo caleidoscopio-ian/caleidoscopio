@@ -38,6 +38,8 @@ interface Instrucao {
   texto: string;
   como_aplicar?: string;
   observacao?: string;
+  procedimento_correcao?: string;
+  materiais_utilizados?: string;
 }
 
 interface Pontuacao {
@@ -129,7 +131,7 @@ export default function AplicarCurriculumPage() {
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "Iniciar Sessão", href: "/iniciar-sessao" },
-    { label: "Aplicar Curriculum" },
+    { label: "Aplicar Plano Terapêutico" },
   ];
 
   // Buscar dados da sessão
@@ -194,7 +196,17 @@ export default function AplicarCurriculumPage() {
     }
 
     const atividade = sessao.curriculum.atividades[atividadeAtual];
+    if (!atividade) {
+      setError("Atividade não encontrada");
+      return false;
+    }
+
     const instrucao = atividade.atividade.instrucoes[instrucaoAtual];
+    if (!instrucao) {
+      setError("Instrução não encontrada");
+      return false;
+    }
+
     const qtdTentativas = atividade.atividade.qtd_tentativas_alvo || 1;
 
     // Verificar se todas as tentativas foram avaliadas
@@ -301,6 +313,11 @@ export default function AplicarCurriculumPage() {
   // Navegar para uma atividade específica
   const navegarParaAtividade = (indice: number) => {
     if (!sessao) return;
+
+    // Limpar estado das avaliações de tentativas ao trocar de atividade
+    setAvaliacoesTentativas(new Map());
+
+    // Atualizar os índices - SEMPRE reseta instrução para 0
     setAtividadeAtual(indice);
     setInstrucaoAtual(0);
   };
@@ -445,8 +462,39 @@ export default function AplicarCurriculumPage() {
     );
   }
 
+  // Validar se atividade e instrução existem
   const atividade = sessao.curriculum.atividades[atividadeAtual];
+  if (!atividade) {
+    return (
+      <MainLayout breadcrumbs={breadcrumbs}>
+        <div className="text-center py-12">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">Atividade não encontrada</h3>
+          <Button onClick={() => router.push("/iniciar-sessao")}>
+            Voltar para Iniciar Sessão
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
+
   const instrucao = atividade.atividade.instrucoes[instrucaoAtual];
+  if (!instrucao) {
+    return (
+      <MainLayout breadcrumbs={breadcrumbs}>
+        <div className="text-center py-12">
+          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">Instrução não encontrada</h3>
+          <p className="text-muted-foreground mb-4">
+            Índice de instrução inválido para esta atividade
+          </p>
+          <Button onClick={() => router.push("/iniciar-sessao")}>
+            Voltar para Iniciar Sessão
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   // Calcular total de avaliações (instruções × tentativas)
   const totalAvaliacoes = sessao.curriculum.atividades.reduce(
@@ -469,7 +517,7 @@ export default function AplicarCurriculumPage() {
         {/* Header com informações da sessão */}
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Aplicar Curriculum
+            Aplicar Plano Terapêutico
           </h1>
           <p className="text-muted-foreground">
             Paciente: <strong>{sessao.paciente.name}</strong> • Curriculum:{" "}

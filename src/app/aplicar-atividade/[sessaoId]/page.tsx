@@ -80,7 +80,7 @@ export default function AplicarAtividadePage() {
   const [error, setError] = useState<string | null>(null);
   const [instrucaoAtual, setInstrucaoAtual] = useState(0);
   const [avaliacoes, setAvaliacoes] = useState<Map<string, Avaliacao>>(
-    new Map()
+    new Map(),
   );
 
   // Estado da avaliação atual
@@ -460,7 +460,7 @@ export default function AplicarAtividadePage() {
                             setTiposAjuda((prev) => [...prev, tipo.codigo]);
                           } else {
                             setTiposAjuda((prev) =>
-                              prev.filter((t) => t !== tipo.codigo)
+                              prev.filter((t) => t !== tipo.codigo),
                             );
                           }
                         }}

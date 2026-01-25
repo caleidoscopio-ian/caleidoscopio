@@ -59,28 +59,19 @@ export default function EditarAtividadePage() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="geral">Geral</TabsTrigger>
             <TabsTrigger value="pontuacao">Pontuação/Dicas</TabsTrigger>
-            <TabsTrigger value="instrucoes">Instruções</TabsTrigger>
+            <TabsTrigger value="instrucoes">Instruções (SD)</TabsTrigger>
           </TabsList>
 
           <TabsContent value="geral">
-            <AbaGeral
-              atividadeId={atividadeId}
-              onSave={() => {}}
-            />
+            <AbaGeral atividadeId={atividadeId} onSave={() => {}} />
           </TabsContent>
 
           <TabsContent value="pontuacao">
-            <AbaPontuacao
-              atividadeId={atividadeId}
-              onSave={() => {}}
-            />
+            <AbaPontuacao atividadeId={atividadeId} onSave={() => {}} />
           </TabsContent>
 
           <TabsContent value="instrucoes">
-            <AbaInstrucoes
-              atividadeId={atividadeId}
-              onSave={() => {}}
-            />
+            <AbaInstrucoes atividadeId={atividadeId} onSave={() => {}} />
           </TabsContent>
         </Tabs>
       </div>

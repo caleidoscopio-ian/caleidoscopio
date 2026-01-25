@@ -120,7 +120,7 @@ export function ExcluirCurriculumDialog({ curriculum, onSuccess }: ExcluirCurric
                       </li>
                     </ul>
                     <p className="mt-2">
-                      Ao excluir, todas as associações entre este curriculum e suas atividades serão removidas.
+                      Ao excluir, todas as associações entre este plano e suas atividades serão removidas.
                       As atividades em si não serão excluídas.
                     </p>
                   </div>
@@ -129,7 +129,7 @@ export function ExcluirCurriculumDialog({ curriculum, onSuccess }: ExcluirCurric
             )}
 
             <p className="text-sm text-muted-foreground">
-              Tem certeza que deseja excluir este curriculum?
+              Tem certeza que deseja excluir este plano?
             </p>
           </div>
         </div>

@@ -143,9 +143,9 @@ export function AtribuirCurriculumDialog({
       setSelectedPacientes([]);
       onSuccess();
     } catch (err) {
-      console.error("Erro ao atribuir curriculum:", err);
+      console.error("Erro ao atribuir plano terapêutico:", err);
       setError(
-        err instanceof Error ? err.message : "Erro ao atribuir curriculum"
+        err instanceof Error ? err.message : "Erro ao atribuir plano terapêutico"
       );
     } finally {
       setLoading(false);
@@ -186,9 +186,9 @@ export function AtribuirCurriculumDialog({
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Atribuir Curriculum a Pacientes</DialogTitle>
+          <DialogTitle>Atribuir Plano Terapêutico a Pacientes</DialogTitle>
           <DialogDescription>
-            Selecione os pacientes que receberão este curriculum
+            Selecione os pacientes que receberão este plano
           </DialogDescription>
         </DialogHeader>
 

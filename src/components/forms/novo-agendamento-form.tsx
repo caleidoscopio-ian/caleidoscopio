@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { StatusAgendamento } from "@/types/agendamento";
 
 const formSchema = z.object({
+  id: z.string().optional(), // Para edição
   pacienteId: z.string().min(1, "Selecione um paciente"),
   profissionalId: z.string().min(1, "Selecione um profissional"),
   data: z.date({
@@ -43,9 +44,10 @@ const formSchema = z.object({
   datasAdicionais: z.array(z.date()).optional(),
   dataLimite: z.date().optional(),
   diasDaSemana: z.array(z.number()).optional(),
-  horario: z.string().min(1, "Informe o horário"),
-  duracao_minutos: z.number().min(30, "Duração mínima de 30 minutos"),
-  sala: z.string().optional(),
+  horario: z.string().min(1, "Informe o horário de início"),
+  horario_fim: z.string().min(1, "Informe o horário de fim"),
+  sala: z.string().min(1, "Selecione uma sala"),
+  procedimento: z.string().optional(),
   status: z.nativeEnum(StatusAgendamento),
   observacoes: z.string().optional(),
 });
@@ -56,6 +58,7 @@ interface NovoAgendamentoFormProps {
   pacientes: Array<{ id: string; nome: string }>;
   profissionais: Array<{ id: string; nome: string; especialidade: string }>;
   salas: Array<{ id: string; nome: string; cor?: string }>;
+  procedimentos: Array<{ id: string; nome: string; codigo?: string }>;
   onSubmit: (data: FormValues) => Promise<void>;
   onCancel: () => void;
   defaultValues?: Partial<FormValues>;
@@ -65,6 +68,7 @@ export function NovoAgendamentoForm({
   pacientes,
   profissionais,
   salas,
+  procedimentos,
   onSubmit,
   onCancel,
   defaultValues,
@@ -77,7 +81,6 @@ export function NovoAgendamentoForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: StatusAgendamento.AGENDADO,
-      duracao_minutos: 60,
       sala: "",
       observacoes: "",
       datasAdicionais: [],
@@ -432,13 +435,13 @@ export function NovoAgendamentoForm({
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="duracao_minutos"
+            name="horario_fim"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Duração (minutos) *</FormLabel>
+                <FormLabel>Horário de Término *</FormLabel>
                 <Select
-                  onValueChange={(value) => field.onChange(parseInt(value))}
-                  defaultValue={field.value?.toString()}
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -446,10 +449,11 @@ export function NovoAgendamentoForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="30">30 minutos</SelectItem>
-                    <SelectItem value="60">60 minutos (1 hora)</SelectItem>
-                    <SelectItem value="90">90 minutos (1h30)</SelectItem>
-                    <SelectItem value="120">120 minutos (2 horas)</SelectItem>
+                    {horarios.map((hora) => (
+                      <SelectItem key={hora} value={hora}>
+                        {hora}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -462,12 +466,10 @@ export function NovoAgendamentoForm({
             name="sala"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Sala (opcional)</FormLabel>
+                <FormLabel>Sala *</FormLabel>
                 <Select
-                  onValueChange={(value) =>
-                    field.onChange(value === "none" ? undefined : value)
-                  }
-                  defaultValue={field.value || "none"}
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -475,7 +477,6 @@ export function NovoAgendamentoForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="none">Sem sala</SelectItem>
                     {salas
                       .filter((s) => s.id)
                       .map((sala) => (
@@ -498,6 +499,40 @@ export function NovoAgendamentoForm({
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="procedimento"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Procedimento (opcional)</FormLabel>
+              <Select
+                onValueChange={(value) =>
+                  field.onChange(value === "none" ? undefined : value)
+                }
+                value={field.value || "none"}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um procedimento" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="none">Sem procedimento</SelectItem>
+                  {procedimentos
+                    .filter((p) => p.id)
+                    .map((proc) => (
+                      <SelectItem key={proc.id} value={proc.id}>
+                        {proc.codigo ? `${proc.codigo} - ` : ""}
+                        {proc.nome}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

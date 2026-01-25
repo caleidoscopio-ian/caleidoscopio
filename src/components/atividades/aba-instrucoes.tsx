@@ -48,6 +48,8 @@ interface Instrucao {
   texto: string;
   como_aplicar: string;
   observacao: string;
+  procedimento_correcao: string;
+  materiais_utilizados: string;
 }
 
 interface AbaInstrucoesProps {
@@ -69,6 +71,8 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
     texto: "",
     como_aplicar: "",
     observacao: "",
+    procedimento_correcao: "",
+    materiais_utilizados: "",
   });
 
   const fetchInstrucoes = async () => {
@@ -108,6 +112,8 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
       texto: "",
       como_aplicar: "",
       observacao: "",
+      procedimento_correcao: "",
+      materiais_utilizados: "",
     });
     setDialogOpen(true);
   };
@@ -120,6 +126,8 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
       texto: instrucao.texto,
       como_aplicar: instrucao.como_aplicar || "",
       observacao: instrucao.observacao || "",
+      procedimento_correcao: instrucao.procedimento_correcao || "",
+      materiais_utilizados: instrucao.materiais_utilizados || "",
     });
     setDialogOpen(true);
   };
@@ -139,6 +147,8 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
         texto: formData.texto,
         como_aplicar: formData.como_aplicar,
         observacao: formData.observacao,
+        procedimento_correcao: formData.procedimento_correcao,
+        materiais_utilizados: formData.materiais_utilizados,
       };
       setInstrucoes(novasInstrucoes);
     } else {
@@ -150,6 +160,8 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
           texto: formData.texto,
           como_aplicar: formData.como_aplicar,
           observacao: formData.observacao,
+          procedimento_correcao: formData.procedimento_correcao,
+          materiais_utilizados: formData.materiais_utilizados,
         },
       ]);
     }
@@ -388,6 +400,32 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
                 value={formData.observacao}
                 onChange={(e) =>
                   setFormData({ ...formData, observacao: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="procedimento_correcao">Procedimento de Correção</Label>
+              <Textarea
+                id="procedimento_correcao"
+                placeholder="Como corrigir erros durante a aplicação..."
+                rows={3}
+                value={formData.procedimento_correcao}
+                onChange={(e) =>
+                  setFormData({ ...formData, procedimento_correcao: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="materiais_utilizados">Materiais Utilizados</Label>
+              <Textarea
+                id="materiais_utilizados"
+                placeholder="Lista de materiais necessários para esta instrução..."
+                rows={2}
+                value={formData.materiais_utilizados}
+                onChange={(e) =>
+                  setFormData({ ...formData, materiais_utilizados: e.target.value })
                 }
               />
             </div>

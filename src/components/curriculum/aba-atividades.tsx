@@ -152,7 +152,7 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
     if (
       atividadesSelecionadas.some((a) => a.atividadeId === atividade.id)
     ) {
-      alert("Esta atividade já foi adicionada ao curriculum");
+      alert("Esta atividade já foi adicionada ao plano");
       return;
     }
 
@@ -272,9 +272,9 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Atividades do Curriculum</CardTitle>
+              <CardTitle>Atividades do Plano Terapêutico</CardTitle>
               <CardDescription>
-                Adicione e organize as atividades deste curriculum
+                Adicione e organize as atividades deste plano
               </CardDescription>
             </div>
             <Button onClick={() => setDialogOpen(true)} size="sm">
@@ -386,7 +386,7 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
           <DialogHeader>
             <DialogTitle>Adicionar Atividade</DialogTitle>
             <DialogDescription>
-              Selecione uma atividade para adicionar ao curriculum
+              Selecione uma atividade para adicionar ao plano
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -432,7 +432,7 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar remoção</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover esta atividade do curriculum?
+              Tem certeza que deseja remover esta atividade do plano?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

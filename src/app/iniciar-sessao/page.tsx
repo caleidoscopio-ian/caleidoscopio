@@ -193,16 +193,16 @@ export default function IniciarSessaoPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Erro ao buscar curriculums");
+        throw new Error(result.error || "Erro ao buscar planos terapêuticos");
       }
 
       if (result.success) {
         setCurriculums(result.data);
       }
     } catch (err) {
-      console.error("❌ Erro ao buscar curriculums:", err);
+      console.error("❌ Erro ao buscar planos terapêuticos:", err);
       setError(
-        err instanceof Error ? err.message : "Erro ao carregar curriculums"
+        err instanceof Error ? err.message : "Erro ao carregar planos terapêuticos"
       );
     } finally {
       setLoadingCurriculums(false);
@@ -363,7 +363,7 @@ export default function IniciarSessaoPage() {
     }
   }, [isAuthenticated, user]);
 
-  // Quando seleciona paciente, buscar curriculums e avaliações
+  // Quando seleciona paciente, buscar planos terapêuticos e avaliações
   useEffect(() => {
     if (pacienteSelecionado) {
       fetchCurriculums(pacienteSelecionado);
@@ -587,10 +587,10 @@ export default function IniciarSessaoPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5" />
-                Curriculums Atribuídos
+                Planos Terapêuticos Atribuídos
               </CardTitle>
               <CardDescription>
-                Escolha o curriculum que será aplicado nesta sessão
+                Escolha o plano terapêutico que será aplicado nesta sessão
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -598,7 +598,7 @@ export default function IniciarSessaoPage() {
                 <div className="text-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
                   <p className="text-muted-foreground">
-                    Carregando curriculums...
+                    Carregando planos...
                   </p>
                 </div>
               )}
@@ -607,13 +607,13 @@ export default function IniciarSessaoPage() {
                 <div className="text-center py-8">
                   <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">
-                    Nenhum curriculum atribuído
+                    Nenhum plano terapêutico atribuído
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    Este paciente ainda não possui curriculums atribuídos.
+                    Este paciente ainda não possui planos terapêuticos atribuídos.
                   </p>
                   <Button onClick={() => router.push("/curriculum")}>
-                    Gerenciar Curriculums
+                    Gerenciar Planos Terapêuticos
                   </Button>
                 </div>
               )}

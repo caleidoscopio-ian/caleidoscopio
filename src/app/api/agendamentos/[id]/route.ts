@@ -118,39 +118,39 @@ export async function PUT(
     }
 
     // Se está alterando horário ou profissional, verificar conflito
-    if (body.data_hora || body.profissionalId || body.duracao_minutos) {
+    if (body.data_hora || body.horario_fim || body.profissionalId) {
       const profissionalId =
         body.profissionalId || agendamentoExistente.profissionalId;
       const dataHora = body.data_hora
         ? new Date(body.data_hora)
         : agendamentoExistente.data_hora;
-      const duracao =
-        body.duracao_minutos || agendamentoExistente.duracao_minutos;
-      const dataFim = new Date(dataHora.getTime() + duracao * 60000);
+      const dataFim = body.horario_fim
+        ? new Date(body.horario_fim)
+        : new Date(agendamentoExistente.horario_fim);
 
-      const conflito = await prisma.agendamento.findFirst({
+      // Buscar agendamentos conflitantes do profissional
+      const agendamentosProf = await prisma.agendamento.findMany({
         where: {
           id: { not: id },
           profissionalId,
           status: {
             notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.FALTOU],
           },
-          AND: [
-            {
-              data_hora: {
-                lt: dataFim,
-              },
-            },
-            {
-              data_hora: {
-                gte: dataHora,
-              },
-            },
-          ],
+        },
+        select: {
+          id: true,
+          data_hora: true,
+          horario_fim: true,
         },
       });
 
-      if (conflito) {
+      const conflitoProf = agendamentosProf.find((ag) => {
+        const agInicio = new Date(ag.data_hora);
+        const agFim = new Date(ag.horario_fim);
+        return dataHora < agFim && dataFim > agInicio;
+      });
+
+      if (conflitoProf) {
         return NextResponse.json(
           {
             error:
@@ -158,6 +158,40 @@ export async function PUT(
           },
           { status: 409 }
         );
+      }
+
+      // Se está alterando sala, verificar conflito na sala
+      const salaId = body.sala || agendamentoExistente.salaId;
+      if (salaId) {
+        const agendamentosSala = await prisma.agendamento.findMany({
+          where: {
+            id: { not: id },
+            salaId,
+            status: {
+              notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.FALTOU],
+            },
+          },
+          select: {
+            id: true,
+            data_hora: true,
+            horario_fim: true,
+          },
+        });
+
+        const conflitoSala = agendamentosSala.find((ag) => {
+          const agInicio = new Date(ag.data_hora);
+          const agFim = new Date(ag.horario_fim);
+          return dataHora < agFim && dataFim > agInicio;
+        });
+
+        if (conflitoSala) {
+          return NextResponse.json(
+            {
+              error: "Sala já está ocupada neste horário",
+            },
+            { status: 409 }
+          );
+        }
       }
     }
 
@@ -167,8 +201,20 @@ export async function PUT(
     if (body.pacienteId) updateData.pacienteId = body.pacienteId;
     if (body.profissionalId) updateData.profissionalId = body.profissionalId;
     if (body.data_hora) updateData.data_hora = new Date(body.data_hora);
-    if (body.duracao_minutos) updateData.duracao_minutos = body.duracao_minutos;
-    if (body.sala !== undefined) updateData.sala = body.sala;
+    if (body.horario_fim) updateData.horario_fim = new Date(body.horario_fim);
+
+    // Calcular duração se ambos os horários foram fornecidos
+    if (body.data_hora && body.horario_fim) {
+      const inicio = new Date(body.data_hora);
+      const fim = new Date(body.horario_fim);
+      updateData.duracao_minutos = Math.round((fim.getTime() - inicio.getTime()) / 60000);
+    }
+
+    if (body.sala !== undefined) {
+      updateData.salaId = body.sala;
+      updateData.sala = body.sala; // Manter campo legado
+    }
+    if (body.procedimento !== undefined) updateData.procedimentoId = body.procedimento;
     if (body.status) updateData.status = body.status;
     if (body.observacoes !== undefined)
       updateData.observacoes = body.observacoes;
@@ -193,6 +239,21 @@ export async function PUT(
             nome: true,
             especialidade: true,
             email: true,
+          },
+        },
+        salaRelacao: {
+          select: {
+            id: true,
+            nome: true,
+            cor: true,
+          },
+        },
+        procedimento: {
+          select: {
+            id: true,
+            nome: true,
+            codigo: true,
+            cor: true,
           },
         },
       },

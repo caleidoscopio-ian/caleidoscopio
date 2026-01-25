@@ -99,9 +99,15 @@ export function AgendamentoDetailsDialog({
   }
 
   const calculateEndTime = () => {
-    const start = new Date(agendamento.data_hora)
-    const end = new Date(start.getTime() + agendamento.duracao_minutos * 60000)
+    const end = new Date(agendamento.horario_fim)
     return formatTime(end)
+  }
+
+  const calculateDuration = () => {
+    const start = new Date(agendamento.data_hora)
+    const end = new Date(agendamento.horario_fim)
+    const minutes = Math.round((end.getTime() - start.getTime()) / 60000)
+    return minutes
   }
 
   const handleConfirmar = async () => {
@@ -244,7 +250,7 @@ export function AgendamentoDetailsDialog({
                     {formatTime(agendamento.data_hora)} - {calculateEndTime()}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {agendamento.duracao_minutos} minutos
+                    {calculateDuration()} minutos
                   </div>
                 </div>
               </div>

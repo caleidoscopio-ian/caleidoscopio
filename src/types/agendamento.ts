@@ -13,8 +13,11 @@ export interface Agendamento {
   pacienteId: string
   profissionalId: string
   data_hora: Date | string
-  duracao_minutos: number
+  horario_fim: Date | string
+  duracao_minutos?: number // Campo legado, calculado automaticamente
+  salaId: string
   sala?: string | null
+  procedimentoId?: string | null
   status: StatusAgendamento
   observacoes?: string | null
   createdAt: Date | string
@@ -39,14 +42,21 @@ export interface Agendamento {
     nome: string
     cor?: string | null
   } | null
+  procedimento?: {
+    id: string
+    nome: string
+    codigo?: string | null
+    cor?: string | null
+  } | null
 }
 
 export interface CreateAgendamentoInput {
   pacienteId: string
   profissionalId: string
   data_hora: Date | string
-  duracao_minutos: number
-  sala?: string
+  horario_fim: Date | string
+  sala: string
+  procedimento?: string
   status?: StatusAgendamento
   observacoes?: string
 }
@@ -55,8 +65,9 @@ export interface UpdateAgendamentoInput {
   pacienteId?: string
   profissionalId?: string
   data_hora?: Date | string
-  duracao_minutos?: number
+  horario_fim?: Date | string
   sala?: string
+  procedimento?: string
   status?: StatusAgendamento
   observacoes?: string
 }
