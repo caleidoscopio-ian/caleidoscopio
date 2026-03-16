@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'view_professionals')) {
+    if (!await hasPermission(user, 'view_professionals')) {
       console.error(`❌ API Terapeutas - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'create_professionals')) {
+    if (!await hasPermission(user, 'create_professionals')) {
       console.error(`❌ API Terapeutas - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {
@@ -314,7 +314,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'edit_professionals')) {
+    if (!await hasPermission(user, 'edit_professionals')) {
       console.error(`❌ API Terapeutas - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {
@@ -485,7 +485,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'delete_professionals')) {
+    if (!await hasPermission(user, 'delete_professionals')) {
       console.error(`❌ API Terapeutas - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {

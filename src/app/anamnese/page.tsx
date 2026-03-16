@@ -214,7 +214,7 @@ export default function AnamnesesPage() {
   };
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
           {/* Header */}

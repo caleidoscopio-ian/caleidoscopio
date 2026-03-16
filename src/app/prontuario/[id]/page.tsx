@@ -111,7 +111,7 @@ export default function ProntuarioPage({
 
   if (loading) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
         <MainLayout breadcrumbs={breadcrumbs}>
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -126,7 +126,7 @@ export default function ProntuarioPage({
 
   if (error || !patient) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
         <MainLayout breadcrumbs={breadcrumbs}>
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -151,7 +151,7 @@ export default function ProntuarioPage({
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
           {/* Header */}

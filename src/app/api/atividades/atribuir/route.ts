@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'create_activities')) {
+    if (!await hasPermission(user, 'create_activities')) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para atribuir atividades" },
         { status: 403 }
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'view_activities')) {
+    if (!await hasPermission(user, 'view_activities')) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para visualizar atividades" },
         { status: 403 }
@@ -274,7 +274,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'edit_activities')) {
+    if (!await hasPermission(user, 'edit_activities')) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para remover atribuições" },
         { status: 403 }

@@ -16,8 +16,9 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function EditarAvaliacaoPage() {
+function EditarAvaliacaoPageContent() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -171,5 +172,13 @@ export default function EditarAvaliacaoPage() {
         </Tabs>
       </div>
     </MainLayout>
+  );
+}
+
+export default function EditarAvaliacaoPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'avaliacoes', action: 'UPDATE' }}>
+      <EditarAvaliacaoPageContent />
+    </ProtectedRoute>
   );
 }

@@ -114,7 +114,7 @@ export async function PUT(
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'edit_anamneses')) {
+    if (!await hasPermission(user, 'edit_anamneses')) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para editar anamneses" },
         { status: 403 }
@@ -226,7 +226,7 @@ export async function DELETE(
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'delete_anamneses')) {
+    if (!await hasPermission(user, 'delete_anamneses')) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para deletar anamneses" },
         { status: 403 }

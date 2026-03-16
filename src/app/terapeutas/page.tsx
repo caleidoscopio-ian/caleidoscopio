@@ -31,6 +31,7 @@ import {
   GraduationCap,
   UserCheck,
 } from "lucide-react";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Professional {
   id: string;
@@ -52,7 +53,7 @@ interface ProfessionalsResponse {
   error?: string;
 }
 
-export default function TerapeutasPage() {
+function TerapeutasPageContent() {
   const { user, isAuthenticated } = useAuth();
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
@@ -436,5 +437,13 @@ export default function TerapeutasPage() {
         </Card>
       </div>
     </MainLayout>
+  );
+}
+
+export default function TerapeutasPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'terapeutas', action: 'VIEW' }}>
+      <TerapeutasPageContent />
+    </ProtectedRoute>
   );
 }

@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Users, Search, Filter, Calendar, Clock, Loader2, FileText } from "lucide-react";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Patient {
   id: string;
@@ -53,7 +54,7 @@ interface PatientsResponse {
   error?: string;
 }
 
-export default function PacientesPage() {
+function PacientesPageContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -450,4 +451,12 @@ export default function PacientesPage() {
       </div>
     </MainLayout>
   );
+}
+
+export default function PacientesPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'pacientes', action: 'VIEW' }}>
+      <PacientesPageContent />
+    </ProtectedRoute>
+  )
 }

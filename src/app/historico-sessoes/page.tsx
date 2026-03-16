@@ -53,6 +53,7 @@ import {
   Play,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scrollarea";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Paciente {
   id: string;
@@ -100,7 +101,7 @@ interface Sessao {
   avaliacao?: any; // Para sessões de avaliação
 }
 
-export default function HistoricoSessoesPage() {
+function HistoricoSessoesPageContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [sessoes, setSessoes] = useState<Sessao[]>([]);
@@ -1195,4 +1196,12 @@ export default function HistoricoSessoesPage() {
       </div>
     </MainLayout>
   );
+}
+
+export default function HistoricoSessoesPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'sessoes', action: 'VIEW' }}>
+      <HistoricoSessoesPageContent />
+    </ProtectedRoute>
+  )
 }

@@ -37,6 +37,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Tarefa {
   id: string;
@@ -86,7 +87,7 @@ const TIPOS_PONTUACAO: Record<string, string> = {
   NAO_SE_APLICA: "Não se Aplica",
 };
 
-export default function AplicarAvaliacaoPage() {
+function AplicarAvaliacaoPageContent() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -543,5 +544,13 @@ export default function AplicarAvaliacaoPage() {
         </AlertDialog>
       </div>
     </MainLayout>
+  );
+}
+
+export default function AplicarAvaliacaoPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'sessoes', action: 'CREATE' }}>
+      <AplicarAvaliacaoPageContent />
+    </ProtectedRoute>
   );
 }

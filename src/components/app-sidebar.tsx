@@ -8,7 +8,8 @@ import Image from "next/image";
 import { ChevronRight, HelpCircle, LogOut, ExternalLink } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
-import { getSidebarItems } from "@/lib/navigation";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getSidebarItems, SidebarItem } from "@/lib/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -29,17 +30,8 @@ import { NavUser } from "@/components/nav-user";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// Vamos manter a mesma estrutura de dados que temos atualmente
-interface SidebarItem {
-  title: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
-  roleFilter?: string[];
-}
-
 // Reorganizar itens por grupos para hierarquia
-const getGroupedNavigation = (userRole: string) => {
+const getGroupedNavigation = (userRole: string): Record<string, SidebarItem[]> => {
   const allItems = getSidebarItems(userRole);
 
   // Agrupar por categorias baseado no role
@@ -82,7 +74,7 @@ const getGroupedNavigation = (userRole: string) => {
           ["Meus Pacientes", "Agenda", "Registro de Sessão", "Anamneses"].includes(item.title)
         ),
         "Atendimento": allItems.filter((item) =>
-          ["Iniciar Sessão", "Plano Terapêutico", "Atividades", "Avaliações", "Histórico de Sessões"].includes(item.title)
+          ["Iniciar Sessão", "Plano Terapêutico", "Atividades", "Avaliações", "Histórico de Sessões", "Evolução"].includes(item.title)
         ),
         Perfil: allItems.filter((item) => item.title === "Meu Perfil"),
       };
@@ -102,7 +94,7 @@ const getGroupedNavigation = (userRole: string) => {
           ["Agenda Global", "Salas", "Registro de Sessão", "Anamneses"].includes(item.title)
         ),
         "Atendimento": allItems.filter((item) =>
-          ["Iniciar Sessão", "Plano Terapêutico", "Atividades", "Avaliações", "Histórico de Sessões"].includes(item.title)
+          ["Iniciar Sessão", "Plano Terapêutico", "Atividades", "Avaliações", "Histórico de Sessões", "Evolução"].includes(item.title)
         ),
         Administração: allItems.filter((item) =>
           ["Relatórios", "Permissões", "Configurações"].includes(
@@ -123,8 +115,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const { state } = useSidebar();
+  const { can, loading: permsLoading, source } = usePermissions();
 
-  const groupedNavigation = getGroupedNavigation(user?.role || "user");
+  const rawGrouped = getGroupedNavigation(user?.role || "user");
+
+  // Quando RBAC está ativo e carregado, filtrar itens por permissão efetiva.
+  // Durante o carregamento ou no fallback SSO, exibir todos os itens (sem quebrar).
+  const groupedNavigation = React.useMemo(() => {
+    if (permsLoading || source !== "rbac") return rawGrouped;
+
+    const filtered: Record<string, SidebarItem[]> = {};
+    for (const [group, items] of Object.entries(rawGrouped)) {
+      const visibleItems = (items as SidebarItem[]).filter((item) => {
+        if (!item.requiredPermission) return true;
+        return can(item.requiredPermission.resource, item.requiredPermission.action);
+      });
+      if (visibleItems.length > 0) {
+        filtered[group] = visibleItems;
+      }
+    }
+    return filtered;
+  }, [rawGrouped, permsLoading, source, can]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
 
-// POST - Avaliar instrução de atividade do curriculum
+// POST - Avaliar instrução de atividade do curriculum (usando clones)
 export async function POST(request: NextRequest) {
   try {
     console.log("📝 API Sessoes-Curriculum/Avaliar - Avaliando instrução...");
@@ -18,18 +18,34 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { sessaoId, atividadeId, instrucaoId, tentativa, nota, tipos_ajuda, observacao } = body;
+    const {
+      sessaoId,
+      atividadeId,
+      atividadeCloneId,
+      instrucaoId,
+      tentativa,
+      nota,
+      tipos_ajuda,
+      observacao,
+    } = body;
 
-    if (!sessaoId || !atividadeId || !instrucaoId || tentativa === undefined || nota === undefined || nota === null) {
+    if (
+      !sessaoId ||
+      !atividadeId ||
+      !instrucaoId ||
+      tentativa === undefined ||
+      nota === undefined ||
+      nota === null
+    ) {
       return NextResponse.json(
         { error: "Dados incompletos para avaliação" },
         { status: 400 }
       );
     }
 
-    if (nota < 0 || nota > 4) {
+    if (nota < 0) {
       return NextResponse.json(
-        { error: "Nota deve estar entre 0 e 4" },
+        { error: "Nota deve ser >= 0" },
         { status: 400 }
       );
     }
@@ -39,20 +55,7 @@ export async function POST(request: NextRequest) {
       where: { id: sessaoId },
       include: {
         paciente: true,
-        curriculum: {
-          include: {
-            atividades: {
-              include: {
-                atividade: {
-                  include: {
-                    instrucoes: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+      },
     });
 
     if (!sessao) {
@@ -95,10 +98,13 @@ export async function POST(request: NextRequest) {
           nota,
           tipos_ajuda: tipos_ajuda || [],
           observacao: observacao || null,
+          atividadeCloneId: atividadeCloneId || null,
         },
       });
 
-      console.log(`✅ Avaliação atualizada para instrução ${instrucaoId} (tentativa ${tentativa}) da atividade ${atividadeId}`);
+      console.log(
+        `✅ Avaliação atualizada para instrução ${instrucaoId} (tentativa ${tentativa}) da atividade ${atividadeId}`
+      );
 
       return NextResponse.json({
         success: true,
@@ -111,6 +117,7 @@ export async function POST(request: NextRequest) {
           id: randomUUID(),
           sessaoId,
           atividadeId,
+          atividadeCloneId: atividadeCloneId || null,
           instrucaoId,
           tentativa,
           nota,
@@ -119,7 +126,9 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      console.log(`✅ Avaliação criada para instrução ${instrucaoId} (tentativa ${tentativa}) da atividade ${atividadeId}`);
+      console.log(
+        `✅ Avaliação criada para instrução ${instrucaoId} (tentativa ${tentativa}) da atividade ${atividadeId}`
+      );
 
       return NextResponse.json({
         success: true,

@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AtribuirAvaliacaoDialog } from "@/components/forms/atribuir-avaliacao-dialog";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import {
   ClipboardCheck,
   Search,
@@ -58,7 +59,7 @@ interface Avaliacao {
   };
 }
 
-export default function AvaliacoesPage() {
+function AvaliacoesPageContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
@@ -453,5 +454,13 @@ export default function AvaliacoesPage() {
         </AlertDialog>
       </div>
     </MainLayout>
+  );
+}
+
+export default function AvaliacoesPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'avaliacoes', action: 'VIEW' }}>
+      <AvaliacoesPageContent />
+    </ProtectedRoute>
   );
 }

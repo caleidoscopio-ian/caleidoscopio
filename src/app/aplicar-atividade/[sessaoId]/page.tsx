@@ -29,6 +29,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Instrucao {
   id: string;
@@ -67,7 +68,7 @@ interface Avaliacao {
   observacao: string;
 }
 
-export default function AplicarAtividadePage() {
+function AplicarAtividadePageContent() {
   const router = useRouter();
   const params = useParams();
   const sessaoId = params.sessaoId as string;
@@ -546,5 +547,13 @@ export default function AplicarAtividadePage() {
         </Card>
       </div>
     </MainLayout>
+  );
+}
+
+export default function AplicarAtividadePage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'sessoes', action: 'CREATE' }}>
+      <AplicarAtividadePageContent />
+    </ProtectedRoute>
   );
 }

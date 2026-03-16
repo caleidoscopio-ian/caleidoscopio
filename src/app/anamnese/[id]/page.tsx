@@ -166,7 +166,7 @@ export default function AnamneseDetalhesPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
         <MainLayout breadcrumbs={breadcrumbs}>
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -181,7 +181,7 @@ export default function AnamneseDetalhesPage() {
 
   if (error || !anamnese) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
         <MainLayout breadcrumbs={breadcrumbs}>
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -204,7 +204,7 @@ export default function AnamneseDetalhesPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
           {/* Header */}

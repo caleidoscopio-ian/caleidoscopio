@@ -149,7 +149,7 @@ export default function UsuariosPage() {
   };
 
   return (
-    <ProtectedRoute requiredRole="ADMIN">
+    <ProtectedRoute requiredRole="ADMIN" requiredPermission={{ resource: 'usuarios', action: 'VIEW' }}>
       <MainLayout>
         <div className="space-y-6">
           {/* Header */}

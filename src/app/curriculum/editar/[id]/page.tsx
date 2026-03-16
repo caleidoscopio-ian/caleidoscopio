@@ -10,8 +10,9 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { AbaGeral } from "@/components/curriculum/aba-geral";
 import { AbaAtividades } from "@/components/curriculum/aba-atividades";
 import { useAuth } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function EditarCurriculumPage() {
+function EditarCurriculumPageContent() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -129,5 +130,13 @@ export default function EditarCurriculumPage() {
         </Tabs>
       </div>
     </MainLayout>
+  );
+}
+
+export default function EditarCurriculumPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'curriculums', action: 'UPDATE' }}>
+      <EditarCurriculumPageContent />
+    </ProtectedRoute>
   );
 }

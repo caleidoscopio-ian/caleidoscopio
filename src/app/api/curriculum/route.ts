@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!hasPermission(user, "view_activities")) {
+    if (!await hasPermission(user, "view_activities")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para visualizar curriculums" },
         { status: 403 }
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!hasPermission(user, "create_activities")) {
+    if (!await hasPermission(user, "create_activities")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para criar curriculums" },
         { status: 403 }
@@ -237,7 +237,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (!hasPermission(user, "edit_activities")) {
+    if (!await hasPermission(user, "edit_activities")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para editar curriculums" },
         { status: 403 }
@@ -357,7 +357,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!hasPermission(user, "delete_activities")) {
+    if (!await hasPermission(user, "delete_activities")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para deletar curriculums" },
         { status: 403 }

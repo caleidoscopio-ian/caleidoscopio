@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'edit_sessions')) {
+    if (!await hasPermission(user, 'edit_sessions')) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para avaliar sessões" },
         { status: 403 }

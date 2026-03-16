@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "create_patients")) {
+    if (!await hasPermission(user, "create_patients")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para criar agendamentos" },
         { status: 403 }

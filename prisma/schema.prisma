@@ -210,18 +210,20 @@ model SessaoCurriculum {
 }
 
 model AvaliacaoInstrucaoCurriculum {
-  id             String             @id @default(uuid())
-  sessaoId       String
-  atividadeId    String             // Qual atividade do curriculum
-  instrucaoId    String
-  tentativa      Int                @default(1) // Número da tentativa (1 a qtd_tentativas_alvo)
-  nota           Int                // 0 a 4
-  tipos_ajuda    String[]           // Array: ["-", "AFT", "AFP", "AI", "AG", "AVE", "AVG", "+"]
-  observacao     String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @default(now()) @updatedAt
+  id                String             @id @default(uuid())
+  sessaoId          String
+  atividadeId       String             // Referência à atividade original (legado)
+  atividadeCloneId  String?            // Referência ao clone da atividade do paciente
+  instrucaoId       String             // ID da instrução (clone ou original)
+  tentativa         Int                @default(1) // Número da tentativa (1 a qtd_tentativas_alvo)
+  nota              Int                // 0 a 4
+  tipos_ajuda       String[]           // Array: ["-", "AFT", "AFP", "AI", "AG", "AVE", "AVG", "+"]
+  observacao        String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @default(now()) @updatedAt
 
-  sessao         SessaoCurriculum   @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  sessao            SessaoCurriculum   @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  atividadeClone    PacienteAtividadeClone? @relation(fields: [atividadeCloneId], references: [id], onDelete: SetNull)
 
   @@unique([sessaoId, atividadeId, instrucaoId, tentativa])
   @@map("avaliacao_instrucao_curriculums")
@@ -693,6 +695,13 @@ enum StatusSessao {
   CANCELADA
 }
 
+enum FaseAtividade {
+  LINHA_BASE
+  INTERVENCAO
+  MANUTENCAO
+  GENERALIZACAO
+}
+
 enum TipoAvaliacao {
   AQUISICAO_HABILIDADES
   REDUCAO_COMPORTAMENTOS
@@ -813,8 +822,9 @@ model PacienteCurriculum {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @default(now()) @updatedAt
 
-  paciente     paciente   @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
-  curriculum   curriculum @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  paciente        paciente                @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  curriculum      curriculum              @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  atividadesClone PacienteAtividadeClone[]
 
   @@unique([pacienteId, curriculumId])
   @@map("paciente_curriculums")
@@ -854,4 +864,206 @@ model RespostaTarefa {
 
   @@unique([sessaoId, tarefaId])
   @@map("resposta_tarefas")
+}
+
+// ========================================
+// SISTEMA DE EVOLUÇÃO POR FASES (MÓDULO 20)
+// ========================================
+
+model PacienteAtividadeClone {
+  id                   String        @id @default(uuid())
+  pacienteCurriculumId String
+  atividadeOriginalId  String?       // Referência à atividade original (pode ser null se deletada)
+  ordem                Int           // Ordem dentro do curriculum do paciente
+
+  // Cópia de todos os campos da atividade
+  nome                 String
+  protocolo            String?
+  habilidade           String?
+  marco_codificacao    String?
+  tipo_ensino          String?
+  qtd_alvos_sessao     Int?
+  qtd_tentativas_alvo  Int?
+
+  // Fase atual da atividade para este paciente
+  faseAtual            FaseAtividade @default(LINHA_BASE)
+  ativo                Boolean       @default(true)
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @default(now()) @updatedAt
+
+  pacienteCurriculum   PacienteCurriculum          @relation(fields: [pacienteCurriculumId], references: [id], onDelete: Cascade)
+  instrucoes           AtividadeCloneInstrucao[]
+  pontuacoes           AtividadeClonePontuacao[]
+  fases                AtividadeFase[]
+  historico            AtividadeFaseHistorico[]
+  avaliacoes           AvaliacaoInstrucaoCurriculum[]
+
+  @@map("paciente_atividade_clones")
+}
+
+model AtividadeCloneInstrucao {
+  id                    String   @id @default(uuid())
+  atividadeCloneId      String
+  ordem                 Int
+  texto                 String   @db.Text
+  como_aplicar          String?  @db.Text
+  observacao            String?  @db.Text
+  procedimento_correcao String?  @db.Text
+  materiais_utilizados  String?  @db.Text
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @default(now()) @updatedAt
+
+  atividadeClone        PacienteAtividadeClone @relation(fields: [atividadeCloneId], references: [id], onDelete: Cascade)
+
+  @@unique([atividadeCloneId, ordem])
+  @@map("atividade_clone_instrucoes")
+}
+
+model AtividadeClonePontuacao {
+  id               String   @id @default(uuid())
+  atividadeCloneId String
+  ordem            Int
+  sigla            String
+  grau             String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
+
+  atividadeClone   PacienteAtividadeClone @relation(fields: [atividadeCloneId], references: [id], onDelete: Cascade)
+
+  @@unique([atividadeCloneId, ordem])
+  @@map("atividade_clone_pontuacoes")
+}
+
+model AtividadeFase {
+  id                       String        @id @default(uuid())
+  atividadeCloneId         String
+  fase                     FaseAtividade
+
+  // Critérios de Sessão
+  porcentagem_acerto       Float         @default(80)
+  qtd_sessoes_consecutivas Int           @default(1)
+
+  // Critérios de Avanço/Retrocesso
+  fase_se_atingir          FaseAtividade? // Para onde vai se atingir critério (null = concluída/permanecer)
+  fase_se_nao_atingir      FaseAtividade? // Para onde vai se não atingir (null = permanecer)
+
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @default(now()) @updatedAt
+
+  atividadeClone           PacienteAtividadeClone @relation(fields: [atividadeCloneId], references: [id], onDelete: Cascade)
+
+  @@unique([atividadeCloneId, fase])
+  @@map("atividade_fases")
+}
+
+model AtividadeFaseHistorico {
+  id                  String        @id @default(uuid())
+  atividadeCloneId    String
+  faseAnterior        FaseAtividade
+  faseNova            FaseAtividade
+  motivo              String        // "CRITERIO_ATINGIDO" | "CRITERIO_NAO_ATINGIDO" | "ALTERACAO_MANUAL"
+  alterado_em         DateTime      @default(now())
+  alterado_por        String?       // userId se manual, null se automático
+  sessaoCurriculumId  String?       // Sessão que triggou a mudança (null se manual)
+
+  atividadeClone      PacienteAtividadeClone @relation(fields: [atividadeCloneId], references: [id], onDelete: Cascade)
+
+  @@map("atividade_fase_historico")
+}
+
+// ========================================
+// SISTEMA RBAC — MÓDULO 19
+// ========================================
+
+model Role {
+  id          String          @id @default(uuid())
+  tenantId    String          // Isolamento multi-tenant
+  nome        String
+  descricao   String?         @db.Text
+  isSystem    Boolean         @default(false) // true = SUPER_ADMIN, ADMIN, USER (não editáveis)
+  ativo       Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @default(now()) @updatedAt
+
+  permissoes  RolePermissao[]
+  usuarios    UsuarioRole[]
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model Recurso {
+  id          String          @id @default(uuid())
+  slug        String          @unique // "pacientes", "agenda", "atividades"...
+  nome        String          // "Pacientes", "Agenda", "Atividades"...
+  modulo      String?         // Agrupamento visual (ex: "Clínico", "Administrativo")
+  ordem       Int             @default(0)
+  ativo       Boolean         @default(true)
+
+  permissoes  RolePermissao[]
+
+  @@map("recursos")
+}
+
+model Acao {
+  id          String          @id @default(uuid())
+  slug        String          @unique // "VIEW", "CREATE", "UPDATE", "DELETE", "EXPORT", "APPROVE", "MANAGE"
+  nome        String          // "Visualizar", "Criar", "Editar", "Deletar", "Exportar", "Aprovar", "Gerenciar"
+  ordem       Int             @default(0)
+
+  permissoes  RolePermissao[]
+
+  @@map("acoes")
+}
+
+model RolePermissao {
+  id          String   @id @default(uuid())
+  roleId      String
+  recursoId   String
+  acaoId      String
+  createdAt   DateTime @default(now())
+
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  recurso     Recurso  @relation(fields: [recursoId], references: [id], onDelete: Cascade)
+  acao        Acao     @relation(fields: [acaoId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, recursoId, acaoId])
+  @@index([roleId])
+  @@map("role_permissoes")
+}
+
+model UsuarioRole {
+  id             String   @id @default(uuid())
+  usuarioId      String   // ID do usuário no Sistema 1 (SSO)
+  tenantId       String   // Isolamento multi-tenant
+  roleId         String
+  atribuido_por  String   // userId de quem atribuiu
+  justificativa  String?  @db.Text
+  ativo          Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  role           Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, tenantId]) // Um usuário tem uma role por tenant
+  @@index([tenantId])
+  @@map("usuario_roles")
+}
+
+model UsuarioRoleHistorico {
+  id             String   @id @default(uuid())
+  usuarioId      String   // ID do usuário no Sistema 1
+  tenantId       String
+  roleAnteriorId String?  // null = primeira atribuição
+  roleNovoId     String?  // null = remoção
+  acao           String   // "ATRIBUICAO" | "ALTERACAO" | "REMOCAO"
+  alterado_por   String   // userId de quem fez a alteração
+  justificativa  String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  @@index([usuarioId, tenantId])
+  @@index([tenantId])
+  @@map("usuario_role_historico")
 }

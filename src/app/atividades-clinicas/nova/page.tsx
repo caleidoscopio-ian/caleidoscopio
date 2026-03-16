@@ -9,8 +9,9 @@ import { ArrowLeft, Save } from "lucide-react";
 import { AbaGeral } from "@/components/atividades/aba-geral";
 import { AbaPontuacao } from "@/components/atividades/aba-pontuacao";
 import { AbaInstrucoes } from "@/components/atividades/aba-instrucoes";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function NovaAtividadePage() {
+function NovaAtividadePageContent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("geral");
   const [atividadeId, setAtividadeId] = useState<string | null>(null);
@@ -95,5 +96,13 @@ export default function NovaAtividadePage() {
         </Tabs>
       </div>
     </MainLayout>
+  );
+}
+
+export default function NovaAtividadePage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'atividades', action: 'CREATE' }}>
+      <NovaAtividadePageContent />
+    </ProtectedRoute>
   );
 }

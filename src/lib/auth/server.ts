@@ -3,6 +3,8 @@
 
 import { NextRequest } from 'next/server'
 import { managerClient } from '@/lib/manager-client'
+import { checkPermission } from '@/lib/auth/permission-service'
+import { mapLegacyAction } from '@/lib/auth/action-map'
 
 interface AuthUser {
   id: string
@@ -96,19 +98,31 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<AuthUs
 }
 
 /**
- * Verifica se o usuário tem permissão para uma determinada ação
+ * Verifica se o usuário tem permissão para uma determinada ação.
+ *
+ * Estratégia de resolução:
+ * 1. Tenta resolver via RBAC dinâmico do banco (checkPermission)
+ * 2. Se não houver registro RBAC (null), usa fallback hardcoded para
+ *    garantir retrocompatibilidade durante a transição
  */
-export function hasPermission(user: AuthUser, action: string): boolean {
+export async function hasPermission(user: AuthUser, action: string): Promise<boolean> {
+  // Tentar resolução via RBAC dinâmico
+  if (user.tenant?.id) {
+    const mapped = mapLegacyAction(action)
+    if (mapped) {
+      const result = await checkPermission(user.id, user.tenant.id, mapped.resource, mapped.action)
+      // null = sem registro RBAC → usar fallback
+      if (result !== null) return result
+    }
+  }
+
+  // ─── Fallback legado (mantido para retrocompatibilidade) ──────────────────
   const adminRoles = ['ADMIN', 'SUPER_ADMIN']
-  const terapeutaRoles = ['USER', 'TERAPEUTA', ...adminRoles] // USER = Terapeuta
+  const terapeutaRoles = ['USER', 'TERAPEUTA', ...adminRoles]
 
   switch (action) {
     case 'view_patients':
-      return terapeutaRoles.includes(user.role)
-
     case 'create_patients':
-      return terapeutaRoles.includes(user.role)
-
     case 'edit_patients':
       return terapeutaRoles.includes(user.role)
 
@@ -116,25 +130,19 @@ export function hasPermission(user: AuthUser, action: string): boolean {
       return adminRoles.includes(user.role)
 
     case 'view_professionals':
-      return terapeutaRoles.includes(user.role) // Terapeutas podem ver lista de profissionais
+      return terapeutaRoles.includes(user.role)
 
     case 'create_professionals':
-      return adminRoles.includes(user.role)
-
     case 'edit_professionals':
-      return adminRoles.includes(user.role)
-
     case 'delete_professionals':
       return adminRoles.includes(user.role)
 
-    // Permissões de prontuários
     case 'view_medical_records':
     case 'create_medical_records':
     case 'edit_medical_records':
     case 'delete_medical_records':
       return terapeutaRoles.includes(user.role)
 
-    // Permissões de atividades
     case 'view_activities':
     case 'create_activities':
     case 'edit_activities':
@@ -143,13 +151,11 @@ export function hasPermission(user: AuthUser, action: string): boolean {
     case 'delete_activities':
       return adminRoles.includes(user.role)
 
-    // Permissões de sessões
     case 'view_sessions':
     case 'create_sessions':
     case 'edit_sessions':
       return terapeutaRoles.includes(user.role)
 
-    // Permissões de anamneses
     case 'view_anamneses':
     case 'create_anamneses':
     case 'edit_anamneses':
@@ -159,6 +165,7 @@ export function hasPermission(user: AuthUser, action: string): boolean {
       return adminRoles.includes(user.role)
 
     case 'manage_users':
+    case 'manage_permissions':
       return adminRoles.includes(user.role)
 
     default:

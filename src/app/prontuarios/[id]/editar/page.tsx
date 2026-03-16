@@ -275,7 +275,7 @@ export default function EditarProntuario() {
 
   if (loading) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'UPDATE' }}>
         <MainLayout breadcrumbs={breadcrumbs}>
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -293,7 +293,7 @@ export default function EditarProntuario() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'UPDATE' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Header */}

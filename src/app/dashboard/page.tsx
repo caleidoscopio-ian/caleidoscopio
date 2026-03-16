@@ -239,7 +239,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute>
+      <ProtectedRoute requiredPermission={{ resource: 'dashboard', action: 'VIEW' }}>
         <MainLayout breadcrumbs={breadcrumbs}>
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center">
@@ -253,7 +253,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermission={{ resource: 'dashboard', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
           {/* Header */}

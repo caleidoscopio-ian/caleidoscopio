@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!hasPermission(user, "view_patients")) {
+    if (!await hasPermission(user, "view_patients")) {
       return NextResponse.json(
         {
           success: false,
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!hasPermission(user, "create_patients")) {
+    if (!await hasPermission(user, "create_patients")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para criar encaminhamentos" },
         { status: 403 }
@@ -211,7 +211,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (!hasPermission(user, "create_patients")) {
+    if (!await hasPermission(user, "create_patients")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para editar encaminhamentos" },
         { status: 403 }
@@ -319,7 +319,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!hasPermission(user, "create_patients")) {
+    if (!await hasPermission(user, "create_patients")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para excluir encaminhamentos" },
         { status: 403 }

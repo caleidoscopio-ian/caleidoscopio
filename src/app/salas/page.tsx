@@ -119,7 +119,7 @@ export default function SalasPage() {
   const salasInativas = salas.filter((s) => !s.ativo).length;
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermission={{ resource: 'salas', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
           {/* Header */}

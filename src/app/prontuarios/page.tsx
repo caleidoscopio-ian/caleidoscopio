@@ -37,6 +37,7 @@ import {
   Stethoscope,
   BarChart,
 } from "lucide-react";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Patient {
   id: string;
@@ -69,7 +70,7 @@ interface MedicalRecordsResponse {
   error?: string;
 }
 
-export default function ProntuariosPage() {
+function ProntuariosPageContent() {
   const { user, isAuthenticated } = useAuth();
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -497,4 +498,12 @@ export default function ProntuariosPage() {
       </div>
     </MainLayout>
   );
+}
+
+export default function ProntuariosPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
+      <ProntuariosPageContent />
+    </ProtectedRoute>
+  )
 }

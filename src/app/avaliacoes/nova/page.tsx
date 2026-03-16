@@ -12,8 +12,9 @@ import { AbaNiveis } from "@/components/avaliacoes/aba-niveis";
 import { AbaHabilidades } from "@/components/avaliacoes/aba-habilidades";
 import { AbaPontuacao } from "@/components/avaliacoes/aba-pontuacao";
 import { AbaTarefas } from "@/components/avaliacoes/aba-tarefas";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function NovaAvaliacaoPage() {
+function NovaAvaliacaoPageContent() {
   const router = useRouter();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("geral");
@@ -174,5 +175,13 @@ export default function NovaAvaliacaoPage() {
         </Tabs>
       </div>
     </MainLayout>
+  );
+}
+
+export default function NovaAvaliacaoPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'avaliacoes', action: 'CREATE' }}>
+      <NovaAvaliacaoPageContent />
+    </ProtectedRoute>
   );
 }

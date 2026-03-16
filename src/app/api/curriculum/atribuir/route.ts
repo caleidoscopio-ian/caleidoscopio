@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
+import { clonarAtividadesParaPaciente } from "@/lib/clone-atividade";
 
 // API para atribuir curriculum a um paciente
 export async function POST(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'create_activities')) {
+    if (!await hasPermission(user, 'create_activities')) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para atribuir curriculums" },
         { status: 403 }
@@ -94,9 +95,10 @@ export async function POST(request: NextRequest) {
     console.log(`📝 Atribuindo curriculum "${curriculum.nome}" ao paciente "${paciente.nome}"`);
 
     // Criar atribuição
+    const atribuicaoId = randomUUID();
     const atribuicao = await prisma.pacienteCurriculum.create({
       data: {
-        id: randomUUID(),
+        id: atribuicaoId,
         pacienteId,
         curriculumId,
         atribuida_por: user.id,
@@ -117,7 +119,10 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log(`✅ Curriculum atribuído com sucesso`);
+    // Clonar atividades do curriculum para o paciente (cópias independentes)
+    await clonarAtividadesParaPaciente(atribuicaoId, curriculumId);
+
+    console.log(`✅ Curriculum atribuído e atividades clonadas com sucesso`);
 
     return NextResponse.json({
       success: true,
@@ -162,7 +167,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'view_activities')) {
+    if (!await hasPermission(user, 'view_activities')) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para visualizar curriculums" },
         { status: 403 }
@@ -270,7 +275,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'edit_activities')) {
+    if (!await hasPermission(user, 'edit_activities')) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para remover atribuições" },
         { status: 403 }

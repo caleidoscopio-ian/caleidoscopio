@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { ClipboardList, Search, Plus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Instrucao {
   id: string;
@@ -62,7 +63,7 @@ interface Atividade {
   };
 }
 
-export default function AtividadesClinicasPage() {
+function AtividadesClinicasPageContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [atividades, setAtividades] = useState<Atividade[]>([]);
@@ -400,5 +401,13 @@ export default function AtividadesClinicasPage() {
         </Card>
       </div>
     </MainLayout>
+  );
+}
+
+export default function AtividadesClinicasPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'atividades', action: 'VIEW' }}>
+      <AtividadesClinicasPageContent />
+    </ProtectedRoute>
   );
 }

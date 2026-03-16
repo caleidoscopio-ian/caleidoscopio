@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "view_patients")) {
+    if (!await hasPermission(user, "view_patients")) {
       console.error(
         `❌ API Pacientes - Permissão negada para role: ${user.role}`
       );
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "create_patients")) {
+    if (!await hasPermission(user, "create_patients")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para criar pacientes" },
         { status: 403 }
@@ -382,7 +382,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "edit_patients")) {
+    if (!await hasPermission(user, "edit_patients")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para editar pacientes" },
         { status: 403 }
@@ -545,7 +545,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "delete_patients")) {
+    if (!await hasPermission(user, "delete_patients")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para deletar pacientes" },
         { status: 403 }

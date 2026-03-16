@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'view_anamneses')) {
+    if (!await hasPermission(user, 'view_anamneses')) {
       console.error(`❌ API Anamneses - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'create_anamneses')) {
+    if (!await hasPermission(user, 'create_anamneses')) {
       console.error(`❌ API Anamneses - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {

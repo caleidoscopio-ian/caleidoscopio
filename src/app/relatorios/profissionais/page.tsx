@@ -10,6 +10,7 @@ import { FiltrosRelatorio } from "@/components/relatorios/filtros-relatorio";
 import { ResumoCards } from "@/components/relatorios/resumo-cards";
 import { TabelaAtendimentos } from "@/components/relatorios/tabela-atendimentos";
 import { GraficosRelatorio } from "@/components/relatorios/graficos-relatorio";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Resumo {
   totalSessoes: number;
@@ -56,7 +57,7 @@ interface AtendimentosPorPaciente {
   atendimentos: Atendimento[];
 }
 
-export default function RelatoriosProfissionaisPage() {
+function RelatoriosProfissionaisPageContent() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [resumo, setResumo] = useState<Resumo | null>(null);
@@ -183,5 +184,13 @@ export default function RelatoriosProfissionaisPage() {
         )}
       </div>
     </MainLayout>
+  );
+}
+
+export default function RelatoriosProfissionaisPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'relatorios', action: 'VIEW' }}>
+      <RelatoriosProfissionaisPageContent />
+    </ProtectedRoute>
   );
 }

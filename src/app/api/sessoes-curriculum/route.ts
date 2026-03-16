@@ -4,6 +4,13 @@ import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
 import { Prisma, StatusSessao } from "@prisma/client";
 
+// Inclui clones com instruções e pontuações para uso na sessão
+const atividadesCloneInclude = {
+  instrucoes: { orderBy: { ordem: "asc" as const } },
+  pontuacoes: { orderBy: { ordem: "asc" as const } },
+  fases: true,
+};
+
 // POST - Iniciar sessão de curriculum
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "create_activities")) {
+    if (!await hasPermission(user, "create_activities")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para iniciar sessões" },
         { status: 403 }
@@ -68,20 +75,6 @@ export async function POST(request: NextRequest) {
         tenantId: user.tenant.id,
         ativo: true,
       },
-      include: {
-        atividades: {
-          orderBy: { ordem: "asc" },
-          include: {
-            atividade: {
-              include: {
-                instrucoes: {
-                  orderBy: { ordem: "asc" },
-                },
-              },
-            },
-          },
-        },
-      },
     });
 
     if (!curriculum) {
@@ -91,9 +84,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!curriculum.atividades || curriculum.atividades.length === 0) {
+    // Buscar atribuição do paciente ao curriculum (PacienteCurriculum) com clones
+    const pacienteCurriculum = await prisma.pacienteCurriculum.findFirst({
+      where: {
+        pacienteId,
+        curriculumId,
+        ativa: true,
+      },
+      include: {
+        atividadesClone: {
+          where: { ativo: true },
+          orderBy: { ordem: "asc" },
+          include: atividadesCloneInclude,
+        },
+      },
+    });
+
+    if (!pacienteCurriculum || pacienteCurriculum.atividadesClone.length === 0) {
       return NextResponse.json(
-        { error: "Este curriculum não possui atividades atribuídas" },
+        { error: "Este curriculum não possui atividades clonadas para este paciente. Reatribua o curriculum." },
         { status: 400 }
       );
     }
@@ -113,10 +122,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se já existe uma sessão EM_ANDAMENTO para este paciente
+    // Verificar se já existe uma sessão EM_ANDAMENTO para este paciente e curriculum
     const sessaoExistente = await prisma.sessaoCurriculum.findFirst({
       where: {
         pacienteId,
+        curriculumId,
         status: "EM_ANDAMENTO",
         paciente: {
           tenantId: user.tenant.id,
@@ -124,25 +134,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         paciente: true,
-        curriculum: {
-          include: {
-            atividades: {
-              orderBy: { ordem: "asc" },
-              include: {
-                atividade: {
-                  include: {
-                    instrucoes: {
-                      orderBy: { ordem: "asc" },
-                    },
-                    pontuacoes: {
-                      orderBy: { ordem: "asc" },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        curriculum: true,
         profissional: true,
         avaliacoes: true,
       },
@@ -154,7 +146,10 @@ export async function POST(request: NextRequest) {
       );
       return NextResponse.json({
         success: true,
-        data: sessaoExistente,
+        data: {
+          ...sessaoExistente,
+          atividadesClone: pacienteCurriculum.atividadesClone,
+        },
         message:
           "Já existe uma sessão em andamento para este paciente. Continue de onde parou.",
         existente: true,
@@ -180,25 +175,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         paciente: true,
-        curriculum: {
-          include: {
-            atividades: {
-              orderBy: { ordem: "asc" },
-              include: {
-                atividade: {
-                  include: {
-                    instrucoes: {
-                      orderBy: { ordem: "asc" },
-                    },
-                    pontuacoes: {
-                      orderBy: { ordem: "asc" },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        curriculum: true,
         profissional: true,
       },
     });
@@ -207,7 +184,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: sessao,
+      data: {
+        ...sessao,
+        atividadesClone: pacienteCurriculum.atividadesClone,
+        avaliacoes: [],
+      },
       tenant: {
         id: user.tenant.id,
         name: user.tenant.name,
@@ -258,25 +239,7 @@ export async function GET(request: NextRequest) {
         where: { id },
         include: {
           paciente: true,
-          curriculum: {
-            include: {
-              atividades: {
-                orderBy: { ordem: "asc" },
-                include: {
-                  atividade: {
-                    include: {
-                      instrucoes: {
-                        orderBy: { ordem: "asc" },
-                      },
-                      pontuacoes: {
-                        orderBy: { ordem: "asc" },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+          curriculum: true,
           profissional: true,
           avaliacoes: true,
         },
@@ -297,9 +260,27 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      // Buscar atividades clonadas do PacienteCurriculum
+      const pacienteCurriculum = await prisma.pacienteCurriculum.findFirst({
+        where: {
+          pacienteId: sessao.pacienteId,
+          curriculumId: sessao.curriculumId,
+        },
+        include: {
+          atividadesClone: {
+            where: { ativo: true },
+            orderBy: { ordem: "asc" },
+            include: atividadesCloneInclude,
+          },
+        },
+      });
+
       return NextResponse.json({
         success: true,
-        data: sessao,
+        data: {
+          ...sessao,
+          atividadesClone: pacienteCurriculum?.atividadesClone || [],
+        },
         tenant: {
           id: user.tenant.id,
           name: user.tenant.name,

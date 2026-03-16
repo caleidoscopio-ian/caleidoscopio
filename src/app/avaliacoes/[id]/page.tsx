@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArrowLeft, Edit, Loader2 } from "lucide-react";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Nivel {
   id: string;
@@ -74,7 +75,7 @@ const TIPOS_PONTUACAO: Record<string, string> = {
   NAO_SE_APLICA: "Não se Aplica",
 };
 
-export default function VisualizarAvaliacaoPage() {
+function VisualizarAvaliacaoPageContent() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -431,5 +432,13 @@ export default function VisualizarAvaliacaoPage() {
         </Tabs>
       </div>
     </MainLayout>
+  );
+}
+
+export default function VisualizarAvaliacaoPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'avaliacoes', action: 'VIEW' }}>
+      <VisualizarAvaliacaoPageContent />
+    </ProtectedRoute>
   );
 }

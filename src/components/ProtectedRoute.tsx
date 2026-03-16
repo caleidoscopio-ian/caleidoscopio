@@ -1,49 +1,53 @@
 'use client'
 
 import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
 import { useRouter } from 'next/navigation'
 import { useEffect, ReactNode } from 'react'
+
+interface RequiredPermission {
+  resource: string
+  action: string
+}
 
 interface ProtectedRouteProps {
   children: ReactNode
   requiredRole?: 'ADMIN' | 'SUPER_ADMIN' | 'USER'
+  requiredPermission?: RequiredPermission
 }
 
-export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, loading } = useAuth()
+export default function ProtectedRoute({ children, requiredRole, requiredPermission }: ProtectedRouteProps) {
+  const { user, loading: authLoading } = useAuth()
+  const { can, loading: permsLoading } = usePermissions()
   const router = useRouter()
 
-  console.log('🛡️ ProtectedRoute - Estado atual:', {
-    loading,
-    user: !!user,
-    userEmail: user?.email,
-    userName: user?.name,
-    role: user?.role,
-    requiredRole
-  })
+  const loading = authLoading || (!!requiredPermission && permsLoading)
 
   useEffect(() => {
-    if (!loading && !user) {
-      console.log('❌ ProtectedRoute - Usuário não encontrado, redirecionando para login')
+    if (loading) return
+
+    if (!user) {
       router.push('/login')
-    } else if (!loading && user) {
-      console.log('✅ ProtectedRoute - Usuário encontrado:', user.email)
+      return
+    }
 
-      // Verificar permissão de role se especificada
-      if (requiredRole) {
-        const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(user.role)
-        const hasPermission = requiredRole === 'ADMIN' ? isAdmin : user.role === requiredRole
-
-        if (!hasPermission) {
-          console.log('❌ ProtectedRoute - Sem permissão, redirecionando para dashboard')
-          router.push('/dashboard')
-        }
+    // Verificar role SSO (legado)
+    if (requiredRole) {
+      const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(user.role)
+      const hasRole = requiredRole === 'ADMIN' ? isAdmin : user.role === requiredRole
+      if (!hasRole) {
+        router.push('/dashboard')
+        return
       }
     }
-  }, [user, loading, router, requiredRole])
+
+    // Verificar permissão RBAC
+    if (requiredPermission && !can(requiredPermission.resource, requiredPermission.action)) {
+      router.push('/sem-permissao')
+    }
+  }, [user, loading, router, requiredRole, requiredPermission, can])
 
   if (loading) {
-    console.log('⏳ ProtectedRoute - Ainda carregando...')
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
@@ -57,11 +61,12 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     )
   }
 
-  if (!user) {
-    console.log('❌ ProtectedRoute - Sem usuário, aguardando redirecionamento...')
+  if (!user) return null
+
+  // Aguardar verificação de permissão antes de renderizar
+  if (requiredPermission && !can(requiredPermission.resource, requiredPermission.action)) {
     return null
   }
 
-  console.log('✅ ProtectedRoute - Usuário autenticado, exibindo conteúdo')
   return <>{children}</>
 }

@@ -46,10 +46,11 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 type ViewMode = "day" | "week";
 
-export default function AgendaPage() {
+function AgendaPageContent() {
   const { user, isAdmin, tenant } = useAuth();
   const { toast } = useToast();
 
@@ -958,4 +959,12 @@ export default function AgendaPage() {
       </Dialog>
     </MainLayout>
   );
+}
+
+export default function AgendaPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'agenda', action: 'VIEW' }}>
+      <AgendaPageContent />
+    </ProtectedRoute>
+  )
 }

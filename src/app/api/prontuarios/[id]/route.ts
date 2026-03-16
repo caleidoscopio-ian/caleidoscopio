@@ -39,7 +39,7 @@ export async function GET(
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "view_medical_records")) {
+    if (!await hasPermission(user, "view_medical_records")) {
       console.error(
         `❌ API Prontuário - Permissão negada para role: ${user.role}`
       );

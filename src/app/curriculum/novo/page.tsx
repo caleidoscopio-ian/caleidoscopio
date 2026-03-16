@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Save } from "lucide-react";
 import { AbaGeral } from "@/components/curriculum/aba-geral";
 import { AbaAtividades } from "@/components/curriculum/aba-atividades";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function NovoCurriculumPage() {
+function NovoCurriculumPageContent() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("geral");
   const [curriculumId, setCurriculumId] = useState<string | null>(null);
@@ -84,5 +85,13 @@ export default function NovoCurriculumPage() {
         </Tabs>
       </div>
     </MainLayout>
+  );
+}
+
+export default function NovoCurriculumPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'curriculums', action: 'CREATE' }}>
+      <NovoCurriculumPageContent />
+    </ProtectedRoute>
   );
 }

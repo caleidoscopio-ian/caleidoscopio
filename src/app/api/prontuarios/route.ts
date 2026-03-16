@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'view_medical_records')) {
+    if (!await hasPermission(user, 'view_medical_records')) {
       console.error(`❌ API Prontuários - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'create_medical_records')) {
+    if (!await hasPermission(user, 'create_medical_records')) {
       console.error(`❌ API Prontuários - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {
@@ -344,7 +344,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'edit_medical_records')) {
+    if (!await hasPermission(user, 'edit_medical_records')) {
       console.error(`❌ API Prontuários - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {
@@ -540,7 +540,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, 'delete_medical_records')) {
+    if (!await hasPermission(user, 'delete_medical_records')) {
       console.error(`❌ API Prontuários - Permissão negada para role: ${user.role}`);
       return NextResponse.json(
         {

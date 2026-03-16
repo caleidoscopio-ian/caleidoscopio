@@ -43,6 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Paciente {
   id: string;
@@ -102,7 +103,7 @@ interface AvaliacaoAtribuida {
   avaliacao: Avaliacao;
 }
 
-export default function IniciarSessaoPage() {
+function IniciarSessaoPageContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
@@ -828,4 +829,12 @@ export default function IniciarSessaoPage() {
       </AlertDialog>
     </MainLayout>
   );
+}
+
+export default function IniciarSessaoPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'sessoes', action: 'CREATE' }}>
+      <IniciarSessaoPageContent />
+    </ProtectedRoute>
+  )
 }

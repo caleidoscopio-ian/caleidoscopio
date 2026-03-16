@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Terapeutas e Admins podem ver agendamentos
-    if (!hasPermission(user, "view_patients")) {
+    if (!await hasPermission(user, "view_patients")) {
       console.error(
         `❌ API Agendamentos - Permissão negada para role: ${user.role}`
       );
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "create_patients")) {
+    if (!await hasPermission(user, "create_patients")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para criar agendamentos" },
         { status: 403 }

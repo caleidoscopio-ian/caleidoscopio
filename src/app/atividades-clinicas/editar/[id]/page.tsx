@@ -9,8 +9,9 @@ import { ArrowLeft, Save } from "lucide-react";
 import { AbaGeral } from "@/components/atividades/aba-geral";
 import { AbaPontuacao } from "@/components/atividades/aba-pontuacao";
 import { AbaInstrucoes } from "@/components/atividades/aba-instrucoes";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-export default function EditarAtividadePage() {
+function EditarAtividadePageContent() {
   const router = useRouter();
   const params = useParams();
   const atividadeId = params.id as string;
@@ -76,5 +77,13 @@ export default function EditarAtividadePage() {
         </Tabs>
       </div>
     </MainLayout>
+  );
+}
+
+export default function EditarAtividadePage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'atividades', action: 'UPDATE' }}>
+      <EditarAtividadePageContent />
+    </ProtectedRoute>
   );
 }

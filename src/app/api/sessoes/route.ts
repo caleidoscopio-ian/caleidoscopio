@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "create_sessions")) {
+    if (!await hasPermission(user, "create_sessions")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para criar sessões" },
         { status: 403 }
@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "view_sessions")) {
+    if (!await hasPermission(user, "view_sessions")) {
       return NextResponse.json(
         { success: false, error: "Sem permissão para visualizar sessões" },
         { status: 403 }

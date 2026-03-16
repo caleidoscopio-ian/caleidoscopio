@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { managerClient } from "@/lib/manager-client";
 import { LoginCredentials } from "@/types/auth";
+import { ensureDefaultRole } from "@/lib/auth/bootstrap-roles";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +35,15 @@ export async function POST(request: NextRequest) {
         { error: "Usuário não está associado a uma clínica" },
         { status: 403 }
       );
+    }
+
+    // Bootstrap RBAC: garantir role local mapeada à SSO role
+    // Blocking — precisa completar antes de retornar para que usePermissions funcione
+    try {
+      await ensureDefaultRole(user.id, tenant.id, user.role)
+    } catch (err) {
+      console.error('[RBAC Bootstrap] Erro ao atribuir role (login continua):', err)
+      // Não bloqueia o login — o usuário pode acessar via SSO-fallback
     }
 
     // Criar resposta de sucesso

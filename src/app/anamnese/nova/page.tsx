@@ -23,7 +23,7 @@ export default function NovaAnamnese() {
   };
 
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'CREATE' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="max-w-5xl mx-auto">
           <NovaAnamneseForm onSuccess={handleSuccess} onCancel={handleCancel} />

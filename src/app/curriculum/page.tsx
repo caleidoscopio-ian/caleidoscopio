@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { VisualizarCurriculumDialog } from "@/components/curriculum/visualizar-curriculum-dialog";
 import { ExcluirCurriculumDialog } from "@/components/curriculum/excluir-curriculum-dialog";
 import { AtribuirCurriculumDialog } from "@/components/curriculum/atribuir-curriculum-dialog";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 interface Curriculum {
   id: string;
@@ -47,7 +48,7 @@ interface Curriculum {
   };
 }
 
-export default function CurriculumPage() {
+function CurriculumPageContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const [curriculums, setCurriculums] = useState<Curriculum[]>([]);
@@ -337,5 +338,13 @@ export default function CurriculumPage() {
         </Card>
       </div>
     </MainLayout>
+  );
+}
+
+export default function CurriculumPage() {
+  return (
+    <ProtectedRoute requiredPermission={{ resource: 'curriculums', action: 'VIEW' }}>
+      <CurriculumPageContent />
+    </ProtectedRoute>
   );
 }

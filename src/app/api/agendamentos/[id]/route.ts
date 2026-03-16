@@ -90,7 +90,7 @@ export async function PUT(
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "edit_patients")) {
+    if (!await hasPermission(user, "edit_patients")) {
       return NextResponse.json(
         { error: "Sem permissão para editar agendamentos" },
         { status: 403 }
@@ -288,7 +288,7 @@ export async function DELETE(
     }
 
     // Verificar permissão
-    if (!hasPermission(user, "delete_patients")) {
+    if (!await hasPermission(user, "delete_patients")) {
       return NextResponse.json(
         { error: "Sem permissão para deletar agendamentos" },
         { status: 403 }
