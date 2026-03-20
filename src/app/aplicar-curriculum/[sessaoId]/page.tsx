@@ -44,14 +44,25 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 
 // ============ Interfaces ============
 
+interface InstrucaoPontuacao {
+  id: string;
+  fase: string;
+  ordem: number;
+  sigla: string;
+  grau: string;
+}
+
 interface Instrucao {
   id: string;
   ordem: number;
   texto: string;
+  faseAtual?: string;
+  qtd_tentativas_alvo?: number;
   como_aplicar?: string;
   observacao?: string;
   procedimento_correcao?: string;
   materiais_utilizados?: string;
+  pontuacoes?: InstrucaoPontuacao[];
 }
 
 interface Pontuacao {
@@ -59,6 +70,13 @@ interface Pontuacao {
   ordem: number;
   sigla: string;
   grau: string;
+}
+
+// Item plano para navegação: cada instrução selecionada é um item
+interface InstrucaoNavItem {
+  clone: AtividadeClone;
+  instrucao: Instrucao;
+  pontuacoesFase: Pontuacao[];
 }
 
 interface AtividadeClone {
@@ -106,6 +124,7 @@ interface Sessao {
   curriculum: Curriculum;
   atividadesClone: AtividadeClone[];
   avaliacoes: AvaliacaoSalva[];
+  instrucoesSelecionadas?: InstrucaoSelecionada[];
 }
 
 interface Avaliacao {
@@ -117,10 +136,11 @@ interface Avaliacao {
   observacao: string;
 }
 
-interface EvolucaoResultado {
-  atividadeCloneId: string;
-  nomeAtividade: string;
+interface InstrucaoEvolucaoResultado {
+  instrucaoId: string;
+  textoInstrucao: string;
   avancou: boolean;
+  regrediu: boolean;
   faseAnterior: string;
   faseNova: string;
   stats: {
@@ -131,6 +151,18 @@ interface EvolucaoResultado {
     qtdSessoesConsecutivas: number;
     atingiuCriterio: boolean;
   };
+}
+
+interface EvolucaoResultado {
+  atividadeCloneId: string;
+  nomeAtividade: string;
+  progressoAtividade: number;
+  instrucoes: InstrucaoEvolucaoResultado[];
+}
+
+interface InstrucaoSelecionada {
+  instrucaoId: string;
+  atividadeCloneId: string;
 }
 
 interface ResultadoSessao {
@@ -174,9 +206,8 @@ function AplicarCurriculumPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [resultadoSessao, setResultadoSessao] = useState<ResultadoSessao | null>(null);
 
-  // Navegação entre atividades e instruções
-  const [atividadeAtual, setAtividadeAtual] = useState(0);
-  const [instrucaoAtual, setInstrucaoAtual] = useState(0);
+  // Navegação plana — cada instrução selecionada é um item
+  const [itemAtual, setItemAtual] = useState(0);
   const [avaliacoes, setAvaliacoes] = useState<Map<string, Avaliacao>>(
     new Map()
   );
@@ -259,19 +290,15 @@ function AplicarCurriculumPageContent() {
       return false;
     }
 
-    const clone = sessao.atividadesClone[atividadeAtual];
-    if (!clone) {
-      setError("Atividade não encontrada");
-      return false;
-    }
-
-    const instrucao = clone.instrucoes[instrucaoAtual];
-    if (!instrucao) {
+    const item = itensNavegacao[itemAtual];
+    if (!item) {
       setError("Instrução não encontrada");
       return false;
     }
 
-    const qtdTentativas = clone.qtd_tentativas_alvo || 1;
+    const clone = item.clone;
+    const instrucao = item.instrucao;
+    const qtdTentativas = instrucao.qtd_tentativas_alvo || 1;
 
     // Verificar se todas as tentativas foram avaliadas
     for (let t = 1; t <= qtdTentativas; t++) {
@@ -351,36 +378,20 @@ function AplicarCurriculumPageContent() {
 
   const proximaInstrucao = async () => {
     const sucesso = await salvarAvaliacoesInstrucao();
-
-    if (sucesso && sessao) {
-      const clone = sessao.atividadesClone[atividadeAtual];
-
-      if (instrucaoAtual < clone.instrucoes.length - 1) {
-        setInstrucaoAtual((prev) => prev + 1);
-      } else if (atividadeAtual < sessao.atividadesClone.length - 1) {
-        setAtividadeAtual((prev) => prev + 1);
-        setInstrucaoAtual(0);
-      }
+    if (sucesso && itemAtual < itensNavegacao.length - 1) {
+      setItemAtual((prev) => prev + 1);
     }
   };
 
   const instrucaoAnterior = () => {
-    if (instrucaoAtual > 0) {
-      setInstrucaoAtual((prev) => prev - 1);
-    } else if (atividadeAtual > 0) {
-      const atividadeAnterior = atividadeAtual - 1;
-      const cloneAnt = sessao!.atividadesClone[atividadeAnterior];
-      const ultimaInstrucao = cloneAnt.instrucoes.length - 1;
-      setAtividadeAtual(atividadeAnterior);
-      setInstrucaoAtual(ultimaInstrucao);
+    if (itemAtual > 0) {
+      setItemAtual((prev) => prev - 1);
     }
   };
 
-  const navegarParaAtividade = (indice: number) => {
-    if (!sessao) return;
+  const navegarParaItem = (indice: number) => {
     setAvaliacoesTentativas(new Map());
-    setAtividadeAtual(indice);
-    setInstrucaoAtual(0);
+    setItemAtual(indice);
   };
 
   // ============ Finalizar ============
@@ -388,9 +399,8 @@ function AplicarCurriculumPageContent() {
   const finalizarSessao = async () => {
     if (!sessao) return;
 
-    const totalAvaliacoes = sessao.atividadesClone.reduce((total, clone) => {
-      const qtdTentativas = clone.qtd_tentativas_alvo || 1;
-      return total + clone.instrucoes.length * qtdTentativas;
+    const totalAvaliacoes = itensNavegacao.reduce((total, item) => {
+      return total + (item.instrucao.qtd_tentativas_alvo || 1);
     }, 0);
 
     if (avaliacoes.size < totalAvaliacoes) {
@@ -456,22 +466,19 @@ function AplicarCurriculumPageContent() {
 
   // Carregar avaliações da instrução atual quando navegar
   useEffect(() => {
-    if (!sessao) return;
+    if (!sessao || itensNavegacao.length === 0) return;
 
-    const clone = sessao.atividadesClone[atividadeAtual];
-    if (!clone) return;
+    const item = itensNavegacao[itemAtual];
+    if (!item) return;
 
-    const instrucao = clone.instrucoes[instrucaoAtual];
-    if (!instrucao) return;
-
-    const qtdTentativas = clone.qtd_tentativas_alvo || 1;
+    const qtdTentativas = item.instrucao.qtd_tentativas_alvo || 1;
     const tentativasMap = new Map<
       number,
       { nota: number | null; observacao: string }
     >();
 
     for (let t = 1; t <= qtdTentativas; t++) {
-      const key = `${clone.id}-${instrucao.id}-${t}`;
+      const key = `${item.clone.id}-${item.instrucao.id}-${t}`;
       const avalSalva = avaliacoes.get(key);
 
       if (avalSalva) {
@@ -483,7 +490,7 @@ function AplicarCurriculumPageContent() {
     }
 
     setAvaliacoesTentativas(tentativasMap);
-  }, [sessao, atividadeAtual, instrucaoAtual]);
+  }, [sessao, itemAtual]);
 
   // ============ Render: Loading ============
 
@@ -529,27 +536,43 @@ function AplicarCurriculumPageContent() {
     );
   }
 
-  // ============ Render: Dados ============
+  // ============ Construir lista plana de itens de navegação ============
 
-  const clone = sessao.atividadesClone[atividadeAtual];
-  if (!clone) {
-    return (
-      <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="text-center py-12">
-          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">
-            Atividade não encontrada
-          </h3>
-          <Button onClick={() => router.push("/iniciar-sessao")}>
-            Voltar para Iniciar Sessão
-          </Button>
-        </div>
-      </MainLayout>
-    );
+  // Helper: pegar pontuações da instrução filtradas por fase (com "+" por último)
+  const getPontuacoesFase = (instr: Instrucao): Pontuacao[] => {
+    const fase = instr.faseAtual || "LINHA_BASE";
+    return (instr.pontuacoes || [])
+      .filter((p) => p.fase === fase)
+      .sort((a, b) => {
+        if (a.sigla === "+") return 1;
+        if (b.sigla === "+") return -1;
+        return a.ordem - b.ordem;
+      })
+      .map((p) => ({ id: p.id, ordem: p.ordem, sigla: p.sigla, grau: p.grau }));
+  };
+
+  const instrucoesSel = sessao.instrucoesSelecionadas ?? [];
+  const instrucaoIdsSet = new Set(instrucoesSel.map((s) => s.instrucaoId));
+
+  // Lista plana: cada instrução selecionada é um item independente
+  const itensNavegacao: InstrucaoNavItem[] = [];
+  for (const clone of sessao.atividadesClone) {
+    const instrucoesFiltradas = instrucoesSel.length > 0
+      ? clone.instrucoes.filter((i) => instrucaoIdsSet.has(i.id))
+      : clone.instrucoes;
+    for (const instr of instrucoesFiltradas) {
+      itensNavegacao.push({
+        clone,
+        instrucao: instr,
+        pontuacoesFase: getPontuacoesFase(instr),
+      });
+    }
   }
 
-  const instrucao = clone.instrucoes[instrucaoAtual];
-  if (!instrucao) {
+  // ============ Render: Dados ============
+
+  const currentItem = itensNavegacao[itemAtual];
+  if (!currentItem) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="text-center py-12">
@@ -565,16 +588,15 @@ function AplicarCurriculumPageContent() {
     );
   }
 
+  const { clone, instrucao, pontuacoesFase } = currentItem;
+
   // Calcular progresso
-  const totalAvaliacoes = sessao.atividadesClone.reduce((total, c) => {
-    const qtdTentativas = c.qtd_tentativas_alvo || 1;
-    return total + c.instrucoes.length * qtdTentativas;
+  const totalAvaliacoes = itensNavegacao.reduce((total, item) => {
+    return total + (item.instrucao.qtd_tentativas_alvo || 1);
   }, 0);
   const progresso = totalAvaliacoes > 0 ? (avaliacoes.size / totalAvaliacoes) * 100 : 0;
 
-  const isUltimaInstrucao =
-    instrucaoAtual === clone.instrucoes.length - 1 &&
-    atividadeAtual === sessao.atividadesClone.length - 1;
+  const isUltimaInstrucao = itemAtual === itensNavegacao.length - 1;
   const todasAvaliadas = avaliacoes.size >= totalAvaliacoes;
 
   return (
@@ -592,47 +614,43 @@ function AplicarCurriculumPageContent() {
           </p>
         </div>
 
-        {/* Painel de Navegação de Atividades */}
+        {/* Painel de Navegação — cada instrução selecionada é um item */}
         <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <BookMarked className="h-4 w-4" />
-              Atividades do Curriculum ({sessao.atividadesClone.length})
+              Instruções da Sessão ({itensNavegacao.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2 overflow-x-auto pb-2">
-              {sessao.atividadesClone.map((atv, idx) => {
-                const qtdTentativas = atv.qtd_tentativas_alvo || 1;
-                const todasInstrucoesAvaliadas = atv.instrucoes.every(
-                  (instr) => {
-                    for (let t = 1; t <= qtdTentativas; t++) {
-                      const key = `${atv.id}-${instr.id}-${t}`;
-                      if (!avaliacoes.has(key)) return false;
-                    }
-                    return true;
-                  }
-                );
-                const isAtual = idx === atividadeAtual;
+              {itensNavegacao.map((nav, idx) => {
+                const qtdTentativas = nav.instrucao.qtd_tentativas_alvo || 1;
+                let avaliada = true;
+                for (let t = 1; t <= qtdTentativas; t++) {
+                  const key = `${nav.clone.id}-${nav.instrucao.id}-${t}`;
+                  if (!avaliacoes.has(key)) { avaliada = false; break; }
+                }
+                const isAtual = idx === itemAtual;
 
                 return (
                   <Button
-                    key={atv.id}
+                    key={`${nav.clone.id}-${nav.instrucao.id}`}
                     variant={isAtual ? "default" : "outline"}
                     size="sm"
-                    onClick={() => navegarParaAtividade(idx)}
-                    className={`flex-shrink-0 min-w-[120px] justify-between ${
-                      todasInstrucoesAvaliadas && !isAtual
+                    onClick={() => navegarParaItem(idx)}
+                    className={`flex-shrink-0 min-w-[160px] max-w-[260px] justify-between ${
+                      avaliada && !isAtual
                         ? "border-green-500 bg-green-50 hover:bg-green-100"
                         : ""
                     }`}
                   >
                     <span className="text-xs font-medium truncate">
-                      {idx + 1}. {atv.nome}
+                      {idx + 1}. {nav.clone.nome} - {nav.instrucao.texto}
                     </span>
                     <span className="flex items-center gap-1 ml-1">
-                      <FaseBadge fase={atv.faseAtual} />
-                      {todasInstrucoesAvaliadas && (
+                      {nav.instrucao.faseAtual && <FaseBadge fase={nav.instrucao.faseAtual} />}
+                      {avaliada && (
                         <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-600" />
                       )}
                     </span>
@@ -672,15 +690,14 @@ function AplicarCurriculumPageContent() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 flex-wrap">
                   <Badge variant="secondary">
-                    Atividade {atividadeAtual + 1}: {clone.nome}
+                    {clone.nome}
                   </Badge>
-                  <FaseBadge fase={clone.faseAtual} />
-                  <Badge variant="outline">Instrução {instrucao.ordem}</Badge>
+                  {instrucao.faseAtual && <FaseBadge fase={instrucao.faseAtual} />}
                 </CardTitle>
                 <CardDescription>
-                  Instrução {instrucaoAtual + 1} de {clone.instrucoes.length}
+                  Instrução {itemAtual + 1} de {itensNavegacao.length}
                   {" • "}
                   Total: {avaliacoes.size}/{totalAvaliacoes}
                 </CardDescription>
@@ -723,7 +740,7 @@ function AplicarCurriculumPageContent() {
             {/* Tentativas */}
             <div className="space-y-8">
               {Array.from(
-                { length: clone.qtd_tentativas_alvo || 1 },
+                { length: instrucao.qtd_tentativas_alvo || 1 },
                 (_, index) => {
                   const tentativa = index + 1;
                   const avalTentativa = avaliacoesTentativas.get(tentativa) || {
@@ -739,28 +756,27 @@ function AplicarCurriculumPageContent() {
                       <div className="flex items-center gap-2">
                         <Badge variant="default" className="bg-blue-600">
                           Tentativa {tentativa}/
-                          {clone.qtd_tentativas_alvo || 1}
+                          {instrucao.qtd_tentativas_alvo || 1}
                         </Badge>
                         {avalTentativa.nota !== null && (
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
                         )}
                       </div>
 
-                      {/* Respostas */}
+                      {/* Respostas — pontuações por instrução/fase */}
                       <div className="space-y-2">
                         <Label className="text-base">Resposta *</Label>
-                        {clone.pontuacoes &&
-                        clone.pontuacoes.length > 0 ? (
+                        {pontuacoesFase.length > 0 ? (
                           <>
                             <div
                               className={`grid gap-2`}
                               style={{
-                                gridTemplateColumns: `repeat(${Math.min(clone.pontuacoes.length, 8)}, minmax(0, 1fr))`,
+                                gridTemplateColumns: `repeat(${Math.min(pontuacoesFase.length, 8)}, minmax(0, 1fr))`,
                               }}
                             >
-                              {clone.pontuacoes.map(
+                              {pontuacoesFase.map(
                                 (pontuacao, idx) => {
-                                  const isUltimo = idx === clone.pontuacoes!.length - 1;
+                                  const isUltimo = idx === pontuacoesFase.length - 1;
                                   const isPrimeiro = idx === 0;
                                   const isSelecionado = avalTentativa.nota === idx;
                                   return (
@@ -801,10 +817,10 @@ function AplicarCurriculumPageContent() {
                             <div
                               className={`grid gap-2 text-xs text-center text-muted-foreground`}
                               style={{
-                                gridTemplateColumns: `repeat(${Math.min(clone.pontuacoes.length, 8)}, minmax(0, 1fr))`,
+                                gridTemplateColumns: `repeat(${Math.min(pontuacoesFase.length, 8)}, minmax(0, 1fr))`,
                               }}
                             >
-                              {clone.pontuacoes.map(
+                              {pontuacoesFase.map(
                                 (pontuacao) => (
                                   <div key={pontuacao.id}>
                                     {pontuacao.grau}
@@ -816,7 +832,7 @@ function AplicarCurriculumPageContent() {
                         ) : (
                           <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
                             <p className="text-sm">
-                              Esta atividade não possui pontuações configuradas. Configure as pontuações no painel de Evolução antes de avaliar.
+                              Esta instrução não possui pontuações configuradas para a fase atual. Configure no painel de Evolução.
                             </p>
                           </div>
                         )}
@@ -855,9 +871,7 @@ function AplicarCurriculumPageContent() {
               <Button
                 variant="outline"
                 onClick={instrucaoAnterior}
-                disabled={
-                  (atividadeAtual === 0 && instrucaoAtual === 0) || salvando
-                }
+                disabled={itemAtual === 0 || salvando}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Anterior
@@ -936,15 +950,16 @@ function AplicarCurriculumPageContent() {
             </div>
           </div>
 
-          {/* Resumo geral */}
+          {/* Resumo geral por instrução */}
           {resultadoSessao.evolucao.length > 0 && (() => {
-            const avancaram = resultadoSessao.evolucao.filter(e => e.faseNova !== e.faseAnterior && e.avancou).length;
-            const regrediram = resultadoSessao.evolucao.filter(e => e.faseNova !== e.faseAnterior && !e.avancou).length;
-            const mantiveram = resultadoSessao.evolucao.filter(e => e.faseNova === e.faseAnterior).length;
+            const todasInstrucoes = resultadoSessao.evolucao.flatMap(e => e.instrucoes);
+            const avancaram = todasInstrucoes.filter(i => i.avancou).length;
+            const regrediram = todasInstrucoes.filter(i => i.regrediu).length;
+            const mantiveram = todasInstrucoes.filter(i => !i.avancou && !i.regrediu).length;
             return (
               <div className="grid grid-cols-4 divide-x border-b bg-muted/40">
                 {[
-                  { label: "Atividades", value: resultadoSessao.evolucao.length, color: "text-foreground" },
+                  { label: "Instruções", value: todasInstrucoes.length, color: "text-foreground" },
                   { label: "Avançaram", value: avancaram, color: "text-green-600" },
                   { label: "Regrediram", value: regrediram, color: "text-red-500" },
                   { label: "Mantiveram", value: mantiveram, color: "text-muted-foreground" },
@@ -958,87 +973,99 @@ function AplicarCurriculumPageContent() {
             );
           })()}
 
-          {/* Detalhes por atividade */}
+          {/* Detalhes por atividade → instruções */}
           <ScrollArea className="max-h-[380px]">
             <div className="divide-y">
-              {resultadoSessao.evolucao.map((ev, i) => {
-                const mudouFase = ev.faseNova !== ev.faseAnterior;
-                const avancou = mudouFase && ev.avancou;
-                const regrediu = mudouFase && !ev.avancou;
-                const pct = ev.stats.porcentagemAcerto;
-                const criterio = ev.stats.porcentagemCriterio;
-                const atingiu = ev.stats.atingiuCriterio;
-
-                return (
-                  <div key={i} className="px-6 py-4 space-y-3">
-                    {/* Nome + transição */}
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="font-medium text-sm leading-snug">{ev.nomeAtividade}</span>
-                      {avancou && (
-                        <Badge className="bg-green-100 text-green-700 border-green-200 shrink-0 gap-1">
-                          <TrendingUp className="h-3 w-3" /> Avançou
-                        </Badge>
-                      )}
-                      {regrediu && (
-                        <Badge className="bg-red-100 text-red-600 border-red-200 shrink-0 gap-1">
-                          <TrendingDown className="h-3 w-3" /> Regrediu
-                        </Badge>
-                      )}
-                      {!mudouFase && (
-                        <Badge variant="outline" className="text-muted-foreground shrink-0 gap-1">
-                          <Minus className="h-3 w-3" /> Manteve
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Fase anterior → nova */}
-                    <div className="flex items-center gap-2 text-xs">
-                      <FaseBadge fase={ev.faseAnterior} />
-                      {mudouFase && (
-                        <>
-                          <span className="text-muted-foreground">→</span>
-                          <FaseBadge fase={ev.faseNova} />
-                        </>
-                      )}
-                    </div>
-
-                    {/* Barra de acerto vs critério */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Target className="h-3 w-3" />
-                          Acerto: <span className={`font-semibold ml-0.5 ${atingiu ? "text-green-600" : "text-red-500"}`}>{pct}%</span>
-                        </span>
-                        <span>Critério: ≥{criterio}% · {ev.stats.qtdSessoesConsecutivas} sessão(ões) consec.</span>
+              {resultadoSessao.evolucao.map((ev, i) => (
+                <div key={i} className="px-6 py-4 space-y-3">
+                  {/* Header da atividade com progresso */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-sm">{ev.nomeAtividade}</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${ev.progressoAtividade}%` }} />
                       </div>
-                      <div className="relative h-2 w-full bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${atingiu ? "bg-green-500" : "bg-red-400"}`}
-                          style={{ width: `${Math.min(pct, 100)}%` }}
-                        />
-                        {/* Marcador do critério */}
-                        <div
-                          className="absolute top-0 h-full w-0.5 bg-foreground/40"
-                          style={{ left: `${criterio}%` }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{ev.stats.tentativasCorretas}/{ev.stats.totalTentativas} corretas</span>
-                        {atingiu
-                          ? <span className="text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Critério atingido</span>
-                          : <span className="text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Critério não atingido</span>
-                        }
-                      </div>
+                      <span>{ev.progressoAtividade}%</span>
                     </div>
                   </div>
-                );
-              })}
+
+                  {/* Instruções da atividade */}
+                  <div className="space-y-3 pl-2">
+                    {ev.instrucoes.map((instr, j) => {
+                      const mudouFase = instr.faseNova !== instr.faseAnterior;
+                      const pct = instr.stats.porcentagemAcerto;
+                      const criterio = instr.stats.porcentagemCriterio;
+                      const atingiu = instr.stats.atingiuCriterio;
+
+                      return (
+                        <div key={j} className="border rounded-lg p-3 space-y-2 bg-muted/20">
+                          {/* Nome instrução + badge */}
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-xs text-muted-foreground leading-snug flex-1">{instr.textoInstrucao}</span>
+                            {instr.avancou && (
+                              <Badge className="bg-green-100 text-green-700 border-green-200 shrink-0 gap-1 text-xs">
+                                <TrendingUp className="h-3 w-3" /> Avançou
+                              </Badge>
+                            )}
+                            {instr.regrediu && (
+                              <Badge className="bg-red-100 text-red-600 border-red-200 shrink-0 gap-1 text-xs">
+                                <TrendingDown className="h-3 w-3" /> Regrediu
+                              </Badge>
+                            )}
+                            {!instr.avancou && !instr.regrediu && (
+                              <Badge variant="outline" className="text-muted-foreground shrink-0 gap-1 text-xs">
+                                <Minus className="h-3 w-3" /> Manteve
+                              </Badge>
+                            )}
+                          </div>
+
+                          {/* Fase anterior → nova */}
+                          <div className="flex items-center gap-2">
+                            <FaseBadge fase={instr.faseAnterior} />
+                            {mudouFase && (
+                              <>
+                                <span className="text-muted-foreground text-xs">→</span>
+                                <FaseBadge fase={instr.faseNova} />
+                              </>
+                            )}
+                          </div>
+
+                          {/* Barra de acerto */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Target className="h-3 w-3" />
+                                Acerto: <span className={`font-semibold ml-0.5 ${atingiu ? "text-green-600" : "text-red-500"}`}>{pct}%</span>
+                              </span>
+                              <span>Critério: ≥{criterio}%</span>
+                            </div>
+                            <div className="relative h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${atingiu ? "bg-green-500" : "bg-red-400"}`}
+                                style={{ width: `${Math.min(pct, 100)}%` }}
+                              />
+                              <div className="absolute top-0 h-full w-0.5 bg-foreground/40" style={{ left: `${criterio}%` }} />
+                            </div>
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>{instr.stats.tentativasCorretas}/{instr.stats.totalTentativas} corretas</span>
+                              {atingiu
+                                ? <span className="text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Atingiu</span>
+                                : <span className="text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Não atingiu</span>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </ScrollArea>
 
           {resultadoSessao.evolucao.length === 0 && (
             <div className="px-6 py-8 text-center text-muted-foreground text-sm">
-              Nenhuma atividade avaliada nesta sessão.
+              Nenhuma instrução avaliada nesta sessão.
             </div>
           )}
 

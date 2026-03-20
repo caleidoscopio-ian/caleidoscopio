@@ -11,10 +11,11 @@ interface AvaliacaoData {
   nota: number
 }
 
-interface EvolucaoResultado {
-  atividadeCloneId: string
-  nomeAtividade: string
+export interface InstrucaoEvolucaoResultado {
+  instrucaoId: string
+  textoInstrucao: string
   avancou: boolean
+  regrediu: boolean
   faseAnterior: FaseAtividade
   faseNova: FaseAtividade
   stats: {
@@ -27,11 +28,16 @@ interface EvolucaoResultado {
   }
 }
 
+export interface EvolucaoResultado {
+  atividadeCloneId: string
+  nomeAtividade: string
+  progressoAtividade: number // 0–100 (% de instruções concluídas)
+  instrucoes: InstrucaoEvolucaoResultado[]
+}
+
 /**
  * Determina se uma tentativa é "correta" (acerto/independente).
- * A nota é o índice do botão de pontuação clicado.
  * O último botão da escala ("+"/Independente) é sempre o correto.
- * Ou seja: nota === qtdPontuacoes - 1
  */
 function isTentativaCorreta(nota: number, qtdPontuacoes: number): boolean {
   if (qtdPontuacoes <= 0) return false
@@ -39,8 +45,17 @@ function isTentativaCorreta(nota: number, qtdPontuacoes: number): boolean {
 }
 
 /**
- * Calcula a evolução de fase para todas as atividades clonadas
- * após uma sessão ser finalizada.
+ * Calcula progresso de uma atividade como % de instruções que atingiram
+ * GENERALIZACAO ou cuja fase_se_atingir em GENERALIZACAO é null (concluída).
+ */
+function calcularProgressoAtividade(instrucoes: { faseAtual: FaseAtividade }[]): number {
+  if (instrucoes.length === 0) return 0
+  const concluidas = instrucoes.filter((i) => i.faseAtual === FaseAtividade.GENERALIZACAO).length
+  return Math.round((concluidas / instrucoes.length) * 100)
+}
+
+/**
+ * Calcula a evolução de fase por INSTRUÇÃO após uma sessão ser finalizada.
  */
 export async function calcularEvolucaoAposFinalizacao(
   sessaoCurriculumId: string,
@@ -49,149 +64,176 @@ export async function calcularEvolucaoAposFinalizacao(
 ): Promise<EvolucaoResultado[]> {
   const resultados: EvolucaoResultado[] = []
 
-  // Buscar os clones ativos com fases, critérios e pontuações
+  // Buscar os clones ativos com instruções (fases + pontuações por instrução)
   const clones = await prisma.pacienteAtividadeClone.findMany({
-    where: {
-      pacienteCurriculumId,
-      ativo: true,
-    },
+    where: { pacienteCurriculumId, ativo: true },
     include: {
-      fases: true,
-      pontuacoes: { orderBy: { ordem: 'asc' } },
+      instrucoes: {
+        where: { ativo: true },
+        orderBy: { ordem: 'asc' },
+        include: {
+          fases: true,
+          pontuacoes: true,
+        },
+      },
     },
   })
 
   for (const clone of clones) {
-    // Filtrar avaliações desta atividade na sessão atual
-    const avaliacoesClone = avaliacoes.filter(
-      (a) => a.atividadeCloneId === clone.id
-    )
+    const instrucaoResultados: InstrucaoEvolucaoResultado[] = []
 
-    if (avaliacoesClone.length === 0) continue
+    // Processar cada instrução individualmente
+    for (const instrucao of clone.instrucoes) {
+      // Avalições desta instrução nesta sessão
+      const avaliacoesInstrucao = avaliacoes.filter(
+        (a) => a.instrucaoId === instrucao.id && a.atividadeCloneId === clone.id
+      )
 
-    const qtdPontuacoes = clone.pontuacoes.length
+      if (avaliacoesInstrucao.length === 0) continue
 
-    // Calcular stats da sessão atual
-    const totalTentativas = avaliacoesClone.length
-    const tentativasCorretas = avaliacoesClone.filter(
-      (a) => isTentativaCorreta(a.nota, qtdPontuacoes)
-    ).length
-    const porcentagemAcerto =
-      totalTentativas > 0
-        ? Math.round((tentativasCorretas / totalTentativas) * 100)
-        : 0
+      // Pontuações desta instrução na fase atual
+      const pontuacoesFase = instrucao.pontuacoes.filter(
+        (p) => p.fase === instrucao.faseAtual
+      )
+      const qtdPontuacoes = pontuacoesFase.length
 
-    // Buscar critérios da fase atual
-    const criterioFaseAtual = clone.fases.find(
-      (f) => f.fase === clone.faseAtual
-    )
+      const totalTentativas = avaliacoesInstrucao.length
+      const tentativasCorretas = avaliacoesInstrucao.filter(
+        (a) => isTentativaCorreta(a.nota, qtdPontuacoes)
+      ).length
+      const porcentagemAcerto =
+        totalTentativas > 0
+          ? Math.round((tentativasCorretas / totalTentativas) * 100)
+          : 0
 
-    if (!criterioFaseAtual) {
-      resultados.push({
-        atividadeCloneId: clone.id,
-        nomeAtividade: clone.nome,
-        avancou: false,
-        faseAnterior: clone.faseAtual,
-        faseNova: clone.faseAtual,
-        stats: {
-          totalTentativas,
-          tentativasCorretas,
-          porcentagemAcerto,
-          porcentagemCriterio: 80,
-          qtdSessoesConsecutivas: 1,
-          atingiuCriterio: false,
-        },
-      })
-      continue
-    }
+      // Buscar critério da fase atual desta instrução
+      const criterioFaseAtual = instrucao.fases.find(
+        (f) => f.fase === instrucao.faseAtual
+      )
 
-    // Verificar se atingiu critério na sessão atual (porcentagem)
-    const atingiuNaSessao =
-      totalTentativas > 0 &&
-      porcentagemAcerto >= criterioFaseAtual.porcentagem_acerto
-
-    // Verificar sessões consecutivas
-    let atingiuCriterioGeral = false
-    if (atingiuNaSessao) {
-      if (criterioFaseAtual.qtd_sessoes_consecutivas <= 1) {
-        atingiuCriterioGeral = true
-      } else {
-        // Buscar as últimas N-1 sessões finalizadas para verificar consecutivas
-        const sessoesAnteriores = await buscarSessoesConsecutivas(
-          clone.id,
-          sessaoCurriculumId,
-          criterioFaseAtual.qtd_sessoes_consecutivas - 1
-        )
-        atingiuCriterioGeral = sessoesAnteriores.todasAtingiram
-      }
-    }
-
-    let faseNova = clone.faseAtual
-    let avancou = false
-
-    if (atingiuCriterioGeral && criterioFaseAtual.fase_se_atingir) {
-      // Avançar para próxima fase
-      faseNova = criterioFaseAtual.fase_se_atingir
-      avancou = true
-
-      await prisma.$transaction([
-        // Atualizar fase do clone
-        prisma.pacienteAtividadeClone.update({
-          where: { id: clone.id },
-          data: { faseAtual: faseNova },
-        }),
-        // Registrar no histórico
-        prisma.atividadeFaseHistorico.create({
-          data: {
-            id: randomUUID(),
-            atividadeCloneId: clone.id,
-            faseAnterior: clone.faseAtual,
-            faseNova,
-            motivo: 'CRITERIO_ATINGIDO',
-            sessaoCurriculumId,
+      if (!criterioFaseAtual) {
+        instrucaoResultados.push({
+          instrucaoId: instrucao.id,
+          textoInstrucao: instrucao.texto,
+          avancou: false,
+          regrediu: false,
+          faseAnterior: instrucao.faseAtual,
+          faseNova: instrucao.faseAtual,
+          stats: {
+            totalTentativas,
+            tentativasCorretas,
+            porcentagemAcerto,
+            porcentagemCriterio: 80,
+            qtdSessoesConsecutivas: 1,
+            atingiuCriterio: false,
           },
-        }),
-      ])
-    } else if (!atingiuNaSessao && criterioFaseAtual.fase_se_nao_atingir) {
-      // Verificar se deve voltar de fase
-      const deveVoltar = criterioFaseAtual.fase_se_nao_atingir !== clone.faseAtual
-      if (deveVoltar) {
-        faseNova = criterioFaseAtual.fase_se_nao_atingir
-        avancou = false
+        })
+        continue
+      }
+
+      const atingiuNaSessao =
+        totalTentativas > 0 &&
+        porcentagemAcerto >= criterioFaseAtual.porcentagem_acerto
+
+      // Verificar sessões consecutivas
+      let atingiuCriterioGeral = false
+      if (atingiuNaSessao) {
+        if (criterioFaseAtual.qtd_sessoes_consecutivas <= 1) {
+          atingiuCriterioGeral = true
+        } else {
+          const sessoesConsec = await buscarSessoesConsecutivasPorInstrucao(
+            instrucao.id,
+            clone.id,
+            sessaoCurriculumId,
+            criterioFaseAtual.porcentagem_acerto,
+            qtdPontuacoes,
+            criterioFaseAtual.qtd_sessoes_consecutivas - 1
+          )
+          atingiuCriterioGeral = sessoesConsec.todasAtingiram
+        }
+      }
+
+      let faseNova = instrucao.faseAtual
+      let avancou = false
+      let regrediu = false
+
+      if (atingiuCriterioGeral && criterioFaseAtual.fase_se_atingir) {
+        faseNova = criterioFaseAtual.fase_se_atingir
+        avancou = true
 
         await prisma.$transaction([
-          prisma.pacienteAtividadeClone.update({
-            where: { id: clone.id },
+          prisma.atividadeCloneInstrucao.update({
+            where: { id: instrucao.id },
             data: { faseAtual: faseNova },
           }),
-          prisma.atividadeFaseHistorico.create({
+          prisma.instrucaoFaseHistorico.create({
             data: {
               id: randomUUID(),
-              atividadeCloneId: clone.id,
-              faseAnterior: clone.faseAtual,
+              instrucaoId: instrucao.id,
+              faseAnterior: instrucao.faseAtual,
               faseNova,
-              motivo: 'CRITERIO_NAO_ATINGIDO',
+              motivo: 'CRITERIO_ATINGIDO',
               sessaoCurriculumId,
             },
           }),
         ])
+      } else if (!atingiuNaSessao && criterioFaseAtual.fase_se_nao_atingir) {
+        const deveVoltar = criterioFaseAtual.fase_se_nao_atingir !== instrucao.faseAtual
+        if (deveVoltar) {
+          faseNova = criterioFaseAtual.fase_se_nao_atingir
+          regrediu = true
+
+          await prisma.$transaction([
+            prisma.atividadeCloneInstrucao.update({
+              where: { id: instrucao.id },
+              data: { faseAtual: faseNova },
+            }),
+            prisma.instrucaoFaseHistorico.create({
+              data: {
+                id: randomUUID(),
+                instrucaoId: instrucao.id,
+                faseAnterior: instrucao.faseAtual,
+                faseNova,
+                motivo: 'CRITERIO_NAO_ATINGIDO',
+                sessaoCurriculumId,
+              },
+            }),
+          ])
+        }
       }
+
+      instrucaoResultados.push({
+        instrucaoId: instrucao.id,
+        textoInstrucao: instrucao.texto,
+        avancou,
+        regrediu,
+        faseAnterior: instrucao.faseAtual,
+        faseNova,
+        stats: {
+          totalTentativas,
+          tentativasCorretas,
+          porcentagemAcerto,
+          porcentagemCriterio: criterioFaseAtual.porcentagem_acerto,
+          qtdSessoesConsecutivas: criterioFaseAtual.qtd_sessoes_consecutivas,
+          atingiuCriterio: atingiuCriterioGeral,
+        },
+      })
     }
+
+    if (instrucaoResultados.length === 0) continue
+
+    // Recalcular progresso da atividade com fases atualizadas
+    const instrucoesFaseAtualizada = clone.instrucoes.map((instr) => {
+      const resultado = instrucaoResultados.find((r) => r.instrucaoId === instr.id)
+      return { faseAtual: resultado ? resultado.faseNova : instr.faseAtual }
+    })
+    const progressoAtividade = calcularProgressoAtividade(instrucoesFaseAtualizada)
 
     resultados.push({
       atividadeCloneId: clone.id,
       nomeAtividade: clone.nome,
-      avancou,
-      faseAnterior: clone.faseAtual,
-      faseNova,
-      stats: {
-        totalTentativas,
-        tentativasCorretas,
-        porcentagemAcerto,
-        porcentagemCriterio: criterioFaseAtual.porcentagem_acerto,
-        qtdSessoesConsecutivas: criterioFaseAtual.qtd_sessoes_consecutivas,
-        atingiuCriterio: atingiuCriterioGeral,
-      },
+      progressoAtividade,
+      instrucoes: instrucaoResultados,
     })
   }
 
@@ -199,28 +241,28 @@ export async function calcularEvolucaoAposFinalizacao(
 }
 
 /**
- * Busca sessões anteriores finalizadas para verificar se as últimas N
- * consecutivas atingiram o critério para uma atividade clone.
+ * Verifica se as últimas N sessões finalizadas para uma instrução específica
+ * atingiram o critério de porcentagem.
  */
-async function buscarSessoesConsecutivas(
+async function buscarSessoesConsecutivasPorInstrucao(
+  instrucaoId: string,
   atividadeCloneId: string,
   sessaoAtualId: string,
+  porcentagemCriterio: number,
+  qtdPontuacoes: number,
   quantidadeNecessaria: number
 ): Promise<{ todasAtingiram: boolean }> {
-  // Buscar as últimas N sessões finalizadas que avaliaram esta atividade clone
   const sessoesComAvaliacoes = await prisma.sessaoCurriculum.findMany({
     where: {
       id: { not: sessaoAtualId },
       status: 'FINALIZADA',
       avaliacoes: {
-        some: {
-          atividadeCloneId,
-        },
+        some: { instrucaoId, atividadeCloneId },
       },
     },
     include: {
       avaliacoes: {
-        where: { atividadeCloneId },
+        where: { instrucaoId, atividadeCloneId },
       },
     },
     orderBy: { finalizada_em: 'desc' },
@@ -231,38 +273,14 @@ async function buscarSessoesConsecutivas(
     return { todasAtingiram: false }
   }
 
-  // Buscar critérios da fase atual do clone e pontuações
-  const clone = await prisma.pacienteAtividadeClone.findUnique({
-    where: { id: atividadeCloneId },
-    include: {
-      fases: true,
-      pontuacoes: { orderBy: { ordem: 'asc' } },
-    },
-  })
-
-  if (!clone) return { todasAtingiram: false }
-
-  const criterio = clone.fases.find((f) => f.fase === clone.faseAtual)
-  if (!criterio) return { todasAtingiram: false }
-
-  const qtdPontuacoes = clone.pontuacoes.length
-
-  // Verificar cada sessão anterior
   for (const sessao of sessoesComAvaliacoes) {
-    const totalTentativas = sessao.avaliacoes.length
-    const tentativasCorretas = sessao.avaliacoes.filter(
+    const total = sessao.avaliacoes.length
+    const corretas = sessao.avaliacoes.filter(
       (a) => isTentativaCorreta(a.nota, qtdPontuacoes)
     ).length
+    const porcentagem = total > 0 ? Math.round((corretas / total) * 100) : 0
 
-    const porcentagemSessao =
-      totalTentativas > 0
-        ? Math.round((tentativasCorretas / totalTentativas) * 100)
-        : 0
-    const atingiu =
-      totalTentativas > 0 &&
-      porcentagemSessao >= criterio.porcentagem_acerto
-
-    if (!atingiu) return { todasAtingiram: false }
+    if (porcentagem < porcentagemCriterio) return { todasAtingiram: false }
   }
 
   return { todasAtingiram: true }

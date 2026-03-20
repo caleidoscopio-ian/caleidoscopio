@@ -6,8 +6,14 @@ import { Prisma, StatusSessao } from "@prisma/client";
 
 // Inclui clones com instruções e pontuações para uso na sessão
 const atividadesCloneInclude = {
-  instrucoes: { orderBy: { ordem: "asc" as const } },
-  pontuacoes: { orderBy: { ordem: "asc" as const } },
+  instrucoes: {
+    where: { ativo: true },
+    orderBy: { ordem: "asc" as const },
+    include: {
+      fases: true,
+      pontuacoes: { orderBy: { ordem: "asc" as const } },
+    },
+  },
   fases: true,
 };
 
@@ -43,7 +49,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { pacienteId, curriculumId } = body;
+    const { pacienteId, curriculumId, instrucoesSelecionadas } = body;
+    // instrucoesSelecionadas: Array<{ instrucaoId: string; atividadeCloneId: string }> | undefined
 
     if (!pacienteId || !curriculumId) {
       return NextResponse.json(
@@ -144,11 +151,17 @@ export async function POST(request: NextRequest) {
       console.log(
         `ℹ️ Sessão EM_ANDAMENTO já existe para o paciente "${paciente.nome}". Retornando sessão existente.`
       );
+      // Buscar instruções selecionadas da sessão existente
+      const instrucoesDaSessao = await prisma.sessaoCurriculumInstrucao.findMany({
+        where: { sessaoId: sessaoExistente.id },
+        select: { instrucaoId: true, atividadeCloneId: true },
+      });
       return NextResponse.json({
         success: true,
         data: {
           ...sessaoExistente,
           atividadesClone: pacienteCurriculum.atividadesClone,
+          instrucoesSelecionadas: instrucoesDaSessao,
         },
         message:
           "Já existe uma sessão em andamento para este paciente. Continue de onde parou.",
@@ -165,9 +178,10 @@ export async function POST(request: NextRequest) {
     );
 
     // Criar sessão de curriculum
+    const sessaoId = randomUUID();
     const sessao = await prisma.sessaoCurriculum.create({
       data: {
-        id: randomUUID(),
+        id: sessaoId,
         pacienteId,
         curriculumId,
         profissionalId: profissional.id,
@@ -180,6 +194,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Registrar instruções selecionadas para esta sessão
+    let instrucoesDaSessao: { instrucaoId: string; atividadeCloneId: string }[] = []
+
+    if (Array.isArray(instrucoesSelecionadas) && instrucoesSelecionadas.length > 0) {
+      const instrucaoData = instrucoesSelecionadas.map(
+        (item: { instrucaoId: string; atividadeCloneId: string }) => ({
+          id: randomUUID(),
+          sessaoId,
+          instrucaoId: item.instrucaoId,
+          atividadeCloneId: item.atividadeCloneId,
+        })
+      );
+      await prisma.sessaoCurriculumInstrucao.createMany({ data: instrucaoData });
+      instrucoesDaSessao = instrucoesSelecionadas;
+    }
+
     console.log(`✅ Sessão de curriculum criada com sucesso`);
 
     return NextResponse.json({
@@ -187,6 +217,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...sessao,
         atividadesClone: pacienteCurriculum.atividadesClone,
+        instrucoesSelecionadas: instrucoesDaSessao,
         avaliacoes: [],
       },
       tenant: {
@@ -242,6 +273,9 @@ export async function GET(request: NextRequest) {
           curriculum: true,
           profissional: true,
           avaliacoes: true,
+          instrucoesSessao: {
+            select: { instrucaoId: true, atividadeCloneId: true },
+          },
         },
       });
 
@@ -275,11 +309,21 @@ export async function GET(request: NextRequest) {
         },
       });
 
+      // Buscar histórico de evolução de fase desta sessão (por instrução)
+      const instrucaoIds = sessao.instrucoesSessao.map((i) => i.instrucaoId);
+      const historicoFases = instrucaoIds.length > 0
+        ? await prisma.instrucaoFaseHistorico.findMany({
+            where: { sessaoCurriculumId: id, instrucaoId: { in: instrucaoIds } },
+          })
+        : [];
+
       return NextResponse.json({
         success: true,
         data: {
           ...sessao,
           atividadesClone: pacienteCurriculum?.atividadesClone || [],
+          instrucoesSelecionadas: sessao.instrucoesSessao,
+          historicoFasesSessao: historicoFases,
         },
         tenant: {
           id: user.tenant.id,

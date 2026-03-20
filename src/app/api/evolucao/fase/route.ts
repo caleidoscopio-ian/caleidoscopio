@@ -24,11 +24,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { atividadeCloneId, novaFase } = body;
+    const { atividadeCloneId, instrucaoId, novaFase } = body;
 
-    if (!atividadeCloneId || !novaFase) {
+    if ((!atividadeCloneId && !instrucaoId) || !novaFase) {
       return NextResponse.json(
-        { error: "ID da atividade clone e nova fase são obrigatórios" },
+        { error: "ID da atividade/instrução e nova fase são obrigatórios" },
         { status: 400 }
       );
     }
@@ -46,7 +46,50 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Buscar clone atual
+    // Modo instrução (novo)
+    if (instrucaoId) {
+      const instrucao = await prisma.atividadeCloneInstrucao.findUnique({
+        where: { id: instrucaoId },
+      });
+
+      if (!instrucao) {
+        return NextResponse.json(
+          { error: "Instrução não encontrada" },
+          { status: 404 }
+        );
+      }
+
+      if (instrucao.faseAtual === novaFase) {
+        return NextResponse.json(
+          { error: "A instrução já está nesta fase" },
+          { status: 400 }
+        );
+      }
+
+      const [instrucaoAtualizada] = await prisma.$transaction([
+        prisma.atividadeCloneInstrucao.update({
+          where: { id: instrucaoId },
+          data: { faseAtual: novaFase as FaseAtividade },
+        }),
+        prisma.instrucaoFaseHistorico.create({
+          data: {
+            id: randomUUID(),
+            instrucaoId,
+            faseAnterior: instrucao.faseAtual,
+            faseNova: novaFase as FaseAtividade,
+            motivo: "ALTERACAO_MANUAL",
+            alterado_por: user.id,
+          },
+        }),
+      ]);
+
+      return NextResponse.json({
+        success: true,
+        data: instrucaoAtualizada,
+      });
+    }
+
+    // Modo atividade (legado)
     const clone = await prisma.pacienteAtividadeClone.findUnique({
       where: { id: atividadeCloneId },
     });

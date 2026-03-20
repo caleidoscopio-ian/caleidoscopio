@@ -71,7 +71,18 @@ export async function GET(request: NextRequest) {
           where: { ativo: true },
           orderBy: { ordem: "asc" },
           include: {
-            instrucoes: { orderBy: { ordem: "asc" } },
+            instrucoes: {
+              where: { ativo: true },
+              orderBy: { ordem: "asc" },
+              include: {
+                fases: true, // InstrucaoFase — critérios por instrução
+                historico: {
+                  orderBy: { alterado_em: "desc" },
+                  take: 5,
+                },
+                pontuacoes: { orderBy: { ordem: "asc" } },
+              },
+            },
             pontuacoes: { orderBy: { ordem: "asc" } },
             fases: true,
             historico: {

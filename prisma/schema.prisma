@@ -205,6 +205,7 @@ model SessaoCurriculum {
   curriculum         curriculum          @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
   profissional       profissional        @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
   avaliacoes         AvaliacaoInstrucaoCurriculum[]
+  instrucoesSessao   SessaoCurriculumInstrucao[]
 
   @@map("sessao_curriculums")
 }
@@ -898,23 +899,34 @@ model PacienteAtividadeClone {
   fases                AtividadeFase[]
   historico            AtividadeFaseHistorico[]
   avaliacoes           AvaliacaoInstrucaoCurriculum[]
+  sessoesInstrucao     SessaoCurriculumInstrucao[]
 
   @@map("paciente_atividade_clones")
 }
 
 model AtividadeCloneInstrucao {
-  id                    String   @id @default(uuid())
+  id                    String        @id @default(uuid())
   atividadeCloneId      String
   ordem                 Int
-  texto                 String   @db.Text
-  como_aplicar          String?  @db.Text
-  observacao            String?  @db.Text
-  procedimento_correcao String?  @db.Text
-  materiais_utilizados  String?  @db.Text
+  texto                 String        @db.Text
+  como_aplicar          String?       @db.Text
+  observacao            String?       @db.Text
+  procedimento_correcao String?       @db.Text
+  materiais_utilizados  String?       @db.Text
+
+  // Fase individual desta instrução
+  faseAtual             FaseAtividade @default(LINHA_BASE)
+  ativo                 Boolean       @default(true)
+  qtd_tentativas_alvo   Int           @default(1)
+
   createdAt             DateTime @default(now())
   updatedAt             DateTime @default(now()) @updatedAt
 
-  atividadeClone        PacienteAtividadeClone @relation(fields: [atividadeCloneId], references: [id], onDelete: Cascade)
+  atividadeClone        PacienteAtividadeClone   @relation(fields: [atividadeCloneId], references: [id], onDelete: Cascade)
+  fases                 InstrucaoFase[]
+  historico             InstrucaoFaseHistorico[]
+  pontuacoes            InstrucaoPontuacao[]
+  sessoesInstrucao      SessaoCurriculumInstrucao[]
 
   @@unique([atividadeCloneId, ordem])
   @@map("atividade_clone_instrucoes")
@@ -970,6 +982,76 @@ model AtividadeFaseHistorico {
   atividadeClone      PacienteAtividadeClone @relation(fields: [atividadeCloneId], references: [id], onDelete: Cascade)
 
   @@map("atividade_fase_historico")
+}
+
+// Critérios de evolução por instrução (granularidade instrução)
+model InstrucaoFase {
+  id                       String        @id @default(uuid())
+  instrucaoId              String
+  fase                     FaseAtividade
+
+  porcentagem_acerto       Float         @default(80)
+  qtd_sessoes_consecutivas Int           @default(1)
+
+  fase_se_atingir          FaseAtividade?
+  fase_se_nao_atingir      FaseAtividade?
+
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @default(now()) @updatedAt
+
+  instrucao                AtividadeCloneInstrucao @relation(fields: [instrucaoId], references: [id], onDelete: Cascade)
+
+  @@unique([instrucaoId, fase])
+  @@map("instrucao_fases")
+}
+
+// Pontuações por instrução por fase
+model InstrucaoPontuacao {
+  id           String        @id @default(uuid())
+  instrucaoId  String
+  fase         FaseAtividade
+  ordem        Int
+  sigla        String
+  grau         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+
+  instrucao    AtividadeCloneInstrucao @relation(fields: [instrucaoId], references: [id], onDelete: Cascade)
+
+  @@unique([instrucaoId, fase, ordem])
+  @@map("instrucao_pontuacoes")
+}
+
+// Histórico de mudanças de fase por instrução
+model InstrucaoFaseHistorico {
+  id                 String        @id @default(uuid())
+  instrucaoId        String
+  faseAnterior       FaseAtividade
+  faseNova           FaseAtividade
+  motivo             String        // "CRITERIO_ATINGIDO" | "CRITERIO_NAO_ATINGIDO" | "ALTERACAO_MANUAL"
+  alterado_em        DateTime      @default(now())
+  alterado_por       String?
+  sessaoCurriculumId String?
+
+  instrucao          AtividadeCloneInstrucao @relation(fields: [instrucaoId], references: [id], onDelete: Cascade)
+
+  @@map("instrucao_fase_historico")
+}
+
+// Instruções selecionadas para cada sessão de curriculum
+model SessaoCurriculumInstrucao {
+  id               String   @id @default(uuid())
+  sessaoId         String
+  instrucaoId      String
+  atividadeCloneId String
+  createdAt        DateTime @default(now())
+
+  sessao         SessaoCurriculum        @relation(fields: [sessaoId], references: [id], onDelete: Cascade)
+  instrucao      AtividadeCloneInstrucao  @relation(fields: [instrucaoId], references: [id], onDelete: Cascade)
+  atividadeClone PacienteAtividadeClone   @relation(fields: [atividadeCloneId], references: [id], onDelete: Cascade)
+
+  @@unique([sessaoId, instrucaoId])
+  @@map("sessao_curriculum_instrucoes")
 }
 
 // ========================================

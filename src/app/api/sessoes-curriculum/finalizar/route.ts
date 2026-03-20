@@ -58,31 +58,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Buscar atividades clonadas para validar avaliações
-    const pacienteCurriculum = await prisma.pacienteCurriculum.findFirst({
-      where: {
-        pacienteId: sessao.pacienteId,
-        curriculumId: sessao.curriculumId,
-      },
-      include: {
-        atividadesClone: {
-          where: { ativo: true },
-          include: {
-            instrucoes: true,
+    // Buscar atividades clonadas e instruções selecionadas para validar avaliações
+    const [pacienteCurriculum, instrucoesSelecionadas] = await Promise.all([
+      prisma.pacienteCurriculum.findFirst({
+        where: { pacienteId: sessao.pacienteId, curriculumId: sessao.curriculumId },
+        include: {
+          atividadesClone: {
+            where: { ativo: true },
+            include: { instrucoes: { where: { ativo: true }, select: { id: true, qtd_tentativas_alvo: true } } },
           },
         },
-      },
-    });
+      }),
+      prisma.sessaoCurriculumInstrucao.findMany({
+        where: { sessaoId },
+        select: { instrucaoId: true, atividadeCloneId: true },
+      }),
+    ]);
 
     if (pacienteCurriculum && pacienteCurriculum.atividadesClone.length > 0) {
-      // Verificar se todas as instruções de todas as atividades clonadas foram avaliadas
-      const totalAvaliacoesNecessarias = pacienteCurriculum.atividadesClone.reduce(
-        (total, clone) => {
-          const tentativasPorAlvo = clone.qtd_tentativas_alvo || 1;
-          return total + clone.instrucoes.length * tentativasPorAlvo;
-        },
-        0
-      );
+      let totalAvaliacoesNecessarias: number
+
+      if (instrucoesSelecionadas.length > 0) {
+        // Usar tentativas de cada instrução selecionada
+        const instrucaoIds = new Set(instrucoesSelecionadas.map((s) => s.instrucaoId))
+        totalAvaliacoesNecessarias = pacienteCurriculum.atividadesClone.reduce((total, clone) => {
+          return total + clone.instrucoes
+            .filter((i) => instrucaoIds.has(i.id))
+            .reduce((sum, instr) => sum + (instr.qtd_tentativas_alvo || 1), 0)
+        }, 0)
+      } else {
+        // Fallback: todas as instruções
+        totalAvaliacoesNecessarias = pacienteCurriculum.atividadesClone.reduce(
+          (total, clone) => total + clone.instrucoes.reduce(
+            (sum, instr) => sum + (instr.qtd_tentativas_alvo || 1), 0
+          ),
+          0
+        )
+      }
 
       if (sessao.avaliacoes.length < totalAvaliacoesNecessarias) {
         return NextResponse.json(

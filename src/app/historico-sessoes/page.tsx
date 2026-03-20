@@ -60,15 +60,60 @@ interface Paciente {
   name: string;
 }
 
-interface Avaliacao {
+// Avaliação individual (curriculum — novo formato)
+interface AvaliacaoCurriculum {
+  id: string;
+  instrucaoId: string;
+  atividadeCloneId: string | null;
+  tentativa: number;
+  nota: number; // índice na lista de pontuações
+  observacao?: string | null;
+}
+
+// Pontuação por instrução/fase
+interface InstrucaoPontuacao {
+  id: string;
+  fase: string;
+  ordem: number;
+  sigla: string;
+  grau: string;
+}
+
+// Instrução com fase e pontuações
+interface InstrucaoClone {
+  id: string;
+  ordem: number;
+  texto: string;
+  faseAtual: string;
+  qtd_tentativas_alvo: number;
+  pontuacoes?: InstrucaoPontuacao[];
+}
+
+// Atividade clone com suas instruções
+interface AtividadeClone {
+  id: string;
+  nome: string;
+  ordem: number;
+  faseAtual: string;
+  instrucoes: InstrucaoClone[];
+}
+
+// Histórico de mudança de fase desta sessão
+interface HistoricoFaseSessao {
+  id: string;
+  instrucaoId: string;
+  faseAnterior: string;
+  faseNova: string;
+  motivo: string;
+}
+
+// Avaliação antiga (sessões de atividade legado)
+interface AvaliacaoLegado {
   id: string;
   nota: number;
   tipos_ajuda: string[];
   observacao?: string;
-  instrucao: {
-    ordem: number;
-    texto: string;
-  };
+  instrucao: { ordem: number; texto: string };
 }
 
 interface Sessao {
@@ -77,28 +122,36 @@ interface Sessao {
   finalizada_em?: string;
   status: string;
   observacoes_gerais?: string;
-  tipo?: "ATIVIDADE" | "AVALIACAO" | "CURRICULUM"; // Adicionado CURRICULUM
-  paciente: {
-    id: string;
-    nome: string;
-  };
-  atividade?: {
-    id: string;
-    nome: string;
-    tipo: string;
-    metodologia?: string;
-  };
-  curriculum?: {
-    id: string;
-    nome: string;
-    atividades?: any[];
-  };
-  profissional: {
-    nome: string;
-  };
-  avaliacoes?: Avaliacao[];
-  respostas?: any[]; // Para sessões de avaliação
-  avaliacao?: any; // Para sessões de avaliação
+  tipo?: "ATIVIDADE" | "AVALIACAO" | "CURRICULUM";
+  paciente: { id: string; nome: string };
+  atividade?: { id: string; nome: string; tipo: string; metodologia?: string };
+  curriculum?: { id: string; nome: string };
+  profissional: { nome: string };
+  // Curriculum novo formato
+  atividadesClone?: AtividadeClone[];
+  instrucoesSelecionadas?: { instrucaoId: string; atividadeCloneId: string }[];
+  avaliacoes?: AvaliacaoCurriculum[] | AvaliacaoLegado[];
+  historicoFasesSessao?: HistoricoFaseSessao[];
+  // Avaliação ABA+
+  respostas?: any[];
+  avaliacao?: any;
+}
+
+// ============ Constantes de fase ============
+const FASE_CONFIG: Record<string, { label: string; color: string }> = {
+  LINHA_BASE:    { label: "Linha de Base", color: "bg-gray-500" },
+  INTERVENCAO:   { label: "Intervenção",   color: "bg-blue-500" },
+  MANUTENCAO:    { label: "Manutenção",    color: "bg-green-500" },
+  GENERALIZACAO: { label: "Generalização", color: "bg-amber-500" },
+};
+
+function FaseBadge({ fase, size = "sm" }: { fase: string; size?: "sm" | "xs" }) {
+  const cfg = FASE_CONFIG[fase] || { label: fase, color: "bg-gray-400" };
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-white font-medium ${cfg.color} ${size === "xs" ? "text-[10px]" : "text-xs"}`}>
+      {cfg.label}
+    </span>
+  );
 }
 
 function HistoricoSessoesPageContent() {
@@ -300,20 +353,39 @@ function HistoricoSessoesPageContent() {
     return `${minutos} min`;
   };
 
-  // Calcular estatísticas de uma sessão de ATIVIDADE
-  const calcularEstatisticas = (sessao: Sessao) => {
-    if (!sessao.avaliacoes || sessao.avaliacoes.length === 0) {
-      return { media: 0, comAjuda: 0, total: 0 };
-    }
+  // Calcular estatísticas de uma sessão de CURRICULUM (novo formato por instrução)
+  const calcularEstatisticasCurriculum = (sessao: Sessao) => {
+    const instrucoesSel = sessao.instrucoesSelecionadas || [];
+    const historico = sessao.historicoFasesSessao || [];
+    const avaliacoes = (sessao.avaliacoes || []) as AvaliacaoCurriculum[];
+    const clones = sessao.atividadesClone || [];
+    const FASE_ORDER = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
 
-    const total = sessao.avaliacoes.length;
-    const somaNotas = sessao.avaliacoes.reduce((acc, av) => acc + av.nota, 0);
-    const media = somaNotas / total;
-    const comAjuda = sessao.avaliacoes.filter(
-      (av) => av.tipos_ajuda && av.tipos_ajuda.length > 0
+    const totalInstrucoes = instrucoesSel.length;
+    const avancaram = historico.filter(
+      (h) => FASE_ORDER.indexOf(h.faseNova) > FASE_ORDER.indexOf(h.faseAnterior)
+    ).length;
+    const regrediram = historico.filter(
+      (h) => FASE_ORDER.indexOf(h.faseNova) < FASE_ORDER.indexOf(h.faseAnterior)
     ).length;
 
-    return { media: media.toFixed(1), comAjuda, total };
+    let totalTentativas = 0;
+    let tentativasCorretas = 0;
+    for (const av of avaliacoes) {
+      const clone = clones.find((c) => c.instrucoes.some((i) => i.id === av.instrucaoId));
+      const instrucao = clone?.instrucoes.find((i) => i.id === av.instrucaoId);
+      if (!instrucao || !instrucao.pontuacoes) continue;
+      const ponts = instrucao.pontuacoes
+        .filter((p) => p.fase === instrucao.faseAtual)
+        .sort((a, b) => a.ordem - b.ordem);
+      totalTentativas++;
+      if (ponts.length > 0 && av.nota === ponts.length - 1) tentativasCorretas++;
+    }
+
+    const percentAcerto =
+      totalTentativas > 0 ? Math.round((tentativasCorretas / totalTentativas) * 100) : 0;
+
+    return { totalInstrucoes, avancaram, regrediram, percentAcerto, totalTentativas, tentativasCorretas };
   };
 
   // Calcular estatísticas de uma sessão de AVALIAÇÃO
@@ -713,184 +785,49 @@ function HistoricoSessoesPageContent() {
                                           </div>
                                         </div>
 
-                                        {/* Atividades do Curriculum */}
-                                        {sessaoDetalhes.tipo === "CURRICULUM" &&
-                                          sessaoDetalhes.curriculum?.atividades && (
-                                            <div className="space-y-3">
-                                              <label className="text-sm font-medium text-muted-foreground">
-                                                Atividades do Curriculum
-                                              </label>
-                                              <div className="grid grid-cols-1 gap-2">
-                                                {sessaoDetalhes.curriculum.atividades.map(
-                                                  (atv: any, idx: number) => (
-                                                    <div
-                                                      key={atv.id}
-                                                      className="p-3 bg-muted/30 rounded-lg"
-                                                    >
-                                                      <div className="flex items-center gap-3">
-                                                        <Badge variant="outline">
-                                                          {idx + 1}
-                                                        </Badge>
-                                                        <div className="flex-1">
-                                                          <p className="text-sm font-medium">
-                                                            {atv.atividade.nome}
-                                                          </p>
-                                                          <p className="text-xs text-muted-foreground">
-                                                            {atv.atividade.instrucoes?.length || 0} instruções
-                                                          </p>
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                  )
-                                                )}
-                                              </div>
-                                            </div>
-                                          )}
-
-                                        {/* Estatísticas - CURRICULUM */}
-                                        {sessaoDetalhes.tipo === "CURRICULUM" &&
-                                          sessaoDetalhes.avaliacoes &&
-                                          sessaoDetalhes.avaliacoes.length >
-                                            0 && (
-                                            <div className="space-y-3">
-                                              <label className="text-sm font-medium text-muted-foreground">
-                                                Resumo do Desempenho
-                                              </label>
-                                              <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
-                                                <div className="grid grid-cols-4 gap-4 text-center">
-                                                  <div>
-                                                    <p className="text-3xl font-bold text-blue-600">
-                                                      {
-                                                        calcularEstatisticas(
-                                                          sessaoDetalhes
-                                                        ).media
-                                                      }
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                      Média Geral
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      (de 4.0)
-                                                    </p>
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-3xl font-bold text-green-600">
-                                                      {
-                                                        sessaoDetalhes.avaliacoes.filter(
-                                                          (a) => a.nota >= 3
-                                                        ).length
-                                                      }
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                      Acertos
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      (nota ≥ 3)
-                                                    </p>
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-3xl font-bold text-orange-600">
-                                                      {
-                                                        calcularEstatisticas(
-                                                          sessaoDetalhes
-                                                        ).comAjuda
-                                                      }
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                      Com Ajuda
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      (
-                                                      {(
-                                                        (calcularEstatisticas(
-                                                          sessaoDetalhes
-                                                        ).comAjuda /
-                                                          calcularEstatisticas(
-                                                            sessaoDetalhes
-                                                          ).total) *
-                                                        100
-                                                      ).toFixed(0)}
-                                                      %)
-                                                    </p>
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-3xl font-bold text-purple-600">
-                                                      {
-                                                        calcularEstatisticas(
-                                                          sessaoDetalhes
-                                                        ).total
-                                                      }
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                      Total
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      avaliações
-                                                    </p>
-                                                  </div>
+                                        {/* Resumo do Desempenho - CURRICULUM */}
+                                        {sessaoDetalhes.tipo === "CURRICULUM" && (
+                                          <div className="space-y-3">
+                                            <label className="text-sm font-medium text-muted-foreground">
+                                              Resumo do Desempenho
+                                            </label>
+                                            <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
+                                              <div className="grid grid-cols-4 gap-4 text-center">
+                                                <div>
+                                                  <p className="text-3xl font-bold text-blue-600">
+                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).totalInstrucoes}
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground mt-1">Instruções</p>
+                                                  <p className="text-xs text-muted-foreground">na sessão</p>
                                                 </div>
-                                              </div>
-
-                                              {/* Distribuição de Notas */}
-                                              <div className="p-4 bg-muted/30 rounded-lg">
-                                                <p className="text-sm font-medium mb-3">
-                                                  Distribuição de Notas
-                                                </p>
-                                                <div className="space-y-2">
-                                                  {[4, 3, 2, 1, 0].map(
-                                                    (nota) => {
-                                                      const count =
-                                                        sessaoDetalhes.avaliacoes!.filter(
-                                                          (a) => a.nota === nota
-                                                        ).length;
-                                                      const percentage =
-                                                        (count /
-                                                          sessaoDetalhes
-                                                            .avaliacoes!
-                                                            .length) *
-                                                        100;
-                                                      return (
-                                                        <div
-                                                          key={nota}
-                                                          className="flex items-center gap-3"
-                                                        >
-                                                          <span className="text-xs font-medium w-12">
-                                                            Nota {nota}:
-                                                          </span>
-                                                          <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
-                                                            <div
-                                                              className={`h-full ${
-                                                                nota === 4
-                                                                  ? "bg-green-500"
-                                                                  : nota === 3
-                                                                    ? "bg-blue-500"
-                                                                    : nota === 2
-                                                                      ? "bg-yellow-500"
-                                                                      : nota ===
-                                                                          1
-                                                                        ? "bg-orange-500"
-                                                                        : "bg-red-500"
-                                                              }`}
-                                                              style={{
-                                                                width: `${percentage}%`,
-                                                              }}
-                                                            />
-                                                          </div>
-                                                          <span className="text-xs font-medium w-16 text-right">
-                                                            {count} (
-                                                            {percentage.toFixed(
-                                                              0
-                                                            )}
-                                                            %)
-                                                          </span>
-                                                        </div>
-                                                      );
-                                                    }
-                                                  )}
+                                                <div>
+                                                  <p className="text-3xl font-bold text-green-600">
+                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).avancaram}
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground mt-1">Avançaram</p>
+                                                  <p className="text-xs text-muted-foreground">de fase</p>
+                                                </div>
+                                                <div>
+                                                  <p className="text-3xl font-bold text-red-500">
+                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).regrediram}
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground mt-1">Regrediram</p>
+                                                  <p className="text-xs text-muted-foreground">de fase</p>
+                                                </div>
+                                                <div>
+                                                  <p className="text-3xl font-bold text-purple-600">
+                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).percentAcerto}%
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground mt-1">Acerto</p>
+                                                  <p className="text-xs text-muted-foreground">
+                                                    ({calcularEstatisticasCurriculum(sessaoDetalhes).tentativasCorretas}/
+                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).totalTentativas})
+                                                  </p>
                                                 </div>
                                               </div>
                                             </div>
-                                          )}
+                                          </div>
+                                        )}
 
                                         {/* Estatísticas - AVALIAÇÕES */}
                                         {sessaoDetalhes.tipo === "AVALIACAO" &&
@@ -1086,82 +1023,121 @@ function HistoricoSessoesPageContent() {
                                             </div>
                                           )}
 
-                                        {/* Avaliações das Instruções (para sessões tipo CURRICULUM) */}
+                                        {/* Instruções da Sessão (para sessões tipo CURRICULUM) */}
                                         {sessaoDetalhes.tipo === "CURRICULUM" &&
-                                          sessaoDetalhes.avaliacoes &&
-                                          sessaoDetalhes.avaliacoes.length > 0 &&
-                                          sessaoDetalhes.curriculum?.atividades && (
-                                            <div>
+                                          sessaoDetalhes.instrucoesSelecionadas &&
+                                          sessaoDetalhes.instrucoesSelecionadas.length > 0 && (
+                                            <div className="space-y-3">
                                               <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                                Avaliações do Curriculum
+                                                Instruções da Sessão
                                               </label>
-                                              <div className="space-y-2">
-                                                {sessaoDetalhes.avaliacoes.map(
-                                                  (avaliacao: any) => {
-                                                    // Encontrar a atividade e instrução correspondentes
-                                                    const atividade = sessaoDetalhes.curriculum?.atividades?.find(
-                                                      (a: any) => a.atividade.id === avaliacao.atividadeId
-                                                    );
-                                                    const instrucao = atividade?.atividade?.instrucoes?.find(
-                                                      (i: any) => i.id === avaliacao.instrucaoId
-                                                    );
-
-                                                    if (!instrucao) return null;
-
-                                                    return (
-                                                      <div
-                                                        key={avaliacao.id}
-                                                        className="p-3 border rounded-lg"
-                                                      >
-                                                        <div className="flex items-start gap-3">
-                                                          <Badge variant="secondary">
-                                                            {instrucao.ordem}
-                                                          </Badge>
-                                                          <div className="flex-1">
-                                                            <p className="text-sm font-medium mb-1">
-                                                              {instrucao.texto}
-                                                            </p>
-                                                            <div className="flex items-center gap-2 text-xs flex-wrap">
-                                                              <Badge variant="outline" className="text-xs">
-                                                                Tentativa {avaliacao.tentativa}
-                                                              </Badge>
-                                                              <Badge
-                                                                variant={
-                                                                  avaliacao.nota >= 3
-                                                                    ? "default"
-                                                                    : "outline"
-                                                                }
-                                                              >
-                                                                Nota: {avaliacao.nota}/4
-                                                              </Badge>
-                                                              {avaliacao.tipos_ajuda &&
-                                                                avaliacao.tipos_ajuda.length > 0 && (
+                                              {sessaoDetalhes.atividadesClone?.map((clone) => {
+                                                const instrucaoIdsDessaAtv = new Set(
+                                                  (sessaoDetalhes.instrucoesSelecionadas || [])
+                                                    .filter((s) => s.atividadeCloneId === clone.id)
+                                                    .map((s) => s.instrucaoId)
+                                                );
+                                                const instrucoes = clone.instrucoes.filter((i) =>
+                                                  instrucaoIdsDessaAtv.has(i.id)
+                                                );
+                                                if (instrucoes.length === 0) return null;
+                                                const FASE_ORDER = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
+                                                return (
+                                                  <div key={clone.id} className="border rounded-lg overflow-hidden">
+                                                    <div className="px-4 py-2 bg-muted/50 font-medium text-sm">
+                                                      {clone.nome}
+                                                    </div>
+                                                    <div className="divide-y">
+                                                      {instrucoes.map((instrucao) => {
+                                                        const hist = sessaoDetalhes.historicoFasesSessao?.find(
+                                                          (h) => h.instrucaoId === instrucao.id
+                                                        );
+                                                        const avsInstrucao = (
+                                                          (sessaoDetalhes.avaliacoes || []) as AvaliacaoCurriculum[]
+                                                        )
+                                                          .filter((av) => av.instrucaoId === instrucao.id)
+                                                          .sort((a, b) => a.tentativa - b.tentativa);
+                                                        const ponts = (instrucao.pontuacoes || [])
+                                                          .filter((p) => p.fase === instrucao.faseAtual)
+                                                          .sort((a, b) => a.ordem - b.ordem);
+                                                        const corretas = avsInstrucao.filter(
+                                                          (av) => ponts.length > 0 && av.nota === ponts.length - 1
+                                                        ).length;
+                                                        const percentInstrucao =
+                                                          avsInstrucao.length > 0
+                                                            ? Math.round((corretas / avsInstrucao.length) * 100)
+                                                            : null;
+                                                        const avancou =
+                                                          hist &&
+                                                          FASE_ORDER.indexOf(hist.faseNova) >
+                                                            FASE_ORDER.indexOf(hist.faseAnterior);
+                                                        const regrediu =
+                                                          hist &&
+                                                          FASE_ORDER.indexOf(hist.faseNova) <
+                                                            FASE_ORDER.indexOf(hist.faseAnterior);
+                                                        return (
+                                                          <div key={instrucao.id} className="p-3 space-y-2">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                              <p className="text-sm font-medium flex-1">
+                                                                {instrucao.texto}
+                                                              </p>
+                                                              <div className="flex items-center gap-1 flex-shrink-0">
+                                                                {hist ? (
                                                                   <>
-                                                                    {avaliacao.tipos_ajuda.map(
-                                                                      (tipo: string, idx: number) => (
-                                                                        <Badge
-                                                                          key={idx}
-                                                                          variant="secondary"
-                                                                        >
-                                                                          {tipo}
-                                                                        </Badge>
-                                                                      )
+                                                                    <FaseBadge fase={hist.faseAnterior} size="xs" />
+                                                                    <span className="text-xs text-muted-foreground">→</span>
+                                                                    <FaseBadge fase={hist.faseNova} size="xs" />
+                                                                    {avancou && (
+                                                                      <span className="text-green-600 text-xs font-bold">↑</span>
+                                                                    )}
+                                                                    {regrediu && (
+                                                                      <span className="text-red-500 text-xs font-bold">↓</span>
                                                                     )}
                                                                   </>
+                                                                ) : (
+                                                                  <FaseBadge fase={instrucao.faseAtual} size="xs" />
                                                                 )}
+                                                              </div>
                                                             </div>
-                                                            {avaliacao.observacao && (
-                                                              <p className="text-xs text-muted-foreground mt-2">
-                                                                Obs: {avaliacao.observacao}
+                                                            {avsInstrucao.length > 0 && (
+                                                              <div className="flex items-center gap-1 flex-wrap">
+                                                                <span className="text-xs text-muted-foreground mr-1">
+                                                                  Tentativas:
+                                                                </span>
+                                                                {avsInstrucao.map((av) => {
+                                                                  const sigla = ponts[av.nota]?.sigla ?? String(av.nota);
+                                                                  const isCorreto =
+                                                                    ponts.length > 0 && av.nota === ponts.length - 1;
+                                                                  return (
+                                                                    <Badge
+                                                                      key={av.id}
+                                                                      variant={isCorreto ? "default" : "outline"}
+                                                                      className={`text-xs font-bold ${isCorreto ? "bg-green-600 hover:bg-green-700" : ""}`}
+                                                                    >
+                                                                      {sigla}
+                                                                    </Badge>
+                                                                  );
+                                                                })}
+                                                                {percentInstrucao !== null && (
+                                                                  <span className="text-xs text-muted-foreground ml-2">
+                                                                    {percentInstrucao}% acerto
+                                                                  </span>
+                                                                )}
+                                                              </div>
+                                                            )}
+                                                            {avsInstrucao.some((av) => av.observacao) && (
+                                                              <p className="text-xs text-muted-foreground">
+                                                                Obs:{" "}
+                                                                {avsInstrucao.find((av) => av.observacao)?.observacao}
                                                               </p>
                                                             )}
                                                           </div>
-                                                        </div>
-                                                      </div>
-                                                    );
-                                                  }
-                                                )}
-                                              </div>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })}
                                             </div>
                                           )}
 

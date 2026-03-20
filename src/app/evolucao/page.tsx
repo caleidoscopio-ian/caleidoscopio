@@ -49,20 +49,53 @@ import {
   Plus,
   Trash2,
   Save,
+  ChevronRight,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { FaseBadge, FASE_LABELS } from "@/components/evolucao/fase-badge";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 // ============ Interfaces ============
 
+interface InstrucaoFaseData {
+  id: string;
+  fase: string;
+  porcentagem_acerto: number;
+  qtd_sessoes_consecutivas: number;
+  fase_se_atingir: string | null;
+  fase_se_nao_atingir: string | null;
+}
+
+interface InstrucaoHistorico {
+  id: string;
+  faseAnterior: string;
+  faseNova: string;
+  motivo: string;
+  alterado_em: string;
+  alterado_por: string | null;
+}
+
+interface InstrucaoPontuacaoData {
+  id: string;
+  fase: string;
+  ordem: number;
+  sigla: string;
+  grau: string;
+}
+
 interface Instrucao {
   id: string;
   ordem: number;
   texto: string;
+  faseAtual: string;
+  qtd_tentativas_alvo?: number;
   como_aplicar?: string | null;
   observacao?: string | null;
   procedimento_correcao?: string | null;
   materiais_utilizados?: string | null;
+  fases?: InstrucaoFaseData[];
+  historico?: InstrucaoHistorico[];
+  pontuacoes?: InstrucaoPontuacaoData[];
 }
 
 interface Pontuacao {
@@ -159,6 +192,14 @@ function EvolucaoPageContent() {
   });
   const [salvandoCriterio, setSalvandoCriterio] = useState(false);
   const [salvandoFase, setSalvandoFase] = useState(false);
+  const [instrucaoParaCriterios, setInstrucaoParaCriterios] = useState<Instrucao | null>(null);
+
+  // Instruction detail modal states
+  const [instrucaoDetalheAberto, setInstrucaoDetalheAberto] = useState(false);
+  const [instrucaoSelecionada, setInstrucaoSelecionada] = useState<Instrucao | null>(null);
+  const [instrucaoDetalheTab, setInstrucaoDetalheTab] = useState("evolucao");
+  const [fasePontuacao, setFasePontuacao] = useState<string>("");
+  const [salvandoPontuacao, setSalvandoPontuacao] = useState(false);
 
   // Edit clone states
   const [salvandoClone, setSalvandoClone] = useState(false);
@@ -294,6 +335,22 @@ function EvolucaoPageContent() {
       setSalvandoCriterio(true);
       const userDataEncoded = btoa(JSON.stringify(user));
 
+      const body = instrucaoParaCriterios
+        ? {
+            instrucaoId: instrucaoParaCriterios.id,
+            fase: faseCriterio,
+            ...criterioForm,
+            fase_se_atingir: criterioForm.fase_se_atingir || null,
+            fase_se_nao_atingir: criterioForm.fase_se_nao_atingir || null,
+          }
+        : {
+            atividadeCloneId: cloneSelecionado.id,
+            fase: faseCriterio,
+            ...criterioForm,
+            fase_se_atingir: criterioForm.fase_se_atingir || null,
+            fase_se_nao_atingir: criterioForm.fase_se_nao_atingir || null,
+          };
+
       const response = await fetch("/api/evolucao/criterios", {
         method: "PUT",
         headers: {
@@ -301,19 +358,14 @@ function EvolucaoPageContent() {
           "X-User-Data": userDataEncoded,
           "X-Auth-Token": user.token,
         },
-        body: JSON.stringify({
-          atividadeCloneId: cloneSelecionado.id,
-          fase: faseCriterio,
-          ...criterioForm,
-          fase_se_atingir: criterioForm.fase_se_atingir || null,
-          fase_se_nao_atingir: criterioForm.fase_se_nao_atingir || null,
-        }),
+        body: JSON.stringify(body),
       });
 
       const result = await response.json();
       if (result.success) {
         await fetchEvolucao();
         setCriteriosAberto(false);
+        setInstrucaoParaCriterios(null);
       } else {
         setError(result.error);
       }
@@ -344,11 +396,141 @@ function EvolucaoPageContent() {
     setCriteriosAberto(true);
   };
 
-  // ============ Abrir detalhes (com edição) ============
+  // ============ Abrir critérios por instrução ============
+
+  const abrirCriteriosInstrucao = (instrucao: Instrucao, clone: AtividadeClone) => {
+    setCloneSelecionado(clone);
+    setInstrucaoParaCriterios(instrucao);
+    setFaseCriterio(instrucao.faseAtual);
+
+    const criterioExistente = instrucao.fases?.find((f) => f.fase === instrucao.faseAtual);
+    if (criterioExistente) {
+      setCriterioForm({
+        porcentagem_acerto: criterioExistente.porcentagem_acerto,
+        qtd_sessoes_consecutivas: criterioExistente.qtd_sessoes_consecutivas,
+        fase_se_atingir: criterioExistente.fase_se_atingir || "",
+        fase_se_nao_atingir: criterioExistente.fase_se_nao_atingir || "",
+      });
+    } else {
+      setCriterioForm({
+        porcentagem_acerto: 80,
+        qtd_sessoes_consecutivas: 1,
+        fase_se_atingir: "",
+        fase_se_nao_atingir: "",
+      });
+    }
+
+    setCriteriosAberto(true);
+  };
+
+  // ============ Abrir detalhes da instrução ============
+
+  // Helper: filtra pontuações por fase e ordena com "+" sempre por último
+  const filtrarPontuacoesFase = (pontuacoes: InstrucaoPontuacaoData[], fase: string) =>
+    pontuacoes
+      .filter((p) => p.fase === fase)
+      .sort((a, b) => {
+        if (a.sigla === "+") return 1;
+        if (b.sigla === "+") return -1;
+        return a.ordem - b.ordem;
+      })
+      .map((p) => ({ id: p.id, ordem: p.ordem, sigla: p.sigla, grau: p.grau }));
+
+  const abrirDetalhesInstrucao = (instrucao: Instrucao, clone: AtividadeClone) => {
+    setInstrucaoSelecionada(instrucao);
+    setCloneSelecionado(clone);
+    setInstrucaoDetalheTab("evolucao");
+    setFasePontuacao(instrucao.faseAtual);
+    setPontuacoesList(filtrarPontuacoesFase(instrucao.pontuacoes || [], instrucao.faseAtual));
+    setInstrucaoDetalheAberto(true);
+  };
+
+  // Trocar fase no tab de pontuação — recarrega lista da fase selecionada
+  const trocarFasePontuacao = (fase: string) => {
+    if (!instrucaoSelecionada) return;
+    setFasePontuacao(fase);
+    setPontuacoesList(filtrarPontuacoesFase(instrucaoSelecionada.pontuacoes || [], fase));
+  };
+
+  // Salvar pontuações por instrução por fase
+  const salvarPontuacoesInstrucao = async () => {
+    if (!user || !instrucaoSelecionada || !fasePontuacao) return;
+
+    try {
+      setSalvandoPontuacao(true);
+      const userDataEncoded = btoa(JSON.stringify(user));
+
+      const response = await fetch("/api/evolucao/pontuacoes", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+        body: JSON.stringify({
+          instrucaoId: instrucaoSelecionada.id,
+          fase: fasePontuacao,
+          pontuacoes: pontuacoesList.map((p) => ({
+            sigla: p.sigla,
+            grau: p.grau,
+          })),
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        await fetchEvolucao();
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      console.error("Erro ao salvar pontuações:", err);
+      setError("Erro ao salvar pontuações");
+    } finally {
+      setSalvandoPontuacao(false);
+    }
+  };
+
+  // ============ Alterar fase de uma instrução manualmente ============
+
+  const alterarFaseInstrucao = async (instrucaoId: string, novaFase: string) => {
+    if (!user) return;
+
+    try {
+      setSalvandoFase(true);
+      const userDataEncoded = btoa(JSON.stringify(user));
+
+      const response = await fetch("/api/evolucao/fase", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": userDataEncoded,
+          "X-Auth-Token": user.token,
+        },
+        body: JSON.stringify({ instrucaoId, novaFase }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        await fetchEvolucao();
+        setInstrucaoDetalheAberto(false);
+        setInstrucaoSelecionada(null);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      console.error("Erro ao alterar fase da instrução:", err);
+      setError("Erro ao alterar fase");
+    } finally {
+      setSalvandoFase(false);
+    }
+  };
+
+  // ============ Abrir detalhes da atividade (com edição) ============
 
   const abrirDetalhes = (clone: AtividadeClone) => {
     setCloneSelecionado(clone);
-    setDetalhesTab("detalhes");
+    setDetalhesTab("geral");
 
     // Preencher formulários de edição
     setGeralForm({
@@ -361,7 +543,6 @@ function EvolucaoPageContent() {
       qtd_tentativas_alvo: clone.qtd_tentativas_alvo || 1,
     });
     setInstrucoesList(clone.instrucoes.map((i) => ({ ...i })));
-    setPontuacoesList((clone.pontuacoes || []).map((p) => ({ ...p })));
 
     setDetalhesAberto(true);
   };
@@ -383,6 +564,7 @@ function EvolucaoPageContent() {
         Object.assign(payload, geralForm);
       } else if (tipo === "instrucoes") {
         payload.instrucoes = instrucoesList.map((i) => ({
+          id: i.id.startsWith("temp-") ? undefined : i.id,
           texto: i.texto,
           como_aplicar: i.como_aplicar || "",
           observacao: i.observacao || "",
@@ -462,6 +644,7 @@ function EvolucaoPageContent() {
     const novaInstrucao: Instrucao = {
       id: instrucaoEditIndex !== null ? instrucoesList[instrucaoEditIndex].id : `temp-${Date.now()}`,
       ordem: instrucaoEditIndex !== null ? instrucoesList[instrucaoEditIndex].ordem : instrucoesList.length + 1,
+      faseAtual: instrucaoEditIndex !== null ? instrucoesList[instrucaoEditIndex].faseAtual : "LINHA_BASE",
       texto: instrucaoForm.texto,
       como_aplicar: instrucaoForm.como_aplicar || null,
       observacao: instrucaoForm.observacao || null,
@@ -699,25 +882,66 @@ function EvolucaoPageContent() {
         {/* Lista de Atividades */}
         {atribuicaoAtual && !loading && (
           <div className="grid gap-4">
-            {atividadesFiltradas.map((clone) => (
+            {atividadesFiltradas.map((clone) => {
+              // Calcular progresso: % de instruções em GENERALIZACAO
+              const totalInstrucoes = clone.instrucoes.length;
+              const instrucoesGeneralizacao = clone.instrucoes.filter(
+                (i) => i.faseAtual === "GENERALIZACAO"
+              ).length;
+              const progresso =
+                totalInstrucoes > 0
+                  ? Math.round((instrucoesGeneralizacao / totalInstrucoes) * 100)
+                  : 0;
+
+              return (
               <Card key={clone.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-lg">{clone.nome}</h3>
-                        <FaseBadge fase={clone.faseAtual} />
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-3">
+                        <h3 className="font-semibold text-lg truncate">{clone.nome}</h3>
                       </div>
-                      <div className="flex gap-4 text-sm text-muted-foreground">
-                        {clone.protocolo && (
-                          <span>Protocolo: {clone.protocolo}</span>
-                        )}
-                        {clone.habilidade && (
-                          <span>Habilidade: {clone.habilidade}</span>
-                        )}
-                        <span>
-                          {clone.instrucoes.length} instrução(ões)
-                        </span>
+
+                      {/* Barra de progresso da atividade */}
+                      <div className="mb-3 space-y-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Progresso da atividade</span>
+                          <span className="font-medium">{progresso}% ({instrucoesGeneralizacao}/{totalInstrucoes} instrução(ões))</span>
+                        </div>
+                        <Progress value={progresso} className="h-2" />
+                      </div>
+
+                      {/* Instruções com fases individuais */}
+                      <div className="space-y-1">
+                        {clone.instrucoes.map((instrucao) => (
+                          <div
+                            key={instrucao.id}
+                            className="flex items-center justify-between gap-2 text-sm py-1 border-b last:border-0"
+                          >
+                            <span className="text-muted-foreground flex-1 truncate flex items-center gap-1">
+                              <ChevronRight className="h-3 w-3 flex-shrink-0" />
+                              {instrucao.texto}
+                            </span>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <FaseBadge fase={instrucao.faseAtual} />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => abrirDetalhesInstrucao(instrucao, clone)}
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Ver / Editar
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Meta info */}
+                      <div className="flex gap-4 text-xs text-muted-foreground mt-2">
+                        {clone.protocolo && <span>Protocolo: {clone.protocolo}</span>}
+                        {clone.habilidade && <span>Habilidade: {clone.habilidade}</span>}
                         {clone.historico.length > 0 && (
                           <span className="flex items-center gap-1">
                             <History className="h-3 w-3" />
@@ -727,7 +951,7 @@ function EvolucaoPageContent() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 flex-shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
@@ -736,21 +960,12 @@ function EvolucaoPageContent() {
                         <Edit className="h-4 w-4 mr-1" />
                         Ver / Editar
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          abrirCriterios(clone, clone.faseAtual)
-                        }
-                      >
-                        <Settings2 className="h-4 w-4 mr-1" />
-                        Critérios
-                      </Button>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
 
             {atividadesFiltradas.length === 0 && (
               <Card>
@@ -765,178 +980,23 @@ function EvolucaoPageContent() {
         )}
       </div>
 
-      {/* ============ Modal Detalhes com Abas ============ */}
+      {/* ============ Modal Detalhes da Atividade (Geral + Instruções) ============ */}
       <Dialog open={detalhesAberto} onOpenChange={setDetalhesAberto}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           {cloneSelecionado && (
             <>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  {cloneSelecionado.nome}
-                  <FaseBadge fase={cloneSelecionado.faseAtual} />
-                </DialogTitle>
+                <DialogTitle>{cloneSelecionado.nome}</DialogTitle>
                 <DialogDescription>
-                  Visualize e edite os dados desta atividade para este paciente
+                  Edite os dados gerais e instruções desta atividade
                 </DialogDescription>
               </DialogHeader>
 
               <Tabs value={detalhesTab} onValueChange={setDetalhesTab}>
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="detalhes">Evolução</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="geral">Geral</TabsTrigger>
                   <TabsTrigger value="instrucoes">Instruções</TabsTrigger>
-                  <TabsTrigger value="pontuacao">Pontuação</TabsTrigger>
                 </TabsList>
-
-                {/* ---- Aba Evolução (antigo Detalhes) ---- */}
-                <TabsContent value="detalhes" className="space-y-6 mt-4">
-                  {/* Instruções resumo */}
-                  <div>
-                    <h4 className="font-semibold mb-2">
-                      Instruções ({cloneSelecionado.instrucoes.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {cloneSelecionado.instrucoes.map((instr) => (
-                        <div
-                          key={instr.id}
-                          className="p-3 bg-muted rounded text-sm"
-                        >
-                          <span className="font-medium mr-2">
-                            {instr.ordem}.
-                          </span>
-                          {instr.texto}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Critérios da fase atual */}
-                  <div>
-                    <h4 className="font-semibold mb-2">
-                      Critérios da Fase Atual
-                    </h4>
-                    {(() => {
-                      const criterio = cloneSelecionado.fases.find(
-                        (f) => f.fase === cloneSelecionado.faseAtual
-                      );
-                      if (!criterio) return <p className="text-sm text-muted-foreground">Sem critérios configurados</p>;
-                      return (
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div className="p-3 bg-muted rounded text-center">
-                            <div className="font-semibold text-lg">
-                              {criterio.porcentagem_acerto}%
-                            </div>
-                            <div className="text-muted-foreground">
-                              % mínima de acerto
-                            </div>
-                          </div>
-                          <div className="p-3 bg-muted rounded text-center">
-                            <div className="font-semibold text-lg">
-                              {criterio.qtd_sessoes_consecutivas}
-                            </div>
-                            <div className="text-muted-foreground">
-                              Sessões consecutivas
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Histórico de fases */}
-                  {cloneSelecionado.historico.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2">
-                        Histórico de Mudanças
-                      </h4>
-                      <div className="space-y-2">
-                        {cloneSelecionado.historico.map((h) => (
-                          <div
-                            key={h.id}
-                            className="flex items-center gap-3 p-3 bg-muted rounded text-sm"
-                          >
-                            <FaseBadge fase={h.faseAnterior} size="sm" />
-                            <span>→</span>
-                            <FaseBadge fase={h.faseNova} size="sm" />
-                            <span className="text-muted-foreground ml-auto">
-                              {h.motivo === "CRITERIO_ATINGIDO"
-                                ? "Critério atingido"
-                                : h.motivo === "CRITERIO_NAO_ATINGIDO"
-                                  ? "Critério não atingido"
-                                  : "Manual"}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(h.alterado_em).toLocaleDateString(
-                                "pt-BR"
-                              )}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Botões de fase */}
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {(() => {
-                      const faseIndex = FASES_ORDEM.indexOf(
-                        cloneSelecionado.faseAtual
-                      );
-                      const podVoltar = faseIndex > 0;
-                      const podAvancar = faseIndex < FASES_ORDEM.length - 1;
-
-                      return (
-                        <>
-                          {podVoltar && (
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                alterarFase(
-                                  cloneSelecionado.id,
-                                  FASES_ORDEM[faseIndex - 1]
-                                )
-                              }
-                              disabled={salvandoFase}
-                            >
-                              <ChevronDown className="h-4 w-4 mr-1" />
-                              Voltar Fase
-                            </Button>
-                          )}
-                          {podAvancar && (
-                            <Button
-                              onClick={() =>
-                                alterarFase(
-                                  cloneSelecionado.id,
-                                  FASES_ORDEM[faseIndex + 1]
-                                )
-                              }
-                              disabled={salvandoFase}
-                            >
-                              {salvandoFase ? (
-                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                              ) : (
-                                <ChevronUp className="h-4 w-4 mr-1" />
-                              )}
-                              Avançar Fase
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            onClick={() =>
-                              abrirCriterios(
-                                cloneSelecionado,
-                                cloneSelecionado.faseAtual
-                              )
-                            }
-                          >
-                            <Settings2 className="h-4 w-4 mr-1" />
-                            Editar Critérios
-                          </Button>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </TabsContent>
 
                 {/* ---- Aba Geral ---- */}
                 <TabsContent value="geral" className="space-y-4 mt-4">
@@ -1060,21 +1120,7 @@ function EvolucaoPageContent() {
                           }
                         />
                       </div>
-                      <div className="grid gap-2">
-                        <Label>Tentativas por Instrução</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={50}
-                          value={geralForm.qtd_tentativas_alvo}
-                          onChange={(e) =>
-                            setGeralForm({
-                              ...geralForm,
-                              qtd_tentativas_alvo: parseInt(e.target.value) || 1,
-                            })
-                          }
-                        />
-                      </div>
+                      {/* Tentativas agora são configuradas por instrução individual */}
                     </div>
                   </div>
 
@@ -1162,8 +1208,208 @@ function EvolucaoPageContent() {
                   </Button>
                 </TabsContent>
 
-                {/* ---- Aba Pontuação ---- */}
+              </Tabs>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ============ Modal Detalhes da Instrução (Evolução + Pontuação) ============ */}
+      <Dialog open={instrucaoDetalheAberto} onOpenChange={(open) => { setInstrucaoDetalheAberto(open); if (!open) setInstrucaoSelecionada(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          {instrucaoSelecionada && cloneSelecionado && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FaseBadge fase={instrucaoSelecionada.faseAtual} />
+                  <span className="truncate">{instrucaoSelecionada.texto}</span>
+                </DialogTitle>
+                <DialogDescription>
+                  Atividade: {cloneSelecionado.nome}
+                </DialogDescription>
+              </DialogHeader>
+
+              <Tabs value={instrucaoDetalheTab} onValueChange={setInstrucaoDetalheTab}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="evolucao">Evolução</TabsTrigger>
+                  <TabsTrigger value="pontuacao">Pontuação</TabsTrigger>
+                </TabsList>
+
+                {/* ---- Aba Evolução da Instrução ---- */}
+                <TabsContent value="evolucao" className="space-y-6 mt-4">
+                  {/* Tentativas por instrução */}
+                  <div className="flex items-center gap-3">
+                    <Label className="whitespace-nowrap">Tentativas por sessão</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={50}
+                      className="w-20"
+                      value={instrucaoSelecionada.qtd_tentativas_alvo || 1}
+                      onChange={async (e) => {
+                        const val = parseInt(e.target.value) || 1;
+                        if (!user) return;
+                        const userDataEncoded = btoa(JSON.stringify(user));
+                        await fetch("/api/evolucao/clone", {
+                          method: "PUT",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "X-User-Data": userDataEncoded,
+                            "X-Auth-Token": user.token,
+                          },
+                          body: JSON.stringify({
+                            instrucaoId: instrucaoSelecionada.id,
+                            qtd_tentativas_alvo: val,
+                          }),
+                        });
+                        // Atualizar estado local
+                        setInstrucaoSelecionada({ ...instrucaoSelecionada, qtd_tentativas_alvo: val });
+                        fetchEvolucao();
+                      }}
+                    />
+                  </div>
+
+                  {/* Critérios da fase atual */}
+                  <div>
+                    <h4 className="font-semibold mb-2">
+                      Critérios da Fase Atual ({FASE_LABELS[instrucaoSelecionada.faseAtual]?.label || instrucaoSelecionada.faseAtual})
+                    </h4>
+                    {(() => {
+                      const criterio = instrucaoSelecionada.fases?.find(
+                        (f) => f.fase === instrucaoSelecionada.faseAtual
+                      );
+                      if (!criterio) return <p className="text-sm text-muted-foreground">Sem critérios configurados</p>;
+                      return (
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="p-3 bg-muted rounded text-center">
+                            <div className="font-semibold text-lg">
+                              {criterio.porcentagem_acerto}%
+                            </div>
+                            <div className="text-muted-foreground">
+                              % mínima de acerto
+                            </div>
+                          </div>
+                          <div className="p-3 bg-muted rounded text-center">
+                            <div className="font-semibold text-lg">
+                              {criterio.qtd_sessoes_consecutivas}
+                            </div>
+                            <div className="text-muted-foreground">
+                              Sessões consecutivas
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Histórico de fases da instrução */}
+                  {(instrucaoSelecionada.historico?.length ?? 0) > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-2">
+                        Histórico de Mudanças
+                      </h4>
+                      <div className="space-y-2">
+                        {instrucaoSelecionada.historico?.map((h) => (
+                          <div
+                            key={h.id}
+                            className="flex items-center gap-3 p-3 bg-muted rounded text-sm"
+                          >
+                            <FaseBadge fase={h.faseAnterior} size="sm" />
+                            <span>→</span>
+                            <FaseBadge fase={h.faseNova} size="sm" />
+                            <span className="text-muted-foreground ml-auto">
+                              {h.motivo === "CRITERIO_ATINGIDO"
+                                ? "Critério atingido"
+                                : h.motivo === "CRITERIO_NAO_ATINGIDO"
+                                  ? "Critério não atingido"
+                                  : "Manual"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(h.alterado_em).toLocaleDateString("pt-BR")}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Botões de fase */}
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {(() => {
+                      const faseIndex = FASES_ORDEM.indexOf(instrucaoSelecionada.faseAtual);
+                      const podVoltar = faseIndex > 0;
+                      const podAvancar = faseIndex < FASES_ORDEM.length - 1;
+
+                      return (
+                        <>
+                          {podVoltar && (
+                            <Button
+                              variant="outline"
+                              onClick={() =>
+                                alterarFaseInstrucao(
+                                  instrucaoSelecionada.id,
+                                  FASES_ORDEM[faseIndex - 1]
+                                )
+                              }
+                              disabled={salvandoFase}
+                            >
+                              <ChevronDown className="h-4 w-4 mr-1" />
+                              Voltar Fase
+                            </Button>
+                          )}
+                          {podAvancar && (
+                            <Button
+                              onClick={() =>
+                                alterarFaseInstrucao(
+                                  instrucaoSelecionada.id,
+                                  FASES_ORDEM[faseIndex + 1]
+                                )
+                              }
+                              disabled={salvandoFase}
+                            >
+                              {salvandoFase ? (
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <ChevronUp className="h-4 w-4 mr-1" />
+                              )}
+                              Avançar Fase
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              abrirCriteriosInstrucao(instrucaoSelecionada, cloneSelecionado)
+                            }
+                          >
+                            <Settings2 className="h-4 w-4 mr-1" />
+                            Editar Critérios
+                          </Button>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </TabsContent>
+
+                {/* ---- Aba Pontuação da Instrução (por fase) ---- */}
                 <TabsContent value="pontuacao" className="space-y-4 mt-4">
+                  {/* Seletor de fase */}
+                  <div className="space-y-2">
+                    <Label>Fase</Label>
+                    <Select value={fasePontuacao} onValueChange={trocarFasePontuacao}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FASES_ORDEM.map((f) => (
+                          <SelectItem key={f} value={f}>
+                            {FASE_LABELS[f]?.label || f}
+                            {f === instrucaoSelecionada?.faseAtual ? " (atual)" : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="flex justify-between items-center">
                     <h4 className="font-semibold">
                       Pontuação/Dicas ({pontuacoesList.length})
@@ -1176,7 +1422,7 @@ function EvolucaoPageContent() {
 
                   {pontuacoesList.length === 0 ? (
                     <p className="text-center text-muted-foreground py-4">
-                      Nenhuma pontuação cadastrada
+                      Nenhuma pontuação cadastrada para esta fase
                     </p>
                   ) : (
                     <Table>
@@ -1219,16 +1465,16 @@ function EvolucaoPageContent() {
                   )}
 
                   <Button
-                    onClick={() => salvarClone("pontuacoes")}
-                    disabled={salvandoClone}
+                    onClick={salvarPontuacoesInstrucao}
+                    disabled={salvandoPontuacao}
                     className="w-full"
                   >
-                    {salvandoClone ? (
+                    {salvandoPontuacao ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Save className="h-4 w-4 mr-2" />
                     )}
-                    Salvar Pontuações
+                    Salvar Pontuações ({FASE_LABELS[fasePontuacao]?.label || fasePontuacao})
                   </Button>
                 </TabsContent>
               </Tabs>
@@ -1383,7 +1629,7 @@ function EvolucaoPageContent() {
       </Dialog>
 
       {/* ============ Modal Critérios ============ */}
-      <Dialog open={criteriosAberto} onOpenChange={setCriteriosAberto}>
+      <Dialog open={criteriosAberto} onOpenChange={(open) => { setCriteriosAberto(open); if (!open) setInstrucaoParaCriterios(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -1391,7 +1637,9 @@ function EvolucaoPageContent() {
               {FASE_LABELS[faseCriterio]?.label || faseCriterio}
             </DialogTitle>
             <DialogDescription>
-              Configure os critérios para avançar ou regredir de fase
+              {instrucaoParaCriterios
+                ? `Instrução: "${instrucaoParaCriterios.texto}"`
+                : "Configure os critérios para avançar ou regredir de fase"}
             </DialogDescription>
           </DialogHeader>
 
