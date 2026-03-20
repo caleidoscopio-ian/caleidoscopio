@@ -291,41 +291,6 @@ function EvolucaoPageContent() {
     }
   }, [isAuthenticated, user, pacienteSelecionado]);
 
-  // ============ Alterar fase manualmente ============
-
-  const alterarFase = async (atividadeCloneId: string, novaFase: string) => {
-    if (!user) return;
-
-    try {
-      setSalvandoFase(true);
-      const userDataEncoded = btoa(JSON.stringify(user));
-
-      const response = await fetch("/api/evolucao/fase", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-Data": userDataEncoded,
-          "X-Auth-Token": user.token,
-        },
-        body: JSON.stringify({ atividadeCloneId, novaFase }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        await fetchEvolucao();
-        setDetalhesAberto(false);
-        setCloneSelecionado(null);
-      } else {
-        setError(result.error);
-      }
-    } catch (err) {
-      console.error("Erro ao alterar fase:", err);
-      setError("Erro ao alterar fase");
-    } finally {
-      setSalvandoFase(false);
-    }
-  };
-
   // ============ Salvar critérios ============
 
   const salvarCriterios = async () => {
@@ -375,25 +340,6 @@ function EvolucaoPageContent() {
     } finally {
       setSalvandoCriterio(false);
     }
-  };
-
-  // ============ Abrir modal de critérios ============
-
-  const abrirCriterios = (clone: AtividadeClone, fase: string) => {
-    setCloneSelecionado(clone);
-    setFaseCriterio(fase);
-
-    const criterioExistente = clone.fases.find((f) => f.fase === fase);
-    if (criterioExistente) {
-      setCriterioForm({
-        porcentagem_acerto: criterioExistente.porcentagem_acerto,
-        qtd_sessoes_consecutivas: criterioExistente.qtd_sessoes_consecutivas,
-        fase_se_atingir: criterioExistente.fase_se_atingir || "",
-        fase_se_nao_atingir: criterioExistente.fase_se_nao_atingir || "",
-      });
-    }
-
-    setCriteriosAberto(true);
   };
 
   // ============ Abrir critérios por instrução ============
