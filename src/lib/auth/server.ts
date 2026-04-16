@@ -100,77 +100,29 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<AuthUs
 /**
  * Verifica se o usuário tem permissão para uma determinada ação.
  *
- * Estratégia de resolução:
- * 1. Tenta resolver via RBAC dinâmico do banco (checkPermission)
- * 2. Se não houver registro RBAC (null), usa fallback hardcoded para
- *    garantir retrocompatibilidade durante a transição
+ * Resolução 100% via RBAC dinâmico do banco.
+ * Se o usuário não tiver UsuarioRole, acesso é negado.
+ * O bootstrap (ensureDefaultRole) garante que todo usuário tenha role no login.
  */
 export async function hasPermission(user: AuthUser, action: string): Promise<boolean> {
-  // Tentar resolução via RBAC dinâmico
-  if (user.tenant?.id) {
-    const mapped = mapLegacyAction(action)
-    if (mapped) {
-      const result = await checkPermission(user.id, user.tenant.id, mapped.resource, mapped.action)
-      // null = sem registro RBAC → usar fallback
-      if (result !== null) return result
-    }
+  if (!user.tenant?.id) return false
+
+  const mapped = mapLegacyAction(action)
+  if (!mapped) {
+    console.warn(`[hasPermission] Ação não mapeada: "${action}" — acesso negado`)
+    return false
   }
 
-  // ─── Fallback legado (mantido para retrocompatibilidade) ──────────────────
-  const adminRoles = ['ADMIN', 'SUPER_ADMIN']
-  const terapeutaRoles = ['USER', 'TERAPEUTA', ...adminRoles]
+  const result = await checkPermission(user.id, user.tenant.id, mapped.resource, mapped.action)
 
-  switch (action) {
-    case 'view_patients':
-    case 'create_patients':
-    case 'edit_patients':
-      return terapeutaRoles.includes(user.role)
-
-    case 'delete_patients':
-      return adminRoles.includes(user.role)
-
-    case 'view_professionals':
-      return terapeutaRoles.includes(user.role)
-
-    case 'create_professionals':
-    case 'edit_professionals':
-    case 'delete_professionals':
-      return adminRoles.includes(user.role)
-
-    case 'view_medical_records':
-    case 'create_medical_records':
-    case 'edit_medical_records':
-    case 'delete_medical_records':
-      return terapeutaRoles.includes(user.role)
-
-    case 'view_activities':
-    case 'create_activities':
-    case 'edit_activities':
-      return terapeutaRoles.includes(user.role)
-
-    case 'delete_activities':
-      return adminRoles.includes(user.role)
-
-    case 'view_sessions':
-    case 'create_sessions':
-    case 'edit_sessions':
-      return terapeutaRoles.includes(user.role)
-
-    case 'view_anamneses':
-    case 'create_anamneses':
-    case 'edit_anamneses':
-      return terapeutaRoles.includes(user.role)
-
-    case 'delete_anamneses':
-      return adminRoles.includes(user.role)
-
-    case 'manage_users':
-    case 'manage_permissions':
-      return adminRoles.includes(user.role)
-
-    default:
-      return false
+  // null = sem UsuarioRole no banco → acesso negado
+  // O bootstrap deveria ter criado no login. Se chegou aqui, é erro de configuração.
+  if (result === null) {
+    console.warn(`[hasPermission] Sem UsuarioRole para user=${user.id}, tenant=${user.tenant.id} — acesso negado`)
+    return false
   }
+
+  return result
 }
 
 /**

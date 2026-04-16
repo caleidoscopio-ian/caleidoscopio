@@ -22,7 +22,7 @@ const ALL_RESOURCES = [
   'dashboard', 'pacientes', 'agenda', 'prontuarios', 'anamneses',
   'sessoes', 'atividades', 'curriculums', 'avaliacoes', 'evolucao',
   'relatorios', 'terapeutas', 'salas', 'procedimentos', 'usuarios',
-  'permissoes', 'configuracoes',
+  'permissoes', 'configuracoes', 'convenios',
 ]
 
 type PermissaoMap = Record<string, string[]>
@@ -49,6 +49,7 @@ const PERMISSOES_USER: PermissaoMap = {
   salas:          ['VIEW'],
   procedimentos:  ['VIEW'],
   permissoes:     ['VIEW'],
+  convenios:      ['VIEW'],
 }
 
 const SYSTEM_ROLES_DEF = [
@@ -141,72 +142,152 @@ export async function ensureTenantRoles(tenantId: string): Promise<void> {
 
 // ─── Atribuição automática de role no primeiro login ─────────────────────────
 
+/** Dados opcionais do usuário para criação automática de profissional */
+interface UserInfo {
+  name?: string
+  email?: string
+}
+
 /**
- * Garante que o usuário tenha uma UsuarioRole local.
- * Se não existir, cria mapeando a SSO role para a role local correspondente.
- * Chamado no login — idempotente.
+ * Garante que o usuário tenha uma UsuarioRole local E um registro profissional.
+ * - Se não existir UsuarioRole → cria com base na SSO role
+ * - Se existir mas com role diferente da SSO → corrige (SSO é fonte da verdade)
+ * - Se a role não tiver permissões → re-popula via ensureTenantRoles
+ * - Se não existir profissional → cria automaticamente
+ * Chamado em TODO login — idempotente e auto-corretivo.
  */
 export async function ensureDefaultRole(
   userId: string,
   tenantId: string,
-  ssoRole: string
+  ssoRole: string,
+  userInfo?: UserInfo
 ): Promise<void> {
-  console.log(`[RBAC Bootstrap] ensureDefaultRole: user=${userId}, tenant=${tenantId}, ssoRole=${ssoRole}`)
+  // Normalizar SSO role para maiúscula (S1 pode retornar "admin", "ADMIN", etc.)
+  const normalizedRole = ssoRole.toUpperCase()
+  const localRoleName = SSO_ROLE_MAP[normalizedRole] ?? 'USER'
+
+  console.log(`[RBAC Bootstrap] ensureDefaultRole: user=${userId}, tenant=${tenantId}, ssoRole="${ssoRole}" → "${localRoleName}"`)
 
   // SEMPRE garantir que as roles de sistema existam com permissões populadas
-  // (idempotente — pula roles que já têm permissões)
   await ensureTenantRoles(tenantId)
 
-  // Verificar se já tem role atribuída
-  const existing = await prisma.usuarioRole.findUnique({
-    where: { usuarioId_tenantId: { usuarioId: userId, tenantId } },
-    include: { role: { include: { _count: { select: { permissoes: true } } } } },
-  })
-
-  if (existing) {
-    console.log(`[RBAC Bootstrap] UsuarioRole já existe: role=${existing.role.nome}, permissões=${existing.role._count.permissoes}`)
-    return
-  }
-
-  // Mapear SSO role → nome da role local
-  const localRoleName = SSO_ROLE_MAP[ssoRole] ?? 'USER'
-  console.log(`[RBAC Bootstrap] Mapeamento SSO: "${ssoRole}" → "${localRoleName}"`)
-
-
-  // Buscar a role local
-  const role = await prisma.role.findUnique({
+  // Buscar a role local correspondente à SSO role
+  const targetRole = await prisma.role.findUnique({
     where: { tenantId_nome: { tenantId, nome: localRoleName } },
   })
 
-  if (!role) {
+  if (!targetRole) {
     console.error(`[RBAC Bootstrap] Role "${localRoleName}" não encontrada para tenant ${tenantId}`)
     return
   }
 
-  // Criar UsuarioRole (sistema faz a atribuição inicial)
-  await prisma.usuarioRole.create({
+  // Verificar se já tem role atribuída
+  const existing = await prisma.usuarioRole.findUnique({
+    where: { usuarioId_tenantId: { usuarioId: userId, tenantId } },
+    include: { role: true },
+  })
+
+  if (!existing) {
+    // Primeira vez — criar UsuarioRole
+    await prisma.usuarioRole.create({
+      data: {
+        usuarioId: userId,
+        tenantId,
+        roleId: targetRole.id,
+        atribuido_por: 'system',
+        justificativa: `Atribuição automática baseada em role SSO: ${ssoRole}`,
+        ativo: true,
+      },
+    })
+
+    await prisma.usuarioRoleHistorico.create({
+      data: {
+        usuarioId: userId,
+        tenantId,
+        roleAnteriorId: null,
+        roleNovoId: targetRole.id,
+        acao: 'ATRIBUICAO',
+        alterado_por: 'system',
+        justificativa: `Atribuição automática no primeiro login (SSO role: ${ssoRole})`,
+      },
+    })
+
+    console.log(`[RBAC Bootstrap] UsuarioRole CRIADA: user=${userId}, role=${localRoleName}`)
+
+  } else if (existing.role.nome !== localRoleName) {
+    // Role existente diverge da SSO — SSO é fonte da verdade, corrigir
+    const previousRoleId = existing.roleId
+
+    await prisma.usuarioRole.update({
+      where: { usuarioId_tenantId: { usuarioId: userId, tenantId } },
+      data: { roleId: targetRole.id },
+    })
+
+    await prisma.usuarioRoleHistorico.create({
+      data: {
+        usuarioId: userId,
+        tenantId,
+        roleAnteriorId: previousRoleId,
+        roleNovoId: targetRole.id,
+        acao: 'ALTERACAO',
+        alterado_por: 'system',
+        justificativa: `Correção automática: SSO role "${ssoRole}" divergia da role local "${existing.role.nome}"`,
+      },
+    })
+
+    console.log(`[RBAC Bootstrap] UsuarioRole CORRIGIDA: user=${userId}, "${existing.role.nome}" → "${localRoleName}"`)
+
+  } else {
+    console.log(`[RBAC Bootstrap] UsuarioRole OK: user=${userId}, role=${existing.role.nome}`)
+  }
+
+  // Garantir que exista um profissional vinculado a este usuário no tenant
+  await ensureProfissional(userId, tenantId, normalizedRole, userInfo)
+}
+
+/**
+ * Garante que exista um registro profissional vinculado ao usuário.
+ * Sem profissional, o usuário não aparece na página /usuarios do Sistema 2.
+ * Idempotente — não duplica se já existe.
+ */
+async function ensureProfissional(
+  userId: string,
+  tenantId: string,
+  ssoRole: string,
+  userInfo?: UserInfo
+): Promise<void> {
+  // Verificar se já existe profissional com este usuarioId
+  const existingProf = await prisma.profissional.findFirst({
+    where: { usuarioId: userId, tenantId },
+  })
+
+  if (existingProf) {
+    return
+  }
+
+  // Mapear SSO role para especialidade descritiva
+  const especialidadeMap: Record<string, string> = {
+    SUPER_ADMIN: 'Administrador Geral',
+    ADMIN: 'Administrador',
+    USER: 'Profissional',
+    TERAPEUTA: 'Terapeuta',
+  }
+
+  const nome = userInfo?.name || 'Usuário'
+  const email = userInfo?.email || undefined
+  const normalizedRole = ssoRole.toUpperCase()
+  const especialidade = especialidadeMap[normalizedRole] || 'Profissional'
+
+  await prisma.profissional.create({
     data: {
-      usuarioId: userId,
       tenantId,
-      roleId: role.id,
-      atribuido_por: 'system',
-      justificativa: `Atribuição automática baseada em role SSO: ${ssoRole}`,
+      usuarioId: userId,
+      nome,
+      email,
+      especialidade,
       ativo: true,
     },
   })
 
-  // Registrar histórico
-  await prisma.usuarioRoleHistorico.create({
-    data: {
-      usuarioId: userId,
-      tenantId,
-      roleAnteriorId: null,
-      roleNovoId: role.id,
-      acao: 'ATRIBUICAO',
-      alterado_por: 'system',
-      justificativa: `Atribuição automática no primeiro login (SSO role: ${ssoRole})`,
-    },
-  })
-
-  console.log(`[RBAC Bootstrap] UsuarioRole criada: user=${userId}, role=${localRoleName}, tenant=${tenantId}`)
+  console.log(`[RBAC Bootstrap] Profissional criado automaticamente: user=${userId}, nome="${nome}", tenant=${tenantId}`)
 }

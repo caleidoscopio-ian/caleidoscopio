@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
         responsavel_financeiro: true,
         contato_emergencia: true,
         plano_saude: true,
+        convenioId: true,
         matricula: true,
         cor_agenda: true,
         profissionalId: true,
@@ -114,6 +115,13 @@ export async function GET(request: NextRequest) {
             id: true,
             nome: true,
             especialidade: true,
+          },
+        },
+        convenio: {
+          select: {
+            id: true,
+            razao_social: true,
+            nome_fantasia: true,
           },
         },
         createdAt: true,
@@ -142,6 +150,8 @@ export async function GET(request: NextRequest) {
       guardianName: paciente.responsavel_financeiro,
       guardianPhone: paciente.contato_emergencia,
       healthInsurance: paciente.plano_saude,
+      convenioId: paciente.convenioId ?? null,
+      convenio: paciente.convenio ?? null,
       healthInsuranceNumber: paciente.matricula,
       profissionalId: paciente.profissionalId,
       profissional: paciente.profissional
@@ -238,6 +248,7 @@ export async function POST(request: NextRequest) {
       guardianPhone,
       healthInsurance,
       healthInsuranceNumber,
+      convenioId,
       profissionalId,
     } = body;
 
@@ -292,6 +303,7 @@ export async function POST(request: NextRequest) {
         responsavel_financeiro: guardianName,
         contato_emergencia: guardianPhone,
         plano_saude: healthInsurance === "particular" ? null : healthInsurance,
+        convenioId: convenioId || null,
         matricula: healthInsuranceNumber,
         profissionalId: profissionalId || null,
         ativo: true,
@@ -404,6 +416,7 @@ export async function PUT(request: NextRequest) {
       guardianPhone,
       healthInsurance,
       healthInsuranceNumber,
+      convenioId,
       profissionalId,
     } = body;
 
@@ -469,6 +482,7 @@ export async function PUT(request: NextRequest) {
         responsavel_financeiro: guardianName,
         contato_emergencia: guardianPhone,
         plano_saude: healthInsurance === "particular" ? null : healthInsurance,
+        convenioId: convenioId || null,
         matricula: healthInsuranceNumber,
         profissionalId: profissionalId || null,
       },

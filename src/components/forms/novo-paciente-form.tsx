@@ -76,7 +76,7 @@ const pacienteSchema = z.object({
   contato_emergencia: z.string().optional(),
 
   // Campos opcionais - Convênio
-  plano_saude: z.string().optional(),
+  convenioId: z.string().optional(),
   matricula: z.string().optional(),
 
   // Campo opcional - Cor da agenda
@@ -92,11 +92,18 @@ interface NovoPacienteFormProps {
   onSuccess?: () => void;
 }
 
+interface ConvenioOption {
+  id: string;
+  razao_social: string;
+  nome_fantasia: string | null;
+}
+
 export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
   const { user, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profissionais, setProfissionais] = useState<any[]>([]);
+  const [convenios, setConvenios] = useState<ConvenioOption[]>([]);
 
   const form = useForm<PacienteFormData>({
     resolver: zodResolver(pacienteSchema),
@@ -110,7 +117,7 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
       estado_civil: "",
       responsavel_financeiro: "",
       contato_emergencia: "",
-      plano_saude: "",
+      convenioId: "",
       matricula: "",
       cor_agenda: "#4ECDC4",
       profissionalId: "",
@@ -152,6 +159,26 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
     }
   }, [user, open]);
 
+  // Carregar lista de convênios ativos
+  useEffect(() => {
+    const loadConvenios = async () => {
+      if (!user) return;
+      try {
+        const response = await fetch("/api/convenios", {
+          headers: {
+            "X-User-Data": btoa(JSON.stringify(user)),
+            "X-Auth-Token": user.token,
+          },
+        });
+        const result = await response.json();
+        if (result.success) setConvenios(result.data);
+      } catch {
+        // silencioso — dropdown fica vazio
+      }
+    };
+    if (open) loadConvenios();
+  }, [user, open]);
+
   // Cores predefinidas para a agenda
   const coresAgenda = [
     { value: "#FF6B6B", label: "Vermelho", color: "#FF6B6B" },
@@ -164,18 +191,6 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
     { value: "#3498DB", label: "Azul Claro", color: "#3498DB" },
   ];
 
-  // Planos de saúde comuns
-  const planosSaude = [
-    "Amil",
-    "Bradesco Saúde",
-    "SulAmérica",
-    "Unimed",
-    "Porto Seguro",
-    "Hapvida",
-    "Notre Dame Intermédica",
-    "Prevent Senior",
-    "Outro",
-  ];
 
   const formatCPF = (value: string) => {
     const numbers = value.replace(/\D/g, "");
@@ -257,8 +272,7 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
         estado_civil: data.estado_civil || undefined,
         guardianName: data.responsavel_financeiro,
         guardianPhone: data.contato_emergencia,
-        healthInsurance:
-          data.plano_saude === "particular" ? undefined : data.plano_saude,
+        convenioId: data.convenioId || undefined,
         healthInsuranceNumber: data.matricula,
         profissionalId: profissionalIdToUse,
       };
@@ -676,33 +690,30 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
             {/* Seção: Convênio */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">
-                Plano de Saúde
+                Convênio / Plano de Saúde
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Plano de Saúde */}
+                {/* Convênio */}
                 <FormField
                   control={form.control}
-                  name="plano_saude"
+                  name="convenioId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Plano de Saúde</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
+                      <FormLabel>Convênio</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione o plano" />
+                            <SelectValue placeholder="Selecione o convênio" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="particular">
                             Particular (sem convênio)
                           </SelectItem>
-                          {planosSaude.map((plano) => (
-                            <SelectItem key={plano} value={plano}>
-                              {plano}
+                          {convenios.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.nome_fantasia || c.razao_social}
                             </SelectItem>
                           ))}
                         </SelectContent>

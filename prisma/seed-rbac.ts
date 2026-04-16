@@ -26,10 +26,11 @@ const RECURSOS = [
   { slug: 'relatorios',     nome: 'Relatórios',            modulo: 'Administrativo',  ordem: 11 },
   { slug: 'terapeutas',     nome: 'Profissionais',         modulo: 'Administrativo',  ordem: 12 },
   { slug: 'salas',          nome: 'Salas',                 modulo: 'Administrativo',  ordem: 13 },
-  { slug: 'procedimentos',  nome: 'Procedimentos',         modulo: 'Administrativo',  ordem: 14 },
-  { slug: 'usuarios',       nome: 'Usuários',              modulo: 'Administrativo',  ordem: 15 },
-  { slug: 'permissoes',     nome: 'Gestão de Permissões',  modulo: 'Administrativo',  ordem: 16 },
-  { slug: 'configuracoes', nome: 'Configurações',          modulo: 'Administrativo',  ordem: 17 },
+  { slug: 'convenios',      nome: 'Convênios',             modulo: 'Administrativo',  ordem: 14 },
+  { slug: 'procedimentos',  nome: 'Procedimentos',         modulo: 'Administrativo',  ordem: 15 },
+  { slug: 'usuarios',       nome: 'Usuários',              modulo: 'Administrativo',  ordem: 16 },
+  { slug: 'permissoes',     nome: 'Gestão de Permissões',  modulo: 'Administrativo',  ordem: 17 },
+  { slug: 'configuracoes',  nome: 'Configurações',         modulo: 'Administrativo',  ordem: 18 },
 ]
 
 // ─── Ações ──────────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ const PERMISSOES_USER: PermissaoMap = {
   relatorios:    ['VIEW', 'CREATE'],
   terapeutas:    ['VIEW'],
   salas:         ['VIEW'],
+  convenios:     ['VIEW'],
   procedimentos: ['VIEW'],
   usuarios:      [],
   permissoes:    ['VIEW'],

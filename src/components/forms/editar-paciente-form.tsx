@@ -68,12 +68,18 @@ const pacienteSchema = z.object({
   estado_civil: z.string().optional(),
   responsavel_financeiro: z.string().optional(),
   contato_emergencia: z.string().optional(),
-  plano_saude: z.string().optional(),
+  convenioId: z.string().optional(),
   matricula: z.string().optional(),
   cor_agenda: z.string().optional(),
 });
 
 type PacienteFormData = z.infer<typeof pacienteSchema>;
+
+interface ConvenioOption {
+  id: string;
+  razao_social: string;
+  nome_fantasia: string | null;
+}
 
 interface Patient {
   id: string;
@@ -88,6 +94,7 @@ interface Patient {
   guardianName?: string;
   guardianPhone?: string;
   healthInsurance?: string;
+  convenioId?: string | null;
   healthInsuranceNumber?: string;
   createdAt: string;
   updatedAt: string;
@@ -105,6 +112,7 @@ export function EditarPacienteForm({
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [convenios, setConvenios] = useState<ConvenioOption[]>([]);
 
   const form = useForm<PacienteFormData>({
     resolver: zodResolver(pacienteSchema),
@@ -119,7 +127,7 @@ export function EditarPacienteForm({
       estado_civil: patient.estado_civil || "",
       responsavel_financeiro: patient.guardianName || "",
       contato_emergencia: patient.guardianPhone || "",
-      plano_saude: patient.healthInsurance || "",
+      convenioId: patient.convenioId || "",
       matricula: patient.healthInsuranceNumber || "",
       cor_agenda: "#4ECDC4",
     },
@@ -137,18 +145,25 @@ export function EditarPacienteForm({
     { value: "#3498DB", label: "Azul Claro", color: "#3498DB" },
   ];
 
-  // Planos de saúde comuns
-  const planosSaude = [
-    "Amil",
-    "Bradesco Saúde",
-    "SulAmérica",
-    "Unimed",
-    "Porto Seguro",
-    "Hapvida",
-    "Notre Dame Intermédica",
-    "Prevent Senior",
-    "Outro",
-  ];
+  // Carregar convênios ativos ao abrir o dialog
+  useEffect(() => {
+    const loadConvenios = async () => {
+      if (!user) return;
+      try {
+        const response = await fetch("/api/convenios", {
+          headers: {
+            "X-User-Data": btoa(JSON.stringify(user)),
+            "X-Auth-Token": user.token,
+          },
+        });
+        const result = await response.json();
+        if (result.success) setConvenios(result.data);
+      } catch {
+        // silencioso
+      }
+    };
+    if (open) loadConvenios();
+  }, [user, open]);
 
   const formatCPF = (value: string) => {
     const numbers = value.replace(/\D/g, "");
@@ -191,8 +206,7 @@ export function EditarPacienteForm({
         estado_civil: data.estado_civil || undefined,
         guardianName: data.responsavel_financeiro,
         guardianPhone: data.contato_emergencia,
-        healthInsurance:
-          data.plano_saude === "particular" ? undefined : data.plano_saude,
+        convenioId: data.convenioId && data.convenioId !== "particular" ? data.convenioId : undefined,
         healthInsuranceNumber: data.matricula,
       };
 
@@ -561,33 +575,30 @@ export function EditarPacienteForm({
             {/* Seção: Convênio */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold border-b pb-2">
-                Plano de Saúde
+                Convênio / Plano de Saúde
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Plano de Saúde */}
+                {/* Convênio */}
                 <FormField
                   control={form.control}
-                  name="plano_saude"
+                  name="convenioId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Plano de Saúde</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                      >
+                      <FormLabel>Convênio</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione o plano" />
+                            <SelectValue placeholder="Selecione o convênio" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="particular">
                             Particular (sem convênio)
                           </SelectItem>
-                          {planosSaude.map((plano) => (
-                            <SelectItem key={plano} value={plano}>
-                              {plano}
+                          {convenios.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.nome_fantasia || c.razao_social}
                             </SelectItem>
                           ))}
                         </SelectContent>

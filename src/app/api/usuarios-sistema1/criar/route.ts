@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { managerClient } from "@/lib/manager-client";
 import { prisma } from "@/lib/prisma";
 
@@ -26,12 +26,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Apenas ADMIN pode criar usuários
-    if (!["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    // Verificar permissão RBAC para criar usuários
+    const canCreate = await hasPermission(user, "create_usuarios");
+    if (!canCreate) {
       return NextResponse.json(
         {
           success: false,
-          error: "Apenas administradores podem criar usuários",
+          error: "Sem permissão para criar usuários",
         },
         { status: 403 }
       );

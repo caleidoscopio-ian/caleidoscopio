@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthenticatedUser } from '@/lib/auth/server'
+import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { prisma } from '@/lib/prisma'
 
 // POST - Vincular usuário existente do Sistema 1 a um profissional do Sistema 2
@@ -25,10 +25,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Apenas ADMIN pode vincular
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+    // Verificar permissão RBAC para gerenciar usuários
+    const canEdit = await hasPermission(user, 'edit_usuarios')
+    if (!canEdit) {
       return NextResponse.json(
-        { success: false, error: 'Apenas administradores podem vincular usuários' },
+        { success: false, error: 'Sem permissão para vincular usuários' },
         { status: 403 }
       )
     }

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { managerClient } from "@/lib/manager-client";
 import { prisma } from "@/lib/prisma";
 
@@ -27,12 +27,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Apenas ADMIN pode acessar
-    if (!["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    // Verificar permissão RBAC para visualizar usuários
+    const canView = await hasPermission(user, "view_usuarios");
+    if (!canView) {
       return NextResponse.json(
         {
           success: false,
-          error: "Apenas administradores podem gerenciar usuários",
+          error: "Sem permissão para gerenciar usuários",
         },
         { status: 403 }
       );
@@ -63,12 +64,38 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Buscar roles RBAC de todos os profissionais vinculados (que têm usuarioId)
+    const usuarioIds = profissionais
+      .filter((p) => p.usuarioId)
+      .map((p) => p.usuarioId as string);
+
+    const usuarioRoles = usuarioIds.length > 0
+      ? await prisma.usuarioRole.findMany({
+          where: {
+            tenantId: user.tenant.id,
+            usuarioId: { in: usuarioIds },
+            ativo: true,
+          },
+          select: {
+            usuarioId: true,
+            role: { select: { nome: true } },
+          },
+        })
+      : [];
+
+    // Mapa userId → nome da role RBAC
+    const roleMap = new Map(
+      usuarioRoles.map((ur) => [ur.usuarioId, ur.role.nome])
+    );
+
     // Transformar profissionais em formato "usuário" para a interface
     const usuarios = profissionais.map((prof) => ({
       id: prof.usuarioId || `pending-${prof.id}`,
       email: prof.email || "",
       name: prof.nome,
-      role: prof.usuarioId ? "USER" : "PENDING",
+      role: prof.usuarioId
+        ? roleMap.get(prof.usuarioId) || "USER"
+        : "PENDING",
       isActive: true,
       vinculado: !!prof.usuarioId,
       profissional: {

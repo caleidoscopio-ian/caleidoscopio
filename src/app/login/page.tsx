@@ -70,12 +70,19 @@ export default function LoginPage() {
 
       console.log("✅ Dados salvos localmente");
 
-      // CRUCIAL: Definir cookie para o middleware
-      console.log("🍪 Definindo cookie para middleware...");
+      // CRUCIAL: Definir cookie + bootstrap RBAC no servidor
+      console.log("🍪 Definindo cookie e bootstrapping RBAC...");
       const cookieResponse = await fetch("/api/auth/set-cookie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: ssoResult.token }),
+        body: JSON.stringify({
+          token: ssoResult.token,
+          userId: ssoResult.user.id,
+          tenantId: ssoResult.tenant.id,
+          ssoRole: ssoResult.user.role,
+          userName: ssoResult.user.name,
+          userEmail: ssoResult.user.email,
+        }),
       });
 
       if (!cookieResponse.ok) {

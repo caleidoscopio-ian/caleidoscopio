@@ -9,7 +9,14 @@ import { ChevronRight, HelpCircle, LogOut, ExternalLink } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getSidebarItems, SidebarItem } from "@/lib/navigation";
+import {
+  PROFESSIONAL_ITEMS,
+  PROFESSIONAL_GROUPS,
+  getNonProfessionalItems,
+  NON_PROFESSIONAL_GROUPS,
+  isProfessionalRole,
+  SidebarItem,
+} from "@/lib/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -30,112 +37,47 @@ import { NavUser } from "@/components/nav-user";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// Reorganizar itens por grupos para hierarquia
-const getGroupedNavigation = (userRole: string): Record<string, SidebarItem[]> => {
-  const allItems = getSidebarItems(userRole);
-
-  // Agrupar por categorias baseado no role
-  switch (userRole.toLowerCase()) {
-    case "paciente":
-    case "aluno":
-      return {
-        Aprendizado: allItems.filter((item) =>
-          [
-            "Trilhas Ativas",
-            "Atividades",
-            "Conquistas",
-            "Meu Progresso",
-          ].includes(item.title)
-        ),
-        Perfil: allItems.filter((item) => item.title === "Meu Perfil"),
-      };
-
-    case "responsavel":
-    case "tutor":
-      return {
-        Acompanhamento: allItems.filter((item) =>
-          [
-            "Acompanhar Aluno",
-            "Progresso do Aluno",
-            "Trilhas do Aluno",
-          ].includes(item.title)
-        ),
-        Comunicação: allItems.filter((item) =>
-          ["Relatórios Semanais", "Comunicação"].includes(item.title)
-        ),
-        Perfil: allItems.filter((item) => item.title === "Meu Perfil"),
-      };
-
-    case "user": // Role USER = Terapeuta
-    case "terapeuta":
-      return {
-        Principal: allItems.filter((item) => item.title === "Dashboard"),
-        "Gestão Clínica": allItems.filter((item) =>
-          ["Meus Pacientes", "Agenda", "Registro de Sessão", "Anamneses"].includes(item.title)
-        ),
-        "Atendimento": allItems.filter((item) =>
-          ["Iniciar Sessão", "Plano Terapêutico", "Atividades", "Avaliações", "Histórico de Sessões", "Evolução"].includes(item.title)
-        ),
-        Perfil: allItems.filter((item) => item.title === "Meu Perfil"),
-      };
-
-    case "admin":
-    case "super_admin":
-      return {
-        Principal: allItems.filter((item) => item.title === "Dashboard"),
-        "Gestão de Usuários": allItems.filter((item) =>
-          [
-            "Usuários",
-            "Profissionais",
-            "Pacientes",
-          ].includes(item.title)
-        ),
-        "Sistema Clínico": allItems.filter((item) =>
-          ["Agenda Global", "Salas", "Registro de Sessão", "Anamneses"].includes(item.title)
-        ),
-        "Atendimento": allItems.filter((item) =>
-          ["Iniciar Sessão", "Plano Terapêutico", "Atividades", "Avaliações", "Histórico de Sessões", "Evolução"].includes(item.title)
-        ),
-        Administração: allItems.filter((item) =>
-          ["Relatórios", "Permissões", "Configurações"].includes(
-            item.title
-          )
-        ),
-        Perfil: allItems.filter((item) => item.title === "Meu Perfil"),
-      };
-
-    default:
-      return {
-        Principal: allItems,
-      };
+// Agrupa itens visíveis nas categorias definidas
+function groupItems(
+  items: SidebarItem[],
+  groups: Record<string, string[]>
+): Record<string, SidebarItem[]> {
+  const result: Record<string, SidebarItem[]> = {};
+  for (const [groupName, titles] of Object.entries(groups)) {
+    const groupItems = items.filter((item) => titles.includes(item.title));
+    if (groupItems.length > 0) {
+      result[groupName] = groupItems;
+    }
   }
-};
+  return result;
+}
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const { state } = useSidebar();
-  const { can, loading: permsLoading, source } = usePermissions();
+  const { can, loading: permsLoading } = usePermissions();
 
-  const rawGrouped = getGroupedNavigation(user?.role || "user");
+  const userRole = user?.role || "user";
+  const professional = isProfessionalRole(userRole);
 
-  // Quando RBAC está ativo e carregado, filtrar itens por permissão efetiva.
-  // Durante o carregamento ou no fallback SSO, exibir todos os itens (sem quebrar).
   const groupedNavigation = React.useMemo(() => {
-    if (permsLoading || source !== "rbac") return rawGrouped;
-
-    const filtered: Record<string, SidebarItem[]> = {};
-    for (const [group, items] of Object.entries(rawGrouped)) {
-      const visibleItems = (items as SidebarItem[]).filter((item) => {
-        if (!item.requiredPermission) return true;
-        return can(item.requiredPermission.resource, item.requiredPermission.action);
-      });
-      if (visibleItems.length > 0) {
-        filtered[group] = visibleItems;
-      }
+    if (professional) {
+      // Profissionais: filtrar itens por permissão RBAC
+      const visibleItems = permsLoading
+        ? PROFESSIONAL_ITEMS // Durante loading, mostrar todos (evitar flash)
+        : PROFESSIONAL_ITEMS.filter((item) => {
+            if (!item.requiredPermission) return true;
+            return can(item.requiredPermission.resource, item.requiredPermission.action);
+          });
+      return groupItems(visibleItems, PROFESSIONAL_GROUPS);
+    } else {
+      // Não-profissionais: itens baseados no role (sem RBAC)
+      const items = getNonProfessionalItems(userRole);
+      const groups = NON_PROFESSIONAL_GROUPS[userRole.toLowerCase()] || { "Principal": items.map(i => i.title) };
+      return groupItems(items, groups);
     }
-    return filtered;
-  }, [rawGrouped, permsLoading, source, can]);
+  }, [professional, userRole, permsLoading, can]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {

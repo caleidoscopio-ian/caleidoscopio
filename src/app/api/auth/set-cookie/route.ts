@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { ensureDefaultRole } from '@/lib/auth/bootstrap-roles'
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json()
+    const body = await request.json()
+    const { token, userId, tenantId, ssoRole, userName, userEmail } = body
 
     if (!token) {
       return NextResponse.json(
         { error: 'Token é obrigatório' },
         { status: 400 }
       )
+    }
+
+    // Bootstrap RBAC: garantir role + profissional no primeiro login
+    if (userId && tenantId && ssoRole) {
+      try {
+        await ensureDefaultRole(userId, tenantId, ssoRole, { name: userName, email: userEmail })
+      } catch (err) {
+        console.error('[RBAC Bootstrap] Erro no set-cookie (login continua):', err)
+      }
     }
 
     const response = NextResponse.json({ success: true })

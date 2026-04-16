@@ -9,7 +9,10 @@
       "Bash(npm install:*)",
       "Bash(find:*)",
       "Bash(npm run build:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(awk '/^model prontuario/,/^}/' /e/caleidoscopio/prisma/schema.prisma)",
+      "Bash(awk '/^model SessaoAvaliacao/,/^}/' /e/caleidoscopio/prisma/schema.prisma)",
+      "Bash(grep -n \"Tabs\\\\|TabsList\\\\|TabsContent\\\\|TabsTrigger\" /e/caleidoscopio/src/app/convenios/[id]/page.tsx)"
     ],
     "deny": [],
     "ask": []

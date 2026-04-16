@@ -41,7 +41,8 @@ model Procedimento {
   cor          String?       // Cor para identificação visual na agenda
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @default(now()) @updatedAt
-  agendamentos agendamento[]
+  agendamentos    agendamento[]
+  tabelasConvenio ConvenioTabela[]
 
   @@map("procedimentos")
 }
@@ -282,7 +283,8 @@ model paciente {
   endereco               String?
   escolaridade           Escolaridade?
   estado_civil           EstadoCivil?
-  plano_saude            String?
+  plano_saude            String?            // Mantido para compatibilidade (texto livre legado)
+  convenioId             String?            // FK para convênio cadastrado
   matricula              String?
   responsavel_financeiro String?
   contato_emergencia     String?
@@ -308,6 +310,7 @@ model paciente {
   diagnosticos           diagnostico[]
   relatorios             relatorioClinico[]
   anexos                 anexoPaciente[]
+  convenio               Convenio?          @relation(fields: [convenioId], references: [id])
 
   @@unique([tenantId, cpf])
   @@map("pacientes")
@@ -715,6 +718,206 @@ enum TipoPontuacao {
   RARAMENTE_25
   NUNCA_0
   NAO_SE_APLICA
+}
+
+// ========================================
+// GESTÃO DE CONVÊNIOS — MÓDULO 13
+// ========================================
+
+enum StatusConvenio {
+  ATIVO
+  INATIVO
+  SUSPENSO
+  EM_NEGOCIACAO
+}
+
+enum TipoConvenio {
+  PLANO_SAUDE
+  CONVENIO_EMPRESA
+  CONVENIO_ESCOLAR
+  CONVENIO_PUBLICO
+  PARTICULAR_DESCONTO
+  OUTROS
+}
+
+enum TipoGuiaTISS {
+  SP_SADT
+  CONSULTA
+  INTERNACAO
+  HONORARIOS
+  ODONTOLOGICA
+  RESUMO_INTERNACAO
+}
+
+enum RegimeAtendimento {
+  AMBULATORIAL
+  HOSPITALAR
+  HOSPITAL_DIA
+  DOMICILIAR
+}
+
+enum CaraterAtendimento {
+  ELETIVO
+  URGENCIA_EMERGENCIA
+}
+
+enum TipoConvenioAnexo {
+  CONTRATO
+  TABELA_VALORES
+  ADITIVO
+  CORRESPONDENCIA
+  OUTROS
+}
+
+enum TipoHistoricoConvenio {
+  CRIACAO
+  ALTERACAO_DADOS
+  ALTERACAO_TABELA
+  NEGOCIACAO
+  REAJUSTE
+  SUSPENSAO
+  REATIVACAO
+  OBSERVACAO
+}
+
+model Convenio {
+  id                    String             @id @default(uuid())
+  tenantId              String             // Referência ao tenant do Sistema 1 (não FK)
+
+  // Dados Básicos
+  razao_social          String
+  nome_fantasia         String?
+  cnpj                  String
+  registro_ans          String?            // Registro na ANS (Agência Nacional de Saúde Suplementar)
+  tipo                  TipoConvenio
+  status                StatusConvenio     @default(EM_NEGOCIACAO)
+
+  // Contato
+  telefone              String?
+  email                 String?
+  site                  String?
+  endereco              String?            @db.Text
+  contato_nome          String?            // Nome do contato principal
+  contato_telefone      String?
+  contato_email         String?
+
+  // Configurações Financeiras
+  prazo_pagamento_dias  Int?               // Prazo padrão de pagamento em dias
+  dia_fechamento        Int?               // Dia do mês para fechamento do faturamento
+  dia_entrega_guias     Int?               // Dia limite para entrega de guias
+  percentual_repasse    Decimal?           @db.Decimal(5, 2) // Percentual de repasse
+
+  // Parâmetros TISS
+  versao_tiss           String?            // Versão do padrão TISS (ex: "4.01.00")
+  tipo_guia_padrao      TipoGuiaTISS?      // Tipo de guia mais usado
+  regime_atendimento    RegimeAtendimento? @default(AMBULATORIAL)
+  carater_atendimento   CaraterAtendimento? @default(ELETIVO)
+  codigo_operadora      String?            // Código da operadora na ANS
+  codigo_prestador      String?            // Código do prestador junto ao convênio
+  numero_lote_padrao    String?            // Prefixo de lote para envio
+
+  // Datas
+  data_inicio_contrato  DateTime?
+  data_fim_contrato     DateTime?
+  data_ultimo_reajuste  DateTime?
+
+  // Observações
+  observacoes           String?            @db.Text
+
+  // Controle
+  ativo                 Boolean            @default(true)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @default(now()) @updatedAt
+
+  // Relações
+  tabelas               ConvenioTabela[]
+  anexos                ConvenioAnexo[]
+  historicos            ConvenioHistorico[]
+  pacientes             paciente[]
+
+  @@unique([tenantId, cnpj])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("convenios")
+}
+
+model ConvenioTabela {
+  id                  String          @id @default(uuid())
+  convenioId          String
+  tenantId            String          // Denormalizado para queries multi-tenant
+  procedimentoId      String?         // FK opcional para Procedimento
+
+  // Identificação do procedimento
+  codigo_procedimento String          // Código TUSS/TISS do procedimento
+  nome_procedimento   String          // Nome do procedimento
+  codigo_tiss         String?         // Código TISS específico
+
+  // Valores
+  valor_convenio      Decimal         @db.Decimal(10, 2) // Valor pago pelo convênio
+  valor_particular    Decimal?        @db.Decimal(10, 2) // Valor particular de referência
+  valor_co_participacao Decimal?      @db.Decimal(10, 2) // Co-participação do paciente
+
+  // Parâmetros TISS do procedimento (override)
+  tipo_guia           TipoGuiaTISS?   // Tipo de guia para este procedimento específico
+  tipo_tabela         String?         // "22" (TUSS), "00" (própria), etc.
+  grau_participacao   String?         // "00" (cirurgião), "01" (auxiliar), etc.
+
+  // Vigência
+  vigencia_inicio     DateTime?
+  vigencia_fim        DateTime?
+
+  // Controle
+  ativo               Boolean         @default(true)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @default(now()) @updatedAt
+
+  convenio            Convenio        @relation(fields: [convenioId], references: [id], onDelete: Cascade)
+  procedimento        Procedimento?   @relation(fields: [procedimentoId], references: [id], onDelete: SetNull)
+
+  @@unique([convenioId, codigo_procedimento])
+  @@index([tenantId])
+  @@map("convenio_tabelas")
+}
+
+model ConvenioAnexo {
+  id             String            @id @default(uuid())
+  convenioId     String
+  tenantId       String            // Denormalizado para queries multi-tenant
+  tipo           TipoConvenioAnexo
+  titulo         String
+  descricao      String?           @db.Text
+  arquivo_url    String            // URL do arquivo (Vercel Blob)
+  arquivo_nome   String            // Nome original do arquivo
+  arquivo_tipo   String            // MIME type
+  arquivo_size   Int               // Tamanho em bytes
+  data_documento DateTime?         // Data do documento (não do upload)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @default(now()) @updatedAt
+
+  convenio       Convenio          @relation(fields: [convenioId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("convenio_anexos")
+}
+
+model ConvenioHistorico {
+  id               String                @id @default(uuid())
+  convenioId       String
+  tenantId         String                // Denormalizado para queries multi-tenant
+  tipo             TipoHistoricoConvenio
+  titulo           String
+  descricao        String                @db.Text
+  usuario_nome     String                // Nome de quem registrou
+  usuario_id       String                // userId do Sistema 1
+  dados_anteriores Json?                 // Snapshot antes da alteração
+  dados_novos      Json?                 // Snapshot após a alteração
+  createdAt        DateTime              @default(now())
+
+  convenio         Convenio              @relation(fields: [convenioId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([convenioId, createdAt])
+  @@map("convenio_historicos")
 }
 
 // ========================================

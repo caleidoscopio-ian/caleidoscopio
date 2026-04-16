@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // Bootstrap RBAC: garantir role local mapeada à SSO role
     // Blocking — precisa completar antes de retornar para que usePermissions funcione
     try {
-      await ensureDefaultRole(user.id, tenant.id, user.role)
+      await ensureDefaultRole(user.id, tenant.id, user.role, { name: user.name, email: user.email })
     } catch (err) {
       console.error('[RBAC Bootstrap] Erro ao atribuir role (login continua):', err)
       // Não bloqueia o login — o usuário pode acessar via SSO-fallback

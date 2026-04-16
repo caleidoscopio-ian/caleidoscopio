@@ -4,6 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
@@ -49,17 +50,18 @@ interface Usuario {
 }
 
 export default function UsuariosPage() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
+  const { can, loading: permsLoading } = usePermissions();
   const { toast } = useToast();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showNovoUsuarioDialog, setShowNovoUsuarioDialog] = useState(false);
 
   useEffect(() => {
-    if (user && isAdmin) {
+    if (user && !permsLoading && can("usuarios", "VIEW")) {
       loadUsuarios();
     }
-  }, [user, isAdmin]);
+  }, [user, permsLoading]);
 
   const loadUsuarios = async () => {
     if (!user) return;
@@ -149,7 +151,7 @@ export default function UsuariosPage() {
   };
 
   return (
-    <ProtectedRoute requiredRole="ADMIN" requiredPermission={{ resource: 'usuarios', action: 'VIEW' }}>
+    <ProtectedRoute requiredPermission={{ resource: 'usuarios', action: 'VIEW' }}>
       <MainLayout>
         <div className="space-y-6">
           {/* Header */}

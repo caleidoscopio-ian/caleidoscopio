@@ -12,11 +12,10 @@ interface RequiredPermission {
 
 interface ProtectedRouteProps {
   children: ReactNode
-  requiredRole?: 'ADMIN' | 'SUPER_ADMIN' | 'USER'
   requiredPermission?: RequiredPermission
 }
 
-export default function ProtectedRoute({ children, requiredRole, requiredPermission }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, requiredPermission }: ProtectedRouteProps) {
   const { user, loading: authLoading } = useAuth()
   const { can, loading: permsLoading } = usePermissions()
   const router = useRouter()
@@ -31,21 +30,11 @@ export default function ProtectedRoute({ children, requiredRole, requiredPermiss
       return
     }
 
-    // Verificar role SSO (legado)
-    if (requiredRole) {
-      const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(user.role)
-      const hasRole = requiredRole === 'ADMIN' ? isAdmin : user.role === requiredRole
-      if (!hasRole) {
-        router.push('/dashboard')
-        return
-      }
-    }
-
     // Verificar permissão RBAC
     if (requiredPermission && !can(requiredPermission.resource, requiredPermission.action)) {
       router.push('/sem-permissao')
     }
-  }, [user, loading, router, requiredRole, requiredPermission, can])
+  }, [user, loading, router, requiredPermission, can])
 
   if (loading) {
     return (

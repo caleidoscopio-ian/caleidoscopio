@@ -49,6 +49,10 @@ export const ACTION_MAP: Record<string, ResourceAction> = {
 
   // Usuários / Admin
   manage_users:             { resource: 'usuarios',      action: 'MANAGE' },
+  view_usuarios:            { resource: 'usuarios',      action: 'VIEW'   },
+  create_usuarios:          { resource: 'usuarios',      action: 'CREATE' },
+  edit_usuarios:            { resource: 'usuarios',      action: 'UPDATE' },
+  delete_usuarios:          { resource: 'usuarios',      action: 'DELETE' },
 
   // Salas
   view_rooms:               { resource: 'salas',         action: 'VIEW'   },
@@ -78,6 +82,12 @@ export const ACTION_MAP: Record<string, ResourceAction> = {
 
   // Permissões
   manage_permissions:       { resource: 'permissoes',    action: 'MANAGE' },
+
+  // Convênios
+  view_convenios:           { resource: 'convenios',     action: 'VIEW'   },
+  create_convenios:         { resource: 'convenios',     action: 'CREATE' },
+  edit_convenios:           { resource: 'convenios',     action: 'UPDATE' },
+  delete_convenios:         { resource: 'convenios',     action: 'DELETE' },
 }
 
 /**
