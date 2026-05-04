@@ -136,3 +136,7 @@ NUNCA: `any` type · query sem `tenantId` · import de `src/` · `dangerouslySet
 | 10 | Evolução/Fases | `/evolucao` | Implementado |
 | 11 | Relatórios | `/relatorios` | Implementado |
 | 12 | Admin (Usuários/Salas) | `/usuarios`, `/salas` | Implementado |
+| 13 | Convênios | `/convenios`, `/convenios/[id]` | Implementado |
+| 14 | Profissional Detalhe + Repasse | `/terapeutas/[id]` | Implementado |
+| 15 | Procedimentos e Pacotes | `/procedimentos`, `/procedimentos/[id]`, `/pacotes/[id]` | Implementado |
+| 16 | Check-in e Recepção | `/check-in` | Implementado |

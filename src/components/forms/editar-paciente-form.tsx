@@ -206,7 +206,7 @@ export function EditarPacienteForm({
         estado_civil: data.estado_civil || undefined,
         guardianName: data.responsavel_financeiro,
         guardianPhone: data.contato_emergencia,
-        convenioId: data.convenioId && data.convenioId !== "particular" ? data.convenioId : undefined,
+        convenioId: data.convenioId && data.convenioId !== "_particular" ? data.convenioId : undefined,
         healthInsuranceNumber: data.matricula,
       };
 
@@ -586,14 +586,17 @@ export function EditarPacienteForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Convênio</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <Select
+                        onValueChange={(v) => field.onChange(v === "_particular" ? "" : v)}
+                        value={field.value || "_particular"}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o convênio" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="particular">
+                          <SelectItem value="_particular">
                             Particular (sem convênio)
                           </SelectItem>
                           {convenios.map((c) => (

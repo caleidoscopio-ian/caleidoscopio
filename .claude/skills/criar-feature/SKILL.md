@@ -24,12 +24,55 @@ Você vai implementar uma feature end-to-end no projeto Caleidoscópio.
 ### Fase 3: Frontend
 1. **Criar tipos** — Interfaces em `src/types/` se necessário
 2. **Criar componentes** — Seguir padrões de `/criar-componente`
-3. **Adicionar navegação** — Atualizar `src/lib/navigation.ts` se nova rota
-4. **Atualizar sidebar** — Se necessário, `src/components/app-sidebar.tsx`
+3. **RBAC obrigatório** — Ver seção abaixo
+4. **Adicionar navegação** — Atualizar `src/lib/navigation.ts` se nova rota
+5. **Atualizar sidebar** — Se necessário, `src/components/app-sidebar.tsx`
 
 ### Fase 4: Validação
 1. **Build** — `npm run build` (obrigatório, deve passar sem erros)
-2. **Review** — Verificar isolamento multi-tenant, tipos, segurança
+2. **Review** — Verificar isolamento multi-tenant, tipos, segurança, RBAC
+
+## RBAC — Obrigatório em Toda Feature
+
+**SEMPRE** ao criar uma nova página ou recurso:
+
+### 1. ProtectedRoute com resource correto
+```tsx
+// O resource DEVE ser o slug exato definido em prisma/seed-rbac.ts
+<ProtectedRoute requiredPermission={{ resource: 'slug-do-recurso', action: 'VIEW' }}>
+```
+
+### 2. Verificar slug no seed
+Antes de usar um resource, confirmar que ele existe em `prisma/seed-rbac.ts`:
+```typescript
+// Lista de recursos válidos em seed-rbac.ts
+{ slug: 'pacientes' }, { slug: 'agenda' }, { slug: 'terapeutas' }, ...
+```
+Se o recurso for novo → adicionar no seed E no `bootstrap-roles.ts`.
+
+### 3. API routes com hasPermission
+Cada endpoint usa a action-key correta do `src/lib/auth/action-map.ts`:
+```typescript
+if (!await hasPermission(user, 'view_professionals')) { ... }
+```
+
+### 4. Permission matrix
+Verificar que o recurso aparece em `src/components/rbac/permission-matrix.tsx`.
+Se não estiver → adicionar na lista `RECURSOS`.
+
+### 5. Sidebar
+Se a rota deve aparecer no menu, usar `requiredPermission` em `src/lib/navigation.ts`:
+```typescript
+{ title: "...", href: "/rota", icon: Icon, requiredPermission: { resource: "slug", action: "VIEW" } }
+```
+
+### Checklist RBAC por feature
+- [ ] `ProtectedRoute` com `resource` = slug correto do seed
+- [ ] Recurso existe em `prisma/seed-rbac.ts`
+- [ ] Recurso existe em `src/lib/auth/bootstrap-roles.ts`
+- [ ] API routes usam `hasPermission` com action-key do `action-map.ts`
+- [ ] Recurso na `permission-matrix.tsx`
+- [ ] Item no sidebar (se aplicável) com `requiredPermission`
 
 ## Delegação a Subagents
 
@@ -42,6 +85,7 @@ Para features grandes:
 
 - [ ] Schema atualizado (se necessário)
 - [ ] API routes com tenantId
+- [ ] **RBAC completo** — todos os 6 itens do checklist RBAC acima
 - [ ] Componentes acessíveis
 - [ ] Navegação atualizada
 - [ ] `npm run build` passa sem erros

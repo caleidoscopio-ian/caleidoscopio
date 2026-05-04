@@ -54,6 +54,21 @@ export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
     defaultValues: {
       status: "EM_NEGOCIACAO",
       tipo: "PLANO_SAUDE",
+      razao_social: "",
+      nome_fantasia: "",
+      cnpj: "",
+      registro_ans: "",
+      telefone: "",
+      email: "",
+      site: "",
+      endereco: "",
+      contato_nome: "",
+      contato_telefone: "",
+      contato_email: "",
+      observacoes: "",
+      prazo_pagamento_dias: undefined,
+      dia_fechamento: undefined,
+      dia_entrega_guias: undefined,
     },
   });
 

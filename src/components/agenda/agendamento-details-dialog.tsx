@@ -26,7 +26,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-import { Agendamento, StatusAgendamento } from '@/types/agendamento'
+import { Agendamento, StatusAgendamento, STATUS_AGENDAMENTO_LABELS } from '@/types/agendamento'
 import { cn } from '@/lib/utils'
 
 interface AgendamentoDetailsDialogProps {
@@ -54,33 +54,20 @@ export function AgendamentoDetailsDialog({
 
   if (!agendamento) return null
 
-  const getStatusColor = (status: StatusAgendamento) => {
-    switch (status) {
-      case StatusAgendamento.CONFIRMADO:
-        return 'bg-green-100 text-green-800 border-green-300'
-      case StatusAgendamento.AGENDADO:
-        return 'bg-blue-100 text-blue-800 border-blue-300'
-      case StatusAgendamento.CANCELADO:
-        return 'bg-red-100 text-red-800 border-red-300'
-      case StatusAgendamento.ATENDIDO:
-        return 'bg-purple-100 text-purple-800 border-purple-300'
-      case StatusAgendamento.FALTOU:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
-    }
+  const STATUS_DIALOG_COLOR: Record<StatusAgendamento, string> = {
+    [StatusAgendamento.AGENDADO]:       'bg-blue-100 text-blue-800 border-blue-300',
+    [StatusAgendamento.CONFIRMADO]:     'bg-green-100 text-green-800 border-green-300',
+    [StatusAgendamento.EM_ATENDIMENTO]: 'bg-amber-100 text-amber-800 border-amber-300',
+    [StatusAgendamento.ATENDIDO]:       'bg-purple-100 text-purple-800 border-purple-300',
+    [StatusAgendamento.FALTOU]:         'bg-gray-100 text-gray-800 border-gray-300',
+    [StatusAgendamento.CANCELADO]:      'bg-red-100 text-red-800 border-red-300',
   }
 
-  const getStatusText = (status: StatusAgendamento) => {
-    switch (status) {
-      case StatusAgendamento.CONFIRMADO: return 'Confirmado'
-      case StatusAgendamento.AGENDADO: return 'Agendado'
-      case StatusAgendamento.CANCELADO: return 'Cancelado'
-      case StatusAgendamento.ATENDIDO: return 'Atendido'
-      case StatusAgendamento.FALTOU: return 'Faltou'
-      default: return 'Agendado'
-    }
-  }
+  const getStatusColor = (status: StatusAgendamento) =>
+    STATUS_DIALOG_COLOR[status] ?? 'bg-gray-100 text-gray-800 border-gray-300'
+
+  const getStatusText = (status: StatusAgendamento) =>
+    STATUS_AGENDAMENTO_LABELS[status] ?? 'Agendado'
 
   const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('pt-BR', {

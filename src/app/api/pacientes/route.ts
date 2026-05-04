@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isValidUuid(v: unknown): v is string {
+  return typeof v === 'string' && UUID_RE.test(v)
+}
+
 // API para buscar pacientes da clínica do usuário logado
 export async function GET(request: NextRequest) {
   try {
@@ -303,7 +308,7 @@ export async function POST(request: NextRequest) {
         responsavel_financeiro: guardianName,
         contato_emergencia: guardianPhone,
         plano_saude: healthInsurance === "particular" ? null : healthInsurance,
-        convenioId: convenioId || null,
+        convenioId: isValidUuid(convenioId) ? convenioId : null,
         matricula: healthInsuranceNumber,
         profissionalId: profissionalId || null,
         ativo: true,
@@ -482,7 +487,7 @@ export async function PUT(request: NextRequest) {
         responsavel_financeiro: guardianName,
         contato_emergencia: guardianPhone,
         plano_saude: healthInsurance === "particular" ? null : healthInsurance,
-        convenioId: convenioId || null,
+        convenioId: isValidUuid(convenioId) ? convenioId : null,
         matricula: healthInsuranceNumber,
         profissionalId: profissionalId || null,
       },

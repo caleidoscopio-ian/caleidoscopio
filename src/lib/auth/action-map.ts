@@ -88,6 +88,12 @@ export const ACTION_MAP: Record<string, ResourceAction> = {
   create_convenios:         { resource: 'convenios',     action: 'CREATE' },
   edit_convenios:           { resource: 'convenios',     action: 'UPDATE' },
   delete_convenios:         { resource: 'convenios',     action: 'DELETE' },
+
+  // Procedimentos e Pacotes
+  view_procedimentos:       { resource: 'procedimentos', action: 'VIEW'   },
+  create_procedimentos:     { resource: 'procedimentos', action: 'CREATE' },
+  edit_procedimentos:       { resource: 'procedimentos', action: 'UPDATE' },
+  delete_procedimentos:     { resource: 'procedimentos', action: 'DELETE' },
 }
 
 /**

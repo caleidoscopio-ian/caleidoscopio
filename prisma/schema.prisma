@@ -19,6 +19,14 @@ model agendamento {
   sala            String?           // Campo antigo, manter por compatibilidade
   status          StatusAgendamento @default(AGENDADO)
   observacoes     String?
+  // Check-in / fluxo operacional
+  confirmado_em   DateTime?
+  confirmado_por  String?
+  hora_chegada    DateTime?
+  checkin_por     String?
+  hora_inicio_real DateTime?
+  hora_fim_real   DateTime?
+  motivo_falta    String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @default(now()) @updatedAt
   paciente        paciente          @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
@@ -30,20 +38,32 @@ model agendamento {
 }
 
 model Procedimento {
-  id           String        @id @default(uuid())
-  tenantId     String        // Referência ao tenant do Sistema 1 (não FK)
-  nome         String
-  descricao    String?       @db.Text
-  codigo       String?       // Código do procedimento (ex: TUSS)
-  valor        Decimal?      @db.Decimal(10, 2) // Valor do procedimento
-  duracao_padrao Int?        // Duração padrão em minutos
-  ativo        Boolean       @default(true)
-  cor          String?       // Cor para identificação visual na agenda
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now()) @updatedAt
-  agendamentos    agendamento[]
-  tabelasConvenio ConvenioTabela[]
+  id                  String        @id @default(uuid())
+  tenantId            String
+  nome                String
+  descricao           String?       @db.Text
+  codigo              String?
+  valor               Decimal?      @db.Decimal(10, 2)
+  valor_particular    Decimal?      @db.Decimal(10, 2)
+  duracao_padrao      Int?
+  tempo_minimo        Int?
+  tempo_maximo        Int?
+  especialidade       String?
+  requer_autorizacao  Boolean       @default(false)
+  observacoes         String?       @db.Text
+  cor                 String?
+  icone               String?
+  ativo               Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @default(now()) @updatedAt
 
+  agendamentos         agendamento[]
+  tabelasConvenio      ConvenioTabela[]
+  regrasRepasse        RegraRepasse[]
+  pacoteProcedimentos  PacoteProcedimento[]
+
+  @@index([tenantId])
+  @@index([tenantId, especialidade])
   @@map("procedimentos")
 }
 
@@ -336,6 +356,7 @@ model profissional {
   sessoes               sessaoAtividade[]
   sessoesCurriculum     SessaoCurriculum[]
   sessoesAvaliacao      SessaoAvaliacao[]
+  regrasRepasse         RegraRepasse[]
 
   @@unique([tenantId, cpf])
   @@map("profissionais")
@@ -660,9 +681,10 @@ enum StatusAnamnese {
 enum StatusAgendamento {
   AGENDADO
   CONFIRMADO
-  CANCELADO
+  EM_ATENDIMENTO
   ATENDIDO
   FALTOU
+  CANCELADO
 }
 
 enum StatusProgresso {
@@ -780,6 +802,25 @@ enum TipoHistoricoConvenio {
   OBSERVACAO
 }
 
+enum TipoRepasse {
+  PERCENTUAL    // % sobre o valor do procedimento/convênio
+  VALOR_FIXO    // Valor fixo por atendimento
+  VALOR_HORA    // Valor por hora de atendimento
+}
+
+enum StatusPacote {
+  ATIVO
+  INATIVO
+  ESGOTADO
+}
+
+enum TipoPacote {
+  SESSOES_ILIMITADAS
+  COMBO_MISTO
+  AVALIACAO_COMPLETA
+  OUTROS
+}
+
 model Convenio {
   id                    String             @id @default(uuid())
   tenantId              String             // Referência ao tenant do Sistema 1 (não FK)
@@ -834,6 +875,8 @@ model Convenio {
   anexos                ConvenioAnexo[]
   historicos            ConvenioHistorico[]
   pacientes             paciente[]
+  regrasRepasse         RegraRepasse[]
+  pacotes               Pacote[]
 
   @@unique([tenantId, cnpj])
   @@index([tenantId])
@@ -918,6 +961,131 @@ model ConvenioHistorico {
   @@index([tenantId])
   @@index([convenioId, createdAt])
   @@map("convenio_historicos")
+}
+
+// ========================================
+// REGRAS DE REPASSE
+// ========================================
+
+model RegraRepasse {
+  id               String                  @id @default(uuid())
+  tenantId         String
+  profissionalId   String
+  convenioId       String?                 // null = aplica a todos os convênios
+  procedimentoId   String?                 // null = aplica a todos os procedimentos
+
+  tipo             TipoRepasse
+  valor            Decimal                 @db.Decimal(10, 2)
+  descricao        String?
+
+  vigencia_inicio  DateTime                @default(now())
+  vigencia_fim     DateTime?               // null = sem data fim
+
+  prioridade       Int                     @default(0)    // maior = prevalece em conflito
+  ativo            Boolean                 @default(true)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @default(now()) @updatedAt
+
+  profissional     profissional            @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  convenio         Convenio?               @relation(fields: [convenioId], references: [id], onDelete: SetNull)
+  procedimento     Procedimento?           @relation(fields: [procedimentoId], references: [id], onDelete: SetNull)
+  historico        RegraRepasseHistorico[]
+
+  @@index([tenantId])
+  @@index([profissionalId, ativo])
+  @@map("regras_repasse")
+}
+
+model RegraRepasseHistorico {
+  id               String        @id @default(uuid())
+  regraRepasseId   String
+  tenantId         String
+
+  tipo_alteracao   String        // CRIACAO, ALTERACAO, DESATIVACAO, REATIVACAO
+  descricao        String
+  dados_anteriores Json?
+  dados_novos      Json?
+  usuario_nome     String
+  usuario_id       String
+
+  createdAt        DateTime      @default(now())
+
+  regraRepasse     RegraRepasse  @relation(fields: [regraRepasseId], references: [id], onDelete: Cascade)
+
+  @@index([regraRepasseId])
+  @@map("regras_repasse_historico")
+}
+
+// ========================================
+// MÓDULO DE PACOTES DE ATENDIMENTO
+// ========================================
+
+model Pacote {
+  id               String       @id @default(uuid())
+  tenantId         String
+
+  nome             String
+  descricao        String?      @db.Text
+  tipo             TipoPacote
+  status           StatusPacote @default(ATIVO)
+
+  valor_total      Decimal      @db.Decimal(10, 2)
+  valor_particular Decimal?     @db.Decimal(10, 2)
+  valor_original   Decimal?     @db.Decimal(10, 2)
+
+  total_sessoes    Int?
+  validade_dias    Int?
+  cor              String?
+  icone            String?
+
+  convenioId       String?
+  convenio         Convenio?    @relation(fields: [convenioId], references: [id], onDelete: SetNull)
+
+  ativo            Boolean      @default(true)
+  observacoes      String?      @db.Text
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
+
+  procedimentos    PacoteProcedimento[]
+  historicos       PacoteHistorico[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("pacotes")
+}
+
+model PacoteProcedimento {
+  id             String       @id @default(uuid())
+  pacoteId       String
+  procedimentoId String
+  quantidade     Int          @default(1)
+  observacoes    String?
+
+  pacote         Pacote       @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
+  procedimento   Procedimento @relation(fields: [procedimentoId], references: [id], onDelete: Restrict)
+
+  @@unique([pacoteId, procedimentoId])
+  @@map("pacote_procedimentos")
+}
+
+model PacoteHistorico {
+  id               String   @id @default(uuid())
+  pacoteId         String
+  tenantId         String
+
+  tipo_alteracao   String
+  descricao        String
+  dados_anteriores Json?
+  dados_novos      Json?
+  usuario_nome     String
+  usuario_id       String
+
+  createdAt        DateTime @default(now())
+
+  pacote           Pacote   @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
+
+  @@index([pacoteId])
+  @@map("pacotes_historico")
 }
 
 // ========================================

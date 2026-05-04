@@ -3,6 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
 import { EditarTerapeutaForm } from "@/components/forms/editar-terapeuta-form";
@@ -30,6 +31,7 @@ import {
   Stethoscope,
   GraduationCap,
   UserCheck,
+  ExternalLink,
 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -398,7 +400,12 @@ function TerapeutasPageContent() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          <TerapeutaDetailsDialog professional={professional} />
+                          <Button size="sm" variant="outline" asChild>
+                            <Link href={`/terapeutas/${professional.id}`}>
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              Detalhes
+                            </Link>
+                          </Button>
                           <EditarTerapeutaForm
                             professional={professional}
                             onSuccess={fetchProfessionals}
@@ -407,10 +414,6 @@ function TerapeutasPageContent() {
                             professional={professional}
                             onSuccess={fetchProfessionals}
                           />
-                          <Button size="sm">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            Agenda
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>

@@ -12,7 +12,13 @@
       "Bash(node:*)",
       "Bash(awk '/^model prontuario/,/^}/' /e/caleidoscopio/prisma/schema.prisma)",
       "Bash(awk '/^model SessaoAvaliacao/,/^}/' /e/caleidoscopio/prisma/schema.prisma)",
-      "Bash(grep -n \"Tabs\\\\|TabsList\\\\|TabsContent\\\\|TabsTrigger\" /e/caleidoscopio/src/app/convenios/[id]/page.tsx)"
+      "Bash(grep -n \"Tabs\\\\|TabsList\\\\|TabsContent\\\\|TabsTrigger\" /e/caleidoscopio/src/app/convenios/[id]/page.tsx)",
+      "Bash(mkdir -p \"e:/caleidoscopio/src/app/api/terapeutas/[id]/regras-repasse\")",
+      "Bash(mkdir -p \"e:/caleidoscopio/src/app/terapeutas/[id]\")",
+      "Bash(mkdir -p \"e:/caleidoscopio/src/app/api/procedimentos/[id]\")",
+      "Bash(mkdir -p \"e:/caleidoscopio/src/app/api/pacotes/[id]/procedimentos\")",
+      "Bash(mkdir -p \"e:/caleidoscopio/src/app/procedimentos/[id]\")",
+      "Bash(mkdir -p \"e:/caleidoscopio/src/app/pacotes/[id]\")"
     ],
     "deny": [],
     "ask": []

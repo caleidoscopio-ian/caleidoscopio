@@ -1,6 +1,6 @@
 # Módulo 14 — Página de Detalhe do Profissional + Regras de Repasse
 
-## Status: PENDENTE
+## Status: CONCLUÍDO ✅
 
 ## Contexto
 

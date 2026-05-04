@@ -169,14 +169,14 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tipo de Guia Padrão</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                  <Select onValueChange={(v) => field.onChange(v === "_none" ? null : v)} value={field.value || "_none"}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Não definido</SelectItem>
+                      <SelectItem value="_none">Não definido</SelectItem>
                       {Object.entries(TIPO_GUIA_TISS_LABELS).map(([value, label]) => (
                         <SelectItem key={value} value={value}>{label}</SelectItem>
                       ))}
@@ -193,14 +193,14 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Regime de Atendimento</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                  <Select onValueChange={(v) => field.onChange(v === "_none" ? null : v)} value={field.value || "_none"}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Não definido</SelectItem>
+                      <SelectItem value="_none">Não definido</SelectItem>
                       {Object.entries(REGIME_ATENDIMENTO_LABELS).map(([value, label]) => (
                         <SelectItem key={value} value={value}>{label}</SelectItem>
                       ))}
@@ -217,14 +217,14 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Caráter de Atendimento</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                  <Select onValueChange={(v) => field.onChange(v === "_none" ? null : v)} value={field.value || "_none"}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Não definido</SelectItem>
+                      <SelectItem value="_none">Não definido</SelectItem>
                       {Object.entries(CARATER_ATENDIMENTO_LABELS).map(([value, label]) => (
                         <SelectItem key={value} value={value}>{label}</SelectItem>
                       ))}

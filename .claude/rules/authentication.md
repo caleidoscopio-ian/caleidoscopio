@@ -57,3 +57,39 @@ function ConteudoProtegido() {
 ## Rotas Públicas
 
 Definidas em `src/middleware.ts`: `/`, `/login`, `/api/health`
+
+## RBAC — Proteção de Rotas
+
+**REGRA**: Toda nova página DEVE ter `<ProtectedRoute requiredPermission={{ resource, action }}>`.
+
+O `resource` DEVE ser o slug exato definido em `prisma/seed-rbac.ts`. Nunca inventar slugs.
+
+### Slugs de recursos válidos (atualizar ao adicionar novo recurso)
+
+| Slug | Descrição |
+|------|-----------|
+| `dashboard` | Dashboard |
+| `pacientes` | Pacientes |
+| `agenda` | Agenda |
+| `prontuarios` | Prontuários |
+| `anamneses` | Anamneses |
+| `atividades` | Atividades Clínicas |
+| `curriculum` | Curriculum |
+| `avaliacoes` | Avaliações |
+| `evolucao` | Evolução/Fases |
+| `relatorios` | Relatórios |
+| `terapeutas` | Profissionais/Terapeutas |
+| `salas` | Salas |
+| `procedimentos` | Procedimentos |
+| `usuarios` | Usuários |
+| `convenios` | Convênios |
+| `permissoes` | Permissões RBAC |
+
+### API routes — hasPermission
+
+Usar sempre as action-keys de `src/lib/auth/action-map.ts`:
+```typescript
+if (!await hasPermission(user, 'view_professionals')) { ... }
+```
+
+Nunca usar `user.role === 'ADMIN'` diretamente — sempre passar pelo RBAC.

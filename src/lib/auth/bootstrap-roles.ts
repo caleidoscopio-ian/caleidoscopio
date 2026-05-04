@@ -150,8 +150,8 @@ interface UserInfo {
 
 /**
  * Garante que o usuário tenha uma UsuarioRole local E um registro profissional.
- * - Se não existir UsuarioRole → cria com base na SSO role
- * - Se existir mas com role diferente da SSO → corrige (SSO é fonte da verdade)
+ * - Se não existir UsuarioRole → cria com base na SSO role (primeiro login)
+ * - Se existir → mantém a role atribuída (manual tem prioridade sobre SSO)
  * - Se a role não tiver permissões → re-popula via ensureTenantRoles
  * - Se não existir profissional → cria automaticamente
  * Chamado em TODO login — idempotente e auto-corretivo.
@@ -214,31 +214,9 @@ export async function ensureDefaultRole(
 
     console.log(`[RBAC Bootstrap] UsuarioRole CRIADA: user=${userId}, role=${localRoleName}`)
 
-  } else if (existing.role.nome !== localRoleName) {
-    // Role existente diverge da SSO — SSO é fonte da verdade, corrigir
-    const previousRoleId = existing.roleId
-
-    await prisma.usuarioRole.update({
-      where: { usuarioId_tenantId: { usuarioId: userId, tenantId } },
-      data: { roleId: targetRole.id },
-    })
-
-    await prisma.usuarioRoleHistorico.create({
-      data: {
-        usuarioId: userId,
-        tenantId,
-        roleAnteriorId: previousRoleId,
-        roleNovoId: targetRole.id,
-        acao: 'ALTERACAO',
-        alterado_por: 'system',
-        justificativa: `Correção automática: SSO role "${ssoRole}" divergia da role local "${existing.role.nome}"`,
-      },
-    })
-
-    console.log(`[RBAC Bootstrap] UsuarioRole CORRIGIDA: user=${userId}, "${existing.role.nome}" → "${localRoleName}"`)
-
   } else {
-    console.log(`[RBAC Bootstrap] UsuarioRole OK: user=${userId}, role=${existing.role.nome}`)
+    // Já tem role atribuída — respeitar a atribuição manual, não sobrescrever
+    console.log(`[RBAC Bootstrap] UsuarioRole OK (mantida): user=${userId}, role=${existing.role.nome}`)
   }
 
   // Garantir que exista um profissional vinculado a este usuário no tenant

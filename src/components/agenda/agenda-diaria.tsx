@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Clock, Plus } from "lucide-react";
-import { Agendamento, StatusAgendamento } from "@/types/agendamento";
+import { Agendamento, StatusAgendamento, STATUS_AGENDAMENTO_LABELS } from "@/types/agendamento";
 import { cn } from "@/lib/utils";
 
 interface AgendaDiariaProps {
@@ -102,56 +102,32 @@ export function AgendaDiaria({
     );
   };
 
-  const getStatusColor = (status: StatusAgendamento) => {
-    switch (status) {
-      case StatusAgendamento.CONFIRMADO:
-        return "bg-green-50 border-green-300 hover:bg-green-100";
-      case StatusAgendamento.AGENDADO:
-        return "bg-blue-50 border-blue-300 hover:bg-blue-100";
-      case StatusAgendamento.CANCELADO:
-        return "bg-red-50 border-red-300 hover:bg-red-100";
-      case StatusAgendamento.ATENDIDO:
-        return "bg-purple-50 border-purple-300 hover:bg-purple-100";
-      case StatusAgendamento.FALTOU:
-        return "bg-gray-50 border-gray-300 hover:bg-gray-100";
-      default:
-        return "bg-gray-50 border-gray-300 hover:bg-gray-100";
-    }
+  const STATUS_CARD_BG: Record<StatusAgendamento, string> = {
+    [StatusAgendamento.AGENDADO]:       "bg-blue-50 border-blue-300 hover:bg-blue-100",
+    [StatusAgendamento.CONFIRMADO]:     "bg-green-50 border-green-300 hover:bg-green-100",
+    [StatusAgendamento.EM_ATENDIMENTO]: "bg-amber-50 border-amber-300 hover:bg-amber-100",
+    [StatusAgendamento.ATENDIDO]:       "bg-purple-50 border-purple-300 hover:bg-purple-100",
+    [StatusAgendamento.FALTOU]:         "bg-gray-50 border-gray-300 hover:bg-gray-100",
+    [StatusAgendamento.CANCELADO]:      "bg-red-50 border-red-300 hover:bg-red-100",
   };
 
-  const getStatusBadgeColor = (status: StatusAgendamento) => {
-    switch (status) {
-      case StatusAgendamento.CONFIRMADO:
-        return "bg-green-100 text-green-800";
-      case StatusAgendamento.AGENDADO:
-        return "bg-blue-100 text-blue-800";
-      case StatusAgendamento.CANCELADO:
-        return "bg-red-100 text-red-800";
-      case StatusAgendamento.ATENDIDO:
-        return "bg-purple-100 text-purple-800";
-      case StatusAgendamento.FALTOU:
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  const STATUS_BADGE_COLOR: Record<StatusAgendamento, string> = {
+    [StatusAgendamento.AGENDADO]:       "bg-blue-100 text-blue-800",
+    [StatusAgendamento.CONFIRMADO]:     "bg-green-100 text-green-800",
+    [StatusAgendamento.EM_ATENDIMENTO]: "bg-amber-100 text-amber-800",
+    [StatusAgendamento.ATENDIDO]:       "bg-purple-100 text-purple-800",
+    [StatusAgendamento.FALTOU]:         "bg-gray-100 text-gray-800",
+    [StatusAgendamento.CANCELADO]:      "bg-red-100 text-red-800",
   };
 
-  const getStatusText = (status: StatusAgendamento) => {
-    switch (status) {
-      case StatusAgendamento.CONFIRMADO:
-        return "Confirmado";
-      case StatusAgendamento.AGENDADO:
-        return "Agendado";
-      case StatusAgendamento.CANCELADO:
-        return "Cancelado";
-      case StatusAgendamento.ATENDIDO:
-        return "Atendido";
-      case StatusAgendamento.FALTOU:
-        return "Faltou";
-      default:
-        return "Agendado";
-    }
-  };
+  const getStatusColor = (status: StatusAgendamento) =>
+    STATUS_CARD_BG[status] ?? "bg-gray-50 border-gray-300 hover:bg-gray-100";
+
+  const getStatusBadgeColor = (status: StatusAgendamento) =>
+    STATUS_BADGE_COLOR[status] ?? "bg-gray-100 text-gray-800";
+
+  const getStatusText = (status: StatusAgendamento) =>
+    STATUS_AGENDAMENTO_LABELS[status] ?? "Agendado";
 
   // Profissionais a exibir
   const profissionaisExibir = showMultipleProfessionals

@@ -3,9 +3,28 @@
 export enum StatusAgendamento {
   AGENDADO = 'AGENDADO',
   CONFIRMADO = 'CONFIRMADO',
-  CANCELADO = 'CANCELADO',
+  EM_ATENDIMENTO = 'EM_ATENDIMENTO',
   ATENDIDO = 'ATENDIDO',
-  FALTOU = 'FALTOU'
+  FALTOU = 'FALTOU',
+  CANCELADO = 'CANCELADO',
+}
+
+export const STATUS_AGENDAMENTO_LABELS: Record<StatusAgendamento, string> = {
+  [StatusAgendamento.AGENDADO]:       'Agendado',
+  [StatusAgendamento.CONFIRMADO]:     'Confirmado',
+  [StatusAgendamento.EM_ATENDIMENTO]: 'Em Atendimento',
+  [StatusAgendamento.ATENDIDO]:       'Finalizado',
+  [StatusAgendamento.FALTOU]:         'Faltou',
+  [StatusAgendamento.CANCELADO]:      'Cancelado',
+}
+
+export const STATUS_AGENDAMENTO_BADGE: Record<StatusAgendamento, string> = {
+  [StatusAgendamento.AGENDADO]:       'bg-blue-50 border-blue-300 text-blue-800',
+  [StatusAgendamento.CONFIRMADO]:     'bg-green-50 border-green-300 text-green-800',
+  [StatusAgendamento.EM_ATENDIMENTO]: 'bg-amber-50 border-amber-300 text-amber-800',
+  [StatusAgendamento.ATENDIDO]:       'bg-purple-50 border-purple-300 text-purple-800',
+  [StatusAgendamento.FALTOU]:         'bg-gray-50 border-gray-300 text-gray-800',
+  [StatusAgendamento.CANCELADO]:      'bg-red-50 border-red-300 text-red-800',
 }
 
 export interface Agendamento {
@@ -20,6 +39,14 @@ export interface Agendamento {
   procedimentoId?: string | null
   status: StatusAgendamento
   observacoes?: string | null
+  // Check-in / fluxo operacional
+  confirmado_em?: string | null
+  confirmado_por?: string | null
+  hora_chegada?: string | null
+  checkin_por?: string | null
+  hora_inicio_real?: string | null
+  hora_fim_real?: string | null
+  motivo_falta?: string | null
   createdAt: Date | string
   updatedAt: Date | string
 
