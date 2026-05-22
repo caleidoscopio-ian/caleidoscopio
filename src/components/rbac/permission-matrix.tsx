@@ -29,6 +29,7 @@ const RECURSOS = [
   { slug: 'evolucao', nome: 'Evolução' },
   { slug: 'relatorios', nome: 'Relatórios' },
   { slug: 'terapeutas', nome: 'Profissionais / Terapeutas' },
+  { slug: 'filiais', nome: 'Filiais' },
   { slug: 'salas', nome: 'Salas' },
   { slug: 'convenios', nome: 'Convênios' },
   { slug: 'procedimentos', nome: 'Procedimentos' },

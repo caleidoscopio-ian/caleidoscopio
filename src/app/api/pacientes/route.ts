@@ -58,15 +58,20 @@ export async function GET(request: NextRequest) {
       `🔍 Buscando pacientes para clínica: ${user.tenant.name} (${user.tenant.id})`
     );
 
+    const { searchParams } = new URL(request.url)
+    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
+    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
+
     // Construir where clause baseado na role do usuário
     const where: any = {
       tenantId: user.tenant.id, // 🔒 CRÍTICO: Filtrar por tenant
       ativo: true,
+      ...(filialFiltro ? { filialId: filialFiltro } : {}),
     };
 
     // Se o usuário é USER (terapeuta), filtrar apenas seus pacientes
-    const adminRoles = ["ADMIN", "SUPER_ADMIN"];
-    if (!adminRoles.includes(user.role)) {
+    if (!isAdmin) {
       // Buscar o profissional vinculado ao usuário
       const profissionalDoUsuario = await prisma.profissional.findFirst({
         where: {
@@ -255,7 +260,13 @@ export async function POST(request: NextRequest) {
       healthInsuranceNumber,
       convenioId,
       profissionalId,
+      filialId,
     } = body;
+
+    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
+    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    // Admin usa filialId enviado pelo form; não-admin usa a filial do seu perfil
+    const filialIdToSave = isAdmin ? (filialId || null) : (user.filialId ?? null)
 
     console.log("🔑 profissionalId extraído do body:", profissionalId);
 
@@ -311,6 +322,7 @@ export async function POST(request: NextRequest) {
         convenioId: isValidUuid(convenioId) ? convenioId : null,
         matricula: healthInsuranceNumber,
         profissionalId: profissionalId || null,
+        filialId: filialIdToSave,
         ativo: true,
       },
     });
@@ -423,6 +435,7 @@ export async function PUT(request: NextRequest) {
       healthInsuranceNumber,
       convenioId,
       profissionalId,
+      filialId: filialIdBody,
     } = body;
 
     // Validações básicas
@@ -490,6 +503,12 @@ export async function PUT(request: NextRequest) {
         convenioId: isValidUuid(convenioId) ? convenioId : null,
         matricula: healthInsuranceNumber,
         profissionalId: profissionalId || null,
+        // Atualiza filialId apenas se enviado explicitamente
+        ...(filialIdBody !== undefined ? { filialId: filialIdBody || null } : {}),
+      },
+      include: {
+        convenio: { select: { id: true, razao_social: true, nome_fantasia: true } },
+        profissional: { select: { id: true, nome: true, especialidade: true } },
       },
     });
 
@@ -509,7 +528,13 @@ export async function PUT(request: NextRequest) {
       guardianName: updatedPatient.responsavel_financeiro,
       guardianPhone: updatedPatient.contato_emergencia,
       healthInsurance: updatedPatient.plano_saude,
+      convenioId: updatedPatient.convenioId ?? null,
+      convenio: updatedPatient.convenio ?? null,
       healthInsuranceNumber: updatedPatient.matricula,
+      profissionalId: updatedPatient.profissionalId ?? null,
+      profissional: updatedPatient.profissional
+        ? { id: updatedPatient.profissional.id, nome: updatedPatient.profissional.nome, especialidade: updatedPatient.profissional.especialidade }
+        : null,
       createdAt: updatedPatient.createdAt.toISOString(),
       updatedAt: updatedPatient.updatedAt.toISOString(),
     };

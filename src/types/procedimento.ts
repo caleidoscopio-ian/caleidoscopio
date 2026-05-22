@@ -36,6 +36,7 @@ export interface Procedimento {
   observacoes: string | null
   cor: string | null
   icone: string | null
+  filialId: string | null
   ativo: boolean
   createdAt: string
   updatedAt: string
@@ -63,6 +64,7 @@ export const procedimentoSchema = z.object({
   observacoes: z.string().optional().nullable(),
   cor: z.string().optional().nullable(),
   icone: z.string().optional().nullable(),
+  filialId: z.string().optional().nullable(),
 })
 
 export type ProcedimentoFormData = z.infer<typeof procedimentoSchema>

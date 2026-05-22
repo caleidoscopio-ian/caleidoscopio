@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
+import { useFilial } from "@/hooks/useFilial";
 
 // Schema de validação baseado no modelo Profissional do banco
 const terapeutaSchema = z.object({
@@ -70,6 +71,7 @@ interface NovoTerapeutaFormProps {
 
 export function NovoTerapeutaForm({ onSuccess }: NovoTerapeutaFormProps) {
   const { user } = useAuth();
+  const { filialAtiva } = useFilial();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -150,6 +152,7 @@ export function NovoTerapeutaForm({ onSuccess }: NovoTerapeutaFormProps) {
         specialty: data.especialidade,
         professionalRegistration: data.registro_profissional,
         roomAccess: data.salas_acesso || [],
+        filialId: filialAtiva?.id ?? null,
       };
 
       // Preparar headers com dados do usuário

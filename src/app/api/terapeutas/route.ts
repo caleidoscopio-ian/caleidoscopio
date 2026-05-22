@@ -45,6 +45,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const adminRoles = ['ADMIN', 'SUPER_ADMIN'];
+    const isAdmin = adminRoles.includes(user.role);
+    const filialIdParam = searchParams.get('filialId');
+    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam || null);
+
     console.log(`🔍 Buscando terapeutas para clínica: ${user.tenant.name} (${user.tenant.id})`);
 
     // Buscar profissionais APENAS da clínica do usuário (isolamento multi-tenant)
@@ -52,6 +58,7 @@ export async function GET(request: NextRequest) {
       where: {
         tenantId: user.tenant.id, // 🔒 CRÍTICO: Filtrar por tenant
         ativo: true,
+        ...(filialFiltro ? { filiais: { some: { filialId: filialFiltro } } } : {}),
       },
       select: {
         id: true,
@@ -172,6 +179,7 @@ export async function POST(request: NextRequest) {
       specialty,
       professionalRegistration,
       roomAccess,
+      filialId,
     } = body;
 
     // Validações básicas
@@ -236,6 +244,17 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(`✅ Terapeuta "${name}" criado com sucesso para clínica "${user.tenant.name}"`);
+
+    // Vincular à filial se informada
+    if (filialId) {
+      await prisma.profissionalFilial.create({
+        data: {
+          profissionalId: newProfessional.id,
+          filialId,
+          principal: true,
+        },
+      });
+    }
 
     // Converter para formato do frontend
     const professionalFormatted = {

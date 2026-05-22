@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Users, Search, Filter, Calendar, Clock, Loader2, FileText } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useFilial } from "@/hooks/useFilial";
 
 interface Patient {
   id: string;
@@ -37,12 +38,14 @@ interface Patient {
   guardianPhone?: string;
   healthInsurance?: string;
   healthInsuranceNumber?: string;
-  profissionalId?: string;
+  convenioId?: string | null;
+  convenio?: { id: string; razao_social: string; nome_fantasia: string | null } | null;
+  profissionalId?: string | null;
   profissional?: {
     id: string;
     nome: string;
     especialidade: string;
-  };
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,6 +60,7 @@ interface PatientsResponse {
 function PacientesPageContent() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const { filialAtiva } = useFilial();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,7 +90,10 @@ function PacientesPageContent() {
       // Preparar headers com dados do usuário
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch("/api/pacientes", {
+      const params = new URLSearchParams();
+      if (filialAtiva?.id) params.set("filialId", filialAtiva.id);
+
+      const response = await fetch(`/api/pacientes?${params}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -123,7 +130,7 @@ function PacientesPageContent() {
     if (isAuthenticated && user) {
       fetchPatients();
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, filialAtiva?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filtrar pacientes baseado no termo de busca
   const filteredPatients = patients.filter(
@@ -384,18 +391,27 @@ function PacientesPageContent() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {patient.healthInsurance && (
-                            <div>{patient.healthInsurance}</div>
+                          {patient.convenio ? (
+                            <>
+                              <div>{patient.convenio.nome_fantasia || patient.convenio.razao_social}</div>
+                              {patient.healthInsuranceNumber && (
+                                <div className="text-muted-foreground font-mono text-xs">
+                                  {patient.healthInsuranceNumber}
+                                </div>
+                              )}
+                            </>
+                          ) : patient.healthInsurance ? (
+                            <>
+                              <div>{patient.healthInsurance}</div>
+                              {patient.healthInsuranceNumber && (
+                                <div className="text-muted-foreground font-mono text-xs">
+                                  {patient.healthInsuranceNumber}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <Badge variant="outline">Particular</Badge>
                           )}
-                          {patient.healthInsuranceNumber && (
-                            <div className="text-muted-foreground font-mono text-xs">
-                              {patient.healthInsuranceNumber}
-                            </div>
-                          )}
-                          {!patient.healthInsurance &&
-                            !patient.healthInsuranceNumber && (
-                              <Badge variant="outline">Particular</Badge>
-                            )}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">

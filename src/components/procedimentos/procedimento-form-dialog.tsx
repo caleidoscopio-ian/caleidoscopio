@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/useAuth";
+import { useFilial } from "@/hooks/useFilial";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +33,7 @@ interface ProcedimentoFormDialogProps {
 
 export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuccess }: ProcedimentoFormDialogProps) {
   const { user } = useAuth();
+  const { filiais } = useFilial();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const isEditing = !!procedimento;
@@ -77,6 +79,7 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
         observacoes: procedimento.observacoes || "",
         cor: procedimento.cor || null,
         icone: procedimento.icone || null,
+        filialId: procedimento.filialId ?? null,
       });
     } else {
       form.reset({
@@ -87,7 +90,7 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
         tempo_minimo: "" as unknown as number,
         tempo_maximo: "" as unknown as number,
         especialidade: null, requer_autorizacao: false,
-        observacoes: "", cor: null, icone: null,
+        observacoes: "", cor: null, icone: null, filialId: null,
       });
     }
   }, [procedimento, open, form]);
@@ -260,6 +263,36 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
                 </FormItem>
               )} />
             </div>
+
+            {filiais.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Filial</p>
+                <FormField control={form.control} name="filialId" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Restringir à filial</FormLabel>
+                    <Select onValueChange={(v) => field.onChange(v === "_global" ? null : v)} value={field.value ?? "_global"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todas as filiais (global)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="_global">Todas as filiais (global)</SelectItem>
+                        {filiais.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            <span className="flex items-center gap-2">
+                              <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: f.cor ?? '#6b7280' }} />
+                              {f.nome}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>

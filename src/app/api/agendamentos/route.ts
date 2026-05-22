@@ -59,6 +59,12 @@ export async function GET(request: NextRequest) {
     const data_fim = searchParams.get("data_fim");
     const sala = searchParams.get("sala");
 
+    // 🔒 CRÍTICO: Se não for admin, terapeuta só vê seus próprios agendamentos
+    const adminRoles = ["ADMIN", "SUPER_ADMIN"];
+    const isAdmin = adminRoles.includes(user.role);
+    const filialIdParam = searchParams.get("filialId");
+    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam || null);
+
     // Construir query com filtros e isolamento multi-tenant
     const where: any = {
       // 🔒 CRÍTICO: Filtrar por tenant através do paciente
@@ -71,11 +77,11 @@ export async function GET(request: NextRequest) {
         tenantId: user.tenant.id,
         ativo: true,
       },
+      ...(filialFiltro ? { salaRelacao: { filialId: filialFiltro } } : {}),
     };
 
-    // 🔒 CRÍTICO: Se não for admin, terapeuta só vê seus próprios agendamentos
-    const adminRoles = ["ADMIN", "SUPER_ADMIN"];
-    if (!adminRoles.includes(user.role)) {
+
+    if (!isAdmin) {
       // Buscar profissional vinculado ao usuário
       const profissionalDoUsuario = await prisma.profissional.findFirst({
         where: {

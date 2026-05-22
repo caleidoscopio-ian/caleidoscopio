@@ -94,6 +94,12 @@ export const ACTION_MAP: Record<string, ResourceAction> = {
   create_procedimentos:     { resource: 'procedimentos', action: 'CREATE' },
   edit_procedimentos:       { resource: 'procedimentos', action: 'UPDATE' },
   delete_procedimentos:     { resource: 'procedimentos', action: 'DELETE' },
+
+  // Filiais (multi-unidade)
+  view_filiais:             { resource: 'filiais',       action: 'VIEW'   },
+  create_filiais:           { resource: 'filiais',       action: 'CREATE' },
+  edit_filiais:             { resource: 'filiais',       action: 'UPDATE' },
+  delete_filiais:           { resource: 'filiais',       action: 'DELETE' },
 }
 
 /**

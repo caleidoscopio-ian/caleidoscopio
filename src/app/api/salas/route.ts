@@ -36,11 +36,19 @@ export async function GET(request: NextRequest) {
       `🔍 Buscando salas para clínica: ${user.tenant.name} (${user.tenant.id})`
     );
 
+    const { searchParams } = new URL(request.url)
+    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
+    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    // Não-admin fica restrito à própria filial; admin pode filtrar via query param
+    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
+
     // Buscar salas da clínica
     const salas = await prisma.sala.findMany({
       where: {
         tenantId: user.tenant.id,
+        ...(filialFiltro ? { filialId: filialFiltro } : {}),
       },
+      include: { filial: { select: { id: true, nome: true, cor: true } } },
       orderBy: {
         nome: "asc",
       },
@@ -116,7 +124,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { nome, descricao, capacidade, recursos, cor } = body;
+    const { nome, descricao, capacidade, recursos, cor, filialId } = body;
 
     // Validações básicas
     if (!nome) {
@@ -137,6 +145,7 @@ export async function POST(request: NextRequest) {
         capacidade: capacidade ? parseInt(capacidade) : null,
         recursos: recursos || [],
         cor: cor || null,
+        filialId: filialId || null,
         ativo: true,
       },
     });
@@ -208,7 +217,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, nome, descricao, capacidade, recursos, cor, ativo } = body;
+    const { id, nome, descricao, capacidade, recursos, cor, ativo, filialId } = body;
 
     // Validações básicas
     if (!id || !nome) {
@@ -247,6 +256,7 @@ export async function PUT(request: NextRequest) {
         capacidade: capacidade ? parseInt(capacidade) : null,
         recursos: recursos || [],
         cor: cor || null,
+        filialId: filialId || null,
         ativo: ativo !== undefined ? ativo : true,
       },
     });

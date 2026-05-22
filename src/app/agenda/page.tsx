@@ -28,6 +28,7 @@ import {
   ChevronRight,
   User,
   Users,
+  Landmark,
 } from "lucide-react";
 import { AgendaDiaria } from "@/components/agenda/agenda-diaria";
 import { AgendaSemanal } from "@/components/agenda/agenda-semanal";
@@ -35,6 +36,7 @@ import { AgendamentoDetailsDialog } from "@/components/agenda/agendamento-detail
 import { NovoAgendamentoForm } from "@/components/forms/novo-agendamento-form";
 import { Agendamento, StatusAgendamento } from "@/types/agendamento";
 import { useAuth } from "@/hooks/useAuth";
+import { useFilial } from "@/hooks/useFilial";
 import {
   format,
   addDays,
@@ -52,7 +54,12 @@ type ViewMode = "day" | "week";
 
 function AgendaPageContent() {
   const { user, isAdmin, tenant } = useAuth();
+  const { filiais } = useFilial();
   const { toast } = useToast();
+
+  // Filtro local de filial — independente do seletor global do sidebar
+  // Admin: pode trocar pelo dropdown local; não-admin: usa filialId do token (server-side)
+  const [selectedFilialId, setSelectedFilialId] = useState<string | null>(null);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
@@ -93,12 +100,20 @@ function AgendaPageContent() {
     { label: "Agenda" },
   ];
 
+  // Ao mudar filial, resetar filtro de profissional
+  const handleFilialChange = (filialId: string) => {
+    setSelectedFilialId(filialId === "_todas" ? null : filialId);
+    setSelectedProfissional("all");
+  };
+
+  const filialSelecionada = filiais.find(f => f.id === selectedFilialId) ?? null;
+
   // Carregar dados iniciais (só quando usuário estiver autenticado)
   useEffect(() => {
     if (user && isAdmin !== undefined) {
       loadData();
     }
-  }, [user, isAdmin, selectedDate, viewMode, selectedProfissional]);
+  }, [user, isAdmin, selectedDate, viewMode, selectedProfissional, selectedFilialId]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -148,6 +163,10 @@ function AgendaPageContent() {
 
       if (selectedProfissional !== "all") {
         params.append("profissionalId", selectedProfissional);
+      }
+
+      if (selectedFilialId) {
+        params.append("filialId", selectedFilialId);
       }
 
       // Preparar headers com dados do usuário (mesmo padrão da página de pacientes)
@@ -215,7 +234,10 @@ function AgendaPageContent() {
       // Preparar headers com dados do usuário
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch("/api/terapeutas", {
+      const terapeutasParams = new URLSearchParams();
+      if (selectedFilialId) terapeutasParams.set("filialId", selectedFilialId);
+
+      const response = await fetch(`/api/terapeutas?${terapeutasParams}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -252,7 +274,10 @@ function AgendaPageContent() {
       // Preparar headers com dados do usuário
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch("/api/salas", {
+      const salasParams = new URLSearchParams();
+      if (selectedFilialId) salasParams.set("filialId", selectedFilialId);
+
+      const response = await fetch(`/api/salas?${salasParams}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -728,7 +753,9 @@ function AgendaPageContent() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Agenda</h1>
             <p className="text-muted-foreground">
-              Gerencie consultas e agendamentos
+              {filialSelecionada
+                ? `Filial: ${filialSelecionada.nome}`
+                : "Todos os agendamentos da clínica"}
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -838,6 +865,52 @@ function AgendaPageContent() {
                 </Button>
               </div>
               <div className="flex items-center space-x-2">
+                {/* Filtro de filial — visível apenas para admin */}
+                {isAdmin && filiais.length > 0 && (
+                  <Select
+                    value={selectedFilialId ?? "_todas"}
+                    onValueChange={handleFilialChange}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Filial">
+                        {filialSelecionada ? (
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="inline-block w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: filialSelecionada.cor ?? "#6b7280" }}
+                            />
+                            {filialSelecionada.nome}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <Landmark className="h-4 w-4 text-muted-foreground" />
+                            Todas as filiais
+                          </span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_todas">
+                        <span className="flex items-center gap-2">
+                          <Landmark className="h-4 w-4 text-muted-foreground" />
+                          Todas as filiais
+                        </span>
+                      </SelectItem>
+                      {filiais.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="inline-block w-2 h-2 rounded-full"
+                              style={{ backgroundColor: f.cor ?? "#6b7280" }}
+                            />
+                            {f.nome}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
                 <Select
                   value={selectedProfissional}
                   onValueChange={setSelectedProfissional}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Mulish } from "next/font/google";
 import { AuthProvider } from "@/hooks/useAuth";
+import { FilialProvider } from "@/contexts/filial-context";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -23,8 +24,10 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${mulish.className} ${mulish.className} antialiased`}>
         <AuthProvider>
-          {children}
-          <Toaster />
+          <FilialProvider>
+            {children}
+            <Toaster />
+          </FilialProvider>
         </AuthProvider>
       </body>
     </html>

@@ -15,6 +15,7 @@ import { CheckInFiltersBar, todayStr, type CheckInFilters } from "@/components/c
 import { StatusAgendamento } from "@/types/agendamento";
 import { STATUS_LABELS, type AgendamentoCheckIn, type CheckInAction } from "@/types/check-in";
 import { ClipboardCheck } from "lucide-react";
+import { useFilial } from "@/hooks/useFilial";
 
 const COLUNAS: StatusAgendamento[] = [
   StatusAgendamento.AGENDADO,
@@ -32,6 +33,7 @@ const breadcrumbs = [
 export default function CheckInPage() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { filialAtiva } = useFilial();
 
   const [agendamentos, setAgendamentos] = useState<AgendamentoCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +62,7 @@ export default function CheckInPage() {
       if (filters.search) params.set("search", filters.search);
       if (filters.profissionalId) params.set("profissionalId", filters.profissionalId);
       if (filters.salaId) params.set("salaId", filters.salaId);
+      if (filialAtiva?.id) params.set("filialId", filialAtiva.id);
 
       const r = await fetch(`/api/agendamentos/check-in?${params}`, { headers: authHeaders() });
       const d = await r.json();
@@ -70,7 +73,7 @@ export default function CheckInPage() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [user, filters, authHeaders]);
+  }, [user, filters, filialAtiva, authHeaders]);
 
   // Checar se pode editar
   useEffect(() => {

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useFilial } from "@/hooks/useFilial";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
@@ -70,6 +71,7 @@ const pacienteSchema = z.object({
   contato_emergencia: z.string().optional(),
   convenioId: z.string().optional(),
   matricula: z.string().optional(),
+  profissionalId: z.string().optional(),
   cor_agenda: z.string().optional(),
 });
 
@@ -79,6 +81,12 @@ interface ConvenioOption {
   id: string;
   razao_social: string;
   nome_fantasia: string | null;
+}
+
+interface ProfissionalOption {
+  id: string;
+  name: string;
+  especialidade: string;
 }
 
 interface Patient {
@@ -96,6 +104,8 @@ interface Patient {
   healthInsurance?: string;
   convenioId?: string | null;
   healthInsuranceNumber?: string;
+  profissionalId?: string | null;
+  profissional?: { id: string; nome: string; especialidade: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -109,10 +119,12 @@ export function EditarPacienteForm({
   patient,
   onSuccess,
 }: EditarPacienteFormProps) {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const { filialAtiva } = useFilial();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [convenios, setConvenios] = useState<ConvenioOption[]>([]);
+  const [profissionais, setProfissionais] = useState<ProfissionalOption[]>([]);
 
   const form = useForm<PacienteFormData>({
     resolver: zodResolver(pacienteSchema),
@@ -129,6 +141,7 @@ export function EditarPacienteForm({
       contato_emergencia: patient.guardianPhone || "",
       convenioId: patient.convenioId || "",
       matricula: patient.healthInsuranceNumber || "",
+      profissionalId: patient.profissionalId || "",
       cor_agenda: "#4ECDC4",
     },
   });
@@ -145,24 +158,21 @@ export function EditarPacienteForm({
     { value: "#3498DB", label: "Azul Claro", color: "#3498DB" },
   ];
 
-  // Carregar convênios ativos ao abrir o dialog
+  // Carregar convênios e profissionais ao abrir o dialog
   useEffect(() => {
-    const loadConvenios = async () => {
-      if (!user) return;
-      try {
-        const response = await fetch("/api/convenios", {
-          headers: {
-            "X-User-Data": btoa(JSON.stringify(user)),
-            "X-Auth-Token": user.token,
-          },
-        });
-        const result = await response.json();
-        if (result.success) setConvenios(result.data);
-      } catch {
-        // silencioso
-      }
+    if (!open || !user) return;
+    const headers = {
+      "X-User-Data": btoa(JSON.stringify(user)),
+      "X-Auth-Token": user.token,
     };
-    if (open) loadConvenios();
+    fetch("/api/convenios", { headers })
+      .then(r => r.json())
+      .then(result => { if (result.success) setConvenios(result.data); })
+      .catch(() => {});
+    fetch("/api/terapeutas", { headers })
+      .then(r => r.json())
+      .then(result => { if (result.success) setProfissionais(result.data); })
+      .catch(() => {});
   }, [user, open]);
 
   const formatCPF = (value: string) => {
@@ -208,6 +218,8 @@ export function EditarPacienteForm({
         guardianPhone: data.contato_emergencia,
         convenioId: data.convenioId && data.convenioId !== "_particular" ? data.convenioId : undefined,
         healthInsuranceNumber: data.matricula,
+        profissionalId: data.profissionalId && data.profissionalId !== "_none" ? data.profissionalId : null,
+        filialId: filialAtiva?.id ?? null,
       };
 
       // Preparar headers com dados do usuário
@@ -571,6 +583,43 @@ export function EditarPacienteForm({
                 />
               </div>
             </div>
+
+            {/* Seção: Terapeuta */}
+            {isAdmin && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">
+                  Terapeuta Responsável
+                </h3>
+                <FormField
+                  control={form.control}
+                  name="profissionalId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Terapeuta</FormLabel>
+                      <Select
+                        onValueChange={(v) => field.onChange(v === "_none" ? "" : v)}
+                        value={field.value || "_none"}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o terapeuta" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="_none">Não atribuído</SelectItem>
+                          {profissionais.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name} {p.especialidade ? `— ${p.especialidade}` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             {/* Seção: Convênio */}
             <div className="space-y-4">

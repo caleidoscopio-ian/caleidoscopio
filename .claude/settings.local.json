@@ -18,7 +18,11 @@
       "Bash(mkdir -p \"e:/caleidoscopio/src/app/api/procedimentos/[id]\")",
       "Bash(mkdir -p \"e:/caleidoscopio/src/app/api/pacotes/[id]/procedimentos\")",
       "Bash(mkdir -p \"e:/caleidoscopio/src/app/procedimentos/[id]\")",
-      "Bash(mkdir -p \"e:/caleidoscopio/src/app/pacotes/[id]\")"
+      "Bash(mkdir -p \"e:/caleidoscopio/src/app/pacotes/[id]\")",
+      "Bash(New-Item -ItemType Directory -Force \"e:\\\\caleidoscopio\\\\src\\\\app\\\\api\\\\filiais\")",
+      "Bash(Out-Null)",
+      "Bash(New-Item -ItemType Directory -Force \"e:\\\\caleidoscopio\\\\src\\\\app\\\\api\\\\filiais\\\\[id]\")",
+      "Bash(New-Item -ItemType Directory -Force \"e:\\\\caleidoscopio\\\\src\\\\app\\\\api\\\\filiais\\\\[id]\\\\profissionais\")"
     ],
     "deny": [],
     "ask": []

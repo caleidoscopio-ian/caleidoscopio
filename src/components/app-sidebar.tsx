@@ -34,6 +34,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavUser } from "@/components/nav-user";
+import { FilialSelector } from "@/components/filial-selector";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -110,6 +111,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        {/* Seletor de filial — visível logo abaixo do nome da clínica */}
+        <div className="px-1 pb-1">
+          <FilialSelector />
+        </div>
       </SidebarHeader>
 
       <SidebarContent>

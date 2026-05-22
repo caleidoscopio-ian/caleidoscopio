@@ -7,34 +7,31 @@ import * as z from "zod";
 import { Plus, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription,
+  DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormDescription,
+  FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
+import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useFilial } from "@/hooks/useFilial";
 
 const salaSchema = z.object({
-  nome: z.string().min(1, "Nome é obrigatório"),
+  nome:      z.string().min(1, "Nome é obrigatório"),
   descricao: z.string().optional(),
   capacidade: z.string().optional(),
-  recursos: z.array(z.string()).optional(),
-  cor: z.string().optional(),
+  recursos:  z.array(z.string()).optional(),
+  cor:       z.string().optional(),
+  filialId:  z.string().optional(),
 });
 
 type SalaFormData = z.infer<typeof salaSchema>;
@@ -46,6 +43,7 @@ interface NovaSalaDialogProps {
 export function NovaSalaDialog({ onSuccess }: NovaSalaDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { filiais, filialAtiva } = useFilial();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [novoRecurso, setNovoRecurso] = useState("");
@@ -59,6 +57,7 @@ export function NovaSalaDialog({ onSuccess }: NovaSalaDialogProps) {
       capacidade: "",
       recursos: [],
       cor: "#3b82f6",
+      filialId: filialAtiva?.id ?? "",
     },
   });
 
@@ -76,50 +75,30 @@ export function NovaSalaDialog({ onSuccess }: NovaSalaDialogProps) {
   const onSubmit = async (data: SalaFormData) => {
     try {
       setLoading(true);
-
-      if (!user) {
-        throw new Error("Usuário não autenticado");
-      }
-
-      const userDataEncoded = btoa(JSON.stringify(user));
+      if (!user) throw new Error("Usuário não autenticado");
 
       const response = await fetch("/api/salas", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-User-Data": userDataEncoded,
+          "X-User-Data": btoa(JSON.stringify(user)),
           "X-Auth-Token": user.token,
         },
-        body: JSON.stringify({
-          ...data,
-          recursos,
-        }),
+        body: JSON.stringify({ ...data, recursos, filialId: data.filialId || null }),
       });
 
       const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erro ao criar sala");
 
-      if (!response.ok) {
-        throw new Error(result.error || "Erro ao criar sala");
-      }
-
-      toast({
-        title: "Sucesso!",
-        description: "Sala criada com sucesso",
-      });
-
+      toast({ title: "Sucesso!", description: "Sala criada com sucesso" });
       setOpen(false);
       form.reset();
       setRecursos([]);
-
-      if (onSuccess) {
-        onSuccess();
-      }
+      onSuccess?.();
     } catch (error) {
-      console.error("❌ Erro ao criar sala:", error);
       toast({
         title: "Erro",
-        description:
-          error instanceof Error ? error.message : "Erro ao criar sala",
+        description: error instanceof Error ? error.message : "Erro ao criar sala",
         variant: "destructive",
       });
     } finally {
@@ -130,97 +109,90 @@ export function NovaSalaDialog({ onSuccess }: NovaSalaDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Sala
-        </Button>
+        <Button><Plus className="mr-2 h-4 w-4" />Nova Sala</Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Cadastrar Nova Sala</DialogTitle>
-          <DialogDescription>
-            Preencha os dados da nova sala. Campos com * são obrigatórios.
-          </DialogDescription>
+          <DialogDescription>Preencha os dados da nova sala. Campos com * são obrigatórios.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Nome */}
-            <FormField
-              control={form.control}
-              name="nome"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome *</FormLabel>
+            {/* Filial */}
+            <FormField control={form.control} name="filialId" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Filial</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ""}>
                   <FormControl>
-                    <Input placeholder="Ex: Sala 1, Sala Sensorial..." {...field} />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a filial..." />
+                    </SelectTrigger>
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  <SelectContent>
+                    <SelectItem value="">Sem filial</SelectItem>
+                    {filiais.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-full"
+                            style={{ backgroundColor: f.cor ?? "#3b82f6" }}
+                          />
+                          {f.nome}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {/* Nome */}
+            <FormField control={form.control} name="nome" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nome *</FormLabel>
+                <FormControl><Input placeholder="Ex: Sala 1, Sala Sensorial..." {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             {/* Descrição */}
-            <FormField
-              control={form.control}
-              name="descricao"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Descrição opcional da sala..."
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormField control={form.control} name="descricao" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descrição</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Descrição opcional da sala..." className="min-h-[80px]" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             {/* Capacidade e Cor */}
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="capacidade"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Capacidade</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Número de pessoas"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Capacidade máxima de pessoas
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="cor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cor de Identificação</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-2">
-                        <Input type="color" {...field} className="w-20 h-10" />
-                        <Input value={field.value} readOnly className="flex-1" />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Cor para identificação visual
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <FormField control={form.control} name="capacidade" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Capacidade</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Número de pessoas" {...field} />
+                  </FormControl>
+                  <FormDescription>Capacidade máxima de pessoas</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="cor" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cor de Identificação</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <Input type="color" {...field} className="w-20 h-10" />
+                      <Input value={field.value} readOnly className="flex-1" />
+                    </div>
+                  </FormControl>
+                  <FormDescription>Cor para identificação visual</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )} />
             </div>
 
             {/* Recursos */}
@@ -231,64 +203,30 @@ export function NovaSalaDialog({ onSuccess }: NovaSalaDialogProps) {
                   placeholder="Ex: Projetor, Computador..."
                   value={novoRecurso}
                   onChange={(e) => setNovoRecurso(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      adicionarRecurso();
-                    }
-                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); adicionarRecurso(); } }}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={adicionarRecurso}
-                >
-                  Adicionar
-                </Button>
+                <Button type="button" variant="outline" onClick={adicionarRecurso}>Adicionar</Button>
               </div>
               {recursos.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {recursos.map((recurso) => (
                     <Badge key={recurso} variant="secondary">
                       {recurso}
-                      <button
-                        type="button"
-                        onClick={() => removerRecurso(recurso)}
-                        className="ml-2 hover:text-red-600"
-                      >
+                      <button type="button" onClick={() => removerRecurso(recurso)} className="ml-2 hover:text-red-600">
                         <X className="h-3 w-3" />
                       </button>
                     </Badge>
                   ))}
                 </div>
               )}
-              <FormDescription>
-                Adicione os recursos disponíveis na sala
-              </FormDescription>
+              <FormDescription>Adicione os recursos disponíveis na sala</FormDescription>
             </div>
 
             {/* Botões */}
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                disabled={loading}
-              >
-                Cancelar
-              </Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Cancelar</Button>
               <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Criar Sala
-                  </>
-                )}
+                {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : <><Plus className="mr-2 h-4 w-4" />Criar Sala</>}
               </Button>
             </div>
           </form>

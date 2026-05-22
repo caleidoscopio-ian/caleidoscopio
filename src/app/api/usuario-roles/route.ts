@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
         role: {
           select: { id: true, nome: true, isSystem: true },
         },
+        filial: { select: { id: true, nome: true, cor: true } },
       },
     })
 
@@ -57,6 +58,8 @@ export async function GET(request: NextRequest) {
         usuarioRoleId: roleMap.get(p.usuarioId!)?.id ?? null,
         ativo: roleMap.get(p.usuarioId!)?.ativo ?? true,
         especialidade: p.especialidade,
+        filialId: roleMap.get(p.usuarioId!)?.filialId ?? null,
+        filial: roleMap.get(p.usuarioId!)?.filial ?? null,
       }))
 
     return NextResponse.json(result)
@@ -196,6 +199,65 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(updated)
   } catch (error) {
     console.error('PUT /api/usuario-roles error:', error)
+    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  }
+}
+
+// PATCH /api/usuario-roles — Atualizar filialId de um usuário
+export async function PATCH(request: NextRequest) {
+  try {
+    const user = await getAuthenticatedUser(request)
+    if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    if (!user.tenant?.id) return NextResponse.json({ error: 'Sem tenant' }, { status: 403 })
+    if (!await hasPermission(user, 'manage_permissions')) {
+      return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { usuarioId, filialId } = body
+
+    if (!usuarioId) {
+      return NextResponse.json({ error: 'usuarioId é obrigatório' }, { status: 400 })
+    }
+
+    const tenantId = user.tenant.id
+
+    let existing = await prisma.usuarioRole.findUnique({
+      where: { usuarioId_tenantId: { usuarioId, tenantId } },
+    })
+
+    // Auto-criar UsuarioRole com perfil USER padrão se não existir
+    if (!existing) {
+      const defaultRole = await prisma.role.findFirst({
+        where: { tenantId, nome: 'USER', ativo: true },
+      })
+      if (!defaultRole) {
+        return NextResponse.json({ error: 'Perfil padrão USER não encontrado para o tenant' }, { status: 404 })
+      }
+      existing = await prisma.usuarioRole.create({
+        data: {
+          usuarioId,
+          tenantId,
+          roleId: defaultRole.id,
+          atribuido_por: user.id,
+          justificativa: 'Criado automaticamente ao atribuir filial',
+          ativo: true,
+        },
+      })
+    }
+
+    // filialId null = sem restrição de filial (admin)
+    const updated = await prisma.usuarioRole.update({
+      where: { id: existing.id },
+      data: { filialId: filialId ?? null },
+      include: { filial: { select: { id: true, nome: true, cor: true } } },
+    })
+
+    invalidatePermissionCache(usuarioId, tenantId)
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    console.error('PATCH /api/usuario-roles error:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

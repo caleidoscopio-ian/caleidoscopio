@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
     const salaId = searchParams.get('salaId')
     const search = searchParams.get('search') || ''
     const statusParam = searchParams.get('status') // ex: "AGENDADO,CONFIRMADO"
+    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
+    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
 
     // Calcular intervalo do dia — parse manual para evitar UTC vs local mismatch
     let inicioDia: Date
@@ -47,6 +50,7 @@ export async function GET(request: NextRequest) {
         data_hora: { gte: inicioDia, lte: fimDia },
         ...(profissionalId ? { profissionalId } : {}),
         ...(salaId ? { salaId } : {}),
+        ...(filialFiltro ? { salaRelacao: { filialId: filialFiltro } } : {}),
         ...(statusList?.length ? { status: { in: statusList } } : {}),
       },
       include: {

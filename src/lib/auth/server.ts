@@ -5,12 +5,14 @@ import { NextRequest } from 'next/server'
 import { managerClient } from '@/lib/manager-client'
 import { checkPermission } from '@/lib/auth/permission-service'
 import { mapLegacyAction } from '@/lib/auth/action-map'
+import { prisma } from '@/lib/prisma'
 
 interface AuthUser {
   id: string
   email: string
   name: string
   role: string
+  filialId?: string | null
   tenant: {
     id: string
     name: string
@@ -84,10 +86,14 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<AuthUs
       return null
     }
 
-    console.log('✅ Auth Server - Usuário autenticado com sucesso:')
-    console.log(`   👤 Usuário: ${userData.name} (${userData.email})`)
-    console.log(`   🏥 Clínica: ${userData.tenant?.name} (${userData.tenant?.id})`)
-    console.log(`   🔑 Role: ${userData.role}`)
+    // Buscar filialId do usuário no banco local (UsuarioRole)
+    if (userData.tenant?.id) {
+      const ur = await prisma.usuarioRole.findUnique({
+        where: { usuarioId_tenantId: { usuarioId: userData.id, tenantId: userData.tenant.id } },
+        select: { filialId: true },
+      })
+      userData.filialId = ur?.filialId ?? null
+    }
 
     return userData
 

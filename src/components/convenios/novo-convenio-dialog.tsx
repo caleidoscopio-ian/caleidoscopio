@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/useAuth";
+import { useFilial } from "@/hooks/useFilial";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +46,7 @@ interface NovoConvenioDialogProps {
 
 export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
   const { user } = useAuth();
+  const { filiais } = useFilial();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,7 @@ export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
     defaultValues: {
       status: "EM_NEGOCIACAO",
       tipo: "PLANO_SAUDE",
+      filialId: null,
       razao_social: "",
       nome_fantasia: "",
       cnpj: "",
@@ -334,6 +337,38 @@ export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
                 />
               </div>
             </div>
+
+            {/* Filial */}
+            {filiais.length > 0 && (
+              <FormField
+                control={form.control}
+                name="filialId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Filial</FormLabel>
+                    <Select onValueChange={(v) => field.onChange(v === "_global" ? null : v)} value={field.value ?? "_global"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todas as filiais (global)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="_global">Todas as filiais (global)</SelectItem>
+                        {filiais.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            <span className="flex items-center gap-2">
+                              <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: f.cor ?? '#6b7280' }} />
+                              {f.nome}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Observações */}
             <FormField

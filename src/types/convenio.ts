@@ -103,6 +103,7 @@ export interface Convenio {
   data_fim_contrato: string | null
   data_ultimo_reajuste: string | null
   observacoes: string | null
+  filialId: string | null
   ativo: boolean
   createdAt: string
   updatedAt: string
@@ -132,6 +133,14 @@ export interface ConvenioTabela {
   ativo: boolean
   createdAt: string
   updatedAt: string
+  // relação opcional — presente quando a API retorna com include
+  procedimento?: {
+    id: string
+    nome: string
+    codigo: string | null
+    valor: number | null
+    valor_particular: number | null
+  } | null
 }
 
 export interface ConvenioAnexo {
@@ -198,6 +207,9 @@ export const convenioSchema = z.object({
 
   // Observações
   observacoes: z.string().max(2000).optional().or(z.literal('')),
+
+  // Filial (null = global, visível a todas as filiais)
+  filialId: z.string().optional().nullable(),
 })
 
 export const convenioTissSchema = z.object({

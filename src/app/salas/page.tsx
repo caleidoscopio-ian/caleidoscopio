@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { NovaSalaDialog } from "@/components/salas/nova-sala-dialog";
 import { EditarSalaDialog } from "@/components/salas/editar-sala-dialog";
 import { ExcluirSalaDialog } from "@/components/salas/excluir-sala-dialog";
+import { useFilial } from "@/hooks/useFilial";
 
 interface Sala {
   id: string;
@@ -31,6 +32,8 @@ interface Sala {
   recursos: string[];
   cor?: string;
   ativo: boolean;
+  filialId?: string | null;
+  filial?: { id: string; nome: string; cor?: string | null } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,6 +41,7 @@ interface Sala {
 export default function SalasPage() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { filialAtiva } = useFilial();
   const [salas, setSalas] = useState<Sala[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,7 +64,10 @@ export default function SalasPage() {
 
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch("/api/salas", {
+      const params = new URLSearchParams();
+      if (filialAtiva?.id) params.set("filialId", filialAtiva.id);
+
+      const response = await fetch(`/api/salas?${params}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -98,7 +105,8 @@ export default function SalasPage() {
     if (isAuthenticated && user) {
       fetchSalas();
     }
-  }, [isAuthenticated, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user, filialAtiva?.id]);
 
   // Filtrar salas baseado na busca
   const filteredSalas = salas.filter((sala) => {
@@ -243,6 +251,7 @@ export default function SalasPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
+                      <TableHead>Filial</TableHead>
                       <TableHead>Descrição</TableHead>
                       <TableHead>Capacidade</TableHead>
                       <TableHead>Recursos</TableHead>
@@ -263,6 +272,16 @@ export default function SalasPage() {
                             />
                             {sala.nome}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {sala.filial ? (
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: sala.filial.cor ?? "#3b82f6" }} />
+                              <span className="text-sm">{sala.filial.nome}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="max-w-[300px]">
                           <div className="truncate text-sm text-muted-foreground">

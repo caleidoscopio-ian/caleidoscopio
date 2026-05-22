@@ -31,9 +31,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Users, Plus, CheckCircle, XCircle } from "lucide-react";
+import { Users, Plus, CheckCircle, XCircle, Landmark } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useFilial } from "@/hooks/useFilial";
 import { NovoUsuarioProfissionalForm } from "@/components/forms/novo-usuario-profissional-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Usuario {
   id: string;
@@ -49,13 +57,33 @@ interface Usuario {
   } | null;
 }
 
+interface UsuarioRoleInfo {
+  usuarioRoleId: string | null;
+  roleId: string | null;
+  roleNome: string | null;
+  filialId: string | null;
+  filial: { id: string; nome: string; cor: string | null } | null;
+}
+
+interface RoleOption {
+  id: string;
+  nome: string;
+}
+
 export default function UsuariosPage() {
   const { user } = useAuth();
   const { can, loading: permsLoading } = usePermissions();
   const { toast } = useToast();
+  const { filiais } = useFilial();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showNovoUsuarioDialog, setShowNovoUsuarioDialog] = useState(false);
+  const [roleInfoMap, setRoleInfoMap] = useState<Map<string, UsuarioRoleInfo>>(new Map());
+  const [updatingFilial, setUpdatingFilial] = useState<string | null>(null);
+  const [availableRoles, setAvailableRoles] = useState<RoleOption[]>([]);
+  const [managingUser, setManagingUser] = useState<Usuario | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+  const [pendingFilial, setPendingFilial] = useState<{ usuarioId: string; filialId: string | null; filialNome: string } | null>(null);
 
   useEffect(() => {
     if (user && !permsLoading && can("usuarios", "VIEW")) {
@@ -70,21 +98,42 @@ export default function UsuariosPage() {
       setIsLoading(true);
 
       const userDataEncoded = btoa(JSON.stringify(user));
-      const response = await fetch("/api/usuarios-sistema1", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-Data": userDataEncoded,
-          "X-Auth-Token": user.token,
-        },
-      });
+      const headers = {
+        "Content-Type": "application/json",
+        "X-User-Data": userDataEncoded,
+        "X-Auth-Token": user.token,
+      };
 
-      if (!response.ok) {
-        throw new Error("Erro ao carregar usuários");
+      const [usuariosRes, rolesRes, rolesListRes] = await Promise.all([
+        fetch("/api/usuarios-sistema1", { headers }),
+        fetch("/api/usuario-roles", { headers }),
+        fetch("/api/roles", { headers }),
+      ]);
+
+      if (!usuariosRes.ok) throw new Error("Erro ao carregar usuários");
+
+      const data = await usuariosRes.json();
+      setUsuarios(data.usuarios || []);
+
+      if (rolesRes.ok) {
+        const rolesData = await rolesRes.json();
+        const map = new Map<string, UsuarioRoleInfo>();
+        for (const ur of rolesData) {
+          map.set(ur.id, {
+            usuarioRoleId: ur.usuarioRoleId,
+            roleId: ur.roleAtual?.id ?? null,
+            roleNome: ur.roleAtual?.nome ?? null,
+            filialId: ur.filialId,
+            filial: ur.filial,
+          });
+        }
+        setRoleInfoMap(map);
       }
 
-      const data = await response.json();
-      setUsuarios(data.usuarios || []);
+      if (rolesListRes.ok) {
+        const rolesListData = await rolesListRes.json();
+        setAvailableRoles(rolesListData.map((r: { id: string; nome: string }) => ({ id: r.id, nome: r.nome })));
+      }
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
       toast({
@@ -94,6 +143,91 @@ export default function UsuariosPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const confirmFilialChange = async () => {
+    if (!user || !pendingFilial) return;
+    const { usuarioId, filialId } = pendingFilial;
+    setUpdatingFilial(usuarioId);
+    setPendingFilial(null);
+    try {
+      const res = await fetch("/api/usuario-roles", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": btoa(JSON.stringify(user)),
+          "X-Auth-Token": user.token,
+        },
+        body: JSON.stringify({ usuarioId, filialId }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao atualizar filial");
+      }
+      const updated = await res.json();
+      setRoleInfoMap(prev => {
+        const next = new Map(prev);
+        const existing = next.get(usuarioId);
+        next.set(usuarioId, {
+          usuarioRoleId: existing?.usuarioRoleId ?? updated.id,
+          roleId: existing?.roleId ?? null,
+          roleNome: existing?.roleNome ?? null,
+          filialId: updated.filialId,
+          filial: updated.filial,
+        });
+        return next;
+      });
+      toast({ title: "Filial atualizada com sucesso!" });
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } finally {
+      setUpdatingFilial(null);
+    }
+  };
+
+  const handleOpenManage = (usuario: Usuario) => {
+    const ri = roleInfoMap.get(usuario.id);
+    setManagingUser(usuario);
+    setSelectedRoleId(ri?.roleId ?? "");
+  };
+
+  const handleRoleChange = async () => {
+    if (!user || !managingUser || !selectedRoleId) return;
+    const ri = roleInfoMap.get(managingUser.id);
+    const headers = {
+      "Content-Type": "application/json",
+      "X-User-Data": btoa(JSON.stringify(user)),
+      "X-Auth-Token": user.token,
+    };
+    try {
+      const method = ri?.usuarioRoleId ? "PUT" : "POST";
+      const res = await fetch("/api/usuario-roles", {
+        method,
+        headers,
+        body: JSON.stringify({ usuarioId: managingUser.id, roleId: selectedRoleId }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao salvar perfil");
+      }
+      const roleName = availableRoles.find(r => r.id === selectedRoleId)?.nome ?? null;
+      setRoleInfoMap(prev => {
+        const next = new Map(prev);
+        const existing = next.get(managingUser.id);
+        next.set(managingUser.id, {
+          usuarioRoleId: selectedRoleId,
+          roleId: selectedRoleId,
+          roleNome: roleName,
+          filialId: existing?.filialId ?? null,
+          filial: existing?.filial ?? null,
+        });
+        return next;
+      });
+      toast({ title: "Perfil atualizado com sucesso!" });
+      setManagingUser(null);
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
     }
   };
 
@@ -241,6 +375,7 @@ export default function UsuariosPage() {
                       <TableHead>Status</TableHead>
                       <TableHead>Vínculo</TableHead>
                       <TableHead>Profissional</TableHead>
+                      {filiais.length > 0 && <TableHead>Filial</TableHead>}
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -311,12 +446,68 @@ export default function UsuariosPage() {
                             </span>
                           )}
                         </TableCell>
+                        {filiais.length > 0 && (() => {
+                          const ri = roleInfoMap.get(usuario.id);
+                          const currentFilialId = ri?.filialId ?? null;
+                          const isUpdating = updatingFilial === usuario.id;
+                          return (
+                            <TableCell>
+                              <Select
+                                value={currentFilialId ?? "_todas"}
+                                onValueChange={(v) => {
+                                  const newFilialId = v === "_todas" ? null : v;
+                                  const filialNome = newFilialId ? (filiais.find(f => f.id === newFilialId)?.nome ?? newFilialId) : "Todas as filiais";
+                                  setPendingFilial({ usuarioId: usuario.id, filialId: newFilialId, filialNome });
+                                }}
+                                disabled={isUpdating || !can("usuarios", "EDIT")}
+                              >
+                                <SelectTrigger className="w-36 h-8 text-xs">
+                                  <SelectValue>
+                                    {ri?.filial ? (
+                                      <span className="flex items-center gap-1.5">
+                                        <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: ri.filial.cor ?? '#6b7280' }} />
+                                        {ri.filial.nome}
+                                      </span>
+                                    ) : (
+                                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Landmark className="h-3 w-3" />
+                                        Todas
+                                      </span>
+                                    )}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="_todas">
+                                    <span className="flex items-center gap-1.5">
+                                      <Landmark className="h-3 w-3" />
+                                      Todas as filiais
+                                    </span>
+                                  </SelectItem>
+                                  {filiais.map((f) => (
+                                    <SelectItem key={f.id} value={f.id}>
+                                      <span className="flex items-center gap-1.5">
+                                        <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: f.cor ?? '#6b7280' }} />
+                                        {f.nome}
+                                      </span>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                          );
+                        })()}
                         <TableCell className="text-right">
-                          {!usuario.vinculado && usuario.role === "PENDING" && (
-                            <span className="text-xs text-muted-foreground">
-                              Criar usuário para ativar
-                            </span>
-                          )}
+                          <div className="flex justify-end gap-2">
+                            {can("usuarios", "EDIT") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenManage(usuario)}
+                              >
+                                Perfil
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -326,6 +517,60 @@ export default function UsuariosPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Dialog Confirmação Filial */}
+        <Dialog open={!!pendingFilial} onOpenChange={(o) => !o && setPendingFilial(null)}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Confirmar alteração de filial</DialogTitle>
+              <DialogDescription>
+                Alterar a filial deste usuário para <strong>{pendingFilial?.filialNome}</strong>?
+                <br />
+                Isso define quais dados ele poderá acessar no sistema.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setPendingFilial(null)}>Cancelar</Button>
+              <Button onClick={confirmFilialChange}>Confirmar</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Gerenciar Perfil */}
+        <Dialog open={!!managingUser} onOpenChange={(o) => !o && setManagingUser(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Gerenciar Perfil</DialogTitle>
+              <DialogDescription>
+                {managingUser?.name} — altere o perfil de acesso deste usuário
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Perfil de Acesso</label>
+                <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar perfil..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {managingUser && roleInfoMap.get(managingUser.id)?.roleNome && (
+                  <p className="text-xs text-muted-foreground">
+                    Atual: {roleInfoMap.get(managingUser.id)?.roleNome}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setManagingUser(null)}>Cancelar</Button>
+                <Button onClick={handleRoleChange} disabled={!selectedRoleId}>Salvar</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Dialog Novo Usuário */}
         <Dialog

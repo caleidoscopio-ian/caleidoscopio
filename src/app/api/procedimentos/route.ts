@@ -14,9 +14,14 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const especialidade = searchParams.get('especialidade') || ''
     const includeInativos = searchParams.get('includeInativos') === 'true'
+    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
+    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
 
     const where: Prisma.ProcedimentoWhereInput = {
       tenantId: user.tenant.id,
+      // filialId null = procedimento global, visível em todas as filiais
+      ...(filialFiltro ? { AND: [{ OR: [{ filialId: filialFiltro }, { filialId: null }] }] } : {}),
     }
 
     if (!includeInativos) where.ativo = true

@@ -30,6 +30,7 @@ import {
   FileText,
   Clock,
   AlertCircle,
+  Link2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EditarConvenioDialog } from "@/components/convenios/editar-convenio-dialog";
@@ -444,53 +445,80 @@ export default function ConvenioDetalhePage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Código</TableHead>
                           <TableHead>Procedimento</TableHead>
+                          <TableHead className="text-right">Valor Padrão</TableHead>
                           <TableHead className="text-right">Valor Convênio</TableHead>
-                          <TableHead className="text-right">Valor Particular</TableHead>
+                          <TableHead className="text-right">Co-participação</TableHead>
                           <TableHead>Tipo Guia</TableHead>
                           <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {tabela.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-mono text-sm">{item.codigo_procedimento}</TableCell>
-                            <TableCell>{item.nome_procedimento}</TableCell>
-                            <TableCell className="text-right font-medium">
-                              {formatarMoeda(item.valor_convenio)}
-                            </TableCell>
-                            <TableCell className="text-right text-muted-foreground">
-                              {item.valor_particular ? formatarMoeda(item.valor_particular) : "—"}
-                            </TableCell>
-                            <TableCell>
-                              {item.tipo_guia ? (
-                                <Badge variant="outline">{TIPO_GUIA_TISS_LABELS[item.tipo_guia]}</Badge>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">Padrão</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setTabelaForm({ open: true, item })}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => handleRemoverProcedimento(item.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {tabela.map((item) => {
+                          const valorPadrao = item.procedimento?.valor ?? null;
+                          const difereDopadrao =
+                            valorPadrao != null &&
+                            Math.abs(Number(valorPadrao) - Number(item.valor_convenio)) > 0.001;
+                          return (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{item.nome_procedimento}</span>
+                                    {item.procedimentoId && (
+                                      <Badge variant="outline" className="text-xs gap-1 py-0">
+                                        <Link2 className="h-3 w-3" />
+                                        clínica
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <span className="font-mono text-xs text-muted-foreground">
+                                    {item.codigo_procedimento}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground text-sm">
+                                {valorPadrao != null ? formatarMoeda(Number(valorPadrao)) : "—"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span className={difereDopadrao ? "font-semibold text-amber-600" : "font-medium"}>
+                                  {formatarMoeda(item.valor_convenio)}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground">
+                                {item.valor_co_participacao
+                                  ? formatarMoeda(item.valor_co_participacao)
+                                  : "—"}
+                              </TableCell>
+                              <TableCell>
+                                {item.tipo_guia ? (
+                                  <Badge variant="outline">{TIPO_GUIA_TISS_LABELS[item.tipo_guia]}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Padrão</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setTabelaForm({ open: true, item })}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => handleRemoverProcedimento(item.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </CardContent>

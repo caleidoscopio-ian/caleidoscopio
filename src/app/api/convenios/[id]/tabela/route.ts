@@ -40,6 +40,11 @@ export async function GET(
     const tabela = await prisma.convenioTabela.findMany({
       where,
       orderBy: { nome_procedimento: 'asc' },
+      include: {
+        procedimento: {
+          select: { id: true, nome: true, codigo: true, valor: true, valor_particular: true },
+        },
+      },
     })
 
     return NextResponse.json({ success: true, data: tabela, total: tabela.length })

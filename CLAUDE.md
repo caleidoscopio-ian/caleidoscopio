@@ -140,3 +140,4 @@ NUNCA: `any` type · query sem `tenantId` · import de `src/` · `dangerouslySet
 | 14 | Profissional Detalhe + Repasse | `/terapeutas/[id]` | Implementado |
 | 15 | Procedimentos e Pacotes | `/procedimentos`, `/procedimentos/[id]`, `/pacotes/[id]` | Implementado |
 | 16 | Check-in e Recepção | `/check-in` | Implementado |
+| 17 | Filiais (Multi-Unidade) | `/filiais` | Implementado (Fases 0-6 concluídas) |

@@ -23,9 +23,14 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
     const includeInactive = searchParams.get('includeInactive') === 'true'
+    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
+    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
 
     const where: Prisma.ConvenioWhereInput = {
       tenantId: user.tenant.id, // 🔒 CRÍTICO: Filtrar por tenant
+      // filialId null = convênio global, visível em todas as filiais
+      ...(filialFiltro ? { AND: [{ OR: [{ filialId: filialFiltro }, { filialId: null }] }] } : {}),
     }
 
     if (!includeInactive) {

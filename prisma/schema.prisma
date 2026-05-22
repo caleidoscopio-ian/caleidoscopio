@@ -40,6 +40,7 @@ model agendamento {
 model Procedimento {
   id                  String        @id @default(uuid())
   tenantId            String
+  filialId            String?       // null = disponível em todas as filiais
   nome                String
   descricao           String?       @db.Text
   codigo              String?
@@ -61,15 +62,18 @@ model Procedimento {
   tabelasConvenio      ConvenioTabela[]
   regrasRepasse        RegraRepasse[]
   pacoteProcedimentos  PacoteProcedimento[]
+  filial               Filial?              @relation(fields: [filialId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([tenantId, especialidade])
+  @@index([tenantId, filialId])
   @@map("procedimentos")
 }
 
 model Sala {
   id           String        @id @default(uuid())
   tenantId     String        // Referência ao tenant do Sistema 1 (não FK)
+  filialId     String?       // Filial à qual a sala pertence (null = todas as filiais)
   nome         String
   descricao    String?       @db.Text
   capacidade   Int?          // Número de pessoas que a sala comporta
@@ -79,7 +83,9 @@ model Sala {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @default(now()) @updatedAt
   agendamentos agendamento[]
+  filial       Filial?       @relation(fields: [filialId], references: [id], onDelete: SetNull)
 
+  @@index([tenantId, filialId])
   @@map("salas")
 }
 
@@ -312,8 +318,10 @@ model paciente {
   ativo                  Boolean              @default(true)
   createdAt              DateTime             @default(now())
   updatedAt              DateTime             @default(now()) @updatedAt
+  filialId               String?
   profissionalId         String?
   agendamentos           agendamento[]
+  filial                 Filial?              @relation(fields: [filialId], references: [id], onDelete: SetNull)
   profissional           profissional?        @relation(fields: [profissionalId], references: [id])
   progressoAtividades    progressoAtividade[]
   prontuarios            prontuario[]
@@ -357,6 +365,7 @@ model profissional {
   sessoesCurriculum     SessaoCurriculum[]
   sessoesAvaliacao      SessaoAvaliacao[]
   regrasRepasse         RegraRepasse[]
+  filiais               ProfissionalFilial[]
 
   @@unique([tenantId, cpf])
   @@map("profissionais")
@@ -824,6 +833,7 @@ enum TipoPacote {
 model Convenio {
   id                    String             @id @default(uuid())
   tenantId              String             // Referência ao tenant do Sistema 1 (não FK)
+  filialId              String?            // null = disponível em todas as filiais
 
   // Dados Básicos
   razao_social          String
@@ -877,10 +887,12 @@ model Convenio {
   pacientes             paciente[]
   regrasRepasse         RegraRepasse[]
   pacotes               Pacote[]
+  filial                Filial?            @relation(fields: [filialId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, cnpj])
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, filialId])
   @@map("convenios")
 }
 
@@ -1492,6 +1504,7 @@ model UsuarioRole {
   usuarioId      String   // ID do usuário no Sistema 1 (SSO)
   tenantId       String   // Isolamento multi-tenant
   roleId         String
+  filialId       String?  // Filial atribuída (null = sem restrição / admin vê tudo)
   atribuido_por  String   // userId de quem atribuiu
   justificativa  String?  @db.Text
   ativo          Boolean  @default(true)
@@ -1499,9 +1512,11 @@ model UsuarioRole {
   updatedAt      DateTime @default(now()) @updatedAt
 
   role           Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  filial         Filial?  @relation(fields: [filialId], references: [id], onDelete: SetNull)
 
   @@unique([usuarioId, tenantId]) // Um usuário tem uma role por tenant
   @@index([tenantId])
+  @@index([filialId])
   @@map("usuario_roles")
 }
 
@@ -1519,4 +1534,47 @@ model UsuarioRoleHistorico {
   @@index([usuarioId, tenantId])
   @@index([tenantId])
   @@map("usuario_role_historico")
+}
+
+// ========================================
+// MÓDULO FILIAIS (MULTI-UNIDADE)
+// ========================================
+
+model Filial {
+  id        String   @id @default(uuid())
+  tenantId  String   // Referência ao tenant do Sistema 1 (não FK)
+  nome      String
+  cidade    String?
+  endereco  String?  @db.Text
+  telefone  String?
+  email     String?
+  cor       String?  // Cor de identificação visual (hex)
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  salas         Sala[]
+  pacientes     paciente[]
+  profissionais ProfissionalFilial[]
+  convenios     Convenio[]
+  procedimentos Procedimento[]
+  usuarioRoles  UsuarioRole[]
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@index([tenantId, ativo])
+  @@map("filiais")
+}
+
+model ProfissionalFilial {
+  profissionalId String
+  filialId       String
+  principal      Boolean      @default(false) // filial principal do profissional
+
+  profissional   profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  filial         Filial       @relation(fields: [filialId], references: [id], onDelete: Cascade)
+
+  @@id([profissionalId, filialId])
+  @@index([filialId])
+  @@map("profissional_filiais")
 }

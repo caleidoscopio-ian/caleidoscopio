@@ -31,6 +31,7 @@ const RECURSOS = [
   { slug: 'usuarios',       nome: 'Usuários',              modulo: 'Administrativo',  ordem: 16 },
   { slug: 'permissoes',     nome: 'Gestão de Permissões',  modulo: 'Administrativo',  ordem: 17 },
   { slug: 'configuracoes',  nome: 'Configurações',         modulo: 'Administrativo',  ordem: 18 },
+  { slug: 'filiais',        nome: 'Filiais',               modulo: 'Administrativo',  ordem: 19 },
 ]
 
 // ─── Ações ──────────────────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ const PERMISSOES_USER: PermissaoMap = {
   salas:         ['VIEW'],
   convenios:     ['VIEW'],
   procedimentos: ['VIEW'],
+  filiais:       ['VIEW'],
   usuarios:      [],
   permissoes:    ['VIEW'],
 }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import Image from "next/image";
@@ -13,11 +12,11 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import {
-  SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { useFilial } from "@/hooks/useFilial";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -25,6 +24,20 @@ interface MainLayoutProps {
     label: string;
     href?: string;
   }>;
+}
+
+function FilialHeaderBadge() {
+  const { filialAtiva, loading } = useFilial();
+  if (loading || !filialAtiva) return null;
+  return (
+    <div className="hidden sm:flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground">
+      <div
+        className="w-2 h-2 rounded-full shrink-0"
+        style={{ backgroundColor: filialAtiva.cor ?? "#3b82f6" }}
+      />
+      {filialAtiva.nome}
+    </div>
+  );
 }
 
 export function MainLayout({ children, breadcrumbs }: MainLayoutProps) {
@@ -52,6 +65,9 @@ export function MainLayout({ children, breadcrumbs }: MainLayoutProps) {
                 priority
               />
             </div>
+
+            {/* Indicador de filial ativa */}
+            <FilialHeaderBadge />
 
             {/* Breadcrumbs */}
             {breadcrumbs && (

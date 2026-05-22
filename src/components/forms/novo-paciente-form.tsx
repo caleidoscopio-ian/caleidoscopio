@@ -45,6 +45,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useFilial } from "@/hooks/useFilial";
 
 // Schema de validação baseado no modelo Paciente do banco
 const pacienteSchema = z.object({
@@ -100,6 +101,7 @@ interface ConvenioOption {
 
 export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
   const { user, isAdmin } = useAuth();
+  const { filialAtiva } = useFilial();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profissionais, setProfissionais] = useState<any[]>([]);
@@ -275,6 +277,8 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
         convenioId: data.convenioId && data.convenioId !== "_particular" ? data.convenioId : undefined,
         healthInsuranceNumber: data.matricula,
         profissionalId: profissionalIdToUse,
+        // Filial: admin envia a filial ativa no seletor global; não-admin usa a do perfil (server-side)
+        filialId: filialAtiva?.id ?? null,
       };
 
       console.log("📤 Dados que serão enviados para API:", patientData);

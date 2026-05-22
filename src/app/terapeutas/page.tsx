@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useFilial } from "@/hooks/useFilial";
 import { MainLayout } from "@/components/main-layout";
 import { EditarTerapeutaForm } from "@/components/forms/editar-terapeuta-form";
 import { TerapeutaDetailsDialog } from "@/components/terapeuta-details-dialog";
@@ -57,6 +58,7 @@ interface ProfessionalsResponse {
 
 function TerapeutasPageContent() {
   const { user, isAuthenticated } = useAuth();
+  const { filialAtiva } = useFilial();
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -86,7 +88,10 @@ function TerapeutasPageContent() {
       // Preparar headers com dados do usuário
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch("/api/terapeutas", {
+      const params = new URLSearchParams();
+      if (filialAtiva?.id) params.set("filialId", filialAtiva.id);
+
+      const response = await fetch(`/api/terapeutas?${params}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -123,7 +128,7 @@ function TerapeutasPageContent() {
     if (isAuthenticated && user) {
       fetchProfessionals();
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, filialAtiva?.id]);
 
   // Filtrar terapeutas baseado no termo de busca
   const filteredProfessionals = professionals.filter(

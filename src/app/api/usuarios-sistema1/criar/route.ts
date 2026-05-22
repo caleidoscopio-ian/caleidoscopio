@@ -107,6 +107,27 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(`✅ Profissional criado no Sistema 2: ${profissional.id}`);
+
+    // PASSO 3: Criar UsuarioRole padrão (USER) para que o profissional tenha acesso RBAC
+    const defaultRole = await prisma.role.findFirst({
+      where: { tenantId: user.tenant.id, nome: 'USER', ativo: true },
+    });
+    if (defaultRole) {
+      await prisma.usuarioRole.upsert({
+        where: { usuarioId_tenantId: { usuarioId: usuarioSistema1.user.id, tenantId: user.tenant.id } },
+        create: {
+          usuarioId: usuarioSistema1.user.id,
+          tenantId: user.tenant.id,
+          roleId: defaultRole.id,
+          atribuido_por: user.id,
+          justificativa: 'Atribuído automaticamente no cadastro',
+          ativo: true,
+        },
+        update: {},
+      });
+      console.log(`✅ UsuarioRole USER criado para ${usuarioSistema1.user.id}`);
+    }
+
     console.log(
       `🔗 Vínculo estabelecido: Usuario ${usuarioSistema1.user.id} <-> Profissional ${profissional.id}`
     );

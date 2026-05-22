@@ -22,7 +22,7 @@ const ALL_RESOURCES = [
   'dashboard', 'pacientes', 'agenda', 'prontuarios', 'anamneses',
   'sessoes', 'atividades', 'curriculums', 'avaliacoes', 'evolucao',
   'relatorios', 'terapeutas', 'salas', 'procedimentos', 'usuarios',
-  'permissoes', 'configuracoes', 'convenios',
+  'permissoes', 'configuracoes', 'convenios', 'filiais',
 ]
 
 type PermissaoMap = Record<string, string[]>
@@ -50,6 +50,7 @@ const PERMISSOES_USER: PermissaoMap = {
   procedimentos:  ['VIEW'],
   permissoes:     ['VIEW'],
   convenios:      ['VIEW'],
+  filiais:        ['VIEW'],
 }
 
 const SYSTEM_ROLES_DEF = [
@@ -58,51 +59,88 @@ const SYSTEM_ROLES_DEF = [
   { nome: 'USER',        descricao: 'Terapeuta — acesso clínico e educacional',        permissoes: PERMISSOES_USER  },
 ]
 
+// ─── Recursos e Ações globais esperados ──────────────────────────────────────
+// Espelho do seed-rbac.ts — mantidos aqui para auto-seed no bootstrap.
+
+const RECURSOS_GLOBAIS = [
+  { slug: 'dashboard',     nome: 'Dashboard',           modulo: 'Geral',          ordem: 1  },
+  { slug: 'pacientes',     nome: 'Pacientes',            modulo: 'Clínico',        ordem: 2  },
+  { slug: 'agenda',        nome: 'Agenda',               modulo: 'Clínico',        ordem: 3  },
+  { slug: 'prontuarios',   nome: 'Prontuários',          modulo: 'Clínico',        ordem: 4  },
+  { slug: 'anamneses',     nome: 'Anamneses',            modulo: 'Clínico',        ordem: 5  },
+  { slug: 'sessoes',       nome: 'Sessões',              modulo: 'Clínico',        ordem: 6  },
+  { slug: 'atividades',    nome: 'Atividades',           modulo: 'Educacional',    ordem: 7  },
+  { slug: 'curriculums',   nome: 'Plano Terapêutico',    modulo: 'Educacional',    ordem: 8  },
+  { slug: 'avaliacoes',    nome: 'Avaliações ABA+',      modulo: 'Educacional',    ordem: 9  },
+  { slug: 'evolucao',      nome: 'Evolução por Fases',   modulo: 'Educacional',    ordem: 10 },
+  { slug: 'relatorios',    nome: 'Relatórios',           modulo: 'Administrativo', ordem: 11 },
+  { slug: 'terapeutas',    nome: 'Profissionais',        modulo: 'Administrativo', ordem: 12 },
+  { slug: 'salas',         nome: 'Salas',                modulo: 'Administrativo', ordem: 13 },
+  { slug: 'convenios',     nome: 'Convênios',            modulo: 'Administrativo', ordem: 14 },
+  { slug: 'procedimentos', nome: 'Procedimentos',        modulo: 'Administrativo', ordem: 15 },
+  { slug: 'usuarios',      nome: 'Usuários',             modulo: 'Administrativo', ordem: 16 },
+  { slug: 'permissoes',    nome: 'Gestão de Permissões', modulo: 'Administrativo', ordem: 17 },
+  { slug: 'configuracoes', nome: 'Configurações',        modulo: 'Administrativo', ordem: 18 },
+  { slug: 'filiais',       nome: 'Filiais',              modulo: 'Administrativo', ordem: 19 },
+]
+
+const ACOES_GLOBAIS = [
+  { slug: 'VIEW',    nome: 'Visualizar', ordem: 1 },
+  { slug: 'CREATE',  nome: 'Criar',      ordem: 2 },
+  { slug: 'UPDATE',  nome: 'Editar',     ordem: 3 },
+  { slug: 'DELETE',  nome: 'Deletar',    ordem: 4 },
+  { slug: 'EXPORT',  nome: 'Exportar',   ordem: 5 },
+  { slug: 'APPROVE', nome: 'Aprovar',    ordem: 6 },
+  { slug: 'MANAGE',  nome: 'Gerenciar',  ordem: 7 },
+]
+
 // ─── Bootstrap de roles de sistema ───────────────────────────────────────────
 
 /**
  * Garante que as roles de sistema (SUPER_ADMIN, ADMIN, USER) existam
- * para o tenant COM permissões populadas. Idempotente — não duplica.
+ * para o tenant COM permissões populadas. Idempotente — usa skipDuplicates
+ * para adicionar apenas as permissões que faltam (incluindo novos recursos).
  */
 export async function ensureTenantRoles(tenantId: string): Promise<void> {
   console.log(`[RBAC Bootstrap] ensureTenantRoles chamado para tenant: ${tenantId}`)
 
-  // Buscar todos os recursos e ações do banco (globais, já seed-ados)
+  // Garantir que todos os Recursos e Ações globais existam no banco
+  await Promise.all([
+    ...RECURSOS_GLOBAIS.map(r =>
+      prisma.recurso.upsert({
+        where: { slug: r.slug },
+        update: {},
+        create: r,
+      })
+    ),
+    ...ACOES_GLOBAIS.map(a =>
+      prisma.acao.upsert({
+        where: { slug: a.slug },
+        update: {},
+        create: a,
+      })
+    ),
+  ])
+
+  // Buscar todos os recursos e ações (agora garantidamente existentes)
   const [recursos, acoes] = await Promise.all([
     prisma.recurso.findMany(),
     prisma.acao.findMany(),
   ])
 
-  console.log(`[RBAC Bootstrap] Encontrados ${recursos.length} recursos e ${acoes.length} ações no banco`)
-
   const recursoMap = new Map(recursos.map(r => [r.slug, r.id]))
   const acaoMap = new Map(acoes.map(a => [a.slug, a.id]))
 
-  // Se não há recursos/ações no banco, não faz sentido continuar
-  if (recursos.length === 0 || acoes.length === 0) {
-    console.error('[RBAC Bootstrap] ⚠️ TABELAS RECURSO/ACAO VAZIAS! Execute: npx ts-node prisma/seed-rbac.ts')
-    return
-  }
-
   for (const roleDef of SYSTEM_ROLES_DEF) {
-    // Verificar se a role já existe
+    // Garantir que a role existe
+    let roleId: string
     const existing = await prisma.role.findUnique({
       where: { tenantId_nome: { tenantId, nome: roleDef.nome } },
-      include: { _count: { select: { permissoes: true } } },
     })
 
-    if (existing && existing._count.permissoes > 0) {
-      // Role já existe COM permissões — nada a fazer
-      continue
-    }
-
-    let roleId: string
-
     if (existing) {
-      // Role existe mas SEM permissões — precisamos popular
       roleId = existing.id
     } else {
-      // Criar a role
       const created = await prisma.role.create({
         data: {
           tenantId,
@@ -115,7 +153,8 @@ export async function ensureTenantRoles(tenantId: string): Promise<void> {
       roleId = created.id
     }
 
-    // Montar permissões a partir da definição inline (NÃO depende de template)
+    // Sempre tentar adicionar permissões — skipDuplicates garante idempotência
+    // Isso permite que novos recursos adicionados ao sistema sejam propagados
     const permissoesToCreate: { roleId: string; recursoId: string; acaoId: string }[] = []
 
     for (const [recursoSlug, acaoSlugs] of Object.entries(roleDef.permissoes)) {
@@ -136,7 +175,7 @@ export async function ensureTenantRoles(tenantId: string): Promise<void> {
       })
     }
 
-    console.log(`[RBAC Bootstrap] Role "${roleDef.nome}" para tenant ${tenantId}: ${permissoesToCreate.length} permissões`)
+    console.log(`[RBAC Bootstrap] Role "${roleDef.nome}" para tenant ${tenantId}: verificada (${permissoesToCreate.length} permissões garantidas)`)
   }
 }
 
@@ -221,6 +260,9 @@ export async function ensureDefaultRole(
 
   // Garantir que exista um profissional vinculado a este usuário no tenant
   await ensureProfissional(userId, tenantId, normalizedRole, userInfo)
+
+  // Garantir que o tenant tenha ao menos uma filial ("Única")
+  await ensureFilialPadrao(tenantId)
 }
 
 /**
@@ -268,4 +310,20 @@ async function ensureProfissional(
   })
 
   console.log(`[RBAC Bootstrap] Profissional criado automaticamente: user=${userId}, nome="${nome}", tenant=${tenantId}`)
+}
+
+/**
+ * Garante que o tenant tenha ao menos uma filial.
+ * Cria a filial "Única" se nenhuma existir — ponto de partida para clínicas novas.
+ * Idempotente.
+ */
+async function ensureFilialPadrao(tenantId: string): Promise<void> {
+  const count = await prisma.filial.count({ where: { tenantId } })
+  if (count > 0) return
+
+  await prisma.filial.create({
+    data: { tenantId, nome: 'Única', ativo: true },
+  })
+
+  console.log(`[RBAC Bootstrap] Filial "Única" criada automaticamente para tenant ${tenantId}`)
 }
