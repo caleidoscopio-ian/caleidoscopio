@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
+import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
 
 // GET - Listar agendamentos com filtros
 export async function GET(request: NextRequest) {
@@ -148,6 +149,10 @@ export async function GET(request: NextRequest) {
             foto: true,
             cor_agenda: true,
             telefone: true,
+            convenioId: true,
+            convenio: {
+              select: { id: true, razao_social: true, nome_fantasia: true },
+            },
           },
         },
         profissional: {
@@ -165,17 +170,85 @@ export async function GET(request: NextRequest) {
             cor: true,
           },
         },
+        procedimento: {
+          select: {
+            id: true,
+            nome: true,
+            codigo: true,
+            cor: true,
+            valor: true,
+            valor_particular: true,
+            duracao_padrao: true,
+          },
+        },
       },
       orderBy: {
         data_hora: "asc",
       },
     });
 
+    // Calcular preço efetivo para cada agendamento (considerando convênio do paciente)
+    // Otimização: buscar entradas de ConvenioTabela em batch
+    const paresConvenioProc = new Set<string>();
+    for (const ag of agendamentos) {
+      const convenioId = ag.paciente?.convenioId;
+      const procedimentoId = ag.procedimentoId;
+      if (convenioId && procedimentoId) {
+        paresConvenioProc.add(`${convenioId}|${procedimentoId}`);
+      }
+    }
+
+    const tabelaMap = new Map<string, { procedimentoId: string | null; valor_convenio: unknown }>();
+    if (paresConvenioProc.size > 0) {
+      const convenioIds = Array.from(
+        new Set(Array.from(paresConvenioProc).map((p) => p.split("|")[0]))
+      );
+      const procIds = Array.from(
+        new Set(Array.from(paresConvenioProc).map((p) => p.split("|")[1]))
+      );
+      const entradas = await prisma.convenioTabela.findMany({
+        where: {
+          convenioId: { in: convenioIds },
+          procedimentoId: { in: procIds },
+        },
+        select: { convenioId: true, procedimentoId: true, valor_convenio: true },
+      });
+      for (const e of entradas) {
+        tabelaMap.set(`${e.convenioId}|${e.procedimentoId}`, {
+          procedimentoId: e.procedimentoId,
+          valor_convenio: e.valor_convenio,
+        });
+      }
+    }
+
+    const agendamentosComPreco = agendamentos.map((ag) => {
+      const convenioId = ag.paciente?.convenioId ?? null;
+      const procedimentoId = ag.procedimentoId;
+      const entrada =
+        convenioId && procedimentoId
+          ? tabelaMap.get(`${convenioId}|${procedimentoId}`)
+          : null;
+      const preco = calcularPrecoProcedimento({
+        procedimentoId,
+        procedimento: ag.procedimento
+          ? {
+              valor: ag.procedimento.valor as unknown as number | null,
+              valor_particular: ag.procedimento.valor_particular as unknown as number | null,
+            }
+          : null,
+        temConvenio: !!convenioId,
+        tabelaConvenio: entrada
+          ? [{ procedimentoId: entrada.procedimentoId, valor_convenio: entrada.valor_convenio as unknown as number | null }]
+          : null,
+      });
+      return { ...ag, precoCalculado: preco };
+    });
+
     console.log(
       `✅ Encontrados ${agendamentos.length} agendamentos para clínica "${user.tenant.name}"`
     );
 
-    return NextResponse.json(agendamentos);
+    return NextResponse.json(agendamentosComPreco);
   } catch (error) {
     console.error("Erro ao buscar agendamentos:", error);
 

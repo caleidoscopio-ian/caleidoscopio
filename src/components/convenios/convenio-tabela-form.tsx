@@ -442,14 +442,17 @@ export function ConvenioTabelaForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de Guia</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                    <Select
+                      onValueChange={(v) => field.onChange(v === "_padrao" ? null : v)}
+                      value={field.value ?? "_padrao"}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Padrão do convênio</SelectItem>
+                        <SelectItem value="_padrao">Padrão do convênio</SelectItem>
                         {Object.entries(TIPO_GUIA_TISS_LABELS).map(([value, label]) => (
                           <SelectItem key={value} value={value}>
                             {label}

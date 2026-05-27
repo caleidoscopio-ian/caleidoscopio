@@ -53,12 +53,36 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔍 Buscando terapeutas para clínica: ${user.tenant.name} (${user.tenant.id})`);
 
+    // Quando filtrando por filial, descobrir quais usuários estão atribuídos a ela
+    // A filial do profissional é gerenciada via UsuarioRole.filialId (página /usuarios)
+    let usuarioIdsDaFilial: string[] | null = null;
+    if (filialFiltro) {
+      const rolesNaFilial = await prisma.usuarioRole.findMany({
+        where: {
+          tenantId: user.tenant.id,
+          ativo: true,
+          filialId: filialFiltro,
+        },
+        select: { usuarioId: true },
+      });
+      usuarioIdsDaFilial = rolesNaFilial.map((r) => r.usuarioId);
+    }
+
     // Buscar profissionais APENAS da clínica do usuário (isolamento multi-tenant)
     const profissionais = await prisma.profissional.findMany({
       where: {
         tenantId: user.tenant.id, // 🔒 CRÍTICO: Filtrar por tenant
         ativo: true,
-        ...(filialFiltro ? { filiais: { some: { filialId: filialFiltro } } } : {}),
+        ...(filialFiltro && usuarioIdsDaFilial !== null ? {
+          OR: [
+            // Profissional cujo usuário está atribuído à filial selecionada
+            { usuarioId: { in: usuarioIdsDaFilial } },
+            // Profissional sem conta de usuário no sistema (tratado como global)
+            { usuarioId: null },
+            // Compat: vínculo direto via ProfissionalFilial (se existir)
+            { filiais: { some: { filialId: filialFiltro } } },
+          ],
+        } : {}),
       },
       select: {
         id: true,

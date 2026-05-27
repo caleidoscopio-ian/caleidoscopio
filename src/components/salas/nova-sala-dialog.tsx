@@ -123,14 +123,17 @@ export function NovaSalaDialog({ onSuccess }: NovaSalaDialogProps) {
             <FormField control={form.control} name="filialId" render={({ field }) => (
               <FormItem>
                 <FormLabel>Filial</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                <Select
+                  onValueChange={(v) => field.onChange(v === "_none" ? null : v)}
+                  value={field.value ?? "_none"}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a filial..." />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Sem filial</SelectItem>
+                    <SelectItem value="_none">Sem filial</SelectItem>
                     {filiais.map((f) => (
                       <SelectItem key={f.id} value={f.id}>
                         <span className="flex items-center gap-2">

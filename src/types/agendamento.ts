@@ -57,6 +57,12 @@ export interface Agendamento {
     foto?: string | null
     cor_agenda?: string | null
     telefone?: string | null
+    convenioId?: string | null
+    convenio?: {
+      id: string
+      razao_social: string
+      nome_fantasia?: string | null
+    } | null
   }
   profissional?: {
     id: string
@@ -74,7 +80,16 @@ export interface Agendamento {
     nome: string
     codigo?: string | null
     cor?: string | null
+    valor?: number | string | null
+    valor_particular?: number | string | null
+    duracao_padrao?: number | null
   } | null
+  // Preço calculado server-side considerando convênio do paciente
+  precoCalculado?: {
+    valor: number | null
+    origem: 'convenio' | 'particular' | 'padrao' | null
+    rotulo: string
+  }
 }
 
 export interface CreateAgendamentoInput {

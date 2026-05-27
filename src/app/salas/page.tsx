@@ -17,7 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Search, Loader2, Users, Wrench } from "lucide-react";
+import { Building2, Search, Loader2, Users, Wrench, LayoutGrid } from "lucide-react";
+import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { NovaSalaDialog } from "@/components/salas/nova-sala-dialog";
 import { EditarSalaDialog } from "@/components/salas/editar-sala-dialog";
@@ -140,7 +141,15 @@ export default function SalasPage() {
                 Cadastre e gerencie as salas da clínica
               </p>
             </div>
-            <NovaSalaDialog onSuccess={fetchSalas} />
+            <div className="flex items-center gap-2">
+              <Link href="/salas/mapa-ocupacao">
+                <Button variant="outline" className="gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  Mapa de Ocupação
+                </Button>
+              </Link>
+              <NovaSalaDialog onSuccess={fetchSalas} />
+            </div>
           </div>
 
           {/* Estatísticas */}

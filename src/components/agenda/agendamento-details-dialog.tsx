@@ -24,10 +24,13 @@ import {
   XCircle,
   PlayCircle,
   Edit,
-  Trash2
+  Trash2,
+  Stethoscope,
+  DollarSign
 } from 'lucide-react'
 import { Agendamento, StatusAgendamento, STATUS_AGENDAMENTO_LABELS } from '@/types/agendamento'
 import { cn } from '@/lib/utils'
+import { formatBRL } from '@/lib/preco-procedimento'
 
 interface AgendamentoDetailsDialogProps {
   agendamento: Agendamento | null
@@ -259,6 +262,56 @@ export function AgendamentoDetailsDialog({
                   />
                 )}
                 <span className="font-medium">{agendamento.salaRelacao.nome}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Procedimento + Preço */}
+          {agendamento.procedimento && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Procedimento
+              </h3>
+              <div className="p-3 border rounded-lg space-y-2">
+                <div className="flex items-center gap-3">
+                  <Stethoscope className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  {agendamento.procedimento.cor && (
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: agendamento.procedimento.cor }}
+                    />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-medium">{agendamento.procedimento.nome}</div>
+                    {agendamento.procedimento.codigo && (
+                      <div className="text-xs text-muted-foreground font-mono">
+                        Cód: {agendamento.procedimento.codigo}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {agendamento.precoCalculado && agendamento.precoCalculado.valor !== null && (
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <DollarSign className="h-4 w-4" />
+                      {agendamento.precoCalculado.rotulo}
+                      {agendamento.precoCalculado.origem === 'convenio' && agendamento.paciente?.convenio && (
+                        <Badge variant="outline" className="ml-1 text-xs">
+                          {agendamento.paciente.convenio.nome_fantasia || agendamento.paciente.convenio.razao_social}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="font-semibold text-lg text-green-700">
+                      {formatBRL(agendamento.precoCalculado.valor)}
+                    </div>
+                  </div>
+                )}
+                {agendamento.precoCalculado && agendamento.precoCalculado.valor === null && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
+                    <DollarSign className="h-4 w-4" />
+                    Sem preço cadastrado para este procedimento
+                  </div>
+                )}
               </div>
             </div>
           )}
