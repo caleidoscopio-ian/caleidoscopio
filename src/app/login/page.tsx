@@ -273,14 +273,17 @@ export default function LoginPage() {
             </form>
 
             {/* Right Side - Banner */}
+            {/* Usando <img> em vez de next/image: a imagem é estática, aparece só em desktop
+                e não precisa de otimização responsiva. Evita falha intermitente do otimizador
+                ("received null") em Windows + Sharp. */}
             <div className="relative hidden md:block">
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src="/Caleidoscopio_Banner_100x160cm.jpg"
                 alt="Caleidoscópio - Educar para incluir, aprender para transformar"
-                fill
-                sizes="(max-width: 768px) 0vw, 50vw"
-                className="object-cover"
-                priority
+                className="absolute inset-0 h-full w-full object-cover"
+                loading="eager"
+                decoding="async"
               />
             </div>
           </div>
