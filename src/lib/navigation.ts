@@ -30,6 +30,9 @@ import {
   Landmark,
   Handshake,
   Package2,
+  Gauge,
+  ReceiptText,
+  FileX2,
 } from "lucide-react";
 
 export interface SidebarItem {
@@ -55,6 +58,7 @@ export const PROFESSIONAL_ITEMS: SidebarItem[] = [
   // Clínica
   { title: "Pacientes", href: "/pacientes", icon: GraduationCap, requiredPermission: { resource: "pacientes", action: "VIEW" } },
   { title: "Agenda", href: "/agenda", icon: Calendar, requiredPermission: { resource: "agenda", action: "VIEW" } },
+  { title: "Taxa de Ocupação", href: "/taxa-ocupacao", icon: Gauge, requiredPermission: { resource: "agenda", action: "VIEW" } },
   { title: "Check-in", href: "/check-in", icon: ClipboardCheck, requiredPermission: { resource: "agenda", action: "VIEW" } },
   { title: "Filiais", href: "/filiais", icon: Landmark, requiredPermission: { resource: "filiais", action: "VIEW" } },
   { title: "Salas", href: "/salas", icon: Building2, requiredPermission: { resource: "salas", action: "VIEW" } },
@@ -73,6 +77,8 @@ export const PROFESSIONAL_ITEMS: SidebarItem[] = [
 
   // Administração
   { title: "Relatórios", href: "/relatorios", icon: BarChart3, requiredPermission: { resource: "relatorios", action: "VIEW" } },
+  { title: "Histórico de Atendimentos", href: "/historico-atendimentos", icon: ReceiptText, requiredPermission: { resource: "relatorios", action: "VIEW" } },
+  { title: "Atendimentos Glosados", href: "/glosas", icon: FileX2, requiredPermission: { resource: "convenios", action: "VIEW" } },
   { title: "Permissões", href: "/permissoes", icon: Shield, requiredPermission: { resource: "permissoes", action: "VIEW" } },
   { title: "Configurações", href: "/configuracoes", icon: Settings, requiredPermission: { resource: "configuracoes", action: "VIEW" } },
 
@@ -85,9 +91,9 @@ export const PROFESSIONAL_ITEMS: SidebarItem[] = [
 export const PROFESSIONAL_GROUPS: Record<string, string[]> = {
   "Principal": ["Dashboard"],
   "Gestão de Usuários": ["Usuários", "Profissionais"],
-  "Clínica": ["Pacientes", "Agenda", "Check-in", "Filiais", "Salas", "Convênios", "Procedimentos", "Registro de Sessão", "Anamneses"],
+  "Clínica": ["Pacientes", "Agenda", "Taxa de Ocupação", "Check-in", "Filiais", "Salas", "Convênios", "Procedimentos", "Registro de Sessão", "Anamneses"],
   "Atendimento": ["Iniciar Sessão", "Plano Terapêutico", "Atividades", "Avaliações", "Histórico de Sessões", "Evolução"],
-  "Administração": ["Relatórios", "Permissões", "Configurações"],
+  "Administração": ["Relatórios", "Histórico de Atendimentos", "Atendimentos Glosados", "Permissões", "Configurações"],
   "Perfil": ["Meu Perfil"],
 };
 

@@ -28,9 +28,15 @@
       "Bash(New-Item -ItemType Directory -Force -Path \"e:\\\\caleidoscopio\\\\src\\\\app\\\\api\\\\salas\\\\ocupacao\")",
       "Bash(Write-Host \"done\")",
       "PowerShell(New-Item -ItemType Directory -Force -Path \"e:\\\\caleidoscopio\\\\src\\\\app\\\\api\\\\salas\\\\ocupacao\")",
-      "PowerShell(New-Item -ItemType Directory -Force -Path \"e:\\\\caleidoscopio\\\\src\\\\app\\\\salas\\\\mapa-ocupacao\")"
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"e:\\\\caleidoscopio\\\\src\\\\app\\\\salas\\\\mapa-ocupacao\")",
+      "Bash(mkdir -p \"src/app/api/terapeutas/[id]/grade\" 2>&1; echo \"done\")",
+      "Bash(mkdir -p \"src/app/api/glosas/[id]/recurso\" && mkdir -p \"src/app/api/glosas/dashboard\" && echo \"ok\")"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "E:\\caleidoscopio\\src\\app\\api\\terapeutas\\[id]",
+      "E:\\caleidoscopio\\src\\app\\api\\glosas\\[id]"
+    ]
   }
 }

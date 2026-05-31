@@ -141,3 +141,7 @@ NUNCA: `any` type · query sem `tenantId` · import de `src/` · `dangerouslySet
 | 15 | Procedimentos e Pacotes | `/procedimentos`, `/procedimentos/[id]`, `/pacotes/[id]` | Implementado |
 | 16 | Check-in e Recepção | `/check-in` | Implementado |
 | 17 | Filiais (Multi-Unidade) | `/filiais` | Implementado (Fases 0-6 concluídas) |
+| 18 | Mapa de Ocupação de Salas | `/salas/mapa-ocupacao` | Implementado |
+| 20 | Taxa de Agendamento por Profissional | `/taxa-ocupacao` | Implementado |
+| 21 | Histórico de Atendimentos | `/historico-atendimentos` | Implementado |
+| 22 | Relatório de Atendimentos Glosados | `/glosas` | Implementado |

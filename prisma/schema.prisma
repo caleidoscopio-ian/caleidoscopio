@@ -33,6 +33,7 @@ model agendamento {
   profissional    profissional      @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
   salaRelacao     Sala              @relation(fields: [salaId], references: [id], onDelete: Restrict)
   procedimento    Procedimento?     @relation(fields: [procedimentoId], references: [id], onDelete: SetNull)
+  glosas          Glosa[]
 
   @@map("agendamentos")
 }
@@ -366,6 +367,7 @@ model profissional {
   sessoesAvaliacao      SessaoAvaliacao[]
   regrasRepasse         RegraRepasse[]
   filiais               ProfissionalFilial[]
+  grades                GradeAtendimento[]
 
   @@unique([tenantId, cpf])
   @@map("profissionais")
@@ -696,6 +698,26 @@ enum StatusAgendamento {
   CANCELADO
 }
 
+enum CategoriaGlosa {
+  ADMINISTRATIVA
+  TECNICA
+  LINEAR
+  DUPLICIDADE
+  TABELA
+  PRAZO
+  DOCUMENTACAO
+  OUTROS
+}
+
+enum StatusGlosa {
+  PENDENTE
+  EM_RECURSO
+  RECUPERADA
+  PARCIAL
+  NEGADA
+  ACATADA
+}
+
 enum StatusProgresso {
   NAO_INICIADO
   EM_PROGRESSO
@@ -887,6 +909,7 @@ model Convenio {
   pacientes             paciente[]
   regrasRepasse         RegraRepasse[]
   pacotes               Pacote[]
+  glosas                Glosa[]
   filial                Filial?            @relation(fields: [filialId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, cnpj])
@@ -1559,6 +1582,7 @@ model Filial {
   convenios     Convenio[]
   procedimentos Procedimento[]
   usuarioRoles  UsuarioRole[]
+  grades        GradeAtendimento[]
 
   @@unique([tenantId, nome])
   @@index([tenantId])
@@ -1577,4 +1601,83 @@ model ProfissionalFilial {
   @@id([profissionalId, filialId])
   @@index([filialId])
   @@map("profissional_filiais")
+}
+
+model GradeAtendimento {
+  id             String       @id @default(uuid())
+  tenantId       String
+  profissionalId String
+  diaSemana      Int          // 0=Dom, 1=Seg ... 6=Sáb
+  hora_inicio    String       // "08:00"
+  hora_fim       String       // "18:00"
+  filialId       String?      // null = qualquer filial
+  ativo          Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  profissional   profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  filial         Filial?      @relation(fields: [filialId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([profissionalId])
+  @@index([tenantId, profissionalId, diaSemana])
+  @@map("grades_atendimento")
+}
+
+// ========================================
+// MÓDULO GLOSAS
+// ========================================
+
+model Glosa {
+  id               String         @id @default(uuid())
+  tenantId         String
+  agendamentoId    String
+  convenioId       String?
+
+  valor_cobrado    Decimal        @db.Decimal(10, 2)
+  valor_glosado    Decimal        @db.Decimal(10, 2)
+  valor_recuperado Decimal?       @db.Decimal(10, 2)
+
+  categoria        CategoriaGlosa
+  codigo_glosa     String?
+  motivo           String         @db.Text
+  status           StatusGlosa    @default(PENDENTE)
+
+  data_glosa       DateTime
+  data_recurso     DateTime?
+  data_resolucao   DateTime?
+
+  observacoes      String?        @db.Text
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now()) @updatedAt
+
+  agendamento      agendamento    @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+  convenio         Convenio?      @relation(fields: [convenioId], references: [id], onDelete: SetNull)
+  historico        GlosaHistorico[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, convenioId])
+  @@index([agendamentoId])
+  @@map("glosas")
+}
+
+model GlosaHistorico {
+  id               String      @id @default(uuid())
+  glosaId          String
+  tenantId         String
+  status_anterior  StatusGlosa?
+  status_novo      StatusGlosa
+  titulo           String
+  descricao        String      @db.Text
+  usuario_nome     String
+  usuario_id       String
+  createdAt        DateTime    @default(now())
+
+  glosa            Glosa       @relation(fields: [glosaId], references: [id], onDelete: Cascade)
+
+  @@index([glosaId])
+  @@index([tenantId])
+  @@map("glosa_historicos")
 }

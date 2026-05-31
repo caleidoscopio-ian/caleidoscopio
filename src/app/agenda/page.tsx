@@ -57,6 +57,23 @@ function AgendaPageContent() {
   const { filiais } = useFilial();
   const { toast } = useToast();
 
+  // Busca grade de um profissional (usado pelo form para aviso soft constraint)
+  const fetchGrade = async (profissionalId: string) => {
+    if (!user) return [];
+    try {
+      const res = await fetch(`/api/terapeutas/${profissionalId}/grade`, {
+        headers: {
+          "X-User-Data": btoa(JSON.stringify(user)),
+          "X-Auth-Token": user.token,
+        },
+      });
+      const data = await res.json();
+      return data.success ? data.data : [];
+    } catch {
+      return [];
+    }
+  };
+
   // Filtro local de filial — independente do seletor global do sidebar
   // Admin: pode trocar pelo dropdown local; não-admin: usa filialId do token (server-side)
   const [selectedFilialId, setSelectedFilialId] = useState<string | null>(null);
@@ -65,8 +82,9 @@ function AgendaPageContent() {
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [pacientes, setPacientes] = useState<
-    Array<{ id: string; nome: string }>
+    Array<{ id: string; nome: string; convenioId?: string | null }>
   >([]);
+  const [convenios, setConvenios] = useState<Array<{ id: string; nome: string }>>([]);
   const [profissionais, setProfissionais] = useState<
     Array<{ id: string; nome: string; especialidade: string }>
   >([]);
@@ -124,6 +142,7 @@ function AgendaPageContent() {
         loadProfissionais(),
         loadSalas(),
         loadProcedimentos(),
+        loadConvenios(),
       ]);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -216,7 +235,7 @@ function AgendaPageContent() {
       const data = result.success ? result.data : result;
 
       setPacientes(
-        data.map((p: any) => ({ id: p.id, nome: p.name || p.nome }))
+        data.map((p: any) => ({ id: p.id, nome: p.name || p.nome, convenioId: p.convenioId ?? null }))
       );
     } catch (error) {
       console.error("Erro ao carregar pacientes:", error);
@@ -351,6 +370,43 @@ function AgendaPageContent() {
       console.warn("Erro ao carregar procedimentos, usando lista vazia:", error);
       // Não propagar erro para não bloquear o carregamento da agenda
       setProcedimentos([]);
+    }
+  };
+
+  const loadConvenios = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch("/api/convenios", {
+        headers: { "X-User-Data": btoa(JSON.stringify(user)), "X-Auth-Token": user.token },
+      });
+      const result = await res.json();
+      const data = Array.isArray(result) ? result : (result.data ?? []);
+      setConvenios(data.map((c: any) => ({
+        id: c.id,
+        nome: c.nome_fantasia || c.razao_social,
+      })));
+    } catch {
+      setConvenios([]);
+    }
+  };
+
+  const fetchTabelaConvenio = async (convenioId: string) => {
+    if (!user) return [];
+    try {
+      const res = await fetch(`/api/convenios/${convenioId}/tabela`, {
+        headers: { "X-User-Data": btoa(JSON.stringify(user)), "X-Auth-Token": user.token },
+      });
+      const result = await res.json();
+      if (!result.success) return [];
+      return result.data.map((t: any) => ({
+        id: t.id,
+        nome_procedimento: t.nome_procedimento,
+        codigo_procedimento: t.codigo_procedimento,
+        valor_convenio: Number(t.valor_convenio),
+        procedimentoId: t.procedimentoId ?? null,
+      }));
+    } catch {
+      return [];
     }
   };
 
@@ -994,9 +1050,12 @@ function AgendaPageContent() {
             profissionais={profissionais}
             salas={salas}
             procedimentos={procedimentos}
+            convenios={convenios}
             onSubmit={handleNovoAgendamento}
             onCancel={() => setShowNovoAgendamento(false)}
             defaultValues={novoAgendamentoDefaults}
+            onFetchGrade={fetchGrade}
+            onFetchTabelaConvenio={fetchTabelaConvenio}
           />
         </DialogContent>
       </Dialog>
@@ -1024,9 +1083,12 @@ function AgendaPageContent() {
             profissionais={profissionais}
             salas={salas}
             procedimentos={procedimentos}
+            convenios={convenios}
             onSubmit={handleUpdateAgendamento}
             onCancel={() => setShowEditarAgendamento(false)}
             defaultValues={editarAgendamentoDefaults}
+            onFetchGrade={fetchGrade}
+            onFetchTabelaConvenio={fetchTabelaConvenio}
           />
         </DialogContent>
       </Dialog>
