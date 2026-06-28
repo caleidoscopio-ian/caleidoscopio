@@ -26,20 +26,32 @@ export async function PATCH(
     if (!await hasPermission(user, 'edit_schedule')) return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
 
     const body = await request.json()
-    const { action, motivo } = body as { action: CheckInAction; motivo?: string }
+    const { action, motivo, senha_autorizacao, numero_guia } = body as {
+      action: CheckInAction; motivo?: string; senha_autorizacao?: string; numero_guia?: string
+    }
 
     const acoes: CheckInAction[] = ['confirmar', 'checkin', 'iniciar', 'finalizar', 'no-show', 'reabrir']
     if (!action || !acoes.includes(action)) {
       return NextResponse.json({ success: false, error: 'Ação inválida' }, { status: 400 })
     }
 
-    // Buscar agendamento verificando tenant
+    // Buscar agendamento verificando tenant (inclui convênio do paciente)
     const agendamento = await prisma.agendamento.findFirst({
       where: { id, paciente: { tenantId: user.tenant.id } },
+      include: { paciente: { select: { convenioId: true } } },
     })
 
     if (!agendamento) {
       return NextResponse.json({ success: false, error: 'Agendamento não encontrado' }, { status: 404 })
+    }
+
+    // Regra de negócio: no check-in, se o paciente tem convênio, a senha é obrigatória
+    const temConvenio = !!agendamento.paciente?.convenioId
+    if (action === 'checkin' && temConvenio && !senha_autorizacao?.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Senha de autorização é obrigatória para pacientes com convênio' },
+        { status: 400 }
+      )
     }
 
     // Validar transição permitida
@@ -63,6 +75,8 @@ export async function PATCH(
       hora_inicio_real?: Date | null
       hora_fim_real?: Date | null
       motivo_falta?: string | null
+      senha_autorizacao?: string | null
+      numero_guia?: string | null
     }
 
     let updateData: AgendamentoUpdate = {}
@@ -76,6 +90,9 @@ export async function PATCH(
           status: StatusAgendamento.CONFIRMADO,
           hora_chegada: now,
           checkin_por: user.id,
+          // Persistir identificadores de faturamento informados no check-in
+          ...(senha_autorizacao?.trim() ? { senha_autorizacao: senha_autorizacao.trim() } : {}),
+          ...(numero_guia?.trim() ? { numero_guia: numero_guia.trim() } : {}),
           // Confirmar automaticamente se ainda AGENDADO
           ...(agendamento.status === StatusAgendamento.AGENDADO ? { confirmado_em: now, confirmado_por: user.id } : {}),
         }

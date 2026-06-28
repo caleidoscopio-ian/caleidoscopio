@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 
 // API para buscar terapeutas/profissionais da clínica do usuário logado
 export async function GET(request: NextRequest) {
@@ -46,8 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN'];
-    const isAdmin = adminRoles.includes(user.role);
+    const isAdmin = isAdminUser(user);
     const filialIdParam = searchParams.get('filialId');
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam || null);
 

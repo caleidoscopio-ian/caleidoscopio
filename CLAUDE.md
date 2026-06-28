@@ -145,3 +145,4 @@ NUNCA: `any` type · query sem `tenantId` · import de `src/` · `dangerouslySet
 | 20 | Taxa de Agendamento por Profissional | `/taxa-ocupacao` | Implementado |
 | 21 | Histórico de Atendimentos | `/historico-atendimentos` | Implementado |
 | 22 | Relatório de Atendimentos Glosados | `/glosas` | Implementado |
+| 23 | Conciliação de Glosas (Demonstrativo TISS) | `/glosas` (aba Conciliação) | Implementado |

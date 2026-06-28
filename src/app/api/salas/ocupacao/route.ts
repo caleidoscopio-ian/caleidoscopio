@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
+import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
 
 const STATUS_OCUPADOS = ['AGENDADO', 'CONFIRMADO', 'EM_ATENDIMENTO', 'ATENDIDO'] as const
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Período máximo de 35 dias' }, { status: 400 })
     }
 
-    const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes((user.role ?? '').toUpperCase())
+    const isAdmin = isAdminUser(user)
 
     // Filtro de filial: non-admin usa a filial do usuário
     const filialFiltro = !isAdmin

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
+import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { calcularMinutosDisponiveis, minutosAgendamento } from '@/lib/ocupacao'
 import type { OcupacaoProfissional, OcupacaoResumo } from '@/types/ocupacao-profissional'
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     if (diffDias > 60)
       return NextResponse.json({ success: false, error: 'Período máximo de 60 dias' }, { status: 400 })
 
-    const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes((user.role ?? '').toUpperCase())
+    const isAdmin = isAdminUser(user)
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam ?? null)
 
     // Buscar profissionais com suas grades

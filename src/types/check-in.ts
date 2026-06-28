@@ -21,6 +21,8 @@ export interface AgendamentoCheckIn extends Agendamento {
     foto?: string | null
     cor_agenda?: string | null
     telefone?: string | null
+    convenioId?: string | null
+    convenio?: { id: string; razao_social: string; nome_fantasia?: string | null } | null
   }
   profissional: {
     id: string

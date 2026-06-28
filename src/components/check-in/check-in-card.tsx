@@ -16,6 +16,13 @@ import {
   calcularAtrasoMinutos, type AgendamentoCheckIn, type CheckInAction,
 } from "@/types/check-in";
 import { NoShowDialog } from "./no-show-dialog";
+import { CheckinSenhaDialog } from "./checkin-senha-dialog";
+
+export interface CheckInActionOpts {
+  motivo?: string;
+  senha_autorizacao?: string;
+  numero_guia?: string;
+}
 
 const ACAO_ICONS: Record<CheckInAction, React.ComponentType<{ className?: string }>> = {
   confirmar:  CheckCircle2,
@@ -47,23 +54,29 @@ const ACAO_VARIANT: Record<CheckInAction, "default" | "secondary" | "destructive
 interface CheckInCardProps {
   agendamento: AgendamentoCheckIn;
   canEdit: boolean;
-  onAction: (id: string, action: CheckInAction, motivo?: string) => Promise<void>;
+  onAction: (id: string, action: CheckInAction, opts?: CheckInActionOpts) => Promise<void>;
 }
 
 export function CheckInCard({ agendamento, canEdit, onAction }: CheckInCardProps) {
   const [loading, setLoading] = useState<CheckInAction | null>(null);
   const [noShowOpen, setNoShowOpen] = useState(false);
+  const [senhaOpen, setSenhaOpen] = useState(false);
 
   const atrasoMin = calcularAtrasoMinutos(agendamento);
   const acoes = ACOES_POR_STATUS[agendamento.status as StatusAgendamento] ?? [];
 
-  const handleAction = async (action: CheckInAction, motivo?: string) => {
+  const handleAction = async (action: CheckInAction, opts?: CheckInActionOpts) => {
     setLoading(action);
     try {
-      await onAction(agendamento.id, action, motivo);
+      await onAction(agendamento.id, action, opts);
     } finally {
       setLoading(null);
     }
+  };
+
+  // Ao clicar em Check-in, abrir dialog para capturar senha/guia (obrigatória se convênio)
+  const handleCheckinClick = () => {
+    setSenhaOpen(true);
   };
 
   const hora = format(new Date(agendamento.data_hora), "HH:mm", { locale: ptBR });
@@ -157,6 +170,23 @@ export function CheckInCard({ agendamento, canEdit, onAction }: CheckInCardProps
                       </Button>
                     );
                   }
+                  if (acao === "checkin") {
+                    return (
+                      <Button
+                        key={acao}
+                        size="sm"
+                        variant={ACAO_VARIANT[acao]}
+                        className="h-7 text-xs px-2"
+                        onClick={handleCheckinClick}
+                        disabled={!!loading}
+                      >
+                        {loading === acao
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <Icon className="h-3 w-3 mr-1" />}
+                        {ACAO_LABELS[acao]}
+                      </Button>
+                    );
+                  }
                   return (
                     <Button
                       key={acao}
@@ -182,8 +212,17 @@ export function CheckInCard({ agendamento, canEdit, onAction }: CheckInCardProps
       <NoShowDialog
         open={noShowOpen}
         pacienteNome={agendamento.paciente.nome}
-        onConfirm={async (motivo) => { setNoShowOpen(false); await handleAction("no-show", motivo); }}
+        onConfirm={async (motivo) => { setNoShowOpen(false); await handleAction("no-show", { motivo }); }}
         onCancel={() => setNoShowOpen(false)}
+      />
+
+      <CheckinSenhaDialog
+        agendamento={agendamento}
+        open={senhaOpen}
+        onOpenChange={setSenhaOpen}
+        onConfirm={async (senha, numeroGuia) => {
+          await handleAction("checkin", { senha_autorizacao: senha, numero_guia: numeroGuia });
+        }}
       />
     </>
   );

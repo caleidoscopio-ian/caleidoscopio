@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
+import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
@@ -14,8 +14,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const especialidade = searchParams.get('especialidade') || ''
     const includeInativos = searchParams.get('includeInativos') === 'true'
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
-    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    const isAdmin = isAdminUser(user)
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
 
     const where: Prisma.ProcedimentoWhereInput = {

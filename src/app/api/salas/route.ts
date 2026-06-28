@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 
 // API para buscar salas da clínica do usuário logado
 export async function GET(request: NextRequest) {
@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
     );
 
     const { searchParams } = new URL(request.url)
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
-    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    // Fonte de verdade = perfil RBAC (página de permissões)
+    const isAdmin = isAdminUser(user)
     // Não-admin fica restrito à própria filial; admin pode filtrar via query param
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
 
@@ -111,13 +111,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar permissão (admin)
-    if (user.role.toLowerCase() !== "admin") {
-      console.error(`❌ API Salas - Permissão negada para role: ${user.role}`);
+    // Verificar permissão via RBAC (perfil da página de permissões)
+    if (!await hasPermission(user, "manage_rooms")) {
+      console.error(`❌ API Salas - Permissão negada (RBAC) para criar salas`);
       return NextResponse.json(
         {
           success: false,
-          error: "Sem permissão para criar salas. Apenas administradores.",
+          error: "Sem permissão para criar salas.",
         },
         { status: 403 }
       );
@@ -204,13 +204,13 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Verificar permissão (admin)
-    if (user.role.toLowerCase() !== "admin") {
-      console.error(`❌ API Salas - Permissão negada para role: ${user.role}`);
+    // Verificar permissão via RBAC (perfil da página de permissões)
+    if (!await hasPermission(user, "manage_rooms")) {
+      console.error(`❌ API Salas - Permissão negada (RBAC) para editar salas`);
       return NextResponse.json(
         {
           success: false,
-          error: "Sem permissão para editar salas. Apenas administradores.",
+          error: "Sem permissão para editar salas.",
         },
         { status: 403 }
       );
@@ -315,13 +315,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Verificar permissão (admin)
-    if (user.role.toLowerCase() !== "admin") {
-      console.error(`❌ API Salas - Permissão negada para role: ${user.role}`);
+    // Verificar permissão via RBAC (perfil da página de permissões)
+    if (!await hasPermission(user, "manage_rooms")) {
+      console.error(`❌ API Salas - Permissão negada (RBAC) para deletar salas`);
       return NextResponse.json(
         {
           success: false,
-          error: "Sem permissão para deletar salas. Apenas administradores.",
+          error: "Sem permissão para deletar salas.",
         },
         { status: 403 }
       );

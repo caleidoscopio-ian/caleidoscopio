@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isValidUuid(v: unknown): v is string {
@@ -59,8 +59,7 @@ export async function GET(request: NextRequest) {
     );
 
     const { searchParams } = new URL(request.url)
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
-    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    const isAdmin = isAdminUser(user)
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
 
     // Construir where clause baseado na role do usuário
@@ -263,8 +262,7 @@ export async function POST(request: NextRequest) {
       filialId,
     } = body;
 
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
-    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    const isAdmin = isAdminUser(user)
     // Admin usa filialId enviado pelo form; não-admin usa a filial do seu perfil
     const filialIdToSave = isAdmin ? (filialId || null) : (user.filialId ?? null)
 

@@ -114,35 +114,39 @@ export default function CheckInPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isAuthenticated, user, filters]);
 
-  const handleAction = useCallback(async (id: string, action: CheckInAction, motivo?: string) => {
+  const handleAction = useCallback(async (id: string, action: CheckInAction, opts?: { motivo?: string; senha_autorizacao?: string; numero_guia?: string }) => {
     if (!user) return;
+    let d: { success: boolean; error?: string; data?: AgendamentoCheckIn };
     try {
       const r = await fetch(`/api/agendamentos/${id}/check-in`, {
         method: "PATCH",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({ action, motivo }),
+        body: JSON.stringify({ action, ...opts }),
       });
-      const d = await r.json();
-      if (d.success) {
-        setAgendamentos((prev) =>
-          prev.map((a) => (a.id === id ? (d.data as AgendamentoCheckIn) : a))
-        );
-        const labels: Record<CheckInAction, string> = {
-          confirmar: "Confirmado",
-          checkin:   "Check-in registrado",
-          iniciar:   "Atendimento iniciado",
-          finalizar: "Atendimento finalizado",
-          "no-show": "No-show registrado",
-          reabrir:   "Agendamento reaberto",
-        };
-        toast({ title: labels[action] });
-      } else {
-        toast({ title: "Erro", description: d.error, variant: "destructive" });
-      }
+      d = await r.json();
     } catch {
       toast({ title: "Erro de conexão", variant: "destructive" });
+      throw new Error("network"); // propaga p/ manter dialogs abertos
     }
-  }, [user, authHeaders]);
+
+    if (!d.success) {
+      toast({ title: "Erro", description: d.error, variant: "destructive" });
+      throw new Error(d.error || "fail"); // propaga p/ manter dialogs abertos
+    }
+
+    setAgendamentos((prev) =>
+      prev.map((a) => (a.id === id ? (d.data as AgendamentoCheckIn) : a))
+    );
+    const labels: Record<CheckInAction, string> = {
+      confirmar: "Confirmado",
+      checkin:   "Check-in registrado",
+      iniciar:   "Atendimento iniciado",
+      finalizar: "Atendimento finalizado",
+      "no-show": "No-show registrado",
+      reabrir:   "Agendamento reaberto",
+    };
+    toast({ title: labels[action] });
+  }, [user, authHeaders, toast]);
 
   if (loading) {
     return (

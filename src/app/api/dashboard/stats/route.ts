@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth/server";
+import { getAuthenticatedUser, isAdminUser } from "@/lib/auth/server";
 
 // API para buscar estatísticas do dashboard
 export async function GET(request: NextRequest) {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const tenantId = user.tenant.id;
-    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role);
+    const isAdmin = isAdminUser(user);
 
     // Buscar estatísticas baseadas no perfil
     const stats: any = {};

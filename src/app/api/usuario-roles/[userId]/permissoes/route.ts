@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthenticatedUser } from '@/lib/auth/server'
+import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { getEffectivePermissions } from '@/lib/auth/permission-service'
 
 // GET /api/usuario-roles/[userId]/permissoes — Permissões efetivas de um usuário
@@ -14,9 +14,8 @@ export async function GET(
 
     const { userId } = await params
 
-    // Usuário pode ver suas próprias permissões; admins podem ver de qualquer usuário
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
-    if (userId !== user.id && !adminRoles.includes(user.role)) {
+    // Usuário pode ver suas próprias permissões; ver de outros exige permissão RBAC
+    if (userId !== user.id && !await hasPermission(user, 'manage_permissions')) {
       return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
     }
 

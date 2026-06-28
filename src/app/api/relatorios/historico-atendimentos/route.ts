@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
 import { startOfDay, endOfDay } from "date-fns";
 import type { AtendimentoHistorico, HistoricoResumo } from "@/types/historico-atendimento";
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
 
-    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes((user.role ?? "").toUpperCase());
+    const isAdmin = isAdminUser(user);
     const filialIdParam = searchParams.get("filialId");
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam ?? null);
 

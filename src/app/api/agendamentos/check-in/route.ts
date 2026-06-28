@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
+import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { StatusAgendamento } from '@/types/agendamento'
 
 export async function GET(request: NextRequest) {
@@ -16,8 +16,7 @@ export async function GET(request: NextRequest) {
     const salaId = searchParams.get('salaId')
     const search = searchParams.get('search') || ''
     const statusParam = searchParams.get('status') // ex: "AGENDADO,CONFIRMADO"
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN']
-    const isAdmin = adminRoles.includes(user.role.toUpperCase())
+    const isAdmin = isAdminUser(user)
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
 
     // Calcular intervalo do dia — parse manual para evitar UTC vs local mismatch
@@ -54,7 +53,13 @@ export async function GET(request: NextRequest) {
         ...(statusList?.length ? { status: { in: statusList } } : {}),
       },
       include: {
-        paciente: { select: { id: true, nome: true, foto: true, cor_agenda: true, telefone: true } },
+        paciente: {
+          select: {
+            id: true, nome: true, foto: true, cor_agenda: true, telefone: true,
+            convenioId: true,
+            convenio: { select: { id: true, razao_social: true, nome_fantasia: true } },
+          },
+        },
         profissional: { select: { id: true, nome: true, especialidade: true, email: true } },
         salaRelacao: { select: { id: true, nome: true, cor: true } },
         procedimento: { select: { id: true, nome: true, codigo: true, cor: true } },

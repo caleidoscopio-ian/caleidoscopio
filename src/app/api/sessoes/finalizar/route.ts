@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 
 // API para finalizar uma sessão
 export async function POST(request: NextRequest) {
@@ -92,8 +92,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário tem permissão para finalizar esta sessão
     // Admins podem finalizar qualquer sessão, terapeutas só as suas próprias
-    const adminRoles = ["ADMIN", "SUPER_ADMIN"];
-    const isAdmin = adminRoles.includes(user.role);
+    const isAdmin = isAdminUser(user);
 
     if (!isAdmin && sessao.profissional.usuarioId !== user.id) {
       return NextResponse.json(

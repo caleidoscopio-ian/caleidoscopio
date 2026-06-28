@@ -21,8 +21,8 @@ export function FilialProvider({ children }: { children: ReactNode }) {
   const [filiais, setFiliais] = useState<Filial[]>([])
   const [filialAtiva, setFilialAtivaState] = useState<Filial | null>(null)
   const [loading, setLoading] = useState(true)
-
-  const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes((user?.role ?? '').toUpperCase())
+  // isAdmin vem do PERFIL RBAC (página de permissões), não do role do SSO
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const setFilialAtiva = useCallback((f: Filial | null) => {
     setFilialAtivaState(f)
@@ -44,32 +44,29 @@ export function FilialProvider({ children }: { children: ReactNode }) {
       'X-Auth-Token': user.token,
     }
 
-    // Não-admin: só precisa da sua filial vinculada — não depende da lista completa
-    if (!isAdmin) {
-      fetch('/api/me/filial', { headers })
-        .then(r => r.json())
-        .then(meFilial => {
-          if (meFilial?.filial) {
-            setFilialAtivaState(meFilial.filial as Filial)
-          }
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false))
-      return
-    }
-
-    // Admin: carregar lista completa de filiais
-    fetch('/api/filiais?ativas=true', { headers })
+    // 1. Determinar perfil RBAC (fonte de verdade) + filial vinculada
+    fetch('/api/me/filial', { headers })
       .then(r => r.json())
-      .then(d => {
-        if (!d.success) return
-        const lista: Filial[] = d.data
-        setFiliais(lista)
+      .then(async (me) => {
+        const admin = !!me?.isAdmin // RBAC
+        setIsAdmin(admin)
 
-        const savedId = localStorage.getItem(STORAGE_KEY)
-        if (savedId) {
-          const found = lista.find(f => f.id === savedId)
-          if (found) { setFilialAtivaState(found); return }
+        if (!admin) {
+          // Não-admin: trava na própria filial vinculada
+          if (me?.filial) setFilialAtivaState(me.filial as Filial)
+          return
+        }
+
+        // Admin: carregar lista completa de filiais para o seletor
+        const d = await fetch('/api/filiais?ativas=true', { headers }).then(r => r.json())
+        if (d?.success) {
+          const lista: Filial[] = d.data
+          setFiliais(lista)
+          const savedId = localStorage.getItem(STORAGE_KEY)
+          if (savedId) {
+            const found = lista.find(f => f.id === savedId)
+            if (found) setFilialAtivaState(found)
+          }
         }
       })
       .catch(() => {})

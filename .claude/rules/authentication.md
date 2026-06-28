@@ -93,3 +93,26 @@ if (!await hasPermission(user, 'view_professionals')) { ... }
 ```
 
 Nunca usar `user.role === 'ADMIN'` diretamente — sempre passar pelo RBAC.
+
+## Fonte de verdade = perfil RBAC (página de permissões), NÃO o role do SSO
+
+O `user.role` vem do Sistema 1 (SSO) e **não** reflete o perfil configurado na página de
+permissões. A verdade é o perfil RBAC local (`UsuarioRole → Role`).
+
+- `getAuthenticatedUser` expõe `user.rbacRole` (nome do perfil RBAC; fallback p/ SSO).
+- **Autorizar AÇÕES** (criar/editar/excluir): SEMPRE `await hasPermission(user, '<action_key>')`.
+  Nunca gatear escrita por `user.role` (ex: `user.role.toLowerCase() === 'admin'` é PROIBIDO).
+- **Escopo administrativo** (ex: ver todas as filiais vs. só a própria): usar o helper
+  `isAdminUser(user)` de `@/lib/auth/server` (baseado em `rbacRole`), nunca `user.role`.
+
+```typescript
+import { isAdminUser, hasPermission } from '@/lib/auth/server'
+
+const isAdmin = isAdminUser(user)                       // escopo (filial, etc.)
+const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
+
+if (!await hasPermission(user, 'manage_rooms')) { ... } // autorizar ação
+```
+
+No frontend, o `isAdmin` do `FilialProvider`/`useFilial` vem de `/api/me/filial`
+(campo `isAdmin`, calculado pelo RBAC) — não do `user.role` do SSO.

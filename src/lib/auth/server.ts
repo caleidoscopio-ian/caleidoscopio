@@ -11,7 +11,8 @@ interface AuthUser {
   id: string
   email: string
   name: string
-  role: string
+  role: string            // role vindo do SSO (Sistema 1)
+  rbacRole?: string | null // role do perfil RBAC local (página de permissões) — fonte de verdade
   filialId?: string | null
   tenant: {
     id: string
@@ -86,13 +87,15 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<AuthUs
       return null
     }
 
-    // Buscar filialId do usuário no banco local (UsuarioRole)
+    // Buscar filialId e o ROLE RBAC do usuário no banco local (UsuarioRole).
+    // O perfil RBAC (página de permissões) é a fonte de verdade — NÃO o role do SSO.
     if (userData.tenant?.id) {
       const ur = await prisma.usuarioRole.findUnique({
         where: { usuarioId_tenantId: { usuarioId: userData.id, tenantId: userData.tenant.id } },
-        select: { filialId: true },
+        select: { filialId: true, role: { select: { nome: true } } },
       })
       userData.filialId = ur?.filialId ?? null
+      userData.rbacRole = ur?.role?.nome ?? null
     }
 
     return userData
@@ -101,6 +104,20 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<AuthUs
     console.error('❌ Auth Server - Erro na autenticação:', error)
     return null
   }
+}
+
+/**
+ * Indica se o usuário tem perfil administrativo (ADMIN/SUPER_ADMIN).
+ *
+ * FONTE DE VERDADE = perfil RBAC (página de permissões), via `rbacRole`.
+ * Fallback para o role do SSO apenas se o RBAC ainda não estiver disponível.
+ *
+ * Usado para ESCOPO (ex: ver todas as filiais vs. só a própria). Para autorizar
+ * AÇÕES (criar/editar/excluir), use sempre `hasPermission`.
+ */
+export function isAdminUser(user: AuthUser): boolean {
+  const role = (user.rbacRole ?? user.role ?? '').toUpperCase()
+  return role === 'ADMIN' || role === 'SUPER_ADMIN'
 }
 
 /**

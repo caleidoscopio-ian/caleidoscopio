@@ -47,7 +47,7 @@ if (status && ['EM_ANDAMENTO', 'FINALIZADA', 'CANCELADA'].includes(status)) {
 }
 ```
 
-Enums do projeto: `StatusSessao`, `StatusProgresso`, `FaseAtividade`, `StatusAgendamento`, `TipoEncaminhamento`, `StatusEncaminhamento`, `TipoRelatorio`, `TipoAnexo`, `TipoRecompensa`, `TipoAvaliacao`
+Enums do projeto: `StatusSessao`, `StatusProgresso`, `FaseAtividade`, `StatusAgendamento`, `TipoEncaminhamento`, `StatusEncaminhamento`, `TipoRelatorio`, `TipoAnexo`, `TipoRecompensa`, `TipoAvaliacao`, `CategoriaGlosa`, `StatusGlosa`, `StatusConciliacao`
 
 ## Interfaces
 

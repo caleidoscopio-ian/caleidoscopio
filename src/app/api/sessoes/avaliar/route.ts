@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
 
 // API para avaliar uma instrução durante a sessão
@@ -117,8 +117,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário tem permissão para avaliar esta sessão
     // Admins podem avaliar qualquer sessão, terapeutas só as suas próprias
-    const adminRoles = ['ADMIN', 'SUPER_ADMIN'];
-    const isAdmin = adminRoles.includes(user.role);
+    const isAdmin = isAdminUser(user);
 
     if (!isAdmin && sessao.profissional.usuarioId !== user.id) {
       return NextResponse.json(

@@ -6,7 +6,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileDown, FileText, Plus, LayoutDashboard, List } from "lucide-react";
+import { FileDown, FileText, Plus, LayoutDashboard, List, FileUp } from "lucide-react";
 import { subDays, startOfDay, endOfDay } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -15,9 +15,14 @@ import { FiltrosGlosas } from "@/components/glosas/filtros-glosas";
 import { TabelaGlosas } from "@/components/glosas/tabela-glosas";
 import { RegistrarGlosaDialog } from "@/components/glosas/registrar-glosa-dialog";
 import { GlosaDetalheDialog } from "@/components/glosas/glosa-detalhe-dialog";
+import { UploadDemonstrativo } from "@/components/glosas/upload-demonstrativo";
+import { ListaDemonstrativos } from "@/components/glosas/lista-demonstrativos";
+import { ComparativoConciliacaoView } from "@/components/glosas/comparativo-conciliacao";
+import { ConciliacaoDetalhe } from "@/components/glosas/conciliacao-detalhe";
 import type {
   Glosa, GlosaListResponse, GlosaDashboard, GlosaFiltros, GlosaResumo, StatusGlosa,
 } from "@/types/glosa";
+import type { DemonstrativoResumo, ComparativoConciliacao } from "@/types/conciliacao";
 
 const TODOS_STATUS: StatusGlosa[] = ["PENDENTE", "EM_RECURSO", "RECUPERADA", "PARCIAL", "NEGADA", "ACATADA"];
 
@@ -56,6 +61,11 @@ function GlosasContent() {
   const [convenios, setConvenios] = useState<Array<{ id: string; nome: string }>>([]);
   const [registrarOpen, setRegistrarOpen] = useState(false);
   const [detalheId, setDetalheId] = useState<string | null>(null);
+
+  // Conciliação
+  const [demonstrativos, setDemonstrativos] = useState<DemonstrativoResumo[]>([]);
+  const [comparativo, setComparativo] = useState<ComparativoConciliacao | null>(null);
+  const [demonstrativoDetalheId, setDemonstrativoDetalheId] = useState<string | null>(null);
   const [exportandoCSV, setExportandoCSV] = useState(false);
   const [exportandoPDF, setExportandoPDF] = useState(false);
 
@@ -139,11 +149,33 @@ function GlosasContent() {
       setFiltrosAtivos(f);
       buscar(f, 1);
       buscarDashboard(f);
+      carregarConciliacao();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handlePage = (pg: number) => { setPage(pg); buscar(filtrosAtivos, pg); };
+
+  const carregarConciliacao = useCallback(async () => {
+    if (!user) return;
+    try {
+      const [dRes, cRes] = await Promise.all([
+        fetch("/api/glosas/demonstrativos", { headers: h() }),
+        fetch("/api/glosas/conciliacao", { headers: h() }),
+      ]);
+      const dData = await dRes.json();
+      const cData = await cRes.json();
+      if (dData.success) setDemonstrativos(dData.data);
+      if (cData.success) setComparativo(cData.data);
+    } catch { /* silencioso */ }
+  }, [user, h]);
+
+  const handleExcluirDemonstrativo = async (id: string) => {
+    if (!confirm("Excluir este demonstrativo e suas guias conciliadas?") || !user) return;
+    const res = await fetch(`/api/glosas/demonstrativos/${id}`, { method: "DELETE", headers: h() });
+    if (res.ok) { toast({ title: "Demonstrativo excluído" }); carregarConciliacao(); }
+    else toast({ title: "Erro ao excluir", variant: "destructive" });
+  };
 
   const handleExcluir = async (id: string) => {
     if (!confirm("Excluir esta glosa?") || !user) return;
@@ -222,6 +254,9 @@ function GlosasContent() {
             <TabsTrigger value="lista" className="gap-2">
               <List className="h-4 w-4" />Detalhamento
             </TabsTrigger>
+            <TabsTrigger value="conciliacao" className="gap-2">
+              <FileUp className="h-4 w-4" />Conciliação
+            </TabsTrigger>
           </TabsList>
 
           {/* Tab Dashboard */}
@@ -253,6 +288,24 @@ function GlosasContent() {
               />
             )}
           </TabsContent>
+
+          {/* Tab Conciliação */}
+          <TabsContent value="conciliacao" className="space-y-6 mt-4">
+            {comparativo && comparativo.total_demonstrativos > 0 && (
+              <ComparativoConciliacaoView comparativo={comparativo} />
+            )}
+            <UploadDemonstrativo convenios={convenios} onImportado={carregarConciliacao} />
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Demonstrativos Importados
+              </h2>
+              <ListaDemonstrativos
+                demonstrativos={demonstrativos}
+                onDetalhe={(id) => setDemonstrativoDetalheId(id)}
+                onExcluir={handleExcluirDemonstrativo}
+              />
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -268,6 +321,11 @@ function GlosasContent() {
         open={detalheId !== null}
         onOpenChange={(o) => { if (!o) setDetalheId(null); }}
         onAtualizada={() => buscar(filtrosAtivos, page)}
+      />
+      <ConciliacaoDetalhe
+        demonstrativoId={demonstrativoDetalheId}
+        open={demonstrativoDetalheId !== null}
+        onOpenChange={(o) => { if (!o) setDemonstrativoDetalheId(null); }}
       />
     </MainLayout>
   );

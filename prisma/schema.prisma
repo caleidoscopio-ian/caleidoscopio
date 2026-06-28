@@ -27,6 +27,9 @@ model agendamento {
   hora_inicio_real DateTime?
   hora_fim_real   DateTime?
   motivo_falta    String?
+  // Identificadores de faturamento TISS (capturados no check-in)
+  senha_autorizacao String?         // senha de autorização do convênio (chave de conciliação)
+  numero_guia       String?         // número da guia do prestador
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @default(now()) @updatedAt
   paciente        paciente          @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
@@ -34,7 +37,9 @@ model agendamento {
   salaRelacao     Sala              @relation(fields: [salaId], references: [id], onDelete: Restrict)
   procedimento    Procedimento?     @relation(fields: [procedimentoId], references: [id], onDelete: SetNull)
   glosas          Glosa[]
+  demonstrativoGuias DemonstrativoGuia[]
 
+  @@index([senha_autorizacao])
   @@map("agendamentos")
 }
 
@@ -910,6 +915,7 @@ model Convenio {
   regrasRepasse         RegraRepasse[]
   pacotes               Pacote[]
   glosas                Glosa[]
+  demonstrativos        DemonstrativoImportacao[]
   filial                Filial?            @relation(fields: [filialId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, cnpj])
@@ -1680,4 +1686,76 @@ model GlosaHistorico {
   @@index([glosaId])
   @@index([tenantId])
   @@map("glosa_historicos")
+}
+
+// ========================================
+// MÓDULO CONCILIAÇÃO TISS (Demonstrativos de Glosa)
+// ========================================
+
+enum StatusConciliacao {
+  CONCILIADO        // guia casada, sem glosa
+  CONCILIADO_GLOSA  // guia casada, com glosa
+  NAO_ENCONTRADO    // guia do demonstrativo sem atendimento correspondente
+}
+
+model DemonstrativoImportacao {
+  id                    String   @id @default(uuid())
+  tenantId              String
+  convenioId            String?
+  nome_arquivo          String
+  tipo_demonstrativo    String   // DEMONSTRATIVO_PAGAMENTO | DEMONSTRATIVO_ANALISE_CONTA
+  numero_demonstrativo  String?
+  operadora_nome        String?
+  registro_ans          String?
+  data_emissao          DateTime?
+  valor_informado_total Decimal? @db.Decimal(12, 2)
+  valor_processado_total Decimal? @db.Decimal(12, 2)
+  valor_liberado_total  Decimal? @db.Decimal(12, 2)
+  valor_glosa_total     Decimal? @db.Decimal(12, 2)
+  total_guias           Int      @default(0)
+  guias_conciliadas     Int      @default(0)
+  guias_nao_encontradas Int      @default(0)
+  importado_por         String
+  importado_por_nome    String
+  createdAt             DateTime @default(now())
+
+  convenio              Convenio?            @relation(fields: [convenioId], references: [id], onDelete: SetNull)
+  guias                 DemonstrativoGuia[]
+
+  @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@map("demonstrativo_importacoes")
+}
+
+model DemonstrativoGuia {
+  id                    String            @id @default(uuid())
+  tenantId              String
+  demonstrativoId       String
+  agendamentoId         String?           // atendimento casado na conciliação
+
+  numero_guia_prestador String?
+  numero_guia_operadora String?
+  senha                 String?
+  numero_carteira       String?
+  data_realizacao       DateTime?
+
+  valor_informado       Decimal           @db.Decimal(10, 2) @default(0)
+  valor_processado      Decimal           @db.Decimal(10, 2) @default(0)
+  valor_liberado        Decimal           @db.Decimal(10, 2) @default(0)
+  valor_glosa           Decimal           @db.Decimal(10, 2) @default(0)
+  situacao              String?
+  codigo_glosa          String?
+  descricao_glosa       String?
+
+  status_conciliacao    StatusConciliacao @default(NAO_ENCONTRADO)
+  createdAt             DateTime          @default(now())
+
+  demonstrativo         DemonstrativoImportacao @relation(fields: [demonstrativoId], references: [id], onDelete: Cascade)
+  agendamento           agendamento?            @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([demonstrativoId])
+  @@index([senha])
+  @@index([agendamentoId])
+  @@map("demonstrativo_guias")
 }

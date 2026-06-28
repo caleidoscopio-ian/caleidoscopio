@@ -47,6 +47,8 @@ export interface Agendamento {
   hora_inicio_real?: string | null
   hora_fim_real?: string | null
   motivo_falta?: string | null
+  senha_autorizacao?: string | null
+  numero_guia?: string | null
   createdAt: Date | string
   updatedAt: Date | string
 

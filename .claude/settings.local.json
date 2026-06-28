@@ -30,13 +30,35 @@
       "PowerShell(New-Item -ItemType Directory -Force -Path \"e:\\\\caleidoscopio\\\\src\\\\app\\\\api\\\\salas\\\\ocupacao\")",
       "PowerShell(New-Item -ItemType Directory -Force -Path \"e:\\\\caleidoscopio\\\\src\\\\app\\\\salas\\\\mapa-ocupacao\")",
       "Bash(mkdir -p \"src/app/api/terapeutas/[id]/grade\" 2>&1; echo \"done\")",
-      "Bash(mkdir -p \"src/app/api/glosas/[id]/recurso\" && mkdir -p \"src/app/api/glosas/dashboard\" && echo \"ok\")"
+      "Bash(mkdir -p \"src/app/api/glosas/[id]/recurso\" && mkdir -p \"src/app/api/glosas/dashboard\" && echo \"ok\")",
+      "Bash(find /c/Users/\"Daniel Moura\"/Downloads -maxdepth 1 -iname \"*.xml\" 2>/dev/null | head -20; echo \"---tmp---\"; find /tmp /c/Users/\"Daniel Moura\"/AppData/Local/Temp -maxdepth 2 -iname \"*radesco*\" -o -iname \"*apvida*\" 2>/dev/null | head)",
+      "Read(//c/Users/Daniel Moura/Downloads/**)",
+      "Bash(awk '{print $5}')",
+      "Bash(awk '/<ans:relacaoGuias>/{f=1} f{print} /<\\\\/ans:relacaoGuias>/{c++; if\\(c==1\\) exit}' \"Hapvida MG \\(1\\).xml\")",
+      "Bash(npm i *)",
+      "Bash(cd /tmp)",
+      "Bash(iconv -f UTF-16 -t UTF-8 \"/c/Users/Daniel Moura/Downloads/Hapvida MG \\(1\\).xml\")",
+      "Bash(cp \"/c/Users/Daniel Moura/Downloads/Hapvida MG \\(1\\).xml\" /tmp/hap_raw.xml)",
+      "Bash(iconv -f UTF-16LE -t UTF-8 /tmp/hap_raw.xml)",
+      "Bash(echo \"exit=$?\")",
+      "Read(//tmp/**)",
+      "Bash(cp /tmp/test-tiss.mjs /e/caleidoscopio/_test_tiss.mjs && node _test_tiss.mjs 2>&1; rm -f /e/caleidoscopio/_test_tiss.mjs)",
+      "Bash(cd /e/caleidoscopio; mkdir -p \"src/app/api/glosas/demonstrativos/[id]\"; echo ok)",
+      "Bash(grep -E \"^\\(tsx|ts-node\\)$\")",
+      "Bash(rm -f .tmp-tiss-test/*.xml .tmp-tiss-test/*.mjs)",
+      "Bash(rmdir .tmp-tiss-test)",
+      "Bash(rm -f .tmp-tiss-test/*.mjs .tmp-tiss-test/*.xml)",
+      "Bash(node .tmp-salas.mjs)",
+      "Bash(grep -v \"^\\\\`\")",
+      "Bash(grep -vE \"^\\\\`|PrismaClient\")"
     ],
     "deny": [],
     "ask": [],
     "additionalDirectories": [
       "E:\\caleidoscopio\\src\\app\\api\\terapeutas\\[id]",
-      "E:\\caleidoscopio\\src\\app\\api\\glosas\\[id]"
+      "E:\\caleidoscopio\\src\\app\\api\\glosas\\[id]",
+      "\\tmp",
+      "E:\\caleidoscopio\\src\\app\\api\\glosas\\demonstrativos"
     ]
   }
 }

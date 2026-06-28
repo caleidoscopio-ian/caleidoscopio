@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
 import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
 
@@ -61,8 +61,7 @@ export async function GET(request: NextRequest) {
     const sala = searchParams.get("sala");
 
     // 🔒 CRÍTICO: Se não for admin, terapeuta só vê seus próprios agendamentos
-    const adminRoles = ["ADMIN", "SUPER_ADMIN"];
-    const isAdmin = adminRoles.includes(user.role);
+    const isAdmin = isAdminUser(user);
     const filialIdParam = searchParams.get("filialId");
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam || null);
 

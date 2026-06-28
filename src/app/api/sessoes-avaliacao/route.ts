@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
 
 // API para iniciar uma sessão de avaliação
@@ -104,8 +104,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Se não encontrou profissional vinculado e o usuário é Admin, buscar o profissional do paciente
-    const adminRoles = ["ADMIN", "SUPER_ADMIN"];
-    if (!profissional && adminRoles.includes(user.role)) {
+    if (!profissional && isAdminUser(user)) {
       // Buscar profissional vinculado ao paciente
       if (paciente.profissionalId) {
         profissional = await prisma.profissional.findFirst({
