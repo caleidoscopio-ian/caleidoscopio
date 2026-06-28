@@ -1,11 +1,11 @@
 // Helper para calcular o preço efetivo de um procedimento em um atendimento.
-// Regra:
-//   1. Se paciente tem convênio E há entrada em ConvenioTabela para o procedimento → valor_convenio
-//   2. Senão, se procedimento tem valor_particular → valor_particular
-//   3. Senão, se procedimento tem valor padrão → valor
-//   4. Senão → null
+// Regra ATUAL: o valor vem EXCLUSIVAMENTE da tabela do convênio (ConvenioTabela.valor_convenio).
+// O procedimento não tem mais valor próprio — o preço só existe quando o paciente tem convênio
+// E o procedimento está vinculado àquele convênio com um valor.
+//   1. Paciente tem convênio E há entrada em ConvenioTabela p/ o procedimento → valor_convenio
+//   2. Senão → null (sem valor)
 
-export type OrigemPreco = "convenio" | "particular" | "padrao" | null;
+export type OrigemPreco = "convenio" | null;
 
 export interface PrecoCalculado {
   valor: number | null;
@@ -49,17 +49,13 @@ export function calcularPrecoProcedimento(params: {
     }
   }
 
-  const particular = toNumber(procedimento.valor_particular);
-  if (particular !== null) {
-    return { valor: particular, origem: "particular", rotulo: "Valor particular" };
-  }
-
-  const padrao = toNumber(procedimento.valor);
-  if (padrao !== null) {
-    return { valor: padrao, origem: "padrao", rotulo: "Valor padrão" };
-  }
-
-  return { valor: null, origem: null, rotulo: "Sem preço cadastrado" };
+  return {
+    valor: null,
+    origem: null,
+    rotulo: temConvenio
+      ? "Procedimento sem valor na tabela do convênio"
+      : "Sem convênio — valor cadastrado apenas por convênio",
+  };
 }
 
 export const formatBRL = (v: number | null): string =>

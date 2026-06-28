@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Procedimento } from "@/types/procedimento";
-import { formatBRL, formatDuracao } from "@/types/procedimento";
+import { formatBRL } from "@/types/procedimento";
 import { TIPO_REPASSE_LABELS } from "@/types/profissional";
 import Link from "next/link";
 import * as LucideIcons from "lucide-react";
@@ -185,11 +185,6 @@ export default function ProcedimentoDetalhePage() {
                 <InfoItem label="Nome" value={procedimento.nome} />
                 <InfoItem label="Especialidade" value={procedimento.especialidade} />
                 <InfoItem label="Código TUSS" value={procedimento.codigo} mono />
-                <InfoItem label="Valor Padrão" value={formatBRL(procedimento.valor)} />
-                <InfoItem label="Valor Particular" value={formatBRL(procedimento.valor_particular)} />
-                <InfoItem label="Duração Padrão" value={formatDuracao(procedimento.duracao_padrao)} />
-                <InfoItem label="Duração Mínima" value={formatDuracao(procedimento.tempo_minimo)} />
-                <InfoItem label="Duração Máxima" value={formatDuracao(procedimento.tempo_maximo)} />
                 {procedimento.descricao && (
                   <div className="col-span-2">
                     <p className="text-xs text-muted-foreground mb-1">Descrição</p>
@@ -221,7 +216,6 @@ export default function ProcedimentoDetalhePage() {
                       <TableRow>
                         <TableHead>Convênio</TableHead>
                         <TableHead>Valor Convênio</TableHead>
-                        <TableHead>Valor Particular</TableHead>
                         <TableHead>Vigência</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
@@ -233,7 +227,6 @@ export default function ProcedimentoDetalhePage() {
                             {t.convenio?.nome_fantasia || t.convenio?.razao_social || "—"}
                           </TableCell>
                           <TableCell>{formatBRL(t.valor_convenio)}</TableCell>
-                          <TableCell>{formatBRL(t.valor_particular)}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">
                             {t.vigencia_inicio ? new Date(t.vigencia_inicio).toLocaleDateString("pt-BR") : "—"}
                             {" — "}

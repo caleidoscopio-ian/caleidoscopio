@@ -174,7 +174,7 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
             {/* Dados básicos */}
             <div className="space-y-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dados Básicos</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="nome" render={({ field }) => (
                   <FormItem className="col-span-2">
                     <FormLabel>Nome *</FormLabel>
@@ -215,7 +215,7 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
             {/* Valores */}
             <div className="space-y-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Valores</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="valor_total" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Valor Total (R$) *</FormLabel>

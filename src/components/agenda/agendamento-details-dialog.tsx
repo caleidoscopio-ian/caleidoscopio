@@ -141,13 +141,13 @@ export function AgendamentoDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center gap-2 pr-6">
             <DialogTitle>Detalhes do Agendamento</DialogTitle>
             <Badge
               variant="outline"
-              className={cn('ml-2', getStatusColor(agendamento.status as StatusAgendamento))}
+              className={cn(getStatusColor(agendamento.status as StatusAgendamento))}
             >
               {getStatusText(agendamento.status as StatusAgendamento)}
             </Badge>
@@ -157,7 +157,7 @@ export function AgendamentoDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Paciente */}
           <div className="space-y-2">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -214,7 +214,7 @@ export function AgendamentoDetailsDialog({
           <Separator />
 
           {/* Data e Horário */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 Data
@@ -333,8 +333,8 @@ export function AgendamentoDetailsDialog({
         </div>
 
         {/* Ações */}
-        <div className="flex items-center justify-between pt-6 border-t">
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-3 pt-4 sm:pt-6 border-t sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
             {onEditar && (
               <Button
                 variant="outline"
@@ -361,7 +361,7 @@ export function AgendamentoDetailsDialog({
             )}
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {agendamento.status === StatusAgendamento.AGENDADO && onConfirmar && (
               <Button
                 onClick={handleConfirmar}

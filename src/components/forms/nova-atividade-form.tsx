@@ -211,7 +211,7 @@ export function NovaAtividadeForm({ onSuccess }: NovaAtividadeFormProps) {
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Informações Básicas</h3>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Nome */}
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome da Atividade *</Label>
@@ -242,7 +242,7 @@ export function NovaAtividadeForm({ onSuccess }: NovaAtividadeFormProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Metodologia */}
               <div className="space-y-2">
                 <Label htmlFor="metodologia">Metodologia</Label>

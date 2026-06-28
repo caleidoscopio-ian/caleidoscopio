@@ -50,11 +50,6 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
       nome: "",
       codigo: "",
       descricao: "",
-      valor: "" as unknown as number,
-      valor_particular: "" as unknown as number,
-      duracao_padrao: "" as unknown as number,
-      tempo_minimo: "" as unknown as number,
-      tempo_maximo: "" as unknown as number,
       especialidade: null,
       requer_autorizacao: false,
       observacoes: "",
@@ -69,11 +64,6 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
         nome: procedimento.nome,
         codigo: procedimento.codigo || "",
         descricao: procedimento.descricao || "",
-        valor: procedimento.valor != null ? Number(procedimento.valor) : "" as unknown as number,
-        valor_particular: procedimento.valor_particular != null ? Number(procedimento.valor_particular) : "" as unknown as number,
-        duracao_padrao: procedimento.duracao_padrao ?? ("" as unknown as number),
-        tempo_minimo: procedimento.tempo_minimo ?? ("" as unknown as number),
-        tempo_maximo: procedimento.tempo_maximo ?? ("" as unknown as number),
         especialidade: procedimento.especialidade || null,
         requer_autorizacao: procedimento.requer_autorizacao,
         observacoes: procedimento.observacoes || "",
@@ -84,11 +74,6 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
     } else {
       form.reset({
         nome: "", codigo: "", descricao: "",
-        valor: "" as unknown as number,
-        valor_particular: "" as unknown as number,
-        duracao_padrao: "" as unknown as number,
-        tempo_minimo: "" as unknown as number,
-        tempo_maximo: "" as unknown as number,
         especialidade: null, requer_autorizacao: false,
         observacoes: "", cor: null, icone: null, filialId: null,
       });
@@ -121,12 +106,6 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
     }
   };
 
-  const numericField = (field: { value: number | null | undefined; onChange: (v: number | string) => void }) => ({
-    value: field.value ?? "",
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-      field.onChange(e.target.value === "" ? ("" as unknown as number) : e.target.valueAsNumber),
-  });
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -138,7 +117,7 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
             {/* Identificação */}
             <div className="space-y-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Identificação</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="nome" render={({ field }) => (
                   <FormItem className="col-span-2">
                     <FormLabel>Nome *</FormLabel>
@@ -172,7 +151,7 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
             {/* Visual */}
             <div className="space-y-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Identificação Visual</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="cor" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cor</FormLabel>
@@ -190,54 +169,8 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
               </div>
             </div>
 
-            {/* Valores */}
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Valores</p>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="valor" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor Padrão (R$)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" min="0" placeholder="0,00" {...numericField(field)} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="valor_particular" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor Particular (R$)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" min="0" placeholder="0,00" {...numericField(field)} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-            </div>
-
-            {/* Duração */}
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Duração (minutos)</p>
-              <div className="grid grid-cols-3 gap-3">
-                <FormField control={form.control} name="duracao_padrao" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Padrão</FormLabel>
-                    <FormControl><Input type="number" min="1" placeholder="45" {...numericField(field)} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="tempo_minimo" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mínimo</FormLabel>
-                    <FormControl><Input type="number" min="1" placeholder="30" {...numericField(field)} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="tempo_maximo" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Máximo</FormLabel>
-                    <FormControl><Input type="number" min="1" placeholder="60" {...numericField(field)} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-            </div>
+            {/* Valores e duração foram removidos: o valor passou a ser definido por convênio
+                (página de Convênios → aba Tabela de Valores). */}
 
             {/* Controle */}
             <div className="space-y-3">

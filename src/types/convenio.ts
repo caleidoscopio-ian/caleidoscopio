@@ -227,8 +227,6 @@ export const convenioTabelaSchema = z.object({
   nome_procedimento: z.string().min(2, 'Nome do procedimento é obrigatório').max(200),
   codigo_tiss: z.string().max(20).optional().or(z.literal('')),
   valor_convenio: z.number().min(0, 'Valor deve ser positivo'),
-  valor_particular: z.number().min(0).optional().nullable(),
-  valor_co_participacao: z.number().min(0).optional().nullable(),
   tipo_guia: z.enum(['SP_SADT', 'CONSULTA', 'INTERNACAO', 'HONORARIOS', 'ODONTOLOGICA', 'RESUMO_INTERNACAO']).optional().nullable(),
   tipo_tabela: z.string().max(10).optional().or(z.literal('')),
   grau_participacao: z.string().max(10).optional().or(z.literal('')),

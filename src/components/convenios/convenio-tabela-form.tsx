@@ -41,8 +41,6 @@ interface ProcedimentoOption {
   id: string;
   nome: string;
   codigo: string | null;
-  valor: number | null;
-  valor_particular: number | null;
   especialidade: string | null;
 }
 
@@ -55,11 +53,6 @@ interface ConvenioTabelaFormProps {
 }
 
 type Modo = "clinica" | "manual";
-
-const formatBRL = (v: number | null) =>
-  v != null
-    ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
-    : null;
 
 export function ConvenioTabelaForm({
   convenioId,
@@ -93,8 +86,6 @@ export function ConvenioTabelaForm({
         nome_procedimento: item.nome_procedimento,
         codigo_tiss: item.codigo_tiss || "",
         valor_convenio: item.valor_convenio,
-        valor_particular: item.valor_particular ?? null,
-        valor_co_participacao: item.valor_co_participacao ?? null,
         tipo_guia: item.tipo_guia ?? null,
         tipo_tabela: item.tipo_tabela || "",
         grau_participacao: item.grau_participacao || "",
@@ -105,8 +96,6 @@ export function ConvenioTabelaForm({
           id: item.procedimentoId!,
           nome: item.procedimento.nome,
           codigo: item.procedimento.codigo,
-          valor: item.procedimento.valor,
-          valor_particular: item.procedimento.valor_particular,
           especialidade: null,
         });
       }
@@ -142,13 +131,7 @@ export function ConvenioTabelaForm({
     form.setValue("procedimentoId", proc.id);
     form.setValue("codigo_procedimento", proc.codigo || proc.id.slice(0, 8));
     form.setValue("nome_procedimento", proc.nome);
-    // Sugerir valor padrão do procedimento (editável pelo usuário)
-    if (proc.valor != null) {
-      form.setValue("valor_convenio", proc.valor);
-    }
-    if (proc.valor_particular != null) {
-      form.setValue("valor_particular", proc.valor_particular);
-    }
+    // O valor é informado aqui (por convênio) — o procedimento não tem mais valor próprio.
   };
 
   const handleModoChange = (novoModo: Modo) => {
@@ -260,11 +243,6 @@ export function ConvenioTabelaForm({
                             <span className="text-xs text-muted-foreground">
                               {p.codigo && <span className="font-mono mr-2">{p.codigo}</span>}
                               {p.especialidade && p.especialidade}
-                              {p.valor != null && (
-                                <span className="ml-2 text-green-600">
-                                  {formatBRL(p.valor)}
-                                </span>
-                              )}
                             </span>
                           </div>
                         </SelectItem>
@@ -280,7 +258,6 @@ export function ConvenioTabelaForm({
                     </div>
                     <div className="flex gap-4 text-xs text-muted-foreground">
                       {selectedProc.codigo && <span className="font-mono">Cód: {selectedProc.codigo}</span>}
-                      {selectedProc.valor != null && <span>Valor padrão: {formatBRL(selectedProc.valor)}</span>}
                     </div>
                   </div>
                 )}
@@ -294,17 +271,12 @@ export function ConvenioTabelaForm({
                   <span className="font-medium">{item.procedimento.nome}</span>
                   <Badge variant="outline" className="text-xs">vinculado à clínica</Badge>
                 </div>
-                {item.procedimento.valor != null && (
-                  <p className="text-xs text-muted-foreground">
-                    Valor atual do procedimento: {formatBRL(item.procedimento.valor)}
-                  </p>
-                )}
               </div>
             )}
 
             {/* Código manual */}
             {modo === "manual" && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="codigo_procedimento"
@@ -367,8 +339,8 @@ export function ConvenioTabelaForm({
               />
             )}
 
-            {/* Valores */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Valor — definido por convênio (único valor considerado em agendamentos/relatórios) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="valor_convenio"
@@ -389,53 +361,9 @@ export function ConvenioTabelaForm({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="valor_particular"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor Particular (R$)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0,00"
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(e.target.value === "" ? null : Number(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="valor_co_participacao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Co-participação (R$)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0,00"
-                        value={field.value ?? ""}
-                        onChange={(e) =>
-                          field.onChange(e.target.value === "" ? null : Number(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="tipo_guia"

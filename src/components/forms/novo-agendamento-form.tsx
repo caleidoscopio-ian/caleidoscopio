@@ -296,7 +296,7 @@ export function NovoAgendamentoForm({
           )}
 
           {/* Data + Horário início */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField control={form.control} name="data" render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Data *</FormLabel>
@@ -397,7 +397,7 @@ export function NovoAgendamentoForm({
           )}
 
           {/* Horário término + Sala */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField control={form.control} name="horario_fim" render={({ field }) => (
               <FormItem>
                 <FormLabel>Horário de Término *</FormLabel>
@@ -581,7 +581,7 @@ export function NovoAgendamentoForm({
           </DialogHeader>
 
           <div className="space-y-3 text-sm">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
               <div className="text-muted-foreground">Paciente</div>
               <div className="font-medium">{pacienteNome}</div>
 
@@ -609,7 +609,7 @@ export function NovoAgendamentoForm({
 
             <Separator />
 
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
               <div className="text-muted-foreground">Convênio</div>
               <div className="font-medium">
                 {selectedConvenioId ? (
@@ -633,7 +633,7 @@ export function NovoAgendamentoForm({
             {pendingData?.status && pendingData.status !== StatusAgendamento.AGENDADO && (
               <>
                 <Separator />
-                <div className="grid grid-cols-2 gap-x-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
                   <div className="text-muted-foreground">Status</div>
                   <div className="font-medium">{pendingData.status}</div>
                 </div>

@@ -46,10 +46,6 @@ interface Instrucao {
   id?: string;
   ordem: number;
   texto: string;
-  como_aplicar: string;
-  observacao: string;
-  procedimento_correcao: string;
-  materiais_utilizados: string;
 }
 
 interface AbaInstrucoesProps {
@@ -69,10 +65,6 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
   const [formData, setFormData] = useState({
     ordem: 1,
     texto: "",
-    como_aplicar: "",
-    observacao: "",
-    procedimento_correcao: "",
-    materiais_utilizados: "",
   });
 
   const fetchInstrucoes = async () => {
@@ -110,10 +102,6 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
     setFormData({
       ordem: instrucoes.length + 1,
       texto: "",
-      como_aplicar: "",
-      observacao: "",
-      procedimento_correcao: "",
-      materiais_utilizados: "",
     });
     setDialogOpen(true);
   };
@@ -124,10 +112,6 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
     setFormData({
       ordem: instrucao.ordem,
       texto: instrucao.texto,
-      como_aplicar: instrucao.como_aplicar || "",
-      observacao: instrucao.observacao || "",
-      procedimento_correcao: instrucao.procedimento_correcao || "",
-      materiais_utilizados: instrucao.materiais_utilizados || "",
     });
     setDialogOpen(true);
   };
@@ -145,10 +129,6 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
         ...novasInstrucoes[editingIndex],
         ordem: formData.ordem,
         texto: formData.texto,
-        como_aplicar: formData.como_aplicar,
-        observacao: formData.observacao,
-        procedimento_correcao: formData.procedimento_correcao,
-        materiais_utilizados: formData.materiais_utilizados,
       };
       setInstrucoes(novasInstrucoes);
     } else {
@@ -158,10 +138,6 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
         {
           ordem: formData.ordem,
           texto: formData.texto,
-          como_aplicar: formData.como_aplicar,
-          observacao: formData.observacao,
-          procedimento_correcao: formData.procedimento_correcao,
-          materiais_utilizados: formData.materiais_utilizados,
         },
       ]);
     }
@@ -269,7 +245,6 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
                   <TableRow>
                     <TableHead className="w-20">Ordem</TableHead>
                     <TableHead>Instrução</TableHead>
-                    <TableHead>Como Aplicar</TableHead>
                     <TableHead className="w-24 text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -278,16 +253,9 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
                     <TableRow key={index}>
                       <TableCell>{instrucao.ordem}</TableCell>
                       <TableCell className="font-medium">
-                        {instrucao.texto.length > 50
-                          ? `${instrucao.texto.substring(0, 50)}...`
+                        {instrucao.texto.length > 80
+                          ? `${instrucao.texto.substring(0, 80)}...`
                           : instrucao.texto}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {instrucao.como_aplicar
-                          ? instrucao.como_aplicar.length > 50
-                            ? `${instrucao.como_aplicar.substring(0, 50)}...`
-                            : instrucao.como_aplicar
-                          : "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -370,62 +338,10 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
               <Textarea
                 id="texto"
                 placeholder="O que fazer..."
-                rows={3}
+                rows={4}
                 value={formData.texto}
                 onChange={(e) =>
                   setFormData({ ...formData, texto: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="como_aplicar">Como Aplicar</Label>
-              <Textarea
-                id="como_aplicar"
-                placeholder="Descrição de como aplicar esta instrução..."
-                rows={4}
-                value={formData.como_aplicar}
-                onChange={(e) =>
-                  setFormData({ ...formData, como_aplicar: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="observacao">Observação</Label>
-              <Textarea
-                id="observacao"
-                placeholder="Observações adicionais..."
-                rows={2}
-                value={formData.observacao}
-                onChange={(e) =>
-                  setFormData({ ...formData, observacao: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="procedimento_correcao">Procedimento de Correção</Label>
-              <Textarea
-                id="procedimento_correcao"
-                placeholder="Como corrigir erros durante a aplicação..."
-                rows={3}
-                value={formData.procedimento_correcao}
-                onChange={(e) =>
-                  setFormData({ ...formData, procedimento_correcao: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="materiais_utilizados">Materiais Utilizados</Label>
-              <Textarea
-                id="materiais_utilizados"
-                placeholder="Lista de materiais necessários para esta instrução..."
-                rows={2}
-                value={formData.materiais_utilizados}
-                onChange={(e) =>
-                  setFormData({ ...formData, materiais_utilizados: e.target.value })
                 }
               />
             </div>

@@ -446,19 +446,13 @@ export default function ConvenioDetalhePage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Procedimento</TableHead>
-                          <TableHead className="text-right">Valor Padrão</TableHead>
                           <TableHead className="text-right">Valor Convênio</TableHead>
-                          <TableHead className="text-right">Co-participação</TableHead>
                           <TableHead>Tipo Guia</TableHead>
                           <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {tabela.map((item) => {
-                          const valorPadrao = item.procedimento?.valor ?? null;
-                          const difereDopadrao =
-                            valorPadrao != null &&
-                            Math.abs(Number(valorPadrao) - Number(item.valor_convenio)) > 0.001;
                           return (
                             <TableRow key={item.id}>
                               <TableCell>
@@ -477,18 +471,10 @@ export default function ConvenioDetalhePage() {
                                   </span>
                                 </div>
                               </TableCell>
-                              <TableCell className="text-right text-muted-foreground text-sm">
-                                {valorPadrao != null ? formatarMoeda(Number(valorPadrao)) : "—"}
-                              </TableCell>
                               <TableCell className="text-right">
-                                <span className={difereDopadrao ? "font-semibold text-amber-600" : "font-medium"}>
+                                <span className="font-medium">
                                   {formatarMoeda(item.valor_convenio)}
                                 </span>
-                              </TableCell>
-                              <TableCell className="text-right text-muted-foreground">
-                                {item.valor_co_participacao
-                                  ? formatarMoeda(item.valor_co_participacao)
-                                  : "—"}
                               </TableCell>
                               <TableCell>
                                 {item.tipo_guia ? (

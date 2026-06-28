@@ -108,7 +108,7 @@ export function GlosaDetalheDialog({ glosaId, open, onOpenChange, onAtualizada }
         {glosa && (
           <div className="space-y-4">
             {/* Dados do atendimento */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
               <div className="text-muted-foreground">Paciente</div>
               <div className="font-medium">{glosa.paciente.nome}</div>
               <div className="text-muted-foreground">Data do atendimento</div>
@@ -121,7 +121,7 @@ export function GlosaDetalheDialog({ glosaId, open, onOpenChange, onAtualizada }
             <Separator />
 
             {/* Dados financeiros */}
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               <div className="text-center p-3 rounded-lg bg-muted/40">
                 <div className="text-xs text-muted-foreground">Cobrado</div>
                 <div className="font-semibold mt-1">{formatBRL(glosa.valor_cobrado)}</div>

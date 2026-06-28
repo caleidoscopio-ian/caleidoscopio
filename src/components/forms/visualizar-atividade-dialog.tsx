@@ -18,8 +18,6 @@ interface Instrucao {
   id: string
   ordem: number
   texto: string
-  como_aplicar?: string
-  observacao?: string
 }
 
 interface Pontuacao {
@@ -38,6 +36,10 @@ interface Atividade {
   tipo_ensino?: string
   qtd_alvos_sessao?: number
   qtd_tentativas_alvo?: number
+  como_aplicar?: string
+  observacao?: string
+  procedimento_correcao?: string
+  materiais_utilizados?: string
   createdAt: string
   instrucoes: Instrucao[]
   pontuacoes?: Pontuacao[]
@@ -88,7 +90,7 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                 <p className="text-lg font-semibold">{atividade.nome}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {atividade.protocolo && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Protocolo</label>
@@ -106,7 +108,7 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {atividade.habilidade && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Habilidade</label>
@@ -122,7 +124,7 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {atividade.qtd_alvos_sessao && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Alvos por Sessão</label>
@@ -138,7 +140,7 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                 )}
               </div>
 
-              <div className="grid grid-cols-4 gap-4 pt-4 border-t">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Instruções</label>
                   <p className="text-2xl font-bold">{atividade.instrucoes?.length || 0}</p>
@@ -193,6 +195,27 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
               </div>
             )}
 
+            {/* Aplicação da atividade */}
+            {(atividade.como_aplicar || atividade.observacao || atividade.procedimento_correcao || atividade.materiais_utilizados) && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">Aplicação</label>
+                <div className="p-3 border rounded-lg bg-muted/30 space-y-2 text-sm">
+                  {atividade.como_aplicar && (
+                    <p><strong>Como aplicar:</strong> {atividade.como_aplicar}</p>
+                  )}
+                  {atividade.observacao && (
+                    <p><strong>Observação:</strong> {atividade.observacao}</p>
+                  )}
+                  {atividade.procedimento_correcao && (
+                    <p><strong>Procedimento de correção:</strong> {atividade.procedimento_correcao}</p>
+                  )}
+                  {atividade.materiais_utilizados && (
+                    <p><strong>Materiais utilizados:</strong> {atividade.materiais_utilizados}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Lista de instruções */}
             {atividade.instrucoes && atividade.instrucoes.length > 0 && (
               <div className="space-y-2">
@@ -211,16 +234,6 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                         </Badge>
                         <div className="flex-1 min-w-0 space-y-1">
                           <p className="text-sm font-medium">{instrucao.texto}</p>
-                          {instrucao.como_aplicar && (
-                            <p className="text-xs text-muted-foreground">
-                              <strong>Como aplicar:</strong> {instrucao.como_aplicar}
-                            </p>
-                          )}
-                          {instrucao.observacao && (
-                            <p className="text-xs text-muted-foreground">
-                              <strong>Obs:</strong> {instrucao.observacao}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>

@@ -381,7 +381,7 @@ export function NovoTerapeutaForm({ onSuccess }: NovoTerapeutaFormProps) {
                       Selecione as salas onde o terapeuta pode realizar
                       atendimentos
                     </FormDescription>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2">
                       {salasDisponiveis.map((sala) => (
                         <div
                           key={sala.id}

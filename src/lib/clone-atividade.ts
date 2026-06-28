@@ -93,10 +93,12 @@ export async function clonarAtividadesParaPaciente(
           atividadeCloneId: cloneId,
           ordem: instrucao.ordem,
           texto: instrucao.texto,
-          como_aplicar: instrucao.como_aplicar,
-          observacao: instrucao.observacao,
-          procedimento_correcao: instrucao.procedimento_correcao,
-          materiais_utilizados: instrucao.materiais_utilizados,
+          // Campos de aplicação agora vêm da ATIVIDADE (não da instrução). Denormaliza
+          // p/ cada instrução clonada para o fluxo de aplicação exibi-los sem mudar a UI.
+          como_aplicar: atividadeOriginal.como_aplicar,
+          observacao: atividadeOriginal.observacao,
+          procedimento_correcao: atividadeOriginal.procedimento_correcao,
+          materiais_utilizados: atividadeOriginal.materiais_utilizados,
           faseAtual: FaseAtividade.LINHA_BASE,
           ativo: true,
           qtd_tentativas_alvo: atividadeOriginal.qtd_tentativas_alvo || 1,

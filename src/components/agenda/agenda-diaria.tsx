@@ -1,14 +1,13 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Clock, Plus } from "lucide-react";
 import { Agendamento, StatusAgendamento, STATUS_AGENDAMENTO_LABELS } from "@/types/agendamento";
 import { cn } from "@/lib/utils";
+import {
+  SLOT_PX, PX_PER_MIN, minutesOfDay, fmtMin, computeRange, layoutColunas, getStatusCardBg,
+} from "@/components/agenda/agenda-grid-utils";
 
 interface AgendaDiariaProps {
   agendamentos: Agendamento[];
@@ -19,308 +18,164 @@ interface AgendaDiariaProps {
   showMultipleProfessionals?: boolean;
 }
 
-// Gerar slots de 10 minutos das 05:00 às 22:00
-const generateTimeSlots = () => {
-  const slots: string[] = [];
-  for (let hour = 5; hour <= 22; hour++) {
-    for (let minute = 0; minute < 60; minute += 10) {
-      if (hour === 22 && minute > 0) break; // Parar em 22:00
-      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-      slots.push(time);
-    }
-  }
-  return slots;
-};
-
-const TIME_SLOTS = generateTimeSlots();
+const getStatusText = (status: StatusAgendamento) =>
+  STATUS_AGENDAMENTO_LABELS[status] ?? "Agendado";
 
 export function AgendaDiaria({
   agendamentos,
   profissionais,
-  selectedDate,
   onNovoAgendamento,
   onAgendamentoClick,
   showMultipleProfessionals = false,
 }: AgendaDiariaProps) {
-  // Agrupar agendamentos por profissional
-  const agendamentosPorProfissional = useMemo(() => {
-    const map = new Map<string, Agendamento[]>();
-
-    profissionais.forEach((prof) => {
-      map.set(prof.id, []);
-    });
-
-    agendamentos.forEach((agendamento) => {
-      const profAgendamentos = map.get(agendamento.profissionalId) || [];
-      profAgendamentos.push(agendamento);
-      map.set(agendamento.profissionalId, profAgendamentos);
-    });
-
-    return map;
-  }, [agendamentos, profissionais]);
-
-  // Calcular quantos slots de 10min o agendamento ocupa
-  const calculateSlots = (inicio: Date | string, fim: Date | string) => {
-    const dataInicio = new Date(inicio);
-    const dataFim = new Date(fim);
-    const duracaoMinutos = (dataFim.getTime() - dataInicio.getTime()) / 60000;
-    return Math.ceil(duracaoMinutos / 10); // Slots de 10 minutos
-  };
-
-  // Verificar se um slot está ocupado
-  const isSlotOccupied = (
-    profissionalId: string,
-    slotTime: string
-  ): Agendamento | null => {
-    const agendamentosDoProfissional =
-      agendamentosPorProfissional.get(profissionalId) || [];
-
-    const [slotHour, slotMinute] = slotTime.split(":").map(Number);
-    const slotDate = new Date(selectedDate);
-    slotDate.setHours(slotHour, slotMinute, 0, 0);
-
-    for (const agendamento of agendamentosDoProfissional) {
-      const agendamentoDate = new Date(agendamento.data_hora);
-      const agendamentoEnd = new Date(agendamento.horario_fim);
-
-      if (slotDate >= agendamentoDate && slotDate < agendamentoEnd) {
-        return agendamento;
-      }
-    }
-
-    return null;
-  };
-
-  // Verificar se é o início do agendamento
-  const isStartSlot = (agendamento: Agendamento, slotTime: string): boolean => {
-    const agendamentoDate = new Date(agendamento.data_hora);
-    const [slotHour, slotMinute] = slotTime.split(":").map(Number);
-
-    return (
-      agendamentoDate.getHours() === slotHour &&
-      agendamentoDate.getMinutes() === slotMinute
-    );
-  };
-
-  const STATUS_CARD_BG: Record<StatusAgendamento, string> = {
-    [StatusAgendamento.AGENDADO]:       "bg-blue-50 border-blue-300 hover:bg-blue-100",
-    [StatusAgendamento.CONFIRMADO]:     "bg-green-50 border-green-300 hover:bg-green-100",
-    [StatusAgendamento.EM_ATENDIMENTO]: "bg-amber-50 border-amber-300 hover:bg-amber-100",
-    [StatusAgendamento.ATENDIDO]:       "bg-purple-50 border-purple-300 hover:bg-purple-100",
-    [StatusAgendamento.FALTOU]:         "bg-gray-50 border-gray-300 hover:bg-gray-100",
-    [StatusAgendamento.CANCELADO]:      "bg-red-50 border-red-300 hover:bg-red-100",
-  };
-
-  const STATUS_BADGE_COLOR: Record<StatusAgendamento, string> = {
-    [StatusAgendamento.AGENDADO]:       "bg-blue-100 text-blue-800",
-    [StatusAgendamento.CONFIRMADO]:     "bg-green-100 text-green-800",
-    [StatusAgendamento.EM_ATENDIMENTO]: "bg-amber-100 text-amber-800",
-    [StatusAgendamento.ATENDIDO]:       "bg-purple-100 text-purple-800",
-    [StatusAgendamento.FALTOU]:         "bg-gray-100 text-gray-800",
-    [StatusAgendamento.CANCELADO]:      "bg-red-100 text-red-800",
-  };
-
-  const getStatusColor = (status: StatusAgendamento) =>
-    STATUS_CARD_BG[status] ?? "bg-gray-50 border-gray-300 hover:bg-gray-100";
-
-  const getStatusBadgeColor = (status: StatusAgendamento) =>
-    STATUS_BADGE_COLOR[status] ?? "bg-gray-100 text-gray-800";
-
-  const getStatusText = (status: StatusAgendamento) =>
-    STATUS_AGENDAMENTO_LABELS[status] ?? "Agendado";
-
-  // Profissionais a exibir
   const profissionaisExibir = showMultipleProfessionals
     ? profissionais
     : profissionais.slice(0, 1);
 
+  // Agendamentos por profissional
+  const agsPorProf = useMemo(() => {
+    const map = new Map<string, Agendamento[]>();
+    profissionais.forEach((p) => map.set(p.id, []));
+    agendamentos.forEach((a) => {
+      const arr = map.get(a.profissionalId) || [];
+      arr.push(a);
+      map.set(a.profissionalId, arr);
+    });
+    return map;
+  }, [agendamentos, profissionais]);
+
+  // Faixa de horários: 07:00–20:00 por padrão, expandida p/ caber todos os agendamentos
+  const { startMin, endMin, slots } = useMemo(() => computeRange(agendamentos), [agendamentos]);
+
+  const gridHeight = (endMin - startMin) * PX_PER_MIN;
+  const gridCols = `52px repeat(${profissionaisExibir.length}, minmax(0, 1fr))`;
+
   return (
     <div className="border rounded-lg overflow-hidden">
-      {/* Header com profissionais */}
-      <div
-        className="grid"
-        style={{
-          gridTemplateColumns: `80px repeat(${profissionaisExibir.length}, 1fr)`,
-        }}
-      >
-        {/* Coluna de horários */}
-        <div className="bg-muted p-4 border-r border-b font-semibold text-sm">
-          <Clock className="h-4 w-4" />
+      {/* Cabeçalho: gutter + profissionais */}
+      <div className="grid border-b" style={{ gridTemplateColumns: gridCols }}>
+        <div className="bg-muted p-2 border-r flex items-center justify-center">
+          <Clock className="h-4 w-4 text-muted-foreground" />
         </div>
-
-        {/* Colunas dos profissionais */}
         {profissionaisExibir.map((prof) => (
-          <div
-            key={prof.id}
-            className="bg-muted p-4 border-r last:border-r-0 border-b"
-          >
-            <div className="font-semibold text-sm">{prof.nome}</div>
-            <div className="text-xs text-muted-foreground">
-              {prof.especialidade}
-            </div>
+          <div key={prof.id} className="bg-muted p-2 border-r last:border-r-0 min-w-0">
+            <div className="font-semibold text-sm truncate">{prof.nome}</div>
+            <div className="text-xs text-muted-foreground truncate">{prof.especialidade}</div>
           </div>
         ))}
       </div>
 
-      {/* Grade de horários */}
-      <div className="overflow-y-auto max-h-[600px]">
-        {TIME_SLOTS.map((slot, slotIndex) => (
-          <div
-            key={slot}
-            className="grid border-b last:border-b-0"
-            style={{
-              gridTemplateColumns: `80px repeat(${profissionaisExibir.length}, 1fr)`,
-            }}
-          >
-            {/* Coluna de horário */}
-            <div className="p-2 border-r text-sm text-muted-foreground text-center flex items-start justify-center pt-1">
-              {slot}
-            </div>
+      {/* Corpo rolável */}
+      <div className="overflow-y-auto max-h-[640px]">
+        <div className="grid pt-3" style={{ gridTemplateColumns: gridCols }}>
+          {/* Coluna de horários — rótulo só na hora cheia (estilo Teams) */}
+          <div className="relative border-r" style={{ height: gridHeight }}>
+            {slots.filter((m) => m % 60 === 0).map((m) => (
+              <div
+                key={m}
+                className="absolute right-0 text-sm font-medium text-muted-foreground text-right pr-2 -translate-y-1/2 tabular-nums"
+                style={{ top: (m - startMin) * PX_PER_MIN }}
+              >
+                {fmtMin(m)}
+              </div>
+            ))}
+          </div>
 
-            {/* Células de cada profissional */}
-            {profissionaisExibir.map((prof) => {
-              const agendamento = isSlotOccupied(prof.id, slot);
-              const isStart = agendamento
-                ? isStartSlot(agendamento, slot)
-                : false;
+          {/* Colunas dos profissionais */}
+          {profissionaisExibir.map((prof) => {
+            const ags = agsPorProf.get(prof.id) || [];
+            const layout = layoutColunas(ags);
 
-              // Se há agendamento mas não é o slot inicial, não renderizar (já foi renderizado no slot inicial)
-              if (agendamento && !isStart) {
-                return (
+            return (
+              <div key={prof.id} className="relative border-r last:border-r-0" style={{ height: gridHeight }}>
+                {/* Linhas de slot (fundo, clicáveis p/ criar) — hora forte, meia-hora fraca */}
+                {slots.map((m) => (
                   <div
-                    key={`${prof.id}-${slot}`}
-                    className="border-r last:border-r-0"
-                  />
-                );
-              }
-
-              // Se é o slot inicial, renderizar o card do agendamento
-              if (agendamento && isStart) {
-                const slotsOcupados = calculateSlots(
-                  agendamento.data_hora,
-                  agendamento.horario_fim
-                );
-                const altura = slotsOcupados * 60; // cada slot tem ~60px
-
-                return (
-                  <div
-                    key={`${prof.id}-${slot}`}
-                    className="border-r last:border-r-0 p-1 relative"
-                    style={{ minHeight: "60px" }}
+                    key={m}
+                    className={cn(
+                      "absolute left-0 right-0 border-t hover:bg-muted/40 cursor-pointer group",
+                      m % 60 === 0 ? "border-border" : "border-dashed border-border/40"
+                    )}
+                    style={{ top: (m - startMin) * PX_PER_MIN, height: SLOT_PX }}
+                    onClick={() => onNovoAgendamento(prof.id, fmtMin(m))}
                   >
+                    <Plus className="h-3.5 w-3.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity absolute top-1 left-1" />
+                  </div>
+                ))}
+
+                {/* Agendamentos posicionados pela hora/duração reais */}
+                {ags.map((a) => {
+                  const ini = minutesOfDay(a.data_hora);
+                  const fim = minutesOfDay(a.horario_fim);
+                  const top = (ini - startMin) * PX_PER_MIN;
+                  const height = Math.max((fim - ini) * PX_PER_MIN, 22);
+                  const { col, cols } = layout.get(a.id) ?? { col: 0, cols: 1 };
+                  const widthPct = 100 / cols;
+                  const compact = height < 40;
+
+                  return (
                     <div
+                      key={a.id}
                       className={cn(
-                        "absolute inset-1 border-l-4 rounded-md p-2 cursor-pointer transition-colors overflow-hidden",
-                        getStatusColor(agendamento.status as StatusAgendamento)
+                        "absolute border-l-4 rounded-md px-1.5 py-1 cursor-pointer transition-colors overflow-hidden shadow-sm",
+                        getStatusCardBg(a.status as StatusAgendamento)
                       )}
                       style={{
-                        height: `${altura - 8}px`,
-                        borderLeftColor:
-                          agendamento.paciente?.cor_agenda || "#3b82f6",
+                        top,
+                        height: height - 2,
+                        left: `calc(${col * widthPct}% + 2px)`,
+                        width: `calc(${widthPct}% - 4px)`,
+                        borderLeftColor: a.paciente?.cor_agenda || "#3b82f6",
                         zIndex: 10,
                       }}
-                      onClick={() => onAgendamentoClick(agendamento)}
+                      onClick={() => onAgendamentoClick(a)}
+                      title={`${a.paciente?.nome ?? ""} · ${fmtMin(ini)}–${fmtMin(fim)}`}
                     >
-                      <div className="space-y-1 h-full overflow-hidden">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Avatar className="h-6 w-6 flex-shrink-0">
-                            <AvatarImage
-                              src={agendamento.paciente?.foto || ""}
-                            />
-                            <AvatarFallback
-                              className="text-xs"
-                              style={{
-                                backgroundColor:
-                                  agendamento.paciente?.cor_agenda || "#3b82f6",
-                                color: "white",
-                              }}
-                            >
-                              {agendamento.paciente?.nome
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .substring(0, 2)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="font-semibold text-sm truncate flex-1 min-w-0">
-                            {agendamento.paciente?.nome}
-                          </div>
+                      {compact ? (
+                        <div className="flex items-center gap-1 min-w-0 text-[11px] leading-tight">
+                          <span className="font-semibold truncate">{a.paciente?.nome}</span>
+                          <span className="text-muted-foreground flex-shrink-0">{fmtMin(ini)}</span>
                         </div>
-
-                        <div className="text-xs text-muted-foreground flex items-center gap-1 truncate">
-                          <Clock className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">
-                            {new Date(agendamento.data_hora).toLocaleTimeString(
-                              "pt-BR",
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}{" "}
-                            -{" "}
-                            {new Date(agendamento.horario_fim).toLocaleTimeString(
-                              "pt-BR",
-                              {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              }
-                            )}
-                          </span>
-                        </div>
-
-                        {agendamento.salaRelacao && slotsOcupados > 1 && (
-                          <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                            {agendamento.salaRelacao.cor && (
-                              <div
-                                className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: agendamento.salaRelacao.cor }}
-                              />
-                            )}
-                            <span className="truncate">{agendamento.salaRelacao.nome}</span>
+                      ) : (
+                        <div className="space-y-0.5 h-full overflow-hidden">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <Avatar className="h-5 w-5 flex-shrink-0">
+                              <AvatarImage src={a.paciente?.foto || ""} />
+                              <AvatarFallback
+                                className="text-[9px]"
+                                style={{ backgroundColor: a.paciente?.cor_agenda || "#3b82f6", color: "white" }}
+                              >
+                                {a.paciente?.nome?.split(" ").map((n) => n[0]).join("").substring(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-semibold text-xs truncate flex-1 min-w-0">{a.paciente?.nome}</span>
                           </div>
-                        )}
-
-                        {slotsOcupados > 1 && (
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-xs inline-block",
-                              getStatusBadgeColor(
-                                agendamento.status as StatusAgendamento
-                              )
-                            )}
-                          >
-                            {getStatusText(
-                              agendamento.status as StatusAgendamento
-                            )}
-                          </Badge>
-                        )}
-                      </div>
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-1 truncate">
+                            <Clock className="h-2.5 w-2.5 flex-shrink-0" />
+                            <span className="truncate">{fmtMin(ini)}–{fmtMin(fim)}</span>
+                          </div>
+                          {height >= 70 && a.salaRelacao && (
+                            <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                              {a.salaRelacao.cor && (
+                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.salaRelacao.cor }} />
+                              )}
+                              <span className="truncate">{a.salaRelacao.nome}</span>
+                            </div>
+                          )}
+                          {height >= 90 && (
+                            <span className="text-[10px] font-medium opacity-70">
+                              {getStatusText(a.status as StatusAgendamento)}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                );
-              }
-
-              // Slot vazio - permitir criar novo agendamento
-              return (
-                <div
-                  key={`${prof.id}-${slot}`}
-                  className="border-r last:border-r-0 p-2 hover:bg-muted/50 cursor-pointer transition-colors group"
-                  style={{ minHeight: "60px" }}
-                  onClick={() => onNovoAgendamento(prof.id, slot)}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full h-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

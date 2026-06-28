@@ -90,7 +90,7 @@ export function VisualizarCurriculumDialog({ curriculum }: VisualizarCurriculumD
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Total de Atividades</label>
                   <p className="text-2xl font-bold">{curriculum.atividades?.length || 0}</p>

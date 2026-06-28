@@ -107,6 +107,11 @@ model atividade {
   tipo_ensino                String?                // Tentativa Discreta, etc
   qtd_alvos_sessao           Int?                   // 1-50
   qtd_tentativas_alvo        Int?                   // 1-50
+  // Aplicação (movidos do nível de instrução p/ a atividade)
+  como_aplicar               String?                @db.Text
+  observacao                 String?                @db.Text
+  procedimento_correcao      String?                @db.Text
+  materiais_utilizados       String?                @db.Text
 
   ativo                      Boolean                @default(true)
   createdAt                  DateTime               @default(now())

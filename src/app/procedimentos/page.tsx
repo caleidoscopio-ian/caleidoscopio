@@ -17,7 +17,7 @@ import { ProcedimentoFormDialog } from "@/components/procedimentos/procedimento-
 import { ExcluirProcedimentoDialog } from "@/components/procedimentos/excluir-procedimento-dialog";
 import { PacoteFormDialog } from "@/components/pacotes/pacote-form-dialog";
 import type { Procedimento } from "@/types/procedimento";
-import { formatDuracao, formatBRL } from "@/types/procedimento";
+import { formatBRL } from "@/types/procedimento";
 import type { Pacote } from "@/types/pacote";
 import { TIPO_PACOTE_LABELS, STATUS_PACOTE_LABELS } from "@/types/pacote";
 import * as LucideIcons from "lucide-react";
@@ -204,8 +204,6 @@ export default function ProcedimentosPage() {
                         <TableHead>Nome</TableHead>
                         <TableHead>Código</TableHead>
                         <TableHead>Especialidade</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead>Duração</TableHead>
                         <TableHead>Autorizações</TableHead>
                         <TableHead className="w-24"></TableHead>
                       </TableRow>
@@ -221,8 +219,6 @@ export default function ProcedimentosPage() {
                               ? <Badge variant="outline" className="text-xs">{proc.especialidade}</Badge>
                               : <span className="text-muted-foreground text-xs">—</span>}
                           </TableCell>
-                          <TableCell className="text-sm">{formatBRL(proc.valor)}</TableCell>
-                          <TableCell className="text-sm">{formatDuracao(proc.duracao_padrao)}</TableCell>
                           <TableCell>
                             {proc.requer_autorizacao && (
                               <Badge variant="secondary" className="text-xs gap-1">

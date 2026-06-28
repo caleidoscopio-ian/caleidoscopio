@@ -171,6 +171,10 @@ export async function POST(request: NextRequest) {
       tipo_ensino,
       qtd_alvos_sessao,
       qtd_tentativas_alvo,
+      como_aplicar,
+      observacao,
+      procedimento_correcao,
+      materiais_utilizados,
       instrucoes,
       pontuacoes,
     } = body;
@@ -199,6 +203,10 @@ export async function POST(request: NextRequest) {
           tipo_ensino: tipo_ensino || null,
           qtd_alvos_sessao: qtd_alvos_sessao || null,
           qtd_tentativas_alvo: qtd_tentativas_alvo || null,
+          como_aplicar: como_aplicar || null,
+          observacao: observacao || null,
+          procedimento_correcao: procedimento_correcao || null,
+          materiais_utilizados: materiais_utilizados || null,
           ativo: true,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -314,6 +322,10 @@ export async function PUT(request: NextRequest) {
       tipo_ensino,
       qtd_alvos_sessao,
       qtd_tentativas_alvo,
+      como_aplicar,
+      observacao,
+      procedimento_correcao,
+      materiais_utilizados,
       instrucoes,
       pontuacoes,
     } = body;
@@ -362,6 +374,14 @@ export async function PUT(request: NextRequest) {
         updateData.qtd_alvos_sessao = qtd_alvos_sessao || null;
       if (qtd_tentativas_alvo !== undefined)
         updateData.qtd_tentativas_alvo = qtd_tentativas_alvo || null;
+      if (como_aplicar !== undefined)
+        updateData.como_aplicar = como_aplicar || null;
+      if (observacao !== undefined)
+        updateData.observacao = observacao || null;
+      if (procedimento_correcao !== undefined)
+        updateData.procedimento_correcao = procedimento_correcao || null;
+      if (materiais_utilizados !== undefined)
+        updateData.materiais_utilizados = materiais_utilizados || null;
 
       // Atualizar a atividade
       const atividade = await tx.atividade.update({

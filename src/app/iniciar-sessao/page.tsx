@@ -727,7 +727,7 @@ function IniciarSessaoPageContent() {
 
       {/* ===== Dialog: Seleção de Instruções ===== */}
       <Dialog open={dialogSelecaoOpen} onOpenChange={setDialogSelecaoOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Selecionar Instruções da Sessão</DialogTitle>
             <DialogDescription>

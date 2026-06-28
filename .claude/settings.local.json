@@ -50,7 +50,13 @@
       "Bash(rm -f .tmp-tiss-test/*.mjs .tmp-tiss-test/*.xml)",
       "Bash(node .tmp-salas.mjs)",
       "Bash(grep -v \"^\\\\`\")",
-      "Bash(grep -vE \"^\\\\`|PrismaClient\")"
+      "Bash(grep -vE \"^\\\\`|PrismaClient\")",
+      "Bash(sed -n '/model Procedimento /,/^}/p' prisma/schema.prisma)",
+      "Bash(sed -n '/model ConvenioTabela /,/^}/p' prisma/schema.prisma)",
+      "Bash(echo \"=== formatBRL ainda usado no form? ===\"; grep -n \"formatBRL\" src/components/convenios/convenio-tabela-form.tsx; echo \"\"; echo \"=== API tabela: valor_particular/co_participacao + select procedimento ===\"; sed -n '40,100p' src/app/api/convenios/[id]/tabela/route.ts | grep -n \"valor_particular\\\\|valor_co_participacao\\\\|valor\\\\|select\\\\|resto\")",
+      "Bash(npx next *)",
+      "Bash(sed -i 's/import { formatDuracao, formatBRL } from \"@\\\\/types\\\\/procedimento\";/import { formatBRL } from \"@\\\\/types\\\\/procedimento\";/' src/app/procedimentos/page.tsx)",
+      "Bash(sed -i 's/import { formatBRL, formatDuracao } from \"@\\\\/types\\\\/procedimento\";/import { formatBRL } from \"@\\\\/types\\\\/procedimento\";/' src/app/procedimentos/\\\\[id\\\\]/page.tsx)"
     ],
     "deny": [],
     "ask": [],
@@ -58,7 +64,8 @@
       "E:\\caleidoscopio\\src\\app\\api\\terapeutas\\[id]",
       "E:\\caleidoscopio\\src\\app\\api\\glosas\\[id]",
       "\\tmp",
-      "E:\\caleidoscopio\\src\\app\\api\\glosas\\demonstrativos"
+      "E:\\caleidoscopio\\src\\app\\api\\glosas\\demonstrativos",
+      "E:\\caleidoscopio\\src\\app\\api\\convenios\\[id]\\tabela"
     ]
   }
 }

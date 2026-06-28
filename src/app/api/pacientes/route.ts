@@ -60,43 +60,22 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const isAdmin = isAdminUser(user)
+    // Filtro de filial: admin escolhe via seletor global (query param); não-admin fica
+    // restrito à própria filial. Sem filial vinculada/selecionada → toda a clínica.
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
 
-    // Construir where clause baseado na role do usuário
+    // Mostrar TODOS os pacientes da clínica/filial para todos os usuários.
+    // A atribuição (profissionalId) continua existindo no cadastro, mas NÃO restringe
+    // mais a listagem — apenas o isolamento de tenant e o filtro de filial se aplicam.
     const where: any = {
       tenantId: user.tenant.id, // 🔒 CRÍTICO: Filtrar por tenant
       ativo: true,
-      ...(filialFiltro ? { filialId: filialFiltro } : {}),
     };
-
-    // Se o usuário é USER (terapeuta), filtrar apenas seus pacientes
-    if (!isAdmin) {
-      // Buscar o profissional vinculado ao usuário
-      const profissionalDoUsuario = await prisma.profissional.findFirst({
-        where: {
-          usuarioId: user.id,
-          tenantId: user.tenant.id,
-          ativo: true,
-        },
-      });
-
-      if (profissionalDoUsuario) {
-        where.profissionalId = profissionalDoUsuario.id;
-      } else {
-        // Se não encontrou profissional vinculado, retornar vazio
-        console.log(
-          `⚠️ Usuário ${user.email} (role: ${user.role}) não tem profissional vinculado`
-        );
-        return NextResponse.json({
-          success: true,
-          data: [],
-          total: 0,
-          tenant: {
-            id: user.tenant.id,
-            name: user.tenant.name,
-          },
-        });
-      }
+    // Filtro de filial inclusivo: quando uma filial está ativa, mostra os pacientes
+    // daquela filial + os sem filial (NULL = todas as filiais, ainda não atribuídos).
+    // Cobre clínicas multi-filial e clínicas com filial única.
+    if (filialFiltro) {
+      where.OR = [{ filialId: filialFiltro }, { filialId: null }];
     }
 
     // Buscar pacientes APENAS da clínica do usuário (isolamento multi-tenant)

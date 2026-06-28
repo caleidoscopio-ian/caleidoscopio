@@ -54,11 +54,7 @@ export const procedimentoSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   codigo: z.string().optional().nullable(),
   descricao: z.string().optional().nullable(),
-  valor: z.number().positive('Deve ser positivo').optional().nullable(),
-  valor_particular: z.number().positive('Deve ser positivo').optional().nullable(),
-  duracao_padrao: z.number().int().positive('Deve ser positivo').optional().nullable(),
-  tempo_minimo: z.number().int().positive('Deve ser positivo').optional().nullable(),
-  tempo_maximo: z.number().int().positive('Deve ser positivo').optional().nullable(),
+  // valor/valor_particular e duração foram removidos — o valor é definido por convênio.
   especialidade: z.string().optional().nullable(),
   requer_autorizacao: z.boolean().optional(),
   observacoes: z.string().optional().nullable(),

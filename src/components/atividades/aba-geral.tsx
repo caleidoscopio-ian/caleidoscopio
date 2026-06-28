@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -38,6 +39,10 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
     tipo_ensino: "",
     qtd_alvos_sessao: 1,
     qtd_tentativas_alvo: 1,
+    como_aplicar: "",
+    observacao: "",
+    procedimento_correcao: "",
+    materiais_utilizados: "",
   });
 
   useEffect(() => {
@@ -70,6 +75,10 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
           tipo_ensino: result.data.tipo_ensino || "",
           qtd_alvos_sessao: result.data.qtd_alvos_sessao || 1,
           qtd_tentativas_alvo: result.data.qtd_tentativas_alvo || 1,
+          como_aplicar: result.data.como_aplicar || "",
+          observacao: result.data.observacao || "",
+          procedimento_correcao: result.data.procedimento_correcao || "",
+          materiais_utilizados: result.data.materiais_utilizados || "",
         });
       }
     } catch (error) {
@@ -314,6 +323,51 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
                 }
               />
             </div>
+          </div>
+
+          {/* Aplicação da atividade (movidos da aba Instruções) */}
+          <div className="grid gap-2">
+            <Label htmlFor="como_aplicar">Como Aplicar</Label>
+            <Textarea
+              id="como_aplicar"
+              placeholder="Descreva como aplicar a atividade..."
+              rows={4}
+              value={formData.como_aplicar}
+              onChange={(e) => setFormData({ ...formData, como_aplicar: e.target.value })}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="observacao">Observação</Label>
+            <Textarea
+              id="observacao"
+              placeholder="Observações adicionais..."
+              rows={2}
+              value={formData.observacao}
+              onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="procedimento_correcao">Procedimento de Correção</Label>
+            <Textarea
+              id="procedimento_correcao"
+              placeholder="Como corrigir erros durante a aplicação..."
+              rows={3}
+              value={formData.procedimento_correcao}
+              onChange={(e) => setFormData({ ...formData, procedimento_correcao: e.target.value })}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="materiais_utilizados">Materiais Utilizados</Label>
+            <Textarea
+              id="materiais_utilizados"
+              placeholder="Lista de materiais necessários..."
+              rows={2}
+              value={formData.materiais_utilizados}
+              onChange={(e) => setFormData({ ...formData, materiais_utilizados: e.target.value })}
+            />
           </div>
         </div>
 
