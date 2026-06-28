@@ -1302,6 +1302,11 @@ model PacienteAtividadeClone {
   tipo_ensino          String?
   qtd_alvos_sessao     Int?
   qtd_tentativas_alvo  Int?
+  // Aplicação (nível atividade — movidos do nível de instrução)
+  como_aplicar          String?       @db.Text
+  observacao            String?       @db.Text
+  procedimento_correcao String?       @db.Text
+  materiais_utilizados  String?       @db.Text
 
   // Fase atual da atividade para este paciente
   faseAtual            FaseAtividade @default(LINHA_BASE)

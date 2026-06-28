@@ -58,10 +58,6 @@ interface Instrucao {
   texto: string;
   faseAtual?: string;
   qtd_tentativas_alvo?: number;
-  como_aplicar?: string;
-  observacao?: string;
-  procedimento_correcao?: string;
-  materiais_utilizados?: string;
   pontuacoes?: InstrucaoPontuacao[];
 }
 
@@ -89,6 +85,10 @@ interface AtividadeClone {
   tipo_ensino?: string;
   qtd_alvos_sessao?: number;
   qtd_tentativas_alvo?: number;
+  como_aplicar?: string;
+  observacao?: string;
+  procedimento_correcao?: string;
+  materiais_utilizados?: string;
   faseAtual: string;
   instrucoes: Instrucao[];
   pontuacoes?: Pontuacao[];
@@ -714,24 +714,46 @@ function AplicarCurriculumPageContent() {
                 <p className="text-lg font-medium">{instrucao.texto}</p>
               </div>
 
-              {instrucao.como_aplicar && (
+              {clone.como_aplicar && (
                 <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
                   <p className="text-sm font-semibold text-blue-700 mb-1">
                     Como Aplicar:
                   </p>
                   <p className="text-sm text-gray-700">
-                    {instrucao.como_aplicar}
+                    {clone.como_aplicar}
                   </p>
                 </div>
               )}
 
-              {instrucao.observacao && (
+              {clone.observacao && (
                 <div className="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
                   <p className="text-sm font-semibold text-yellow-700 mb-1">
                     Observação:
                   </p>
                   <p className="text-sm text-gray-700">
-                    {instrucao.observacao}
+                    {clone.observacao}
+                  </p>
+                </div>
+              )}
+
+              {clone.procedimento_correcao && (
+                <div className="p-4 bg-orange-50 border-l-4 border-orange-500 rounded">
+                  <p className="text-sm font-semibold text-orange-700 mb-1">
+                    Procedimento de Correção:
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    {clone.procedimento_correcao}
+                  </p>
+                </div>
+              )}
+
+              {clone.materiais_utilizados && (
+                <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded">
+                  <p className="text-sm font-semibold text-green-700 mb-1">
+                    Materiais Utilizados:
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    {clone.materiais_utilizados}
                   </p>
                 </div>
               )}

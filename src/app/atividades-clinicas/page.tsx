@@ -34,8 +34,6 @@ interface Instrucao {
   id: string;
   ordem: number;
   texto: string;
-  como_aplicar?: string;
-  observacao?: string;
 }
 
 interface Pontuacao {
@@ -54,6 +52,10 @@ interface Atividade {
   tipo_ensino?: string;
   qtd_alvos_sessao?: number;
   qtd_tentativas_alvo?: number;
+  como_aplicar?: string;
+  observacao?: string;
+  procedimento_correcao?: string;
+  materiais_utilizados?: string;
   createdAt: string;
   instrucoes: Instrucao[];
   pontuacoes?: Pontuacao[];

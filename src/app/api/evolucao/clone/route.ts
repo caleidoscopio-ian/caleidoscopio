@@ -34,6 +34,10 @@ export async function PUT(request: NextRequest) {
       tipo_ensino,
       qtd_alvos_sessao,
       qtd_tentativas_alvo,
+      como_aplicar,
+      observacao,
+      procedimento_correcao,
+      materiais_utilizados,
       instrucoes,
       pontuacoes,
     } = body;
@@ -96,6 +100,15 @@ export async function PUT(request: NextRequest) {
         updateData.qtd_alvos_sessao = qtd_alvos_sessao;
       if (qtd_tentativas_alvo !== undefined)
         updateData.qtd_tentativas_alvo = qtd_tentativas_alvo;
+      // Aplicação no nível da atividade (movido das instruções)
+      if (como_aplicar !== undefined)
+        updateData.como_aplicar = como_aplicar || null;
+      if (observacao !== undefined)
+        updateData.observacao = observacao || null;
+      if (procedimento_correcao !== undefined)
+        updateData.procedimento_correcao = procedimento_correcao || null;
+      if (materiais_utilizados !== undefined)
+        updateData.materiais_utilizados = materiais_utilizados || null;
 
       if (Object.keys(updateData).length > 0) {
         await tx.pacienteAtividadeClone.update({
@@ -118,19 +131,12 @@ export async function PUT(request: NextRequest) {
           const instr = instrucoes[index] as {
             id?: string;
             texto: string;
-            como_aplicar?: string;
-            observacao?: string;
-            procedimento_correcao?: string;
-            materiais_utilizados?: string;
           };
 
+          // Campos de aplicação ficam no nível da atividade (PacienteAtividadeClone)
           const dados = {
             ordem: index + 1,
             texto: instr.texto,
-            como_aplicar: instr.como_aplicar || null,
-            observacao: instr.observacao || null,
-            procedimento_correcao: instr.procedimento_correcao || null,
-            materiais_utilizados: instr.materiais_utilizados || null,
           };
 
           if (instr.id && idsExistentes.has(instr.id)) {

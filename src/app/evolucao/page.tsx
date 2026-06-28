@@ -89,10 +89,6 @@ interface Instrucao {
   texto: string;
   faseAtual: string;
   qtd_tentativas_alvo?: number;
-  como_aplicar?: string | null;
-  observacao?: string | null;
-  procedimento_correcao?: string | null;
-  materiais_utilizados?: string | null;
   fases?: InstrucaoFaseData[];
   historico?: InstrucaoHistorico[];
   pontuacoes?: InstrucaoPontuacaoData[];
@@ -134,6 +130,10 @@ interface AtividadeClone {
   tipo_ensino: string | null;
   qtd_alvos_sessao: number | null;
   qtd_tentativas_alvo: number | null;
+  como_aplicar: string | null;
+  observacao: string | null;
+  procedimento_correcao: string | null;
+  materiais_utilizados: string | null;
   faseAtual: string;
   instrucoes: Instrucao[];
   pontuacoes: Pontuacao[];
@@ -211,16 +211,16 @@ function EvolucaoPageContent() {
     tipo_ensino: "",
     qtd_alvos_sessao: 1,
     qtd_tentativas_alvo: 1,
+    como_aplicar: "",
+    observacao: "",
+    procedimento_correcao: "",
+    materiais_utilizados: "",
   });
   const [instrucoesList, setInstrucoesList] = useState<Instrucao[]>([]);
   const [instrucaoDialogAberto, setInstrucaoDialogAberto] = useState(false);
   const [instrucaoEditIndex, setInstrucaoEditIndex] = useState<number | null>(null);
   const [instrucaoForm, setInstrucaoForm] = useState({
     texto: "",
-    como_aplicar: "",
-    observacao: "",
-    procedimento_correcao: "",
-    materiais_utilizados: "",
   });
   const [pontuacoesList, setPontuacoesList] = useState<Pontuacao[]>([]);
   const [pontuacaoDialogAberto, setPontuacaoDialogAberto] = useState(false);
@@ -487,6 +487,10 @@ function EvolucaoPageContent() {
       tipo_ensino: clone.tipo_ensino || "",
       qtd_alvos_sessao: clone.qtd_alvos_sessao || 1,
       qtd_tentativas_alvo: clone.qtd_tentativas_alvo || 1,
+      como_aplicar: clone.como_aplicar || "",
+      observacao: clone.observacao || "",
+      procedimento_correcao: clone.procedimento_correcao || "",
+      materiais_utilizados: clone.materiais_utilizados || "",
     });
     setInstrucoesList(clone.instrucoes.map((i) => ({ ...i })));
 
@@ -512,10 +516,6 @@ function EvolucaoPageContent() {
         payload.instrucoes = instrucoesList.map((i) => ({
           id: i.id.startsWith("temp-") ? undefined : i.id,
           texto: i.texto,
-          como_aplicar: i.como_aplicar || "",
-          observacao: i.observacao || "",
-          procedimento_correcao: i.procedimento_correcao || "",
-          materiais_utilizados: i.materiais_utilizados || "",
         }));
       } else if (tipo === "pontuacoes") {
         payload.pontuacoes = pontuacoesList.map((p) => ({
@@ -563,19 +563,11 @@ function EvolucaoPageContent() {
       setInstrucaoEditIndex(index);
       setInstrucaoForm({
         texto: instr.texto,
-        como_aplicar: instr.como_aplicar || "",
-        observacao: instr.observacao || "",
-        procedimento_correcao: instr.procedimento_correcao || "",
-        materiais_utilizados: instr.materiais_utilizados || "",
       });
     } else {
       setInstrucaoEditIndex(null);
       setInstrucaoForm({
         texto: "",
-        como_aplicar: "",
-        observacao: "",
-        procedimento_correcao: "",
-        materiais_utilizados: "",
       });
     }
     setInstrucaoDialogAberto(true);
@@ -592,10 +584,6 @@ function EvolucaoPageContent() {
       ordem: instrucaoEditIndex !== null ? instrucoesList[instrucaoEditIndex].ordem : instrucoesList.length + 1,
       faseAtual: instrucaoEditIndex !== null ? instrucoesList[instrucaoEditIndex].faseAtual : "LINHA_BASE",
       texto: instrucaoForm.texto,
-      como_aplicar: instrucaoForm.como_aplicar || null,
-      observacao: instrucaoForm.observacao || null,
-      procedimento_correcao: instrucaoForm.procedimento_correcao || null,
-      materiais_utilizados: instrucaoForm.materiais_utilizados || null,
     };
 
     if (instrucaoEditIndex !== null) {
@@ -1068,6 +1056,40 @@ function EvolucaoPageContent() {
                       </div>
                       {/* Tentativas agora são configuradas por instrução individual */}
                     </div>
+
+                    {/* Aplicação da atividade (nível atividade) */}
+                    <div className="grid gap-2">
+                      <Label>Como Aplicar</Label>
+                      <Textarea
+                        rows={3}
+                        value={geralForm.como_aplicar}
+                        onChange={(e) => setGeralForm({ ...geralForm, como_aplicar: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Observação</Label>
+                      <Textarea
+                        rows={2}
+                        value={geralForm.observacao}
+                        onChange={(e) => setGeralForm({ ...geralForm, observacao: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Procedimento de Correção</Label>
+                      <Textarea
+                        rows={2}
+                        value={geralForm.procedimento_correcao}
+                        onChange={(e) => setGeralForm({ ...geralForm, procedimento_correcao: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Materiais Utilizados</Label>
+                      <Textarea
+                        rows={2}
+                        value={geralForm.materiais_utilizados}
+                        onChange={(e) => setGeralForm({ ...geralForm, materiais_utilizados: e.target.value })}
+                      />
+                    </div>
                   </div>
 
                   <Button
@@ -1446,47 +1468,7 @@ function EvolucaoPageContent() {
                 onChange={(e) =>
                   setInstrucaoForm({ ...instrucaoForm, texto: e.target.value })
                 }
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Como Aplicar</Label>
-              <Textarea
-                value={instrucaoForm.como_aplicar}
-                onChange={(e) =>
-                  setInstrucaoForm({ ...instrucaoForm, como_aplicar: e.target.value })
-                }
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Observação</Label>
-              <Textarea
-                value={instrucaoForm.observacao}
-                onChange={(e) =>
-                  setInstrucaoForm({ ...instrucaoForm, observacao: e.target.value })
-                }
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Procedimento de Correção</Label>
-              <Textarea
-                value={instrucaoForm.procedimento_correcao}
-                onChange={(e) =>
-                  setInstrucaoForm({ ...instrucaoForm, procedimento_correcao: e.target.value })
-                }
-                rows={2}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Materiais Utilizados</Label>
-              <Textarea
-                value={instrucaoForm.materiais_utilizados}
-                onChange={(e) =>
-                  setInstrucaoForm({ ...instrucaoForm, materiais_utilizados: e.target.value })
-                }
-                rows={2}
+                rows={4}
               />
             </div>
           </div>

@@ -41,6 +41,8 @@ import {
   ClipboardList,
   ClipboardCheck,
   AlertCircle,
+  AlertTriangle,
+  Clock,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -68,6 +70,7 @@ interface InstrucaoDisponivel {
   ordem: number;
   texto: string;
   faseAtual: string;
+  ultimaAplicacao?: string | null;
 }
 
 interface AtividadeDisponivel {
@@ -123,6 +126,34 @@ const FASE_CONFIG: Record<string, { label: string; className: string }> = {
 function FaseBadge({ fase }: { fase: string }) {
   const config = FASE_CONFIG[fase] || { label: fase, className: "bg-gray-400 text-white" };
   return <Badge className={`${config.className} text-xs`}>{config.label}</Badge>;
+}
+
+// Dias desde a última aplicação para recomendar manutenção
+const DIAS_MANUTENCAO_RECOMENDADA = 15;
+
+function diasDesde(data: string | null | undefined): number | null {
+  if (!data) return null;
+  const ms = Date.now() - new Date(data).getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+
+function formatarUltimaAplicacao(data: string | null | undefined): string {
+  if (!data) return "Nunca aplicada";
+  return new Date(data).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+// Manutenção recomendada: fase MANUTENCAO e última aplicação > 15 dias (ou nunca aplicada)
+function manutencaoRecomendada(instrucao: {
+  faseAtual: string;
+  ultimaAplicacao?: string | null;
+}): boolean {
+  if (instrucao.faseAtual !== "MANUTENCAO") return false;
+  const dias = diasDesde(instrucao.ultimaAplicacao);
+  return dias === null || dias > DIAS_MANUTENCAO_RECOMENDADA;
 }
 
 // ========== Componente Principal ==========
@@ -785,7 +816,19 @@ function IniciarSessaoPageContent() {
                           onCheckedChange={() => toggleInstrucao(instrucao.id)}
                           onClick={(e) => e.stopPropagation()}
                         />
-                        <span className="text-sm flex-1 leading-snug">{instrucao.texto}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm leading-snug block">{instrucao.texto}</span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Clock className="h-3 w-3 shrink-0" />
+                            Última aplicação: {formatarUltimaAplicacao(instrucao.ultimaAplicacao)}
+                          </span>
+                        </div>
+                        {manutencaoRecomendada(instrucao) && (
+                          <Badge className="bg-orange-500 text-white text-xs gap-1 shrink-0">
+                            <AlertTriangle className="h-3 w-3" />
+                            Manutenção Recomendada
+                          </Badge>
+                        )}
                         <FaseBadge fase={instrucao.faseAtual} />
                       </div>
                     ))}

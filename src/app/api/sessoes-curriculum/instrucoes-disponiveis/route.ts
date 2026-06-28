@@ -60,11 +60,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Buscar a data da última aplicação de cada instrução
+    const instrucaoIds = pacienteCurriculum.atividadesClone.flatMap((a) =>
+      a.instrucoes.map((i) => i.id)
+    );
+
+    const ultimasAplicacoes =
+      instrucaoIds.length > 0
+        ? await prisma.avaliacaoInstrucaoCurriculum.groupBy({
+            by: ["instrucaoId"],
+            where: { instrucaoId: { in: instrucaoIds } },
+            _max: { createdAt: true },
+          })
+        : [];
+
+    const mapaUltimaAplicacao = new Map(
+      ultimasAplicacoes.map((u) => [u.instrucaoId, u._max.createdAt])
+    );
+
+    const atividadesClone = pacienteCurriculum.atividadesClone.map((a) => ({
+      ...a,
+      instrucoes: a.instrucoes.map((i) => ({
+        ...i,
+        ultimaAplicacao: mapaUltimaAplicacao.get(i.id) ?? null,
+      })),
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
         pacienteCurriculumId: pacienteCurriculum.id,
-        atividadesClone: pacienteCurriculum.atividadesClone,
+        atividadesClone,
       },
     });
   } catch (error) {
