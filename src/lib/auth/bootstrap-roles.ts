@@ -285,18 +285,25 @@ async function ensureProfissional(
     return
   }
 
-  // Mapear SSO role para especialidade descritiva
+  // Mapear SSO role para especialidade descritiva (legado, exibição) e tipo de vínculo
   const especialidadeMap: Record<string, string> = {
     SUPER_ADMIN: 'Administrador Geral',
     ADMIN: 'Administrador',
     USER: 'Profissional',
     TERAPEUTA: 'Terapeuta',
   }
+  const tipoVinculoMap: Record<string, 'FUNCIONARIO_ADMINISTRATIVO' | 'PROFISSIONAL_CLINICO'> = {
+    SUPER_ADMIN: 'FUNCIONARIO_ADMINISTRATIVO',
+    ADMIN: 'FUNCIONARIO_ADMINISTRATIVO',
+    USER: 'PROFISSIONAL_CLINICO',
+    TERAPEUTA: 'PROFISSIONAL_CLINICO',
+  }
 
   const nome = userInfo?.name || 'Usuário'
   const email = userInfo?.email || undefined
   const normalizedRole = ssoRole.toUpperCase()
   const especialidade = especialidadeMap[normalizedRole] || 'Profissional'
+  const tipoVinculo = tipoVinculoMap[normalizedRole] || 'PROFISSIONAL_CLINICO'
 
   await prisma.profissional.create({
     data: {
@@ -305,6 +312,8 @@ async function ensureProfissional(
       nome,
       email,
       especialidade,
+      tipo_vinculo: tipoVinculo,
+      ...(tipoVinculo === 'FUNCIONARIO_ADMINISTRATIVO' ? { funcao_administrativa: 'GESTAO' as const } : {}),
       ativo: true,
     },
   })

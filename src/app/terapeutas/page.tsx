@@ -35,6 +35,9 @@ import {
   ExternalLink,
 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { agruparPorFilial } from "@/lib/agrupar-filial";
+import { ESPECIALIDADE_CLINICA_OPTIONS } from "@/lib/profissional-constants";
 
 interface Professional {
   id: string;
@@ -42,9 +45,16 @@ interface Professional {
   cpf: string;
   phone?: string;
   email?: string;
-  specialty: string;
+  specialty: string | null;
   professionalRegistration?: string;
+  tipoVinculo?: string | null;
+  especialidadeClinica?: string | null;
+  funcaoAdministrativa?: string | null;
+  conselho?: string | null;
+  numeroRegistro?: string | null;
+  ufRegistro?: string | null;
   roomAccess: string[];
+  filialId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,9 +66,108 @@ interface ProfessionalsResponse {
   error?: string;
 }
 
+function TerapeutasTable({
+  professionals,
+  onSuccess,
+  formatCPF,
+  formatDate,
+}: {
+  professionals: Professional[];
+  onSuccess: () => void;
+  formatCPF: (cpf: string) => string;
+  formatDate: (dateString: string) => string;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nome</TableHead>
+          <TableHead>Especialidade</TableHead>
+          <TableHead>CPF</TableHead>
+          <TableHead>Contato</TableHead>
+          <TableHead>Registro Profissional</TableHead>
+          <TableHead>Cadastrado</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {professionals.map((professional) => (
+          <TableRow key={professional.id}>
+            <TableCell className="font-medium">
+              {professional.name}
+            </TableCell>
+            <TableCell>
+              {professional.specialty ? (
+                <Badge
+                  variant="outline"
+                  className="bg-blue-50 text-blue-700"
+                >
+                  {professional.specialty}
+                </Badge>
+              ) : (
+                <Badge variant="secondary">Não classificado</Badge>
+              )}
+            </TableCell>
+            <TableCell className="font-mono text-sm">
+              {formatCPF(professional.cpf)}
+            </TableCell>
+            <TableCell>
+              <div className="text-sm">
+                {professional.phone && (
+                  <div>{professional.phone}</div>
+                )}
+                {professional.email && (
+                  <div className="text-muted-foreground">
+                    {professional.email}
+                  </div>
+                )}
+                {!professional.phone && !professional.email && (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="text-sm">
+                {professional.professionalRegistration ? (
+                  <span className="font-mono">
+                    {professional.professionalRegistration}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell className="text-sm text-muted-foreground">
+              {formatDate(professional.createdAt)}
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end space-x-2">
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/terapeutas/${professional.id}`}>
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Detalhes
+                  </Link>
+                </Button>
+                <EditarTerapeutaForm
+                  professional={professional}
+                  onSuccess={onSuccess}
+                />
+                <DeleteTerapeutaDialog
+                  professional={professional}
+                  onSuccess={onSuccess}
+                />
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 function TerapeutasPageContent() {
   const { user, isAuthenticated } = useAuth();
-  const { filialAtiva } = useFilial();
+  const { filialAtiva, filiais } = useFilial();
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -135,7 +244,7 @@ function TerapeutasPageContent() {
     (professional) =>
       professional.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       professional.cpf.includes(searchTerm) ||
-      professional.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (professional.specialty && professional.specialty.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (professional.email &&
         professional.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -151,22 +260,10 @@ function TerapeutasPageContent() {
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   };
 
-  // Lista de especialidades comuns
-  const especialidades = [
-    "Fonoaudiologia",
-    "Terapia Ocupacional",
-    "Psicologia",
-    "Fisioterapia",
-    "Neuropsicologia",
-    "Psicopedagogia",
-    "Musicoterapia",
-    "Educação Física Adaptada",
-  ];
-
-  const especialidadeStats = especialidades
+  const especialidadeStats = ESPECIALIDADE_CLINICA_OPTIONS
     .map((esp) => ({
-      name: esp,
-      count: professionals.filter((p) => p.specialty === esp).length,
+      name: esp.label,
+      count: professionals.filter((p) => p.specialty === esp.label).length,
     }))
     .filter((stat) => stat.count > 0);
 
@@ -345,86 +442,48 @@ function TerapeutasPageContent() {
             )}
 
             {!loading && !error && filteredProfessionals.length > 0 && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Especialidade</TableHead>
-                    <TableHead>CPF</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead>Registro Profissional</TableHead>
-                    <TableHead>Cadastrado</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredProfessionals.map((professional) => (
-                    <TableRow key={professional.id}>
-                      <TableCell className="font-medium">
-                        {professional.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className="bg-blue-50 text-blue-700"
-                        >
-                          {professional.specialty}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {formatCPF(professional.cpf)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {professional.phone && (
-                            <div>{professional.phone}</div>
-                          )}
-                          {professional.email && (
-                            <div className="text-muted-foreground">
-                              {professional.email}
-                            </div>
-                          )}
-                          {!professional.phone && !professional.email && (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {professional.professionalRegistration ? (
-                            <span className="font-mono">
-                              {professional.professionalRegistration}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(professional.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button size="sm" variant="outline" asChild>
-                            <Link href={`/terapeutas/${professional.id}`}>
-                              <ExternalLink className="h-4 w-4 mr-1" />
-                              Detalhes
-                            </Link>
-                          </Button>
-                          <EditarTerapeutaForm
-                            professional={professional}
-                            onSuccess={fetchProfessionals}
+              filialAtiva ? (
+                <TerapeutasTable
+                  professionals={filteredProfessionals}
+                  onSuccess={fetchProfessionals}
+                  formatCPF={formatCPF}
+                  formatDate={formatDate}
+                />
+              ) : (
+                <Accordion
+                  type="multiple"
+                  defaultValue={agruparPorFilial(
+                    filteredProfessionals,
+                    (p) => filiais.find((f) => f.id === p.filialId) ?? null
+                  ).map((g) => g.filial?.id ?? "_sem_filial")}
+                >
+                  {agruparPorFilial(
+                    filteredProfessionals,
+                    (p) => filiais.find((f) => f.id === p.filialId) ?? null
+                  ).map((grupo) => (
+                    <AccordionItem key={grupo.filial?.id ?? "_sem_filial"} value={grupo.filial?.id ?? "_sem_filial"}>
+                      <AccordionTrigger>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: grupo.filial?.cor ?? "#94a3b8" }}
                           />
-                          <DeleteTerapeutaDialog
-                            professional={professional}
-                            onSuccess={fetchProfessionals}
-                          />
+                          <span className="font-medium">{grupo.filial?.nome ?? "Sem filial"}</span>
+                          <Badge variant="secondary" className="text-xs">{grupo.items.length}</Badge>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <TerapeutasTable
+                          professionals={grupo.items}
+                          onSuccess={fetchProfessionals}
+                          formatCPF={formatCPF}
+                          formatDate={formatDate}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </TableBody>
-              </Table>
+                </Accordion>
+              )
             )}
 
             {!loading &&

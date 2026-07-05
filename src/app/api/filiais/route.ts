@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
+import { isValidCNPJ } from '@/lib/masks'
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,10 +49,18 @@ export async function POST(request: NextRequest) {
     if (!await hasPermission(user, 'create_filiais')) return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
 
     const body = await request.json()
-    const { nome, cidade, endereco, telefone, email, cor } = body
+    const {
+      nome, razao_social, cnpj, cnes, tipo_estabelecimento,
+      cidade, endereco, cep, logradouro, numero, complemento, bairro, estado,
+      telefone, email, cor,
+    } = body
 
     if (!nome?.trim()) {
       return NextResponse.json({ success: false, error: 'Nome é obrigatório' }, { status: 400 })
+    }
+
+    if (cnpj && !isValidCNPJ(cnpj)) {
+      return NextResponse.json({ success: false, error: 'CNPJ inválido' }, { status: 400 })
     }
 
     // Verificar nome único por tenant
@@ -62,12 +71,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Já existe uma filial com este nome' }, { status: 409 })
     }
 
+    // Verificar CNPJ único por tenant (quando informado)
+    if (cnpj) {
+      const cnpjNumeros = cnpj.replace(/\D/g, '')
+      const cnpjExistente = await prisma.filial.findFirst({
+        where: { tenantId: user.tenant.id, cnpj: cnpjNumeros },
+      })
+      if (cnpjExistente) {
+        return NextResponse.json({ success: false, error: 'Já existe uma filial com este CNPJ' }, { status: 409 })
+      }
+    }
+
     const filial = await prisma.filial.create({
       data: {
         tenantId: user.tenant.id,
         nome: nome.trim(),
+        razao_social: razao_social?.trim() || null,
+        cnpj: cnpj ? cnpj.replace(/\D/g, '') : null,
+        cnes: cnes?.trim() || null,
+        tipo_estabelecimento: tipo_estabelecimento?.trim() || null,
         cidade: cidade?.trim() || null,
         endereco: endereco?.trim() || null,
+        cep: cep ? cep.replace(/\D/g, '') : null,
+        logradouro: logradouro?.trim() || null,
+        numero: numero?.trim() || null,
+        complemento: complemento?.trim() || null,
+        bairro: bairro?.trim() || null,
+        estado: estado || null,
         telefone: telefone?.trim() || null,
         email: email?.trim() || null,
         cor: cor || null,
@@ -93,10 +123,18 @@ export async function PUT(request: NextRequest) {
     if (!await hasPermission(user, 'edit_filiais')) return NextResponse.json({ success: false, error: 'Sem permissão' }, { status: 403 })
 
     const body = await request.json()
-    const { id, nome, cidade, endereco, telefone, email, cor, ativo } = body
+    const {
+      id, nome, razao_social, cnpj, cnes, tipo_estabelecimento,
+      cidade, endereco, cep, logradouro, numero, complemento, bairro, estado,
+      telefone, email, cor, ativo,
+    } = body
 
     if (!id) return NextResponse.json({ success: false, error: 'ID é obrigatório' }, { status: 400 })
     if (!nome?.trim()) return NextResponse.json({ success: false, error: 'Nome é obrigatório' }, { status: 400 })
+
+    if (cnpj && !isValidCNPJ(cnpj)) {
+      return NextResponse.json({ success: false, error: 'CNPJ inválido' }, { status: 400 })
+    }
 
     const existente = await prisma.filial.findFirst({ where: { id, tenantId: user.tenant.id } })
     if (!existente) return NextResponse.json({ success: false, error: 'Filial não encontrada' }, { status: 404 })
@@ -107,12 +145,31 @@ export async function PUT(request: NextRequest) {
     })
     if (conflito) return NextResponse.json({ success: false, error: 'Já existe uma filial com este nome' }, { status: 409 })
 
+    // Verificar CNPJ único (excluindo a própria filial)
+    if (cnpj) {
+      const cnpjNumeros = cnpj.replace(/\D/g, '')
+      const cnpjConflito = await prisma.filial.findFirst({
+        where: { tenantId: user.tenant.id, cnpj: cnpjNumeros, NOT: { id } },
+      })
+      if (cnpjConflito) return NextResponse.json({ success: false, error: 'Já existe uma filial com este CNPJ' }, { status: 409 })
+    }
+
     const filial = await prisma.filial.update({
       where: { id },
       data: {
         nome: nome.trim(),
+        razao_social: razao_social?.trim() || null,
+        cnpj: cnpj ? cnpj.replace(/\D/g, '') : null,
+        cnes: cnes?.trim() || null,
+        tipo_estabelecimento: tipo_estabelecimento?.trim() || null,
         cidade: cidade?.trim() || null,
         endereco: endereco?.trim() || null,
+        cep: cep ? cep.replace(/\D/g, '') : null,
+        logradouro: logradouro?.trim() || null,
+        numero: numero?.trim() || null,
+        complemento: complemento?.trim() || null,
+        bairro: bairro?.trim() || null,
+        estado: estado || null,
         telefone: telefone?.trim() || null,
         email: email?.trim() || null,
         cor: cor || null,

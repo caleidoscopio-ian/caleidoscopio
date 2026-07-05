@@ -26,7 +26,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -37,6 +36,13 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { useFilial } from "@/hooks/useFilial";
+import { formatCPF, formatPhone, UF_OPTIONS } from "@/lib/masks";
+import {
+  TIPO_VINCULO_OPTIONS,
+  ESPECIALIDADE_CLINICA_OPTIONS,
+  FUNCAO_ADMINISTRATIVA_OPTIONS,
+  CONSELHO_OPTIONS,
+} from "@/lib/profissional-constants";
 
 // Schema de validação baseado no modelo Profissional do banco
 const terapeutaSchema = z.object({
@@ -45,7 +51,16 @@ const terapeutaSchema = z.object({
     .string()
     .min(2, "Nome deve ter pelo menos 2 caracteres")
     .max(100, "Nome muito longo"),
-  especialidade: z.string().min(2, "Especialidade é obrigatória"),
+  tipoVinculo: z.enum(["PROFISSIONAL_CLINICO", "FUNCIONARIO_ADMINISTRATIVO"], {
+    message: "Tipo de vínculo é obrigatório",
+  }),
+
+  // Campos condicionais (validados com refine mais abaixo)
+  especialidadeClinica: z.string().optional(),
+  funcaoAdministrativa: z.string().optional(),
+  conselho: z.string().optional(),
+  numeroRegistro: z.string().optional(),
+  ufRegistro: z.string().optional(),
 
   // Campos opcionais - Dados pessoais
   cpf: z
@@ -57,11 +72,14 @@ const terapeutaSchema = z.object({
     ),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   telefone: z.string().optional(),
-
-  // Campos profissionais
-  registro_profissional: z.string().optional(),
   salas_acesso: z.array(z.string()).optional(),
-});
+}).refine(
+  (data) => data.tipoVinculo !== "PROFISSIONAL_CLINICO" || !!data.especialidadeClinica,
+  { message: "Especialidade é obrigatória", path: ["especialidadeClinica"] }
+).refine(
+  (data) => data.tipoVinculo !== "FUNCIONARIO_ADMINISTRATIVO" || !!data.funcaoAdministrativa,
+  { message: "Função é obrigatória", path: ["funcaoAdministrativa"] }
+);
 
 type TerapeutaFormData = z.infer<typeof terapeutaSchema>;
 
@@ -82,26 +100,17 @@ export function NovoTerapeutaForm({ onSuccess }: NovoTerapeutaFormProps) {
       cpf: "",
       email: "",
       telefone: "",
-      especialidade: "",
-      registro_profissional: "",
+      tipoVinculo: "PROFISSIONAL_CLINICO",
+      especialidadeClinica: "",
+      funcaoAdministrativa: "",
+      conselho: "",
+      numeroRegistro: "",
+      ufRegistro: "",
       salas_acesso: [],
     },
   });
 
-  // Especialidades comuns para TEA
-  const especialidades = [
-    "Fonoaudiologia",
-    "Terapia Ocupacional",
-    "Psicologia",
-    "Fisioterapia",
-    "Neuropsicologia",
-    "Psicopedagogia",
-    "Musicoterapia",
-    "Educação Física Adaptada",
-    "Análise do Comportamento Aplicada (ABA)",
-    "Nutrição",
-    "Outra",
-  ];
+  const tipoVinculo = form.watch("tipoVinculo");
 
   // Salas disponíveis (simulado - em produção viria do backend)
   const salasDisponiveis = [
@@ -114,24 +123,6 @@ export function NovoTerapeutaForm({ onSuccess }: NovoTerapeutaFormProps) {
     { id: "consultorio-2", nome: "Consultório 2" },
     { id: "consultorio-3", nome: "Consultório 3" },
   ];
-
-  const formatCPF = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    if (numbers.length <= 11) {
-      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-    }
-    return value;
-  };
-
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    if (numbers.length === 11) {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-    } else if (numbers.length === 10) {
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
-    }
-    return value;
-  };
 
   const onSubmit = async (data: TerapeutaFormData) => {
     try {
@@ -149,8 +140,12 @@ export function NovoTerapeutaForm({ onSuccess }: NovoTerapeutaFormProps) {
         cpf: data.cpf?.replace(/\D/g, ""), // Remove formatação do CPF
         phone: data.telefone,
         email: data.email || undefined,
-        specialty: data.especialidade,
-        professionalRegistration: data.registro_profissional,
+        tipoVinculo: data.tipoVinculo,
+        especialidadeClinica: data.tipoVinculo === "PROFISSIONAL_CLINICO" ? data.especialidadeClinica : undefined,
+        funcaoAdministrativa: data.tipoVinculo === "FUNCIONARIO_ADMINISTRATIVO" ? data.funcaoAdministrativa : undefined,
+        conselho: data.tipoVinculo === "PROFISSIONAL_CLINICO" ? data.conselho || undefined : undefined,
+        numeroRegistro: data.tipoVinculo === "PROFISSIONAL_CLINICO" ? data.numeroRegistro || undefined : undefined,
+        ufRegistro: data.tipoVinculo === "PROFISSIONAL_CLINICO" ? data.ufRegistro || undefined : undefined,
         roomAccess: data.salas_acesso || [],
         filialId: filialAtiva?.id ?? null,
       };
@@ -236,29 +231,26 @@ export function NovoTerapeutaForm({ onSuccess }: NovoTerapeutaFormProps) {
                   )}
                 />
 
-                {/* Especialidade */}
+                {/* Tipo de Vínculo */}
                 <FormField
                   control={form.control}
-                  name="especialidade"
+                  name="tipoVinculo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Especialidade *</FormLabel>
+                      <FormLabel>Tipo de Vínculo *</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione a especialidade" />
+                            <SelectValue placeholder="Selecione o tipo de vínculo" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {especialidades.map((especialidade) => (
-                            <SelectItem
-                              key={especialidade}
-                              value={especialidade}
-                            >
-                              {especialidade}
+                          {TIPO_VINCULO_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={o.value}>
+                              {o.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -267,7 +259,146 @@ export function NovoTerapeutaForm({ onSuccess }: NovoTerapeutaFormProps) {
                     </FormItem>
                   )}
                 />
+              </div>
 
+              {tipoVinculo === "PROFISSIONAL_CLINICO" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Especialidade */}
+                  <FormField
+                    control={form.control}
+                    name="especialidadeClinica"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Especialidade *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a especialidade" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {ESPECIALIDADE_CLINICA_OPTIONS.map((o) => (
+                              <SelectItem key={o.value} value={o.value}>
+                                {o.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Conselho */}
+                  <FormField
+                    control={form.control}
+                    name="conselho"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Conselho</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o conselho" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {CONSELHO_OPTIONS.map((o) => (
+                              <SelectItem key={o.value} value={o.value}>
+                                {o.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Número de Registro */}
+                  <FormField
+                    control={form.control}
+                    name="numeroRegistro"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número de Registro</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: 06/123456" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* UF do Registro */}
+                  <FormField
+                    control={form.control}
+                    name="ufRegistro"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>UF do Registro</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="UF" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {UF_OPTIONS.map((uf) => (
+                              <SelectItem key={uf.value} value={uf.value}>
+                                {uf.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Função */}
+                  <FormField
+                    control={form.control}
+                    name="funcaoAdministrativa"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Função *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a função" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {FUNCAO_ADMINISTRATIVA_OPTIONS.map((o) => (
+                              <SelectItem key={o.value} value={o.value}>
+                                {o.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* CPF */}
                 <FormField
                   control={form.control}
@@ -286,28 +417,6 @@ export function NovoTerapeutaForm({ onSuccess }: NovoTerapeutaFormProps) {
                           maxLength={14}
                         />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Registro Profissional */}
-                <FormField
-                  control={form.control}
-                  name="registro_profissional"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Registro Profissional</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ex: CRP 06/123456, CRFa 2-12345"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Número do conselho profissional (CRP, CRFa, CREFITO,
-                        etc.)
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

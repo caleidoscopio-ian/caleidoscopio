@@ -24,6 +24,8 @@ import { NovaSalaDialog } from "@/components/salas/nova-sala-dialog";
 import { EditarSalaDialog } from "@/components/salas/editar-sala-dialog";
 import { ExcluirSalaDialog } from "@/components/salas/excluir-sala-dialog";
 import { useFilial } from "@/hooks/useFilial";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { agruparPorFilial } from "@/lib/agrupar-filial";
 
 interface Sala {
   id: string;
@@ -37,6 +39,113 @@ interface Sala {
   filial?: { id: string; nome: string; cor?: string | null } | null;
   createdAt: string;
   updatedAt: string;
+}
+
+function SalasTable({
+  salas,
+  mostrarFilial,
+  onSuccess,
+}: {
+  salas: Sala[];
+  mostrarFilial: boolean;
+  onSuccess: () => void;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nome</TableHead>
+          {mostrarFilial && <TableHead>Filial</TableHead>}
+          <TableHead>Descrição</TableHead>
+          <TableHead>Capacidade</TableHead>
+          <TableHead>Recursos</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {salas.map((sala) => (
+          <TableRow key={sala.id}>
+            <TableCell className="font-medium">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{
+                    backgroundColor: sala.cor || "#94a3b8",
+                  }}
+                />
+                {sala.nome}
+              </div>
+            </TableCell>
+            {mostrarFilial && (
+              <TableCell>
+                {sala.filial ? (
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: sala.filial.cor ?? "#3b82f6" }} />
+                    <span className="text-sm">{sala.filial.nome}</span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">-</span>
+                )}
+              </TableCell>
+            )}
+            <TableCell className="max-w-[300px]">
+              <div className="truncate text-sm text-muted-foreground">
+                {sala.descricao || "-"}
+              </div>
+            </TableCell>
+            <TableCell>
+              {sala.capacidade ? (
+                <div className="flex items-center gap-1">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span>{sala.capacidade}</span>
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  -
+                </span>
+              )}
+            </TableCell>
+            <TableCell>
+              {sala.recursos.length > 0 ? (
+                <div className="flex items-center gap-1">
+                  <Wrench className="h-4 w-4 text-muted-foreground" />
+                  <Badge variant="outline" className="text-xs">
+                    {sala.recursos.length} recurso(s)
+                  </Badge>
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  -
+                </span>
+              )}
+            </TableCell>
+            <TableCell>
+              {sala.ativo ? (
+                <Badge variant="default" className="bg-green-600">
+                  Ativa
+                </Badge>
+              ) : (
+                <Badge variant="secondary">Inativa</Badge>
+              )}
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end space-x-2">
+                <EditarSalaDialog
+                  sala={sala}
+                  onSuccess={onSuccess}
+                />
+                <ExcluirSalaDialog
+                  sala={sala}
+                  onSuccess={onSuccess}
+                />
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 }
 
 export default function SalasPage() {
@@ -256,98 +365,34 @@ export default function SalasPage() {
               )}
 
               {!loading && !error && filteredSalas.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Filial</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Capacidade</TableHead>
-                      <TableHead>Recursos</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredSalas.map((sala) => (
-                      <TableRow key={sala.id}>
-                        <TableCell className="font-medium">
+                filialAtiva ? (
+                  <SalasTable salas={filteredSalas} mostrarFilial onSuccess={fetchSalas} />
+                ) : (
+                  <Accordion
+                    type="multiple"
+                    defaultValue={agruparPorFilial(filteredSalas, (s) => s.filial ?? null).map(
+                      (g) => g.filial?.id ?? "_sem_filial"
+                    )}
+                  >
+                    {agruparPorFilial(filteredSalas, (s) => s.filial ?? null).map((grupo) => (
+                      <AccordionItem key={grupo.filial?.id ?? "_sem_filial"} value={grupo.filial?.id ?? "_sem_filial"}>
+                        <AccordionTrigger>
                           <div className="flex items-center gap-2">
                             <div
-                              className="w-3 h-3 rounded-full"
-                              style={{
-                                backgroundColor: sala.cor || "#94a3b8",
-                              }}
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: grupo.filial?.cor ?? "#94a3b8" }}
                             />
-                            {sala.nome}
+                            <span className="font-medium">{grupo.filial?.nome ?? "Sem filial"}</span>
+                            <Badge variant="secondary" className="text-xs">{grupo.items.length}</Badge>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          {sala.filial ? (
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: sala.filial.cor ?? "#3b82f6" }} />
-                              <span className="text-sm">{sala.filial.nome}</span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="max-w-[300px]">
-                          <div className="truncate text-sm text-muted-foreground">
-                            {sala.descricao || "-"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {sala.capacidade ? (
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              <span>{sala.capacidade}</span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">
-                              -
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {sala.recursos.length > 0 ? (
-                            <div className="flex items-center gap-1">
-                              <Wrench className="h-4 w-4 text-muted-foreground" />
-                              <Badge variant="outline" className="text-xs">
-                                {sala.recursos.length} recurso(s)
-                              </Badge>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">
-                              -
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {sala.ativo ? (
-                            <Badge variant="default" className="bg-green-600">
-                              Ativa
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">Inativa</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <EditarSalaDialog
-                              sala={sala}
-                              onSuccess={fetchSalas}
-                            />
-                            <ExcluirSalaDialog
-                              sala={sala}
-                              onSuccess={fetchSalas}
-                            />
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <SalasTable salas={grupo.items} mostrarFilial={false} onSuccess={fetchSalas} />
+                        </AccordionContent>
+                      </AccordionItem>
                     ))}
-                  </TableBody>
-                </Table>
+                  </Accordion>
+                )
               )}
 
               {!loading &&

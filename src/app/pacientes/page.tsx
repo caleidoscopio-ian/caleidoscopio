@@ -25,6 +25,25 @@ import {
 import { Users, Search, Filter, Calendar, Clock, Loader2, FileText } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useFilial } from "@/hooks/useFilial";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { agruparPorFilial } from "@/lib/agrupar-filial";
+
+interface ResponsavelData {
+  id?: string;
+  nome: string;
+  telefone?: string | null;
+  parentesco: string;
+  cpf?: string | null;
+  financeiro: boolean;
+}
+
+interface ConvenioVinculado {
+  id?: string;
+  convenioId: string;
+  numero_carteirinha?: string | null;
+  principal: boolean;
+  convenio?: { id: string; razao_social: string; nome_fantasia: string | null };
+}
 
 interface Patient {
   id: string;
@@ -34,6 +53,14 @@ interface Patient {
   email?: string;
   phone?: string;
   address?: string;
+  sexo?: string | null;
+  cep?: string | null;
+  logradouro?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
   guardianName?: string;
   guardianPhone?: string;
   healthInsurance?: string;
@@ -46,6 +73,10 @@ interface Patient {
     nome: string;
     especialidade: string;
   } | null;
+  filialId?: string | null;
+  filial?: { id: string; nome: string; cor?: string | null } | null;
+  responsaveis?: ResponsavelData[];
+  convenios?: ConvenioVinculado[];
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +86,150 @@ interface PatientsResponse {
   data: Patient[];
   total: number;
   error?: string;
+}
+
+function PacientesTable({
+  patients,
+  onSuccess,
+  calculateAge,
+  formatDate,
+  onAgendar,
+}: {
+  patients: Patient[];
+  onSuccess: () => void;
+  calculateAge: (birthDate: string) => number;
+  formatDate: (dateString: string) => string;
+  onAgendar: () => void;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nome</TableHead>
+          <TableHead>Idade</TableHead>
+          <TableHead>CPF</TableHead>
+          <TableHead>Terapeuta</TableHead>
+          <TableHead>Contato</TableHead>
+          <TableHead>Responsável</TableHead>
+          <TableHead>Convênio</TableHead>
+          <TableHead>Cadastrado</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {patients.map((patient) => (
+          <TableRow key={patient.id}>
+            <TableCell className="font-medium">
+              {patient.name}
+            </TableCell>
+            <TableCell>
+              {calculateAge(patient.birthDate)} anos
+            </TableCell>
+            <TableCell className="font-mono text-sm">
+              {patient.cpf}
+            </TableCell>
+            <TableCell>
+              <div className="text-sm">
+                {patient.profissional ? (
+                  <>
+                    <div className="font-medium">
+                      {patient.profissional.nome}
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      {patient.profissional.especialidade}
+                    </div>
+                  </>
+                ) : (
+                  <Badge variant="outline">Não atribuído</Badge>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="text-sm">
+                {patient.phone && <div>{patient.phone}</div>}
+                {patient.email && (
+                  <div className="text-muted-foreground">
+                    {patient.email}
+                  </div>
+                )}
+                {!patient.phone && !patient.email && (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="text-sm">
+                {patient.guardianName && (
+                  <div>{patient.guardianName}</div>
+                )}
+                {patient.guardianPhone && (
+                  <div className="text-muted-foreground">
+                    {patient.guardianPhone}
+                  </div>
+                )}
+                {!patient.guardianName && !patient.guardianPhone && (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="text-sm">
+                {patient.convenio ? (
+                  <>
+                    <div>{patient.convenio.nome_fantasia || patient.convenio.razao_social}</div>
+                    {patient.healthInsuranceNumber && (
+                      <div className="text-muted-foreground font-mono text-xs">
+                        {patient.healthInsuranceNumber}
+                      </div>
+                    )}
+                  </>
+                ) : patient.healthInsurance ? (
+                  <>
+                    <div>{patient.healthInsurance}</div>
+                    {patient.healthInsuranceNumber && (
+                      <div className="text-muted-foreground font-mono text-xs">
+                        {patient.healthInsuranceNumber}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Badge variant="outline">Particular</Badge>
+                )}
+              </div>
+            </TableCell>
+            <TableCell className="text-sm text-muted-foreground">
+              {formatDate(patient.createdAt)}
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end space-x-2">
+                <Link href={`/prontuario/${patient.id}`}>
+                  <Button variant="outline" size="sm" title="Visualizar Prontuário">
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <PacienteDetailsDialog patient={patient} onSuccess={onSuccess} />
+                <EditarPacienteForm
+                  patient={patient}
+                  onSuccess={onSuccess}
+                />
+                <DeletePatientDialog
+                  patient={patient}
+                  onSuccess={onSuccess}
+                />
+                <Button
+                  size="sm"
+                  onClick={onAgendar}
+                >
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Agendar
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 }
 
 function PacientesPageContent() {
@@ -319,133 +494,46 @@ function PacientesPageContent() {
             )}
 
             {!loading && !error && filteredPatients.length > 0 && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Idade</TableHead>
-                    <TableHead>CPF</TableHead>
-                    <TableHead>Terapeuta</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead>Convênio</TableHead>
-                    <TableHead>Cadastrado</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPatients.map((patient) => (
-                    <TableRow key={patient.id}>
-                      <TableCell className="font-medium">
-                        {patient.name}
-                      </TableCell>
-                      <TableCell>
-                        {calculateAge(patient.birthDate)} anos
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {patient.cpf}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {patient.profissional ? (
-                            <>
-                              <div className="font-medium">
-                                {patient.profissional.nome}
-                              </div>
-                              <div className="text-muted-foreground text-xs">
-                                {patient.profissional.especialidade}
-                              </div>
-                            </>
-                          ) : (
-                            <Badge variant="outline">Não atribuído</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {patient.phone && <div>{patient.phone}</div>}
-                          {patient.email && (
-                            <div className="text-muted-foreground">
-                              {patient.email}
-                            </div>
-                          )}
-                          {!patient.phone && !patient.email && (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {patient.guardianName && (
-                            <div>{patient.guardianName}</div>
-                          )}
-                          {patient.guardianPhone && (
-                            <div className="text-muted-foreground">
-                              {patient.guardianPhone}
-                            </div>
-                          )}
-                          {!patient.guardianName && !patient.guardianPhone && (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {patient.convenio ? (
-                            <>
-                              <div>{patient.convenio.nome_fantasia || patient.convenio.razao_social}</div>
-                              {patient.healthInsuranceNumber && (
-                                <div className="text-muted-foreground font-mono text-xs">
-                                  {patient.healthInsuranceNumber}
-                                </div>
-                              )}
-                            </>
-                          ) : patient.healthInsurance ? (
-                            <>
-                              <div>{patient.healthInsurance}</div>
-                              {patient.healthInsuranceNumber && (
-                                <div className="text-muted-foreground font-mono text-xs">
-                                  {patient.healthInsuranceNumber}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <Badge variant="outline">Particular</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(patient.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Link href={`/prontuario/${patient.id}`}>
-                            <Button variant="outline" size="sm" title="Visualizar Prontuário">
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <PacienteDetailsDialog patient={patient} />
-                          <EditarPacienteForm
-                            patient={patient}
-                            onSuccess={fetchPatients}
+              filialAtiva ? (
+                <PacientesTable
+                  patients={filteredPatients}
+                  onSuccess={fetchPatients}
+                  calculateAge={calculateAge}
+                  formatDate={formatDate}
+                  onAgendar={() => router.push("/agenda")}
+                />
+              ) : (
+                <Accordion
+                  type="multiple"
+                  defaultValue={agruparPorFilial(filteredPatients, (p) => p.filial ?? null).map(
+                    (g) => g.filial?.id ?? "_sem_filial"
+                  )}
+                >
+                  {agruparPorFilial(filteredPatients, (p) => p.filial ?? null).map((grupo) => (
+                    <AccordionItem key={grupo.filial?.id ?? "_sem_filial"} value={grupo.filial?.id ?? "_sem_filial"}>
+                      <AccordionTrigger>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: grupo.filial?.cor ?? "#94a3b8" }}
                           />
-                          <DeletePatientDialog
-                            patient={patient}
-                            onSuccess={fetchPatients}
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => router.push("/agenda")}
-                          >
-                            <Calendar className="h-4 w-4 mr-1" />
-                            Agendar
-                          </Button>
+                          <span className="font-medium">{grupo.filial?.nome ?? "Sem filial"}</span>
+                          <Badge variant="secondary" className="text-xs">{grupo.items.length}</Badge>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <PacientesTable
+                          patients={grupo.items}
+                          onSuccess={fetchPatients}
+                          calculateAge={calculateAge}
+                          formatDate={formatDate}
+                          onAgendar={() => router.push("/agenda")}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </TableBody>
-              </Table>
+                </Accordion>
+              )
             )}
 
             {!loading &&

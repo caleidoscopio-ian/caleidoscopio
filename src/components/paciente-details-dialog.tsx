@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Eye, Calendar, User, Phone, Mail, MapPin, Shield, CreditCard } from 'lucide-react'
+import { Eye, Calendar, User, Phone, Mail, MapPin, Shield, CreditCard, Stethoscope, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,8 +14,55 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/hooks/useAuth'
+
+const SEXO_LABELS: Record<string, string> = {
+  MASCULINO: 'Masculino',
+  FEMININO: 'Feminino',
+  OUTRO: 'Outro',
+  PREFIRO_NAO_INFORMAR: 'Prefiro não informar',
+}
+
+const PARENTESCO_LABELS: Record<string, string> = {
+  PAI: 'Pai',
+  MAE: 'Mãe',
+  TUTOR_LEGAL: 'Tutor Legal',
+  AVO: 'Avô(ó)',
+  IRMAO: 'Irmão(ã)',
+  OUTRO: 'Outro',
+}
+
+interface ResponsavelData {
+  id?: string
+  nome: string
+  telefone?: string | null
+  parentesco: string
+  cpf?: string | null
+  financeiro: boolean
+}
+
+interface ConvenioVinculado {
+  id?: string
+  convenioId: string
+  numero_carteirinha?: string | null
+  principal: boolean
+  convenio?: { id: string; razao_social: string; nome_fantasia: string | null }
+}
+
+interface ProfissionalOption {
+  id: string
+  name: string
+  especialidade: string
+}
 
 interface Patient {
   id: string
@@ -25,20 +72,86 @@ interface Patient {
   email?: string
   phone?: string
   address?: string
+  sexo?: string | null
+  cep?: string | null
+  logradouro?: string | null
+  numero?: string | null
+  complemento?: string | null
+  bairro?: string | null
+  cidade?: string | null
+  estado?: string | null
   guardianName?: string
   guardianPhone?: string
   healthInsurance?: string
   healthInsuranceNumber?: string
+  convenioId?: string | null
+  convenio?: { id: string; razao_social: string; nome_fantasia: string | null } | null
+  profissionalId?: string | null
+  profissional?: { id: string; nome: string; especialidade: string } | null
+  responsaveis?: ResponsavelData[]
+  convenios?: ConvenioVinculado[]
   createdAt: string
   updatedAt: string
 }
 
 interface PacienteDetailsDialogProps {
   patient: Patient
+  onSuccess?: () => void
 }
 
-export function PacienteDetailsDialog({ patient }: PacienteDetailsDialogProps) {
+export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDialogProps) {
+  const { user, isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
+  const [profissionais, setProfissionais] = useState<ProfissionalOption[]>([])
+  const [profissionalSelecionado, setProfissionalSelecionado] = useState(patient.profissionalId || '_none')
+  const [reatribuindo, setReatribuindo] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setProfissionalSelecionado(patient.profissionalId || '_none')
+    if (!isAdmin || !user) return
+
+    fetch('/api/terapeutas', {
+      headers: {
+        'X-User-Data': btoa(JSON.stringify(user)),
+        'X-Auth-Token': user.token,
+      },
+    })
+      .then((r) => r.json())
+      .then((result) => {
+        if (result.success) setProfissionais(result.data)
+      })
+      .catch(() => {})
+  }, [open, isAdmin, user, patient.profissionalId])
+
+  const reatribuirTerapeuta = async () => {
+    if (!user) return
+    try {
+      setReatribuindo(true)
+      const novoId = profissionalSelecionado === '_none' ? null : profissionalSelecionado
+
+      const response = await fetch('/api/pacientes', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Data': btoa(JSON.stringify(user)),
+          'X-Auth-Token': user.token,
+        },
+        body: JSON.stringify({ id: patient.id, profissionalId: novoId }),
+      })
+
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao reatribuir terapeuta')
+      }
+
+      if (onSuccess) onSuccess()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erro ao reatribuir terapeuta')
+    } finally {
+      setReatribuindo(false)
+    }
+  }
 
   // Calcular idade baseada na data de nascimento
   const calculateAge = (birthDate: string) => {
@@ -70,6 +183,21 @@ export function PacienteDetailsDialog({ patient }: PacienteDetailsDialogProps) {
   }
 
   const age = calculateAge(patient.birthDate)
+
+  const enderecoEstruturado = [
+    patient.logradouro && patient.numero ? `${patient.logradouro}, ${patient.numero}` : patient.logradouro,
+    patient.complemento,
+    patient.bairro,
+    patient.cidade && patient.estado ? `${patient.cidade}/${patient.estado}` : patient.cidade,
+    patient.cep,
+  ]
+    .filter(Boolean)
+    .join(' - ')
+
+  const enderecoExibicao = enderecoEstruturado || patient.address
+
+  const responsaveis = patient.responsaveis || []
+  const convenios = patient.convenios || []
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -123,6 +251,13 @@ export function PacienteDetailsDialog({ patient }: PacienteDetailsDialogProps) {
                   <p>{formatDate(patient.birthDate)}</p>
                 </div>
               </div>
+
+              {patient.sexo && (
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-muted-foreground">Sexo</label>
+                  <p>{SEXO_LABELS[patient.sexo] || patient.sexo}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -152,17 +287,17 @@ export function PacienteDetailsDialog({ patient }: PacienteDetailsDialogProps) {
                 </div>
               )}
 
-              {patient.address && (
+              {enderecoExibicao && (
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div className="flex flex-col">
                     <span className="text-sm text-muted-foreground">Endereço:</span>
-                    <span className="text-sm">{patient.address}</span>
+                    <span className="text-sm">{enderecoExibicao}</span>
                   </div>
                 </div>
               )}
 
-              {!patient.phone && !patient.email && !patient.address && (
+              {!patient.phone && !patient.email && !enderecoExibicao && (
                 <p className="text-sm text-muted-foreground italic">
                   Nenhuma informação de contato cadastrada
                 </p>
@@ -173,7 +308,7 @@ export function PacienteDetailsDialog({ patient }: PacienteDetailsDialogProps) {
           <Separator />
 
           {/* Seção: Responsáveis */}
-          {(patient.guardianName || patient.guardianPhone) && (
+          {(responsaveis.length > 0 || patient.guardianName || patient.guardianPhone) && (
             <>
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -181,37 +316,99 @@ export function PacienteDetailsDialog({ patient }: PacienteDetailsDialogProps) {
                   Responsáveis
                 </h3>
 
-                <div className="space-y-3">
-                  {patient.guardianName && (
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Responsável Financeiro:</span>
-                      <span>{patient.guardianName}</span>
-                    </div>
-                  )}
+                {responsaveis.length > 0 ? (
+                  <div className="space-y-3">
+                    {responsaveis.map((r, i) => (
+                      <div key={r.id || i} className="p-3 border rounded-lg bg-muted/30 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{r.nome}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {PARENTESCO_LABELS[r.parentesco] || r.parentesco}
+                          </Badge>
+                          {r.financeiro && (
+                            <Badge variant="secondary" className="text-xs">Financeiro</Badge>
+                          )}
+                        </div>
+                        {r.telefone && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Phone className="h-3.5 w-3.5" />
+                            {r.telefone}
+                          </div>
+                        )}
+                        {r.cpf && (
+                          <div className="text-sm text-muted-foreground font-mono">
+                            CPF: {formatCPF(r.cpf)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {patient.guardianName && (
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Responsável Financeiro:</span>
+                        <span>{patient.guardianName}</span>
+                      </div>
+                    )}
 
-                  {patient.guardianPhone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Contato de Emergência:</span>
-                      <span>{patient.guardianPhone}</span>
-                    </div>
-                  )}
-                </div>
+                    {patient.guardianPhone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Contato de Emergência:</span>
+                        <span>{patient.guardianPhone}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <Separator />
             </>
           )}
 
-          {/* Seção: Plano de Saúde */}
+          {/* Seção: Convênios */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
-              Plano de Saúde
+              Convênios / Plano de Saúde
             </h3>
 
             <div className="space-y-3">
-              {patient.healthInsurance ? (
+              {convenios.length > 0 ? (
+                convenios.map((c, i) => (
+                  <div key={c.id || i} className="flex items-center gap-2 flex-wrap">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <Badge variant="outline">
+                      {c.convenio?.nome_fantasia || c.convenio?.razao_social || 'Convênio'}
+                    </Badge>
+                    {c.principal && <Badge variant="secondary" className="text-xs">Principal</Badge>}
+                    {c.numero_carteirinha && (
+                      <span className="text-sm font-mono text-muted-foreground">
+                        Carteirinha: {c.numero_carteirinha}
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : patient.convenio ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Convênio:</span>
+                    <Badge variant="outline">
+                      {patient.convenio.nome_fantasia || patient.convenio.razao_social}
+                    </Badge>
+                  </div>
+
+                  {patient.healthInsuranceNumber && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Matrícula:</span>
+                      <span className="font-mono text-sm">{patient.healthInsuranceNumber}</span>
+                    </div>
+                  )}
+                </>
+              ) : patient.healthInsurance ? (
                 <>
                   <div className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-muted-foreground" />
@@ -233,6 +430,47 @@ export function PacienteDetailsDialog({ patient }: PacienteDetailsDialogProps) {
                 </div>
               )}
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Seção: Terapeuta Responsável */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Stethoscope className="h-4 w-4" />
+              Terapeuta Responsável
+            </h3>
+
+            {isAdmin ? (
+              <div className="flex items-center gap-2">
+                <Select value={profissionalSelecionado} onValueChange={setProfissionalSelecionado}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecione o terapeuta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Não atribuído</SelectItem>
+                    {profissionais.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} {p.especialidade ? `— ${p.especialidade}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  disabled={reatribuindo || profissionalSelecionado === (patient.profissionalId || '_none')}
+                  onClick={reatribuirTerapeuta}
+                >
+                  {reatribuindo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm">
+                {patient.profissional
+                  ? `${patient.profissional.nome}${patient.profissional.especialidade ? ` — ${patient.profissional.especialidade}` : ''}`
+                  : 'Não atribuído'}
+              </p>
+            )}
           </div>
 
           <Separator />

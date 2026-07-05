@@ -12,6 +12,7 @@ interface FilialContextValue {
   setFilialAtiva: (f: Filial | null) => void
   loading: boolean
   isAdmin: boolean
+  refreshFiliais: () => Promise<void>
 }
 
 const FilialContext = createContext<FilialContextValue | undefined>(undefined)
@@ -32,6 +33,28 @@ export function FilialProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(STORAGE_KEY)
     }
   }, [])
+
+  // Recarrega a lista de filiais do servidor — usado no mount e exposto como
+  // refreshFiliais para telas que criam/editam/excluem filiais atualizarem o
+  // seletor global (sidebar) sem precisar de F5.
+  const carregarFiliais = useCallback(async () => {
+    if (!user) return
+    const headers = {
+      'X-User-Data': btoa(JSON.stringify(user)),
+      'X-Auth-Token': user.token,
+    }
+    const d = await fetch('/api/filiais?ativas=true', { headers }).then(r => r.json()).catch(() => null)
+    if (d?.success) {
+      const lista: Filial[] = d.data
+      setFiliais(lista)
+      const savedId = localStorage.getItem(STORAGE_KEY)
+      if (savedId) {
+        const found = lista.find(f => f.id === savedId)
+        if (found) setFilialAtivaState(found)
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -58,16 +81,7 @@ export function FilialProvider({ children }: { children: ReactNode }) {
         }
 
         // Admin: carregar lista completa de filiais para o seletor
-        const d = await fetch('/api/filiais?ativas=true', { headers }).then(r => r.json())
-        if (d?.success) {
-          const lista: Filial[] = d.data
-          setFiliais(lista)
-          const savedId = localStorage.getItem(STORAGE_KEY)
-          if (savedId) {
-            const found = lista.find(f => f.id === savedId)
-            if (found) setFilialAtivaState(found)
-          }
-        }
+        await carregarFiliais()
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -75,7 +89,7 @@ export function FilialProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated, user?.id])
 
   return (
-    <FilialContext.Provider value={{ filiais, filialAtiva, setFilialAtiva, loading, isAdmin }}>
+    <FilialContext.Provider value={{ filiais, filialAtiva, setFilialAtiva, loading, isAdmin, refreshFiliais: carregarFiliais }}>
       {children}
     </FilialContext.Provider>
   )

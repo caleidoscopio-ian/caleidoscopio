@@ -3,12 +3,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +29,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -46,6 +46,17 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useFilial } from "@/hooks/useFilial";
+import { formatCPF, formatPhone, formatCEP, isValidCPF, UF_OPTIONS } from "@/lib/masks";
+import { buscarEnderecoPorCep } from "@/lib/viacep";
+
+const PARENTESCO_OPTIONS = [
+  { value: "PAI", label: "Pai" },
+  { value: "MAE", label: "Mãe" },
+  { value: "TUTOR_LEGAL", label: "Tutor Legal" },
+  { value: "AVO", label: "Avô(ó)" },
+  { value: "IRMAO", label: "Irmão(ã)" },
+  { value: "OUTRO", label: "Outro" },
+];
 
 // Schema de validação baseado no modelo Paciente do banco
 const pacienteSchema = z.object({
@@ -56,6 +67,9 @@ const pacienteSchema = z.object({
     .max(100, "Nome muito longo"),
   nascimento: z.date({
     message: "Data de nascimento é obrigatória",
+  }),
+  sexo: z.enum(["MASCULINO", "FEMININO", "OUTRO", "PREFIRO_NAO_INFORMAR"], {
+    message: "Sexo é obrigatório",
   }),
 
   // Campos opcionais - Dados pessoais
@@ -68,17 +82,46 @@ const pacienteSchema = z.object({
     ),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   telefone: z.string().optional(),
-  endereco: z.string().optional(),
   escolaridade: z.string().optional(),
   estado_civil: z.string().optional(),
 
-  // Campos opcionais - Responsáveis
-  responsavel_financeiro: z.string().optional(),
-  contato_emergencia: z.string().optional(),
+  // Campos opcionais - Endereço estruturado
+  cep: z.string().optional(),
+  logradouro: z.string().optional(),
+  numero: z.string().optional(),
+  complemento: z.string().optional(),
+  bairro: z.string().optional(),
+  cidade: z.string().optional(),
+  estado: z.string().optional(),
 
-  // Campos opcionais - Convênio
-  convenioId: z.string().optional(),
-  matricula: z.string().optional(),
+  // Responsáveis (múltiplos)
+  responsaveis: z
+    .array(
+      z.object({
+        nome: z.string().min(2, "Nome do responsável é obrigatório"),
+        telefone: z.string().optional(),
+        parentesco: z.enum(["PAI", "MAE", "TUTOR_LEGAL", "AVO", "IRMAO", "OUTRO"], {
+          message: "Parentesco é obrigatório",
+        }),
+        cpf: z
+          .string()
+          .optional()
+          .refine((val) => !val || isValidCPF(val), "CPF inválido"),
+        financeiro: z.boolean().optional(),
+      })
+    )
+    .optional(),
+
+  // Convênios (múltiplos)
+  convenios: z
+    .array(
+      z.object({
+        convenioId: z.string().min(1, "Selecione um convênio"),
+        numero_carteirinha: z.string().optional(),
+        principal: z.boolean().optional(),
+      })
+    )
+    .optional(),
 
   // Campo opcional - Cor da agenda
   cor_agenda: z.string().optional(),
@@ -114,17 +157,35 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
       cpf: "",
       email: "",
       telefone: "",
-      endereco: "",
+      cep: "",
+      logradouro: "",
+      numero: "",
+      complemento: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
       escolaridade: "",
       estado_civil: "",
-      responsavel_financeiro: "",
-      contato_emergencia: "",
-      convenioId: "",
-      matricula: "",
+      responsaveis: [],
+      convenios: [],
       cor_agenda: "#4ECDC4",
       profissionalId: "",
     },
   });
+
+  const responsaveisArray = useFieldArray({ control: form.control, name: "responsaveis" });
+  const conveniosArray = useFieldArray({ control: form.control, name: "convenios" });
+
+  // Autopreencher endereço a partir do CEP (ViaCEP)
+  const handleCepBlur = async (cep: string) => {
+    const endereco = await buscarEnderecoPorCep(cep);
+    if (endereco) {
+      form.setValue("logradouro", endereco.logradouro);
+      form.setValue("bairro", endereco.bairro);
+      form.setValue("cidade", endereco.localidade);
+      form.setValue("estado", endereco.uf);
+    }
+  };
 
   // Carregar lista de profissionais
   useEffect(() => {
@@ -194,24 +255,6 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
   ];
 
 
-  const formatCPF = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    if (numbers.length <= 11) {
-      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-    }
-    return value;
-  };
-
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    if (numbers.length === 11) {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-    } else if (numbers.length === 10) {
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
-    }
-    return value;
-  };
-
   const onSubmit = async (data: PacienteFormData) => {
     try {
       setLoading(true);
@@ -269,13 +312,18 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
         birthDate: data.nascimento.toISOString(),
         email: data.email || undefined,
         phone: data.telefone,
-        address: data.endereco,
+        sexo: data.sexo,
+        cep: data.cep?.replace(/\D/g, "") || undefined,
+        logradouro: data.logradouro,
+        numero: data.numero,
+        complemento: data.complemento,
+        bairro: data.bairro,
+        cidade: data.cidade,
+        estado: data.estado,
         escolaridade: data.escolaridade || undefined,
         estado_civil: data.estado_civil || undefined,
-        guardianName: data.responsavel_financeiro,
-        guardianPhone: data.contato_emergencia,
-        convenioId: data.convenioId && data.convenioId !== "_particular" ? data.convenioId : undefined,
-        healthInsuranceNumber: data.matricula,
+        responsaveis: data.responsaveis,
+        convenios: data.convenios,
         profissionalId: profissionalIdToUse,
         // Filial: admin envia a filial ativa no seletor global; não-admin usa a do perfil (server-side)
         filialId: filialAtiva?.id ?? null,
@@ -452,6 +500,33 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Sexo */}
+                <FormField
+                  control={form.control}
+                  name="sexo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sexo *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o sexo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="MASCULINO">Masculino</SelectItem>
+                          <SelectItem value="FEMININO">Feminino</SelectItem>
+                          <SelectItem value="OUTRO">Outro</SelectItem>
+                          <SelectItem value="PREFIRO_NAO_INFORMAR">Prefiro não informar</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {/* CPF */}
                 <FormField
@@ -475,7 +550,9 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
                     </FormItem>
                   )}
                 />
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Cor da Agenda */}
                 <FormField
                   control={form.control}
@@ -627,124 +704,386 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
               </div>
 
               {/* Endereço */}
-              <FormField
-                control={form.control}
-                name="endereco"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Endereço</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Rua, número, bairro, cidade, CEP"
-                        {...field}
-                        rows={2}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="cep"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CEP</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="00000-000"
+                            {...field}
+                            onChange={(e) => field.onChange(formatCEP(e.target.value))}
+                            onBlur={(e) => {
+                              field.onBlur();
+                              handleCepBlur(e.target.value);
+                            }}
+                            maxLength={9}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="logradouro"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Logradouro</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Rua, Avenida..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="numero"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: 123 ou S/N" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="complemento"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Complemento</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Apto, bloco..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="bairro"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bairro</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Bairro" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="cidade"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Cidade</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Cidade" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="estado"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estado</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="UF" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {UF_OPTIONS.map((uf) => (
+                              <SelectItem key={uf.value} value={uf.value}>
+                                {uf.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Seção: Responsáveis */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">
-                Responsáveis
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Responsável Financeiro */}
-                <FormField
-                  control={form.control}
-                  name="responsavel_financeiro"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Responsável Financeiro</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nome do responsável" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Pessoa responsável pelos pagamentos
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Contato de Emergência */}
-                <FormField
-                  control={form.control}
-                  name="contato_emergencia"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contato de Emergência</FormLabel>
-                      <FormControl>
-                        <Input placeholder="(11) 99999-9999" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Telefone para emergências
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-lg font-semibold">Responsáveis</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    responsaveisArray.append({
+                      nome: "",
+                      telefone: "",
+                      parentesco: "OUTRO",
+                      cpf: "",
+                      financeiro: responsaveisArray.fields.length === 0,
+                    })
+                  }
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adicionar responsável
+                </Button>
               </div>
+
+              {responsaveisArray.fields.length === 0 && (
+                <p className="text-sm text-muted-foreground italic">
+                  Nenhum responsável adicionado.
+                </p>
+              )}
+
+              {responsaveisArray.fields.map((item, index) => (
+                <div key={item.id} className="p-4 border rounded-lg space-y-4 relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-7 w-7"
+                    onClick={() => responsaveisArray.remove(index)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-8">
+                    <FormField
+                      control={form.control}
+                      name={`responsaveis.${index}.nome`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nome do responsável" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`responsaveis.${index}.parentesco`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Parentesco *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o parentesco" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {PARENTESCO_OPTIONS.map((p) => (
+                                <SelectItem key={p.value} value={p.value}>
+                                  {p.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-8">
+                    <FormField
+                      control={form.control}
+                      name={`responsaveis.${index}.telefone`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefone</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="(11) 99999-9999"
+                              {...field}
+                              onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                              maxLength={15}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`responsaveis.${index}.cpf`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CPF</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="000.000.000-00"
+                              {...field}
+                              onChange={(e) => field.onChange(formatCPF(e.target.value))}
+                              maxLength={14}
+                            />
+                          </FormControl>
+                          <FormDescription>Usado para emissão de NFe</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name={`responsaveis.${index}.financeiro`}
+                    render={({ field }) => (
+                      <FormItem className="flex items-center gap-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(checked) => {
+                              field.onChange(!!checked);
+                              if (checked) {
+                                responsaveisArray.fields.forEach((_, i) => {
+                                  if (i !== index) form.setValue(`responsaveis.${i}.financeiro`, false);
+                                });
+                              }
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="!mt-0 cursor-pointer">Responsável financeiro</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              ))}
             </div>
 
-            {/* Seção: Convênio */}
+            {/* Seção: Convênios */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">
-                Convênio / Plano de Saúde
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Convênio */}
-                <FormField
-                  control={form.control}
-                  name="convenioId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Convênio</FormLabel>
-                      <Select
-                        onValueChange={(v) => field.onChange(v === "_particular" ? "" : v)}
-                        value={field.value || "_particular"}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o convênio" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="_particular">
-                            Particular (sem convênio)
-                          </SelectItem>
-                          {convenios.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.nome_fantasia || c.razao_social}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Matrícula */}
-                <FormField
-                  control={form.control}
-                  name="matricula"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número da Matrícula</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Número do convênio" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-lg font-semibold">Convênios / Plano de Saúde</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    conveniosArray.append({
+                      convenioId: "",
+                      numero_carteirinha: "",
+                      principal: conveniosArray.fields.length === 0,
+                    })
+                  }
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adicionar convênio
+                </Button>
               </div>
+
+              {conveniosArray.fields.length === 0 && (
+                <p className="text-sm text-muted-foreground italic">
+                  Particular (sem convênio).
+                </p>
+              )}
+
+              {conveniosArray.fields.map((item, index) => (
+                <div key={item.id} className="p-4 border rounded-lg space-y-4 relative">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-7 w-7"
+                    onClick={() => conveniosArray.remove(index)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-8">
+                    <FormField
+                      control={form.control}
+                      name={`convenios.${index}.convenioId`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Convênio *</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o convênio" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {convenios.map((c) => (
+                                <SelectItem key={c.id} value={c.id}>
+                                  {c.nome_fantasia || c.razao_social}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`convenios.${index}.numero_carteirinha`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número da Carteirinha</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Número do convênio" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name={`convenios.${index}.principal`}
+                    render={({ field }) => (
+                      <FormItem className="flex items-center gap-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(checked) => {
+                              field.onChange(!!checked);
+                              if (checked) {
+                                conveniosArray.fields.forEach((_, i) => {
+                                  if (i !== index) form.setValue(`convenios.${i}.principal`, false);
+                                });
+                              }
+                            }}
+                          />
+                        </FormControl>
+                        <FormLabel className="!mt-0 cursor-pointer">Convênio principal</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              ))}
             </div>
 
             {/* Botões */}

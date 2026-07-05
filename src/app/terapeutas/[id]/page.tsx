@@ -39,6 +39,7 @@ import { RegraRepasseForm } from "@/components/terapeutas/regra-repasse-form";
 import { PageLoader } from "@/components/page-loader";
 import type { ProfissionalDetalhe, RegraRepasse } from "@/types/profissional";
 import { TIPO_REPASSE_LABELS } from "@/types/profissional";
+import { TIPO_VINCULO_LABELS } from "@/lib/profissional-constants";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -243,7 +244,16 @@ export default function TerapeutaDetalhePage() {
           <div className="flex-1">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold">{profissional.nome}</h1>
-              <Badge variant="secondary">{profissional.especialidade}</Badge>
+              {profissional.especialidade ? (
+                <Badge variant="secondary">{profissional.especialidade}</Badge>
+              ) : (
+                <Badge variant="outline">Não classificado</Badge>
+              )}
+              {profissional.tipo_vinculo && (
+                <Badge variant="outline">
+                  {TIPO_VINCULO_LABELS[profissional.tipo_vinculo] || profissional.tipo_vinculo}
+                </Badge>
+              )}
               {!profissional.ativo && <Badge variant="destructive">Inativo</Badge>}
             </div>
           </div>
@@ -324,7 +334,7 @@ export default function TerapeutaDetalhePage() {
                   <Award className="h-4 w-4 text-muted-foreground shrink-0" />
                   <div>
                     <p className="text-xs text-muted-foreground">Especialidade</p>
-                    <p className="font-medium">{profissional.especialidade}</p>
+                    <p className="font-medium">{profissional.especialidade || "Não classificado"}</p>
                   </div>
                 </div>
                 {profissional.cpf && (

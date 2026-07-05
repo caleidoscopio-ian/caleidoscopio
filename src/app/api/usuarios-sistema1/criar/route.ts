@@ -45,11 +45,10 @@ export async function POST(request: NextRequest) {
       name,
       password,
       role,
-      // Dados do profissional (Sistema 2)
+      // Dados básicos do profissional (Sistema 2) — o restante (especialidade,
+      // conselho, registro etc.) é preenchido depois na ficha do profissional
       cpf,
       telefone,
-      especialidade,
-      registro_profissional,
       salas_acesso,
     } = body;
 
@@ -57,13 +56,6 @@ export async function POST(request: NextRequest) {
     if (!email || !name || !password) {
       return NextResponse.json(
         { error: "Email, nome e senha são obrigatórios" },
-        { status: 400 }
-      );
-    }
-
-    if (!especialidade) {
-      return NextResponse.json(
-        { error: "Especialidade é obrigatória" },
         { status: 400 }
       );
     }
@@ -99,8 +91,9 @@ export async function POST(request: NextRequest) {
         cpf: cpf || null,
         telefone: telefone || null,
         email: email,
-        especialidade,
-        registro_profissional: registro_profissional || null,
+        // Não classificado ainda — preenchido depois na ficha do profissional (/terapeutas)
+        especialidade: null,
+        tipo_vinculo: null,
         salas_acesso: salas_acesso || [],
         ativo: true,
       },

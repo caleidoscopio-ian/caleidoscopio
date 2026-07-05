@@ -17,11 +17,14 @@ import { useToast } from "@/hooks/use-toast";
 import { NovaFilialDialog } from "@/components/filiais/nova-filial-dialog";
 import { EditarFilialDialog } from "@/components/filiais/editar-filial-dialog";
 import { ExcluirFilialDialog } from "@/components/filiais/excluir-filial-dialog";
+import { useFilial } from "@/hooks/useFilial";
+import { formatCNPJ } from "@/lib/masks";
 import type { Filial } from "@/types/filial";
 
 export default function FiliaisPage() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { refreshFiliais } = useFilial();
   const [filiais, setFiliais] = useState<Filial[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,6 +65,13 @@ export default function FiliaisPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user]);
 
+  // Atualiza a listagem local desta página E o seletor global (sidebar) — corrige o
+  // bug de a filial nova só aparecer no dropdown depois de um F5.
+  const handleSuccess = () => {
+    fetchFiliais();
+    refreshFiliais();
+  };
+
   const filtered = filiais.filter((f) => {
     const term = searchTerm.toLowerCase();
     return (
@@ -85,7 +95,7 @@ export default function FiliaisPage() {
               <h1 className="text-3xl font-bold tracking-tight">Filiais</h1>
               <p className="text-muted-foreground">Gerencie as unidades da clínica</p>
             </div>
-            <NovaFilialDialog onSuccess={fetchFiliais} />
+            <NovaFilialDialog onSuccess={handleSuccess} />
           </div>
 
           {/* Estatísticas */}
@@ -163,7 +173,7 @@ export default function FiliaisPage() {
                   <Landmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">Nenhuma filial cadastrada</h3>
                   <p className="text-muted-foreground mb-4">Comece criando a primeira unidade da clínica.</p>
-                  <NovaFilialDialog onSuccess={fetchFiliais} />
+                  <NovaFilialDialog onSuccess={handleSuccess} />
                 </div>
               )}
 
@@ -180,6 +190,7 @@ export default function FiliaisPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
+                      <TableHead>CNPJ</TableHead>
                       <TableHead>Cidade</TableHead>
                       <TableHead>Endereço</TableHead>
                       <TableHead>Salas</TableHead>
@@ -190,7 +201,14 @@ export default function FiliaisPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((filial) => (
+                    {filtered.map((filial) => {
+                      const enderecoEstruturado = [
+                        filial.logradouro && filial.numero ? `${filial.logradouro}, ${filial.numero}` : filial.logradouro,
+                        filial.bairro,
+                        filial.cep,
+                      ].filter(Boolean).join(" - ");
+                      const enderecoExibicao = enderecoEstruturado || filial.endereco;
+                      return (
                       <TableRow key={filial.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
@@ -201,12 +219,15 @@ export default function FiliaisPage() {
                             {filial.nome}
                           </div>
                         </TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">
+                          {filial.cnpj ? formatCNPJ(filial.cnpj) : "-"}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {filial.cidade || "-"}
+                          {filial.cidade ? (filial.estado ? `${filial.cidade}/${filial.estado}` : filial.cidade) : "-"}
                         </TableCell>
                         <TableCell className="max-w-[200px]">
                           <div className="truncate text-sm text-muted-foreground">
-                            {filial.endereco || "-"}
+                            {enderecoExibicao || "-"}
                           </div>
                         </TableCell>
                         <TableCell>{filial._count?.salas ?? 0}</TableCell>
@@ -221,12 +242,13 @@ export default function FiliaisPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <EditarFilialDialog filial={filial} onSuccess={fetchFiliais} />
-                            <ExcluirFilialDialog filial={filial} onSuccess={fetchFiliais} />
+                            <EditarFilialDialog filial={filial} onSuccess={handleSuccess} />
+                            <ExcluirFilialDialog filial={filial} onSuccess={handleSuccess} />
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}

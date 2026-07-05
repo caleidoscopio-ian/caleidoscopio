@@ -58,7 +58,9 @@
       "Bash(sed -i 's/import { formatDuracao, formatBRL } from \"@\\\\/types\\\\/procedimento\";/import { formatBRL } from \"@\\\\/types\\\\/procedimento\";/' src/app/procedimentos/page.tsx)",
       "Bash(sed -i 's/import { formatBRL, formatDuracao } from \"@\\\\/types\\\\/procedimento\";/import { formatBRL } from \"@\\\\/types\\\\/procedimento\";/' src/app/procedimentos/\\\\[id\\\\]/page.tsx)",
       "Bash(sed -n '/model PacienteAtividadeClone /,/^}/p' prisma/schema.prisma)",
-      "Bash(sed -n '/model AtividadeCloneInstrucao /,/^}/p' prisma/schema.prisma)"
+      "Bash(sed -n '/model AtividadeCloneInstrucao /,/^}/p' prisma/schema.prisma)",
+      "Bash(npx prisma *)",
+      "Bash(grep -A2 -E \"^\\\\./src/app/\\(pacientes|salas\\)/page\\\\.tsx$\")"
     ],
     "deny": [],
     "ask": [],

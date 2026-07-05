@@ -47,7 +47,11 @@ if (status && ['EM_ANDAMENTO', 'FINALIZADA', 'CANCELADA'].includes(status)) {
 }
 ```
 
-Enums do projeto: `StatusSessao`, `StatusProgresso`, `FaseAtividade`, `StatusAgendamento`, `TipoEncaminhamento`, `StatusEncaminhamento`, `TipoRelatorio`, `TipoAnexo`, `TipoRecompensa`, `TipoAvaliacao`, `CategoriaGlosa`, `StatusGlosa`, `StatusConciliacao`
+Enums do projeto: `StatusSessao`, `StatusProgresso`, `FaseAtividade`, `StatusAgendamento`, `TipoEncaminhamento`, `StatusEncaminhamento`, `TipoRelatorio`, `TipoAnexo`, `TipoRecompensa`, `TipoAvaliacao`, `CategoriaGlosa`, `StatusGlosa`, `StatusConciliacao`, `Sexo`, `ParentescoResponsavel`, `TipoVinculoProfissional`, `EspecialidadeClinica`, `FuncaoAdministrativa`, `ConselhoProfissional`
+
+## Máscaras e Validações Compartilhadas
+
+Não duplicar `formatCPF`/`formatCNPJ`/`formatPhone`/`formatCEP`/`isValidCPF`/`isValidCNPJ` inline nos formulários — usar `@/lib/masks` (também exporta `UF_OPTIONS`). Autopreenchimento de endereço por CEP via `buscarEnderecoPorCep` em `@/lib/viacep`. Agrupamento de listagens por filial (seções colapsáveis quando o filtro global está em "Todas as filiais") via `agruparPorFilial` em `@/lib/agrupar-filial` — usado em Salas/Pacientes/Terapeutas.
 
 ## Interfaces
 

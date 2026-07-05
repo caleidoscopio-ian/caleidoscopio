@@ -54,8 +54,14 @@ export interface ProfissionalDetalhe {
   cpf: string | null
   telefone: string | null
   email: string | null
-  especialidade: string
+  especialidade: string | null
   registro_profissional: string | null
+  tipo_vinculo?: string | null
+  especialidade_clinica?: string | null
+  funcao_administrativa?: string | null
+  conselho?: string | null
+  numero_registro?: string | null
+  uf_registro?: string | null
   salas_acesso: string[]
   ativo: boolean
   usuarioId: string | null

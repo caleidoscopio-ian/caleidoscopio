@@ -22,7 +22,7 @@ interface Professional {
   cpf: string
   phone?: string
   email?: string
-  specialty: string
+  specialty: string | null
   professionalRegistration?: string
   roomAccess: string[]
   createdAt: string

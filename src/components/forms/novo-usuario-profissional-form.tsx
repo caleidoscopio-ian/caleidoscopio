@@ -18,16 +18,13 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 const formSchema = z.object({
-  // Dados do usuário (Sistema 1)
+  // Dados de acesso (Sistema 1) + identificação básica (Sistema 2)
   name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
   confirmPassword: z.string(),
-  // Dados do profissional (Sistema 2)
   cpf: z.string().optional(),
   telefone: z.string().optional(),
-  especialidade: z.string().min(3, 'Especialidade é obrigatória'),
-  registro_profissional: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'As senhas não coincidem',
   path: ['confirmPassword'],
@@ -55,8 +52,6 @@ export function NovoUsuarioProfissionalForm({
       confirmPassword: '',
       cpf: '',
       telefone: '',
-      especialidade: '',
-      registro_profissional: '',
     },
   })
 
@@ -143,31 +138,6 @@ export function NovoUsuarioProfissionalForm({
                 )}
               />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Dados Profissionais (Sistema 2) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Dados Profissionais</CardTitle>
-            <CardDescription>
-              Informações sobre a atuação profissional
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="especialidade"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Especialidade *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Psicologia, Fonoaudiologia, etc" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
@@ -199,22 +169,10 @@ export function NovoUsuarioProfissionalForm({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="registro_profissional"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Registro Profissional</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: CRP 00/00000" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    CRP, CRFa, ou outro registro profissional
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormDescription>
+              Especialidade, conselho e registro profissional são preenchidos depois,
+              na ficha do profissional em Profissionais.
+            </FormDescription>
           </CardContent>
         </Card>
 

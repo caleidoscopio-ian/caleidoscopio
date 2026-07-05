@@ -317,14 +317,22 @@ model paciente {
   foto                   String?
   telefone               String?
   email                  String?
-  endereco               String?
+  endereco               String?              // Legado (texto livre) — mantido como fallback de exibição
+  sexo                   Sexo?
+  cep                    String?
+  logradouro             String?
+  numero                 String?
+  complemento            String?
+  bairro                 String?
+  cidade                 String?
+  estado                 String?              // UF (2 letras)
   escolaridade           Escolaridade?
   estado_civil           EstadoCivil?
   plano_saude            String?            // Mantido para compatibilidade (texto livre legado)
-  convenioId             String?            // FK para convênio cadastrado
+  convenioId             String?            // FK legado (convênio "principal", sincronizado a partir de PacienteConvenio)
   matricula              String?
-  responsavel_financeiro String?
-  contato_emergencia     String?
+  responsavel_financeiro String?            // Legado — sincronizado a partir de PacienteResponsavel
+  contato_emergencia     String?            // Legado — sincronizado a partir de PacienteResponsavel
   cor_agenda             String?
   ativo                  Boolean              @default(true)
   createdAt              DateTime             @default(now())
@@ -350,9 +358,56 @@ model paciente {
   relatorios             relatorioClinico[]
   anexos                 anexoPaciente[]
   convenio               Convenio?          @relation(fields: [convenioId], references: [id])
+  responsaveis           PacienteResponsavel[]
+  convenios              PacienteConvenio[]
 
   @@unique([tenantId, cpf])
   @@map("pacientes")
+}
+
+enum Sexo {
+  MASCULINO
+  FEMININO
+  OUTRO
+  PREFIRO_NAO_INFORMAR
+}
+
+enum ParentescoResponsavel {
+  PAI
+  MAE
+  TUTOR_LEGAL
+  AVO
+  IRMAO
+  OUTRO
+}
+
+model PacienteResponsavel {
+  id          String                @id @default(uuid())
+  pacienteId  String
+  nome        String
+  telefone    String?
+  parentesco  ParentescoResponsavel
+  cpf         String?
+  financeiro  Boolean               @default(false)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @default(now()) @updatedAt
+  paciente    paciente              @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+
+  @@map("paciente_responsaveis")
+}
+
+model PacienteConvenio {
+  id                 String   @id @default(uuid())
+  pacienteId         String
+  convenioId         String
+  numero_carteirinha String?
+  principal          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  paciente           paciente @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
+  convenio           Convenio @relation(fields: [convenioId], references: [id], onDelete: Cascade)
+
+  @@unique([pacienteId, convenioId])
+  @@map("paciente_convenios")
 }
 
 model profissional {
@@ -362,8 +417,14 @@ model profissional {
   cpf                   String?
   telefone              String?
   email                 String?
-  especialidade         String
-  registro_profissional String?
+  especialidade         String?           // Legado (texto livre) — derivado automaticamente pelos campos estruturados abaixo
+  registro_profissional String?           // Legado (texto livre) — derivado automaticamente (conselho + número + UF)
+  tipo_vinculo          TipoVinculoProfissional?
+  especialidade_clinica EspecialidadeClinica?
+  funcao_administrativa FuncaoAdministrativa?
+  conselho              ConselhoProfissional?
+  numero_registro       String?
+  uf_registro           String?           // UF (2 letras)
   salas_acesso          String[]
   ativo                 Boolean           @default(true)
   createdAt             DateTime          @default(now())
@@ -381,6 +442,45 @@ model profissional {
 
   @@unique([tenantId, cpf])
   @@map("profissionais")
+}
+
+enum TipoVinculoProfissional {
+  PROFISSIONAL_CLINICO
+  FUNCIONARIO_ADMINISTRATIVO
+}
+
+enum EspecialidadeClinica {
+  FONOAUDIOLOGIA
+  TERAPIA_OCUPACIONAL
+  PSICOLOGIA
+  FISIOTERAPIA
+  NEUROPSICOLOGIA
+  PSICOPEDAGOGIA
+  MUSICOTERAPIA
+  EDUCACAO_FISICA_ADAPTADA
+  ABA
+  NUTRICAO
+  OUTRA
+}
+
+enum FuncaoAdministrativa {
+  GESTAO
+  FINANCEIRO
+  RECEPCAO
+  ADMINISTRATIVO
+  OUTRO
+}
+
+enum ConselhoProfissional {
+  CRP
+  CRFA
+  CRM
+  CRN
+  CRO
+  CREFITO
+  CRESS
+  CREF
+  OUTRO
 }
 
 model progressoAtividade {
@@ -917,6 +1017,7 @@ model Convenio {
   anexos                ConvenioAnexo[]
   historicos            ConvenioHistorico[]
   pacientes             paciente[]
+  pacientesConvenio     PacienteConvenio[]
   regrasRepasse         RegraRepasse[]
   pacotes               Pacote[]
   glosas                Glosa[]
@@ -1580,17 +1681,27 @@ model UsuarioRoleHistorico {
 // ========================================
 
 model Filial {
-  id        String   @id @default(uuid())
-  tenantId  String   // Referência ao tenant do Sistema 1 (não FK)
-  nome      String
-  cidade    String?
-  endereco  String?  @db.Text
-  telefone  String?
-  email     String?
-  cor       String?  // Cor de identificação visual (hex)
-  ativo     Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id                   String   @id @default(uuid())
+  tenantId             String   // Referência ao tenant do Sistema 1 (não FK)
+  nome                 String   // Nome Fantasia (exibição — dropdown, badges etc.)
+  razao_social         String?
+  cnpj                 String?
+  cnes                 String?
+  tipo_estabelecimento String?
+  cidade               String?
+  endereco             String?  @db.Text // Legado — fallback de exibição
+  cep                  String?
+  logradouro           String?
+  numero               String?
+  complemento          String?
+  bairro               String?
+  estado               String?  // UF (2 letras)
+  telefone             String?
+  email                String?
+  cor                  String?  // Cor de identificação visual (hex)
+  ativo                Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
 
   salas         Sala[]
   pacientes     paciente[]
