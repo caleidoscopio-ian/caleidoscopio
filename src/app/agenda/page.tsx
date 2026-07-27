@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { AgendaDiaria } from "@/components/agenda/agenda-diaria";
 import { AgendaSemanal } from "@/components/agenda/agenda-semanal";
+import { AgendaMensal } from "@/components/agenda/agenda-mensal";
 import { AgendamentoDetailsDialog } from "@/components/agenda/agendamento-details-dialog";
 import { NovoAgendamentoForm } from "@/components/forms/novo-agendamento-form";
 import { Agendamento, StatusAgendamento } from "@/types/agendamento";
@@ -41,16 +42,20 @@ import {
   format,
   addDays,
   subDays,
+  addMonths,
+  subMonths,
   startOfDay,
   endOfDay,
   startOfWeek,
   endOfWeek,
+  startOfMonth,
+  endOfMonth,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
-type ViewMode = "day" | "week";
+type ViewMode = "day" | "week" | "month";
 
 function AgendaPageContent() {
   const { user, isAdmin, tenant } = useAuth();
@@ -170,9 +175,13 @@ function AgendaPageContent() {
       if (viewMode === "day") {
         data_inicio = startOfDay(selectedDate);
         data_fim = endOfDay(selectedDate);
-      } else {
+      } else if (viewMode === "week") {
         data_inicio = startOfWeek(selectedDate, { locale: ptBR });
         data_fim = endOfWeek(selectedDate, { locale: ptBR });
+      } else {
+        // Mês — inclui os dias de semanas adjacentes que aparecem na grade
+        data_inicio = startOfWeek(startOfMonth(selectedDate), { locale: ptBR });
+        data_fim = endOfWeek(endOfMonth(selectedDate), { locale: ptBR });
       }
 
       const params = new URLSearchParams({
@@ -594,7 +603,7 @@ function AgendaPageContent() {
     }
   };
 
-  const handleDeletarAgendamento = async (id: string) => {
+  const handleDeletarAgendamento = async (id: string, mode: "single" | "future" | "all" = "single") => {
     try {
       // Verificar autenticação
       if (!user) {
@@ -604,7 +613,7 @@ function AgendaPageContent() {
       // Preparar headers com dados do usuário
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch(`/api/agendamentos/${id}`, {
+      const response = await fetch(`/api/agendamentos/${id}?mode=${mode}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -615,9 +624,14 @@ function AgendaPageContent() {
 
       if (!response.ok) throw new Error("Erro ao deletar agendamento");
 
+      const result = await response.json();
+
       toast({
         title: "Sucesso",
-        description: "Agendamento excluído",
+        description:
+          result.count > 1
+            ? `${result.count} agendamentos excluídos`
+            : "Agendamento excluído",
       });
 
       loadAgendamentos();
@@ -764,11 +778,17 @@ function AgendaPageContent() {
           ? addDays(selectedDate, 1)
           : subDays(selectedDate, 1)
       );
-    } else {
+    } else if (viewMode === "week") {
       setSelectedDate(
         direction === "next"
           ? addDays(selectedDate, 7)
           : subDays(selectedDate, 7)
+      );
+    } else {
+      setSelectedDate(
+        direction === "next"
+          ? addMonths(selectedDate, 1)
+          : subMonths(selectedDate, 1)
       );
     }
   };
@@ -905,7 +925,9 @@ function AgendaPageContent() {
                     selectedDate,
                     viewMode === "day"
                       ? "EEEE, d 'de' MMMM 'de' yyyy"
-                      : "'Semana de' d 'de' MMMM",
+                      : viewMode === "week"
+                        ? "'Semana de' d 'de' MMMM"
+                        : "MMMM 'de' yyyy",
                     { locale: ptBR }
                   )}
                 </div>
@@ -1003,6 +1025,13 @@ function AgendaPageContent() {
                 >
                   Semana
                 </Button>
+                <Button
+                  variant={viewMode === "month" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("month")}
+                >
+                  Mês
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -1022,8 +1051,20 @@ function AgendaPageContent() {
                   isAdmin && selectedProfissional === "all"
                 }
               />
-            ) : (
+            ) : viewMode === "week" ? (
               <AgendaSemanal
+                agendamentos={agendamentos}
+                profissionalId={
+                  selectedProfissional !== "all"
+                    ? selectedProfissional
+                    : undefined
+                }
+                selectedDate={selectedDate}
+                onNovoAgendamento={handleNovoAgendamentoSemanalClick}
+                onAgendamentoClick={handleAgendamentoClick}
+              />
+            ) : (
+              <AgendaMensal
                 agendamentos={agendamentos}
                 profissionalId={
                   selectedProfissional !== "all"

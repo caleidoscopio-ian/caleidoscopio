@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
@@ -129,6 +130,9 @@ export async function POST(request: NextRequest) {
     const resultados = [];
     const [hourInicio, minuteInicio] = horario.split(":").map(Number);
     const [hourFim, minuteFim] = horario_fim.split(":").map(Number);
+    // Agrupa os agendamentos desta recorrência para permitir excluir
+    // "este e os futuros" ou "toda a série" depois — só faz sentido com 2+ datas
+    const serieId = datas.length > 1 ? randomUUID() : null;
 
     for (const dataStr of datas) {
       try {
@@ -214,6 +218,7 @@ export async function POST(request: NextRequest) {
             procedimentoId: procedimento || null,
             status,
             observacoes,
+            serieId,
           },
           include: {
             paciente: {

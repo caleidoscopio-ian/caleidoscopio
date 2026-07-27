@@ -26,11 +26,17 @@ import {
   Edit,
   Trash2,
   Stethoscope,
-  DollarSign
+  DollarSign,
+  AlertTriangle,
+  Repeat,
+  Check
 } from 'lucide-react'
 import { Agendamento, StatusAgendamento, STATUS_AGENDAMENTO_LABELS } from '@/types/agendamento'
 import { cn } from '@/lib/utils'
 import { formatBRL } from '@/lib/preco-procedimento'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+
+export type ModoExclusao = 'single' | 'future' | 'all'
 
 interface AgendamentoDetailsDialogProps {
   agendamento: Agendamento | null
@@ -40,7 +46,7 @@ interface AgendamentoDetailsDialogProps {
   onCancelar?: (id: string) => Promise<void>
   onIniciarAtendimento?: (id: string) => void
   onEditar?: (agendamento: Agendamento) => void
-  onDeletar?: (id: string) => Promise<void>
+  onDeletar?: (id: string, mode: ModoExclusao) => Promise<void>
 }
 
 export function AgendamentoDetailsDialog({
@@ -54,6 +60,8 @@ export function AgendamentoDetailsDialog({
   onDeletar
 }: AgendamentoDetailsDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
+  const [modoExclusao, setModoExclusao] = useState<ModoExclusao>('single')
 
   if (!agendamento) return null
 
@@ -126,11 +134,17 @@ export function AgendamentoDetailsDialog({
     }
   }
 
-  const handleDeletar = async () => {
-    if (!onDeletar || !confirm('Tem certeza que deseja excluir este agendamento?')) return
+  const handleAbrirConfirmacaoExclusao = () => {
+    setModoExclusao('single')
+    setConfirmandoExclusao(true)
+  }
+
+  const handleConfirmarExclusao = async () => {
+    if (!onDeletar) return
     setIsLoading(true)
     try {
-      await onDeletar(agendamento.id)
+      await onDeletar(agendamento.id, modoExclusao)
+      setConfirmandoExclusao(false)
       onOpenChange(false)
     } catch (error) {
       console.error('Erro ao deletar agendamento:', error)
@@ -139,8 +153,34 @@ export function AgendamentoDetailsDialog({
     }
   }
 
+  const OPCOES_EXCLUSAO: { value: ModoExclusao; label: string; description: string }[] = [
+    {
+      value: 'single',
+      label: 'Excluir apenas este agendamento',
+      description: 'Remove só este registro, mantendo o restante da série.',
+    },
+    {
+      value: 'future',
+      label: 'Excluir este e todos os agendamentos futuros da série',
+      description: 'Remove este registro e todos os que vêm depois dele na mesma recorrência.',
+    },
+    {
+      value: 'all',
+      label: 'Excluir toda a série',
+      description: 'Remove todos os agendamentos vinculados a esta recorrência, incluindo os passados.',
+    },
+  ]
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      setConfirmandoExclusao(false)
+      setModoExclusao('single')
+    }
+    onOpenChange(next)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2 pr-6">
@@ -151,6 +191,12 @@ export function AgendamentoDetailsDialog({
             >
               {getStatusText(agendamento.status as StatusAgendamento)}
             </Badge>
+            {agendamento.serieId && (
+              <Badge variant="outline" className="gap-1">
+                <Repeat className="h-3 w-3" />
+                Recorrente
+              </Badge>
+            )}
           </div>
           <DialogDescription>
             Informações completas sobre o agendamento
@@ -332,7 +378,62 @@ export function AgendamentoDetailsDialog({
           )}
         </div>
 
-        {/* Ações */}
+        {/* Confirmação de exclusão */}
+        {confirmandoExclusao && onDeletar ? (
+          <div className="pt-4 sm:pt-6 border-t">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="space-y-3">
+                <p className="font-medium">Como você quer excluir este agendamento?</p>
+                <div className="space-y-2">
+                  {(agendamento.serieId ? OPCOES_EXCLUSAO : OPCOES_EXCLUSAO.slice(0, 1)).map((opcao) => (
+                    <button
+                      key={opcao.value}
+                      type="button"
+                      onClick={() => setModoExclusao(opcao.value)}
+                      className={cn(
+                        "w-full text-left p-3 rounded-lg border transition-colors",
+                        modoExclusao === opcao.value ? "border-red-500 bg-red-50" : "border-border hover:bg-muted/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          "h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
+                          modoExclusao === opcao.value ? "border-red-600 bg-red-600" : "border-muted-foreground"
+                        )}>
+                          {modoExclusao === opcao.value && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <div className="text-sm font-medium">{opcao.label}</div>
+                      </div>
+                      <p className="text-xs text-muted-foreground pl-6 mt-1">{opcao.description}</p>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setConfirmandoExclusao(false)}
+                    disabled={isLoading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    onClick={handleConfirmarExclusao}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Excluindo...' : 'Confirmar Exclusão'}
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : (
+        /* Ações */
         <div className="flex flex-col gap-3 pt-4 sm:pt-6 border-t sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {onEditar && (
@@ -351,7 +452,7 @@ export function AgendamentoDetailsDialog({
             {onDeletar && (
               <Button
                 variant="outline"
-                onClick={handleDeletar}
+                onClick={handleAbrirConfirmacaoExclusao}
                 disabled={isLoading}
                 className="text-red-600 hover:text-red-700"
               >
@@ -398,6 +499,7 @@ export function AgendamentoDetailsDialog({
               )}
           </div>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -49,6 +49,7 @@ export interface Agendamento {
   motivo_falta?: string | null
   senha_autorizacao?: string | null
   numero_guia?: string | null
+  serieId?: string | null
   createdAt: Date | string
   updatedAt: Date | string
 

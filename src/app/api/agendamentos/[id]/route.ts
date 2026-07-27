@@ -276,6 +276,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    const { searchParams } = new URL(request.url);
+    const mode = searchParams.get("mode") || "single"; // single | future | all
 
     // Autenticar usuário
     const user = await getAuthenticatedUser(request);
@@ -313,12 +315,26 @@ export async function DELETE(
       );
     }
 
-    // Deletar agendamento
+    // "future"/"all" só fazem sentido pra agendamentos que fazem parte de uma
+    // série (serieId) — sem isso, cai pro comportamento padrão (só este)
+    if ((mode === "future" || mode === "all") && agendamento.serieId) {
+      const result = await prisma.agendamento.deleteMany({
+        where: {
+          serieId: agendamento.serieId,
+          paciente: { tenantId: user.tenant.id }, // 🔒 CRÍTICO: isolamento de tenant
+          ...(mode === "future" ? { data_hora: { gte: agendamento.data_hora } } : {}),
+        },
+      });
+
+      return NextResponse.json({ success: true, count: result.count });
+    }
+
+    // Deletar apenas este agendamento
     await prisma.agendamento.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, count: 1 });
   } catch (error) {
     console.error("Erro ao deletar agendamento:", error);
     return NextResponse.json(

@@ -30,6 +30,7 @@ model agendamento {
   // Identificadores de faturamento TISS (capturados no check-in)
   senha_autorizacao String?         // senha de autorização do convênio (chave de conciliação)
   numero_guia       String?         // número da guia do prestador
+  serieId         String?           // Agrupa agendamentos criados na mesma recorrência (null = avulso)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @default(now()) @updatedAt
   paciente        paciente          @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
@@ -40,6 +41,7 @@ model agendamento {
   demonstrativoGuias DemonstrativoGuia[]
 
   @@index([senha_autorizacao])
+  @@index([serieId])
   @@map("agendamentos")
 }
 
