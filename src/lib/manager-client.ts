@@ -351,6 +351,9 @@ class ManagerClient {
           },
         },
         token: ssoResult.token,
+        // Token de sessão do Sistema 1 (7 dias) — guardado para renovar o token
+        // SSO (curta duração) silenciosamente, sem exigir novo login.
+        sessionToken: loginResult.token,
       };
     } catch (error) {
       console.error("❌ [REAL] Erro no processo SSO:", error);

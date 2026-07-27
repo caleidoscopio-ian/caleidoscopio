@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { managerClient } from '@/lib/manager-client'
+import { installFetchInterceptor } from '@/lib/fetch-interceptor'
 
 interface AuthUser {
   id: string
@@ -53,12 +54,74 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  useEffect(() => {
-    checkAuth()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const validateToken = async (token: string): Promise<boolean> => {
+    try {
+      return await managerClient.validateSSOToken(token)
+    } catch (error) {
+      console.error('Erro ao validar token:', error)
+      return false
+    }
+  }
+
+  const login = (userData: AuthUser) => {
+    console.log('✅ useAuth - Login: Setando usuário no contexto:', userData.email)
+    setUser(userData)
+  }
+
+  // reason 'expired' = disparado automaticamente (token/sessão morreu) — mostra aviso
+  // no login. Sem reason = logout manual (botão "Sair"), sem aviso nenhum.
+  const logout = (reason?: 'expired') => {
+    localStorage.removeItem('edu_auth_user')
+    localStorage.removeItem('edu_auth_token')
+    localStorage.removeItem('edu_session_token')
+    setUser(null)
+
+    if (reason === 'expired' && typeof window !== 'undefined') {
+      sessionStorage.setItem('caleidoscopio_session_expired', '1')
+    }
+
+    // Limpar sessão do Sistema 1
+    try {
+      managerClient.clearSession()
+    } catch (error) {
+      console.warn('Aviso: Erro ao limpar sessão do Sistema 1:', error)
+    }
+
+    // Redirecionar para login local
+    if (typeof window !== 'undefined') {
+      router.push('/login')
+    }
+  }
+
+  // Renova o token SSO (curta duração) usando o token de sessão do Sistema 1
+  // (7 dias), sem exigir novo login. Retorna false se a sessão também já
+  // expirou (aí sim precisa logar de novo). `baseUser` é usado como fallback
+  // quando ainda não há usuário no estado do React (ex.: checkAuth inicial).
+  const refreshToken = useCallback(async (baseUser?: AuthUser): Promise<boolean> => {
+    const sessionToken = localStorage.getItem('edu_session_token')
+    if (!sessionToken) return false
+
+    try {
+      const result = await managerClient.generateSSOToken(sessionToken)
+      if (!result?.token) return false
+
+      localStorage.setItem('edu_auth_token', result.token)
+      setUser((prev) => {
+        const base = prev ?? baseUser
+        if (!base) return prev
+        const updated = { ...base, token: result.token }
+        localStorage.setItem('edu_auth_user', JSON.stringify(updated))
+        return updated
+      })
+      console.log('🔄 useAuth - Token SSO renovado silenciosamente')
+      return true
+    } catch (error) {
+      console.error('❌ useAuth - Erro ao renovar token:', error)
+      return false
+    }
   }, [])
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       console.log('🔍 useAuth - Iniciando verificação...')
       const storedUser = localStorage.getItem('edu_auth_user')
@@ -79,8 +142,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           console.log('✅ useAuth - Token válido, setando usuário:', userData.email)
           setUser(userData)
         } else {
-          console.log('❌ useAuth - Token inválido, fazendo logout')
-          logout()
+          console.log('⚠️ useAuth - Token expirado, tentando renovar...')
+          const renovado = await refreshToken(userData)
+          if (!renovado) {
+            console.log('❌ useAuth - Não foi possível renovar, fazendo logout')
+            logout('expired')
+          }
         }
       } else {
         console.log('❌ useAuth - Não há dados de autenticação no localStorage')
@@ -92,51 +159,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(false)
       console.log('🏁 useAuth - Verificação finalizada')
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshToken])
 
-  const validateToken = async (token: string): Promise<boolean> => {
-    try {
-      return await managerClient.validateSSOToken(token)
-    } catch (error) {
-      console.error('Erro ao validar token:', error)
-      return false
-    }
-  }
+  useEffect(() => {
+    checkAuth()
+    // Centraliza a reação a qualquer 401 vindo de qualquer fetch (apiCall ou
+    // fetch cru direto num componente) — evita alerts genéricos e a corrida
+    // entre /login e /sem-permissao quando a sessão expira.
+    installFetchInterceptor(() => logout('expired'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const login = (userData: AuthUser) => {
-    console.log('✅ useAuth - Login: Setando usuário no contexto:', userData.email)
-    setUser(userData)
-  }
-
-  const logout = () => {
-    // Limpar dados locais
-    localStorage.removeItem('edu_auth_user')
-    localStorage.removeItem('edu_auth_token')
-    setUser(null)
-
-    // Limpar sessão do Sistema 1
-    try {
-      managerClient.clearSession()
-    } catch (error) {
-      console.warn('Aviso: Erro ao limpar sessão do Sistema 1:', error)
-    }
-
-    // Redirecionar para login local
-    if (typeof window !== 'undefined') {
-      router.push('/login')
-    }
-  }
-
-  // Verificar token periodicamente (a cada 5 minutos)
+  // Renovar o token periodicamente (a cada 5 minutos) enquanto a aba estiver
+  // aberta e o usuário ativo — mantém a sessão viva por até 7 dias (duração
+  // do token de sessão do Sistema 1) sem nunca expirar no meio do uso.
   useEffect(() => {
     if (user) {
       const interval = setInterval(async () => {
-        const token = localStorage.getItem('edu_auth_token')
-        if (token) {
-          const isValid = await validateToken(token)
-          if (!isValid) {
-            logout()
-          }
+        const renovado = await refreshToken()
+        if (!renovado) {
+          logout('expired')
         }
       }, 5 * 60 * 1000) // 5 minutos
 

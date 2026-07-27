@@ -14,6 +14,16 @@ export default function LoginPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
+
+  // Mostrar aviso de sessão expirada (definido pelo logout automático) e limpar a flag
+  useEffect(() => {
+    const flag = sessionStorage.getItem("caleidoscopio_session_expired");
+    if (flag) {
+      setSessionExpiredMessage("Sua sessão expirou. Faça login novamente.");
+      sessionStorage.removeItem("caleidoscopio_session_expired");
+    }
+  }, []);
 
   // Se já estiver autenticado, redirecionar diretamente para dashboard
   useEffect(() => {
@@ -29,6 +39,7 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSessionExpiredMessage(null);
 
     try {
       // Usar processo SSO completo (3 etapas) conforme documentação oficial
@@ -67,6 +78,7 @@ export default function LoginPage() {
 
       localStorage.setItem("edu_auth_user", JSON.stringify(userData));
       localStorage.setItem("edu_auth_token", ssoResult.token);
+      localStorage.setItem("edu_session_token", ssoResult.sessionToken);
 
       console.log("✅ Dados salvos localmente");
 
@@ -196,6 +208,13 @@ export default function LoginPage() {
                     className="object-contain mb-4"
                   />
                 </div>
+
+                {/* Session Expired Message */}
+                {sessionExpiredMessage && !error && (
+                  <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-center">
+                    <p className="text-sm text-amber-700">{sessionExpiredMessage}</p>
+                  </div>
+                )}
 
                 {/* Error Message */}
                 {error && (

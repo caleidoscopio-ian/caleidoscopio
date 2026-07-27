@@ -38,19 +38,15 @@ export const apiCall = async (url: string, options: ApiOptions = {}) => {
   }
 
   try {
+    // Nota: uma resposta 401 aqui já é tratada de forma centralizada pelo
+    // interceptor global de fetch (src/lib/fetch-interceptor.ts, instalado
+    // pelo AuthProvider) — que dispara o logout automático. Não duplicar
+    // esse tratamento aqui evita corrida entre múltiplos redirecionamentos.
     const response = await fetch(url, {
       ...options,
       headers,
       credentials: 'include'
     })
-
-    // Se token expirou, redirecionar para login
-    if (response.status === 401) {
-      localStorage.removeItem('edu_auth_user')
-      localStorage.removeItem('edu_auth_token')
-      window.location.href = '/login'
-      return
-    }
 
     return response
   } catch (error) {
