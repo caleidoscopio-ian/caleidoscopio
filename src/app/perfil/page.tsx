@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { AlterarSenhaDialog } from '@/components/alterar-senha-dialog'
 import {
   User,
   Mail,
@@ -70,6 +71,12 @@ export default function PerfilPage() {
                     <Badge variant="outline">{user?.role || '-'}</Badge>
                   </div>
                 </div>
+
+                <Separator />
+
+                <div>
+                  <AlterarSenhaDialog />
+                </div>
               </CardContent>
             </Card>
 
@@ -86,15 +93,6 @@ export default function PerfilPage() {
                 <div>
                   <Label className="text-muted-foreground text-sm">Nome da Clínica</Label>
                   <p className="text-base font-medium mt-1">{tenant?.name || '-'}</p>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <Label className="text-muted-foreground text-sm">ID da Clínica</Label>
-                  <p className="text-base text-muted-foreground mt-1 font-mono text-xs">
-                    {tenant?.id || '-'}
-                  </p>
                 </div>
 
                 <Separator />

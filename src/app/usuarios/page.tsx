@@ -30,8 +30,22 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Users, Plus, CheckCircle, XCircle, Landmark } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import {
+  Users,
+  Plus,
+  CheckCircle,
+  XCircle,
+  Landmark,
+  KeyRound,
+  Trash2,
+  AlertTriangle,
+  Copy,
+  Loader2,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFilial } from "@/hooks/useFilial";
 import { NovoUsuarioProfissionalForm } from "@/components/forms/novo-usuario-profissional-form";
@@ -84,6 +98,10 @@ export default function UsuariosPage() {
   const [managingUser, setManagingUser] = useState<Usuario | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
   const [pendingFilial, setPendingFilial] = useState<{ usuarioId: string; filialId: string | null; filialNome: string } | null>(null);
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
 
   useEffect(() => {
     if (user && !permsLoading && can("usuarios", "VIEW")) {
@@ -190,6 +208,8 @@ export default function UsuariosPage() {
     const ri = roleInfoMap.get(usuario.id);
     setManagingUser(usuario);
     setSelectedRoleId(ri?.roleId ?? "");
+    setTemporaryPassword(null);
+    setConfirmingDelete(false);
   };
 
   const handleRoleChange = async () => {
@@ -228,6 +248,58 @@ export default function UsuariosPage() {
       setManagingUser(null);
     } catch (error: any) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!user || !managingUser) return;
+    setResettingPassword(true);
+    try {
+      const res = await fetch(`/api/usuarios-sistema1/${managingUser.id}/resetar-senha`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": btoa(JSON.stringify(user)),
+          "X-Auth-Token": user.token,
+        },
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Erro ao resetar senha");
+      }
+      setTemporaryPassword(result.temporaryPassword);
+      toast({ title: "Senha resetada com sucesso!" });
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!user || !managingUser) return;
+    setDeletingUser(true);
+    try {
+      const res = await fetch(`/api/usuarios-sistema1/${managingUser.id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": btoa(JSON.stringify(user)),
+          "X-Auth-Token": user.token,
+        },
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Erro ao excluir usuário");
+      }
+      toast({ title: "Usuário excluído com sucesso!" });
+      setManagingUser(null);
+      setConfirmingDelete(false);
+      await loadUsuarios();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } finally {
+      setDeletingUser(false);
     }
   };
 
@@ -504,7 +576,7 @@ export default function UsuariosPage() {
                                 variant="outline"
                                 onClick={() => handleOpenManage(usuario)}
                               >
-                                Perfil
+                                Gerenciar Usuário
                               </Button>
                             )}
                           </div>
@@ -536,16 +608,26 @@ export default function UsuariosPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Dialog Gerenciar Perfil */}
-        <Dialog open={!!managingUser} onOpenChange={(o) => !o && setManagingUser(null)}>
+        {/* Dialog Gerenciar Usuário */}
+        <Dialog
+          open={!!managingUser}
+          onOpenChange={(o) => {
+            if (!o) {
+              setManagingUser(null);
+              setTemporaryPassword(null);
+              setConfirmingDelete(false);
+            }
+          }}
+        >
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Gerenciar Perfil</DialogTitle>
+              <DialogTitle>Gerenciar Usuário</DialogTitle>
               <DialogDescription>
-                {managingUser?.name} — altere o perfil de acesso deste usuário
+                {managingUser?.name} — gerencie o acesso deste usuário
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-2">
+            <div className="space-y-6 py-2">
+              {/* Perfil de Acesso */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Perfil de Acesso</label>
                 <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
@@ -563,12 +645,112 @@ export default function UsuariosPage() {
                     Atual: {roleInfoMap.get(managingUser.id)?.roleNome}
                   </p>
                 )}
+                <div className="flex justify-end">
+                  <Button size="sm" onClick={handleRoleChange} disabled={!selectedRoleId}>
+                    Salvar Perfil
+                  </Button>
+                </div>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setManagingUser(null)}>Cancelar</Button>
-                <Button onClick={handleRoleChange} disabled={!selectedRoleId}>Salvar</Button>
+
+              <div className="border-t pt-4 space-y-2">
+                <label className="text-sm font-medium">Senha de Acesso</label>
+                <p className="text-xs text-muted-foreground">
+                  Gera uma nova senha temporária no Sistema 1 (Manager) para este usuário.
+                </p>
+                {temporaryPassword ? (
+                  <Alert>
+                    <KeyRound className="h-4 w-4" />
+                    <AlertDescription className="space-y-2">
+                      <p>Senha temporária gerada — copie agora, ela não será exibida novamente:</p>
+                      <div className="flex items-center gap-2">
+                        <Input readOnly value={temporaryPassword} className="font-mono" />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(temporaryPassword);
+                            toast({ title: "Senha copiada!" });
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleResetPassword}
+                    disabled={resettingPassword}
+                  >
+                    {resettingPassword ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <KeyRound className="mr-2 h-4 w-4" />
+                    )}
+                    Resetar Senha
+                  </Button>
+                )}
+              </div>
+
+              <div className="border-t pt-4 space-y-2">
+                <label className="text-sm font-medium text-destructive">Excluir Usuário</label>
+                {confirmingDelete ? (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="space-y-3">
+                      <p>
+                        Isso exclui o login deste usuário no Sistema 1 (Manager) — ação
+                        irreversível. O cadastro do profissional e seu histórico clínico
+                        são preservados, só o acesso ao sistema é removido.
+                      </p>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setConfirmingDelete(false)}
+                          disabled={deletingUser}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          onClick={handleDeleteUser}
+                          disabled={deletingUser}
+                        >
+                          {deletingUser ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="mr-2 h-4 w-4" />
+                          )}
+                          Confirmar Exclusão
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setConfirmingDelete(true)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Excluir Usuário
+                  </Button>
+                )}
               </div>
             </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setManagingUser(null)}>Fechar</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

@@ -442,6 +442,106 @@ class ManagerClient {
     }
   }
 
+  // Resetar senha de um usuário no Sistema 1 usando autenticação SSO
+  async resetPassword(
+    userId: string,
+    ssoToken: string
+  ): Promise<{ success: boolean; temporaryPassword: string }> {
+    try {
+      console.log("🔑 [REAL] Resetando senha via SSO para usuário:", userId);
+
+      const response = await fetch(
+        `${this.baseUrl}/api/users/${userId}/reset-password-with-sso?token=${ssoToken}`,
+        {
+          ...DEFAULT_FETCH_OPTIONS,
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(
+          "❌ [REAL] Erro ao resetar senha:",
+          response.status,
+          errorData
+        );
+        throw new Error(errorData.error || "Erro ao resetar senha");
+      }
+
+      const data = await response.json();
+      console.log("✅ [REAL] Senha resetada com sucesso via SSO");
+
+      return data;
+    } catch (error) {
+      console.error("❌ [REAL] Erro ao resetar senha:", error);
+      throw error;
+    }
+  }
+
+  // Excluir usuário no Sistema 1 usando autenticação SSO
+  async deleteUser(userId: string, ssoToken: string): Promise<void> {
+    try {
+      console.log("🗑️ [REAL] Excluindo usuário via SSO:", userId);
+
+      const response = await fetch(
+        `${this.baseUrl}/api/users/${userId}/delete-with-sso?token=${ssoToken}`,
+        {
+          ...DEFAULT_FETCH_OPTIONS,
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error(
+          "❌ [REAL] Erro ao excluir usuário:",
+          response.status,
+          errorData
+        );
+        throw new Error(errorData.error || "Erro ao excluir usuário");
+      }
+
+      console.log("✅ [REAL] Usuário excluído com sucesso via SSO");
+    } catch (error) {
+      console.error("❌ [REAL] Erro ao excluir usuário:", error);
+      throw error;
+    }
+  }
+
+  // Usuário altera a própria senha no Sistema 1 usando autenticação SSO
+  async changeOwnPassword(
+    currentPassword: string,
+    newPassword: string,
+    ssoToken: string
+  ): Promise<{ success: boolean }> {
+    try {
+      console.log("🔑 [REAL] Alterando a própria senha via SSO");
+
+      const response = await fetch(
+        `${this.baseUrl}/api/users/change-password-with-sso?token=${ssoToken}`,
+        {
+          ...DEFAULT_FETCH_OPTIONS,
+          method: "POST",
+          body: JSON.stringify({ currentPassword, newPassword }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("❌ [REAL] Erro ao alterar senha:", response.status, data);
+        throw new Error(data.error || "Erro ao alterar senha");
+      }
+
+      console.log("✅ [REAL] Senha alterada com sucesso via SSO");
+
+      return data;
+    } catch (error) {
+      console.error("❌ [REAL] Erro ao alterar senha:", error);
+      throw error;
+    }
+  }
+
   // Limpar sessão (usar no logout) - apenas placeholder, cookies são gerenciados automaticamente
   clearSession() {
     console.log(
