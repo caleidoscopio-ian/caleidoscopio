@@ -31,7 +31,9 @@ import {
   Landmark,
 } from "lucide-react";
 import { AgendaDiaria } from "@/components/agenda/agenda-diaria";
+import { AgendaDiariaResumo } from "@/components/agenda/agenda-diaria-resumo";
 import { AgendaSemanal } from "@/components/agenda/agenda-semanal";
+import { AgendaSemanalResumo } from "@/components/agenda/agenda-semanal-resumo";
 import { AgendaMensal } from "@/components/agenda/agenda-mensal";
 import { AgendamentoDetailsDialog } from "@/components/agenda/agendamento-details-dialog";
 import { NovoAgendamentoForm } from "@/components/forms/novo-agendamento-form";
@@ -1041,28 +1043,43 @@ function AgendaPageContent() {
         <Card>
           <CardContent className="p-0">
             {viewMode === "day" ? (
-              <AgendaDiaria
-                agendamentos={agendamentos}
-                profissionais={profissionaisFiltrados}
-                selectedDate={selectedDate}
-                onNovoAgendamento={handleNovoAgendamentoClick}
-                onAgendamentoClick={handleAgendamentoClick}
-                showMultipleProfessionals={
-                  isAdmin && selectedProfissional === "all"
-                }
-              />
+              isAdmin && selectedProfissional === "all" ? (
+                <AgendaDiariaResumo
+                  agendamentos={agendamentos}
+                  selectedDate={selectedDate}
+                  onNovoAgendamento={handleNovoAgendamentoSemanalClick}
+                  onAgendamentoClick={handleAgendamentoClick}
+                />
+              ) : (
+                <AgendaDiaria
+                  agendamentos={agendamentos}
+                  profissionais={profissionaisFiltrados}
+                  selectedDate={selectedDate}
+                  onNovoAgendamento={handleNovoAgendamentoClick}
+                  onAgendamentoClick={handleAgendamentoClick}
+                />
+              )
             ) : viewMode === "week" ? (
-              <AgendaSemanal
-                agendamentos={agendamentos}
-                profissionalId={
-                  selectedProfissional !== "all"
-                    ? selectedProfissional
-                    : undefined
-                }
-                selectedDate={selectedDate}
-                onNovoAgendamento={handleNovoAgendamentoSemanalClick}
-                onAgendamentoClick={handleAgendamentoClick}
-              />
+              isAdmin && selectedProfissional === "all" ? (
+                <AgendaSemanalResumo
+                  agendamentos={agendamentos}
+                  selectedDate={selectedDate}
+                  onNovoAgendamento={handleNovoAgendamentoSemanalClick}
+                  onAgendamentoClick={handleAgendamentoClick}
+                />
+              ) : (
+                <AgendaSemanal
+                  agendamentos={agendamentos}
+                  profissionalId={
+                    selectedProfissional !== "all"
+                      ? selectedProfissional
+                      : undefined
+                  }
+                  selectedDate={selectedDate}
+                  onNovoAgendamento={handleNovoAgendamentoSemanalClick}
+                  onAgendamentoClick={handleAgendamentoClick}
+                />
+              )
             ) : (
               <AgendaMensal
                 agendamentos={agendamentos}
@@ -1071,6 +1088,7 @@ function AgendaPageContent() {
                     ? selectedProfissional
                     : undefined
                 }
+                agregado={isAdmin && selectedProfissional === "all"}
                 selectedDate={selectedDate}
                 onNovoAgendamento={handleNovoAgendamentoSemanalClick}
                 onAgendamentoClick={handleAgendamentoClick}

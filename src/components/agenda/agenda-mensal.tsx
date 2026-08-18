@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Agendamento } from "@/types/agendamento";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,8 @@ import {
 import { ptBR } from "date-fns/locale";
 import { getStatusCardBg } from "@/components/agenda/agenda-grid-utils";
 import { StatusAgendamento } from "@/types/agendamento";
+import { Badge } from "@/components/ui/badge";
+import { AgendamentosListaDialog } from "@/components/agenda/agendamentos-lista-dialog";
 
 interface AgendaMensalProps {
   agendamentos: Agendamento[];
@@ -24,6 +26,9 @@ interface AgendaMensalProps {
   selectedDate: Date;
   onNovoAgendamento: (data: Date, horario: string) => void;
   onAgendamentoClick: (agendamento: Agendamento) => void;
+  // "Todos os profissionais" — dia mostra só a contagem total (clicável), em vez
+  // de chips individuais, que ficariam inviáveis com muitos profissionais atendendo.
+  agregado?: boolean;
 }
 
 const MAX_CHIPS_VISIVEIS = 3;
@@ -35,7 +40,9 @@ export function AgendaMensal({
   selectedDate,
   onNovoAgendamento,
   onAgendamentoClick,
+  agregado = false,
 }: AgendaMensalProps) {
+  const [diaAberto, setDiaAberto] = useState<Date | null>(null);
   // Grade completa do mês (inclui dias do mês anterior/seguinte pra fechar as semanas)
   const dias = useMemo(() => {
     const inicioMes = startOfMonth(selectedDate);
@@ -117,33 +124,62 @@ export function AgendaMensal({
                 </button>
               </div>
 
-              <div className="space-y-1">
-                {visiveis.map((ag) => (
+              {agregado ? (
+                ags.length > 0 && (
                   <button
-                    key={ag.id}
                     type="button"
-                    onClick={() => onAgendamentoClick(ag)}
-                    className={cn(
-                      "w-full text-left text-[11px] leading-tight px-1.5 py-1 rounded border truncate block",
-                      getStatusCardBg(ag.status as StatusAgendamento)
-                    )}
-                    title={`${format(new Date(ag.data_hora), "HH:mm")} - ${ag.paciente?.nome ?? "Paciente"}`}
+                    onClick={() => setDiaAberto(dia)}
+                    className="w-full mt-1"
                   >
-                    <span className="font-medium">{format(new Date(ag.data_hora), "HH:mm")}</span>
-                    {" "}
-                    {ag.paciente?.nome ?? "Paciente"}
+                    <Badge variant="secondary" className="text-xs font-medium w-full justify-center">
+                      {ags.length} agendamento{ags.length > 1 ? "s" : ""}
+                    </Badge>
                   </button>
-                ))}
-                {restantes > 0 && (
-                  <div className="text-[11px] text-muted-foreground px-1.5">
-                    +{restantes} mais
-                  </div>
-                )}
-              </div>
+                )
+              ) : (
+                <div className="space-y-1">
+                  {visiveis.map((ag) => (
+                    <button
+                      key={ag.id}
+                      type="button"
+                      onClick={() => onAgendamentoClick(ag)}
+                      className={cn(
+                        "w-full text-left text-[11px] leading-tight px-1.5 py-1 rounded border truncate block",
+                        getStatusCardBg(ag.status as StatusAgendamento)
+                      )}
+                      title={`${format(new Date(ag.data_hora), "HH:mm")} - ${ag.paciente?.nome ?? "Paciente"}`}
+                    >
+                      <span className="font-medium">{format(new Date(ag.data_hora), "HH:mm")}</span>
+                      {" "}
+                      {ag.paciente?.nome ?? "Paciente"}
+                    </button>
+                  ))}
+                  {restantes > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDiaAberto(dia)}
+                      className="text-[11px] text-muted-foreground px-1.5 hover:underline"
+                    >
+                      +{restantes} mais
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      <AgendamentosListaDialog
+        open={diaAberto !== null}
+        onOpenChange={(open) => !open && setDiaAberto(null)}
+        titulo={diaAberto ? `Agendamentos — ${format(diaAberto, "dd/MM/yyyy")}` : ""}
+        agendamentos={diaAberto ? agsPorDia.get(format(diaAberto, "yyyy-MM-dd")) ?? [] : []}
+        onAgendamentoClick={(a) => {
+          setDiaAberto(null);
+          onAgendamentoClick(a);
+        }}
+      />
     </div>
   );
 }

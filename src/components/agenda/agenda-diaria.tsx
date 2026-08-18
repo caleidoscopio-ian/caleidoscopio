@@ -15,22 +15,21 @@ interface AgendaDiariaProps {
   selectedDate: Date;
   onNovoAgendamento: (profissionalId: string, horario: string) => void;
   onAgendamentoClick: (agendamento: Agendamento) => void;
-  showMultipleProfessionals?: boolean;
 }
 
 const getStatusText = (status: StatusAgendamento) =>
   STATUS_AGENDAMENTO_LABELS[status] ?? "Agendado";
 
+// Mostra a agenda de um único profissional (quando "Todos os profissionais" está
+// selecionado, a página usa AgendaDiariaResumo em vez deste componente — não
+// escala renderizar uma coluna por profissional em clínicas com muitos deles).
 export function AgendaDiaria({
   agendamentos,
   profissionais,
   onNovoAgendamento,
   onAgendamentoClick,
-  showMultipleProfessionals = false,
 }: AgendaDiariaProps) {
-  const profissionaisExibir = showMultipleProfessionals
-    ? profissionais
-    : profissionais.slice(0, 1);
+  const profissionaisExibir = profissionais.slice(0, 1);
 
   // Agendamentos por profissional
   const agsPorProf = useMemo(() => {
