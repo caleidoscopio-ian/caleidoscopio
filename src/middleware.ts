@@ -61,8 +61,11 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - qualquer arquivo estático da pasta public/ (por extensão — antes só
+     *   .png era excluído, então .jpg/.svg/etc. caíam no middleware e, sem
+     *   estar autenticado, a requisição do <img> era redirecionada pro HTML
+     *   de /login em vez de servir a imagem — dava "imagem quebrada")
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|avif|woff2?|ttf|css|js|map)$).*)',
   ],
 }

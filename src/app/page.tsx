@@ -10,13 +10,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading) {
-      if (isAuthenticated) {
-        console.log('🏠 Home - Usuário autenticado, redirecionando para dashboard')
-        router.push('/dashboard')
-      } else {
-        console.log('🏠 Home - Usuário não autenticado, redirecionando para login')
-        router.push('/login')
-      }
+      router.push(isAuthenticated ? '/dashboard' : '/login')
     }
   }, [isAuthenticated, loading, router])
 

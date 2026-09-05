@@ -57,14 +57,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const validateToken = async (token: string): Promise<boolean> => {
     try {
       return await managerClient.validateSSOToken(token)
-    } catch (error) {
-      console.error('Erro ao validar token:', error)
+    } catch {
       return false
     }
   }
 
   const login = (userData: AuthUser) => {
-    console.log('✅ useAuth - Login: Setando usuário no contexto:', userData.email)
     setUser(userData)
   }
 
@@ -83,8 +81,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Limpar sessão do Sistema 1
     try {
       managerClient.clearSession()
-    } catch (error) {
-      console.warn('Aviso: Erro ao limpar sessão do Sistema 1:', error)
+    } catch {
+      // ignora — sessão local já foi limpa acima
     }
 
     // Redirecionar para login local
@@ -113,51 +111,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         localStorage.setItem('edu_auth_user', JSON.stringify(updated))
         return updated
       })
-      console.log('🔄 useAuth - Token SSO renovado silenciosamente')
       return true
-    } catch (error) {
-      console.error('❌ useAuth - Erro ao renovar token:', error)
+    } catch {
       return false
     }
   }, [])
 
   const checkAuth = useCallback(async () => {
     try {
-      console.log('🔍 useAuth - Iniciando verificação...')
       const storedUser = localStorage.getItem('edu_auth_user')
       const storedToken = localStorage.getItem('edu_auth_token')
 
-      console.log('📱 useAuth - Dados localStorage:', {
-        temUser: !!storedUser,
-        temToken: !!storedToken,
-        userEmail: storedUser ? JSON.parse(storedUser).email : null
-      })
-
       if (storedUser && storedToken) {
         const userData = JSON.parse(storedUser)
-        console.log('🔍 useAuth - Validando token...')
         const isValid = await validateToken(storedToken)
 
         if (isValid) {
-          console.log('✅ useAuth - Token válido, setando usuário:', userData.email)
           setUser(userData)
         } else {
-          console.log('⚠️ useAuth - Token expirado, tentando renovar...')
           const renovado = await refreshToken(userData)
           if (!renovado) {
-            console.log('❌ useAuth - Não foi possível renovar, fazendo logout')
             logout('expired')
           }
         }
-      } else {
-        console.log('❌ useAuth - Não há dados de autenticação no localStorage')
       }
-    } catch (error) {
-      console.error('❌ useAuth - Erro na verificação:', error)
+    } catch {
       logout()
     } finally {
       setLoading(false)
-      console.log('🏁 useAuth - Verificação finalizada')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshToken])

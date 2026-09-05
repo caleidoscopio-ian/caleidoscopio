@@ -110,12 +110,6 @@ class ManagerClient {
     credentials: LoginCredentials
   ): Promise<LoginResponse | null> {
     try {
-      console.log("🔐 [REAL] Iniciando login para:", credentials.email);
-      console.log(
-        "🌐 [REAL] Conectando com:",
-        `${this.baseUrl}/api/auth/login`
-      );
-
       const response = await fetch(`${this.baseUrl}/api/auth/login`, {
         ...DEFAULT_FETCH_OPTIONS,
         method: "POST",
@@ -128,24 +122,12 @@ class ManagerClient {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error(
-          "❌ [REAL] Erro na resposta:",
-          response.status,
-          errorData
-        );
         throw new Error(
           errorData.error || `HTTP ${response.status}: ${response.statusText}`
         );
       }
 
       const loginData: LoginResponse = await response.json();
-      console.log("✅ [REAL] Login validado no Manager");
-      console.log(
-        "👤 [REAL] Usuário:",
-        loginData.user.name,
-        "/",
-        loginData.user.role
-      );
 
       if (!loginData.success || !loginData.user) {
         throw new Error("Resposta de login inválida do Sistema Manager");
@@ -153,14 +135,8 @@ class ManagerClient {
 
       return loginData;
     } catch (error) {
-      console.error("❌ [REAL] Erro no login:", error);
-
       // Diagnóstico específico para problemas de CORS
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-        console.error("🚫 [REAL] Problema de conexão com Sistema Manager");
-        console.error(
-          "💡 [REAL] Verifique se o Sistema 1 está rodando em localhost:3000"
-        );
         throw new Error(
           "Erro de conexão com Sistema Manager. Verifique se está rodando na porta 3000."
         );
@@ -174,97 +150,58 @@ class ManagerClient {
   async validateAccess(
     userEmail: string
   ): Promise<ValidateAccessResponse | null> {
-    try {
-      console.log("🔍 [REAL] Verificando acesso para:", userEmail);
+    const response = await fetch(`${this.baseUrl}/api/auth/validate-access`, {
+      ...DEFAULT_FETCH_OPTIONS,
+      method: "POST",
+      body: JSON.stringify({
+        productSlug: this.productSlug,
+        userEmail: userEmail,
+      }),
+    });
 
-      const response = await fetch(`${this.baseUrl}/api/auth/validate-access`, {
-        ...DEFAULT_FETCH_OPTIONS,
-        method: "POST",
-        body: JSON.stringify({
-          productSlug: this.productSlug,
-          userEmail: userEmail,
-        }),
-      });
+    const accessData: ValidateAccessResponse = await response.json();
 
-      const accessData: ValidateAccessResponse = await response.json();
-
-      if (!accessData.hasAccess) {
-        console.error("❌ [REAL] Acesso negado:", accessData.error);
-        throw new Error(
-          accessData.error || "Você não tem acesso ao módulo educacional"
-        );
-      }
-
-      console.log("✅ [REAL] Acesso ao módulo educacional confirmado");
-      console.log("🏢 [REAL] Clínica:", accessData.tenant?.name);
-      console.log("📦 [REAL] Plano:", accessData.tenant?.plan?.name);
-
-      return accessData;
-    } catch (error) {
-      console.error("❌ [REAL] Erro na validação de acesso:", error);
-      throw error;
+    if (!accessData.hasAccess) {
+      throw new Error(
+        accessData.error || "Você não tem acesso ao módulo educacional"
+      );
     }
+
+    return accessData;
   }
 
   // ETAPA 3: Gerar token SSO (conforme protocolo real)
   async generateSSOToken(authToken?: string): Promise<SSOTokenResponse | null> {
-    try {
-      console.log("🎫 [REAL] Gerando token SSO");
-      console.log("🔍 [DEBUG] Token recebido:", authToken ? `${authToken.substring(0, 20)}...` : 'NENHUM');
+    const headers: Record<string, string> = {
+      ...(DEFAULT_FETCH_OPTIONS.headers as Record<string, string>),
+    };
 
-      const headers: Record<string, string> = {
-        ...(DEFAULT_FETCH_OPTIONS.headers as Record<string, string>),
-      };
-
-      // Se tiver token de autenticação, enviar no header
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-        console.log("🔑 [REAL] Enviando token de autenticação no header Authorization");
-        console.log("🔍 [DEBUG] Headers completos:", JSON.stringify(headers, null, 2));
-      } else {
-        console.warn("⚠️ [REAL] NENHUM token de autenticação foi fornecido!");
-      }
-
-      console.log("🌐 [DEBUG] URL:", `${this.baseUrl}/api/products/sso/${this.productSlug}`);
-
-      const response = await fetch(
-        `${this.baseUrl}/api/products/sso/${this.productSlug}`,
-        {
-          ...DEFAULT_FETCH_OPTIONS,
-          method: "POST",
-          headers,
-        }
-      );
-
-      if (!response.ok) {
-        const ssoError = await response.json().catch(() => ({}));
-        console.error(
-          "❌ [REAL] Erro ao gerar token SSO:",
-          response.status,
-          ssoError
-        );
-        throw new Error(ssoError.error || "Erro ao gerar token de acesso");
-      }
-
-      const ssoData: SSOTokenResponse = await response.json();
-      console.log("✅ [REAL] Token SSO gerado");
-      console.log("⏰ [REAL] Expira em:", ssoData.expiresIn, "segundos");
-
-      return ssoData;
-    } catch (error) {
-      console.error("❌ [REAL] Erro ao gerar token SSO:", error);
-      throw error;
+    // Se tiver token de autenticação, enviar no header
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
     }
+
+    const response = await fetch(
+      `${this.baseUrl}/api/products/sso/${this.productSlug}`,
+      {
+        ...DEFAULT_FETCH_OPTIONS,
+        method: "POST",
+        headers,
+      }
+    );
+
+    if (!response.ok) {
+      const ssoError = await response.json().catch(() => ({}));
+      throw new Error(ssoError.error || "Erro ao gerar token de acesso");
+    }
+
+    const ssoData: SSOTokenResponse = await response.json();
+    return ssoData;
   }
 
   // Validar token SSO existente (conforme protocolo real)
   async validateSSOToken(token: string): Promise<boolean> {
     try {
-      console.log(
-        "🔍 [REAL] Validando token SSO:",
-        token.substring(0, 20) + "..."
-      );
-
       const response = await fetch(
         `${this.baseUrl}/api/products/sso/${this.productSlug}?token=${token}`,
         {
@@ -272,130 +209,89 @@ class ManagerClient {
         }
       );
 
-      console.log("📡 [REAL] Resposta da validação:", response.status);
-
       if (!response.ok) {
-        console.error(
-          "❌ [REAL] Erro HTTP na validação:",
-          response.status,
-          response.statusText
-        );
         return false;
       }
 
       const data: ValidateTokenResponse = await response.json();
-      const isValid = data.valid === true;
-
-      console.log(
-        isValid ? "✅ [REAL] Token válido" : "❌ [REAL] Token inválido"
-      );
-      if (!isValid) {
-        console.log("❌ [REAL] Detalhes do erro:", data);
-      }
-
-      return isValid;
-    } catch (error) {
-      console.error("❌ [REAL] Erro ao validar token:", error);
+      return data.valid === true;
+    } catch {
       return false;
     }
   }
 
   // Processo completo SSO conforme protocolo REAL do Sistema 1
   async ssoLogin(credentials: LoginCredentials) {
-    console.log("🚀 [REAL] Iniciando processo SSO completo com Sistema 1");
-
-    try {
-      // ETAPA 1: Autenticar no Sistema Manager
-      const loginResult = await this.authenticateUser(credentials);
-      if (!loginResult?.success || !loginResult?.user) {
-        throw new Error("Falha na autenticação");
-      }
-
-      // ETAPA 2: Verificar acesso ao módulo educacional
-      const accessResult = await this.validateAccess(credentials.email);
-      if (!accessResult?.hasAccess) {
-        throw new Error("Acesso negado ao módulo educacional");
-      }
-
-      // ETAPA 3: Gerar token SSO (passando o token de autenticação)
-      const ssoResult = await this.generateSSOToken(loginResult.token);
-      if (!ssoResult?.token) {
-        throw new Error("Erro ao gerar token de acesso");
-      }
-
-      console.log("🎉 [REAL] Processo SSO completo!");
-
-      // Retornar dados no formato esperado pelo Sistema 2
-      return {
-        user: {
-          id: accessResult.user?.id || loginResult.user.id,
-          email: accessResult.user?.email || loginResult.user.email,
-          name: accessResult.user?.name || loginResult.user.name,
-          role: accessResult.user?.role || loginResult.user.role,
-        },
-        tenant: accessResult.tenant
-          ? {
-              id: accessResult.tenant.id,
-              name: accessResult.tenant.name,
-              slug: accessResult.tenant.slug,
-              cnpj: accessResult.tenant.cnpj,
-              plan: accessResult.tenant.plan,
-            }
-          : loginResult.user.tenant,
-        config: accessResult.config || {
-          tenant: {
-            maxStudents: 100,
-            enableCertificates: true,
-            enableLiveClasses: true,
-            contentAccess: "full",
-          },
-        },
-        token: ssoResult.token,
-        // Token de sessão do Sistema 1 (7 dias) — guardado para renovar o token
-        // SSO (curta duração) silenciosamente, sem exigir novo login.
-        sessionToken: loginResult.token,
-      };
-    } catch (error) {
-      console.error("❌ [REAL] Erro no processo SSO:", error);
-      throw error;
+    // ETAPA 1: Autenticar no Sistema Manager
+    const loginResult = await this.authenticateUser(credentials);
+    if (!loginResult?.success || !loginResult?.user) {
+      throw new Error("Falha na autenticação");
     }
+
+    // ETAPA 2: Verificar acesso ao módulo educacional
+    const accessResult = await this.validateAccess(credentials.email);
+    if (!accessResult?.hasAccess) {
+      throw new Error("Acesso negado ao módulo educacional");
+    }
+
+    // ETAPA 3: Gerar token SSO (passando o token de autenticação)
+    const ssoResult = await this.generateSSOToken(loginResult.token);
+    if (!ssoResult?.token) {
+      throw new Error("Erro ao gerar token de acesso");
+    }
+
+    // Retornar dados no formato esperado pelo Sistema 2
+    return {
+      user: {
+        id: accessResult.user?.id || loginResult.user.id,
+        email: accessResult.user?.email || loginResult.user.email,
+        name: accessResult.user?.name || loginResult.user.name,
+        role: accessResult.user?.role || loginResult.user.role,
+      },
+      tenant: accessResult.tenant
+        ? {
+            id: accessResult.tenant.id,
+            name: accessResult.tenant.name,
+            slug: accessResult.tenant.slug,
+            cnpj: accessResult.tenant.cnpj,
+            plan: accessResult.tenant.plan,
+          }
+        : loginResult.user.tenant,
+      config: accessResult.config || {
+        tenant: {
+          maxStudents: 100,
+          enableCertificates: true,
+          enableLiveClasses: true,
+          contentAccess: "full",
+        },
+      },
+      token: ssoResult.token,
+      // Token de sessão do Sistema 1 (7 dias) — guardado para renovar o token
+      // SSO (curta duração) silenciosamente, sem exigir novo login.
+      sessionToken: loginResult.token,
+    };
   }
 
   // Buscar usuários de um tenant no Sistema 1
   async getUsers(tenantId: string, authToken: string): Promise<any> {
-    try {
-      console.log("👥 [REAL] Buscando usuários do tenant:", tenantId);
-
-      const response = await fetch(
-        `${this.baseUrl}/api/users?tenantId=${tenantId}`,
-        {
-          ...DEFAULT_FETCH_OPTIONS,
-          method: "GET",
-          headers: {
-            ...DEFAULT_FETCH_OPTIONS.headers,
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(
-          "❌ [REAL] Erro ao buscar usuários:",
-          response.status,
-          errorData
-        );
-        throw new Error(errorData.error || "Erro ao buscar usuários");
+    const response = await fetch(
+      `${this.baseUrl}/api/users?tenantId=${tenantId}`,
+      {
+        ...DEFAULT_FETCH_OPTIONS,
+        method: "GET",
+        headers: {
+          ...DEFAULT_FETCH_OPTIONS.headers,
+          Authorization: `Bearer ${authToken}`,
+        },
       }
+    );
 
-      const data = await response.json();
-      console.log(`✅ [REAL] ${data.users?.length || 0} usuários encontrados`);
-
-      return data;
-    } catch (error) {
-      console.error("❌ [REAL] Erro ao buscar usuários:", error);
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Erro ao buscar usuários");
     }
+
+    return await response.json();
   }
 
   // Criar usuário no Sistema 1 usando autenticação SSO
@@ -409,40 +305,22 @@ class ManagerClient {
     },
     ssoToken: string
   ): Promise<any> {
-    try {
-      console.log("👤 [REAL] Criando usuário via SSO:", userData.email);
-
-      // Usar nova API que aceita token SSO
-      const response = await fetch(
-        `${this.baseUrl}/api/users/create-with-sso?token=${ssoToken}`,
-        {
-          ...DEFAULT_FETCH_OPTIONS,
-          method: "POST",
-          body: JSON.stringify(userData),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(
-          "❌ [REAL] Erro ao criar usuário:",
-          response.status,
-          errorData
-        );
-        throw new Error(errorData.error || "Erro ao criar usuário");
+    // Usar nova API que aceita token SSO
+    const response = await fetch(
+      `${this.baseUrl}/api/users/create-with-sso?token=${ssoToken}`,
+      {
+        ...DEFAULT_FETCH_OPTIONS,
+        method: "POST",
+        body: JSON.stringify(userData),
       }
+    );
 
-      const data = await response.json();
-      console.log(
-        "✅ [REAL] Usuário criado com sucesso via SSO:",
-        data.user?.email
-      );
-
-      return data;
-    } catch (error) {
-      console.error("❌ [REAL] Erro ao criar usuário:", error);
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Erro ao criar usuário");
     }
+
+    return await response.json();
   }
 
   // Resetar senha de um usuário no Sistema 1 usando autenticação SSO
@@ -450,64 +328,35 @@ class ManagerClient {
     userId: string,
     ssoToken: string
   ): Promise<{ success: boolean; temporaryPassword: string }> {
-    try {
-      console.log("🔑 [REAL] Resetando senha via SSO para usuário:", userId);
-
-      const response = await fetch(
-        `${this.baseUrl}/api/users/${userId}/reset-password-with-sso?token=${ssoToken}`,
-        {
-          ...DEFAULT_FETCH_OPTIONS,
-          method: "POST",
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(
-          "❌ [REAL] Erro ao resetar senha:",
-          response.status,
-          errorData
-        );
-        throw new Error(errorData.error || "Erro ao resetar senha");
+    const response = await fetch(
+      `${this.baseUrl}/api/users/${userId}/reset-password-with-sso?token=${ssoToken}`,
+      {
+        ...DEFAULT_FETCH_OPTIONS,
+        method: "POST",
       }
+    );
 
-      const data = await response.json();
-      console.log("✅ [REAL] Senha resetada com sucesso via SSO");
-
-      return data;
-    } catch (error) {
-      console.error("❌ [REAL] Erro ao resetar senha:", error);
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Erro ao resetar senha");
     }
+
+    return await response.json();
   }
 
   // Excluir usuário no Sistema 1 usando autenticação SSO
   async deleteUser(userId: string, ssoToken: string): Promise<void> {
-    try {
-      console.log("🗑️ [REAL] Excluindo usuário via SSO:", userId);
-
-      const response = await fetch(
-        `${this.baseUrl}/api/users/${userId}/delete-with-sso?token=${ssoToken}`,
-        {
-          ...DEFAULT_FETCH_OPTIONS,
-          method: "POST",
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(
-          "❌ [REAL] Erro ao excluir usuário:",
-          response.status,
-          errorData
-        );
-        throw new Error(errorData.error || "Erro ao excluir usuário");
+    const response = await fetch(
+      `${this.baseUrl}/api/users/${userId}/delete-with-sso?token=${ssoToken}`,
+      {
+        ...DEFAULT_FETCH_OPTIONS,
+        method: "POST",
       }
+    );
 
-      console.log("✅ [REAL] Usuário excluído com sucesso via SSO");
-    } catch (error) {
-      console.error("❌ [REAL] Erro ao excluir usuário:", error);
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Erro ao excluir usuário");
     }
   }
 
@@ -517,39 +366,27 @@ class ManagerClient {
     newPassword: string,
     ssoToken: string
   ): Promise<{ success: boolean }> {
-    try {
-      console.log("🔑 [REAL] Alterando a própria senha via SSO");
-
-      const response = await fetch(
-        `${this.baseUrl}/api/users/change-password-with-sso?token=${ssoToken}`,
-        {
-          ...DEFAULT_FETCH_OPTIONS,
-          method: "POST",
-          body: JSON.stringify({ currentPassword, newPassword }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error("❌ [REAL] Erro ao alterar senha:", response.status, data);
-        throw new Error(data.error || "Erro ao alterar senha");
+    const response = await fetch(
+      `${this.baseUrl}/api/users/change-password-with-sso?token=${ssoToken}`,
+      {
+        ...DEFAULT_FETCH_OPTIONS,
+        method: "POST",
+        body: JSON.stringify({ currentPassword, newPassword }),
       }
+    );
 
-      console.log("✅ [REAL] Senha alterada com sucesso via SSO");
+    const data = await response.json();
 
-      return data;
-    } catch (error) {
-      console.error("❌ [REAL] Erro ao alterar senha:", error);
-      throw error;
+    if (!response.ok) {
+      throw new Error(data.error || "Erro ao alterar senha");
     }
+
+    return data;
   }
 
   // Limpar sessão (usar no logout) - apenas placeholder, cookies são gerenciados automaticamente
   clearSession() {
-    console.log(
-      "🗑️ [REAL] Sessão será limpa automaticamente pelo logout do servidor"
-    );
+    // Sessão é limpa automaticamente pelo logout do servidor (cookies HttpOnly)
   }
 }
 
