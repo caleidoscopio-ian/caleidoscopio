@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { StatusAgendamento } from '@/types/agendamento'
+import { resolverProfissionalIdsDaFilial } from '@/lib/filial-profissionais'
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,6 +40,12 @@ export async function GET(request: NextRequest) {
         ) as StatusAgendamento[])
       : undefined
 
+    // A filial "dona" de um agendamento é a do profissional (cadastro), não a
+    // da sala onde ele acontece — mesma fonte usada em /api/agendamentos.
+    const profissionalIdsDaFilial = filialFiltro
+      ? await resolverProfissionalIdsDaFilial(user.tenant.id, filialFiltro)
+      : null
+
     const agendamentos = await prisma.agendamento.findMany({
       where: {
         paciente: {
@@ -47,9 +54,12 @@ export async function GET(request: NextRequest) {
         },
         profissional: { tenantId: user.tenant.id },
         data_hora: { gte: inicioDia, lte: fimDia },
-        ...(profissionalId ? { profissionalId } : {}),
+        ...(profissionalId
+          ? { profissionalId }
+          : profissionalIdsDaFilial
+            ? { profissionalId: { in: profissionalIdsDaFilial } }
+            : {}),
         ...(salaId ? { salaId } : {}),
-        ...(filialFiltro ? { salaRelacao: { filialId: filialFiltro } } : {}),
         ...(statusList?.length ? { status: { in: statusList } } : {}),
       },
       include: {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
 import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
+import { resolverProfissionalIdsDaFilial } from "@/lib/filial-profissionais";
 
 // GET - Listar agendamentos com filtros
 export async function GET(request: NextRequest) {
@@ -65,6 +66,13 @@ export async function GET(request: NextRequest) {
     const filialIdParam = searchParams.get("filialId");
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam || null);
 
+    // A filial "dona" de um agendamento é a do profissional (cadastro), não a
+    // da sala onde ele acontece — a sala é só o espaço físico, e um profissional
+    // não deveria (nem pode, na criação) usar sala de outra filial.
+    const profissionalIdsDaFilial = filialFiltro
+      ? await resolverProfissionalIdsDaFilial(user.tenant.id, filialFiltro)
+      : null;
+
     // Construir query com filtros e isolamento multi-tenant
     const where: any = {
       // 🔒 CRÍTICO: Filtrar por tenant através do paciente
@@ -77,7 +85,7 @@ export async function GET(request: NextRequest) {
         tenantId: user.tenant.id,
         ativo: true,
       },
-      ...(filialFiltro ? { salaRelacao: { filialId: filialFiltro } } : {}),
+      ...(profissionalIdsDaFilial ? { profissionalId: { in: profissionalIdsDaFilial } } : {}),
     };
 
 

@@ -23,7 +23,9 @@ interface UsePermissionsReturn {
 export function usePermissions(): UsePermissionsReturn {
   const { user } = useAuth()
   const [perms, setPerms] = useState<PermissionsResponse | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Guarda pra qual userId o resultado em `perms` é válido (sucesso OU falha —
+  // "carregado" não significa "tem permissão"). Usado só pra derivar `loading`.
+  const [loadedForUserId, setLoadedForUserId] = useState<string | null>(null)
   const fetchedFor = useRef<string | null>(null)
 
   const fetchPermissions = useCallback(async (userId: string) => {
@@ -38,13 +40,13 @@ export function usePermissions(): UsePermissionsReturn {
     } catch {
       setPerms(null)
     } finally {
-      setLoading(false)
+      setLoadedForUserId(userId)
     }
   }, [])
 
   useEffect(() => {
     if (!user) {
-      setLoading(false)
+      fetchedFor.current = null
       return
     }
     // Evitar fetch duplicado quando o componente re-renderiza
@@ -52,6 +54,11 @@ export function usePermissions(): UsePermissionsReturn {
     fetchedFor.current = user.id
     fetchPermissions(user.id)
   }, [user, fetchPermissions])
+
+  // Derivado a cada render (não é um state separado) — evita a race condition
+  // de `user` passar de null → objeto e o `loading` ficar "false" por um
+  // render até o useEffect acima rodar e dar início à busca.
+  const loading = !!user && loadedForUserId !== user.id
 
   function can(resource: string, action: string): boolean {
     if (!perms) return false

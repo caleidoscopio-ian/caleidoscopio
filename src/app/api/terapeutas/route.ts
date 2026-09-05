@@ -7,6 +7,7 @@ import {
   CONSELHO_LABELS,
 } from "@/lib/profissional-constants";
 import { TipoVinculoProfissional, EspecialidadeClinica, FuncaoAdministrativa, ConselhoProfissional } from "@prisma/client";
+import { resolverProfissionalIdsDaFilial } from "@/lib/filial-profissionais";
 
 // Deriva o texto legado de "especialidade" a partir dos campos estruturados
 function derivarEspecialidadeLegado(
@@ -84,36 +85,18 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔍 Buscando terapeutas para clínica: ${user.tenant.name} (${user.tenant.id})`);
 
-    // Quando filtrando por filial, descobrir quais usuários estão atribuídos a ela
-    // A filial do profissional é gerenciada via UsuarioRole.filialId (página /usuarios)
-    let usuarioIdsDaFilial: string[] | null = null;
-    if (filialFiltro) {
-      const rolesNaFilial = await prisma.usuarioRole.findMany({
-        where: {
-          tenantId: user.tenant.id,
-          ativo: true,
-          filialId: filialFiltro,
-        },
-        select: { usuarioId: true },
-      });
-      usuarioIdsDaFilial = rolesNaFilial.map((r) => r.usuarioId);
-    }
+    // Quando filtrando por filial, resolver os IDs de profissional vinculados a ela
+    // (mesma fonte de verdade usada em /api/agendamentos pro filtro por filial)
+    const profissionalIdsDaFilial = filialFiltro
+      ? await resolverProfissionalIdsDaFilial(user.tenant.id, filialFiltro)
+      : null;
 
     // Buscar profissionais APENAS da clínica do usuário (isolamento multi-tenant)
     const profissionais = await prisma.profissional.findMany({
       where: {
         tenantId: user.tenant.id, // 🔒 CRÍTICO: Filtrar por tenant
         ativo: true,
-        ...(filialFiltro && usuarioIdsDaFilial !== null ? {
-          OR: [
-            // Profissional cujo usuário está atribuído à filial selecionada
-            { usuarioId: { in: usuarioIdsDaFilial } },
-            // Profissional sem conta de usuário no sistema (tratado como global)
-            { usuarioId: null },
-            // Compat: vínculo direto via ProfissionalFilial (se existir)
-            { filiais: { some: { filialId: filialFiltro } } },
-          ],
-        } : {}),
+        ...(profissionalIdsDaFilial ? { id: { in: profissionalIdsDaFilial } } : {}),
       },
       select: {
         id: true,

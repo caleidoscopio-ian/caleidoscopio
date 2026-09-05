@@ -92,14 +92,22 @@ export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showNovoUsuarioDialog, setShowNovoUsuarioDialog] = useState(false);
-  const [roleInfoMap, setRoleInfoMap] = useState<Map<string, UsuarioRoleInfo>>(new Map());
+  const [roleInfoMap, setRoleInfoMap] = useState<Map<string, UsuarioRoleInfo>>(
+    new Map(),
+  );
   const [updatingFilial, setUpdatingFilial] = useState<string | null>(null);
   const [availableRoles, setAvailableRoles] = useState<RoleOption[]>([]);
   const [managingUser, setManagingUser] = useState<Usuario | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
-  const [pendingFilial, setPendingFilial] = useState<{ usuarioId: string; filialId: string | null; filialNome: string } | null>(null);
+  const [pendingFilial, setPendingFilial] = useState<{
+    usuarioId: string;
+    filialId: string | null;
+    filialNome: string;
+  } | null>(null);
   const [resettingPassword, setResettingPassword] = useState(false);
-  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(
+    null,
+  );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deletingUser, setDeletingUser] = useState(false);
 
@@ -150,7 +158,12 @@ export default function UsuariosPage() {
 
       if (rolesListRes.ok) {
         const rolesListData = await rolesListRes.json();
-        setAvailableRoles(rolesListData.map((r: { id: string; nome: string }) => ({ id: r.id, nome: r.nome })));
+        setAvailableRoles(
+          rolesListData.map((r: { id: string; nome: string }) => ({
+            id: r.id,
+            nome: r.nome,
+          })),
+        );
       }
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
@@ -184,7 +197,7 @@ export default function UsuariosPage() {
         throw new Error(err.error || "Erro ao atualizar filial");
       }
       const updated = await res.json();
-      setRoleInfoMap(prev => {
+      setRoleInfoMap((prev) => {
         const next = new Map(prev);
         const existing = next.get(usuarioId);
         next.set(usuarioId, {
@@ -198,7 +211,11 @@ export default function UsuariosPage() {
       });
       toast({ title: "Filial atualizada com sucesso!" });
     } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setUpdatingFilial(null);
     }
@@ -225,14 +242,18 @@ export default function UsuariosPage() {
       const res = await fetch("/api/usuario-roles", {
         method,
         headers,
-        body: JSON.stringify({ usuarioId: managingUser.id, roleId: selectedRoleId }),
+        body: JSON.stringify({
+          usuarioId: managingUser.id,
+          roleId: selectedRoleId,
+        }),
       });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Erro ao salvar perfil");
       }
-      const roleName = availableRoles.find(r => r.id === selectedRoleId)?.nome ?? null;
-      setRoleInfoMap(prev => {
+      const roleName =
+        availableRoles.find((r) => r.id === selectedRoleId)?.nome ?? null;
+      setRoleInfoMap((prev) => {
         const next = new Map(prev);
         const existing = next.get(managingUser.id);
         next.set(managingUser.id, {
@@ -247,7 +268,11 @@ export default function UsuariosPage() {
       toast({ title: "Perfil atualizado com sucesso!" });
       setManagingUser(null);
     } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -255,14 +280,17 @@ export default function UsuariosPage() {
     if (!user || !managingUser) return;
     setResettingPassword(true);
     try {
-      const res = await fetch(`/api/usuarios-sistema1/${managingUser.id}/resetar-senha`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-User-Data": btoa(JSON.stringify(user)),
-          "X-Auth-Token": user.token,
+      const res = await fetch(
+        `/api/usuarios-sistema1/${managingUser.id}/resetar-senha`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-Data": btoa(JSON.stringify(user)),
+            "X-Auth-Token": user.token,
+          },
         },
-      });
+      );
       const result = await res.json();
       if (!res.ok || !result.success) {
         throw new Error(result.error || "Erro ao resetar senha");
@@ -270,7 +298,11 @@ export default function UsuariosPage() {
       setTemporaryPassword(result.temporaryPassword);
       toast({ title: "Senha resetada com sucesso!" });
     } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setResettingPassword(false);
     }
@@ -297,7 +329,11 @@ export default function UsuariosPage() {
       setConfirmingDelete(false);
       await loadUsuarios();
     } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setDeletingUser(false);
     }
@@ -357,7 +393,9 @@ export default function UsuariosPage() {
   };
 
   return (
-    <ProtectedRoute requiredPermission={{ resource: 'usuarios', action: 'VIEW' }}>
+    <ProtectedRoute
+      requiredPermission={{ resource: "usuarios", action: "VIEW" }}
+    >
       <MainLayout>
         <div className="space-y-6">
           {/* Header */}
@@ -518,56 +556,80 @@ export default function UsuariosPage() {
                             </span>
                           )}
                         </TableCell>
-                        {filiais.length > 0 && (() => {
-                          const ri = roleInfoMap.get(usuario.id);
-                          const currentFilialId = ri?.filialId ?? null;
-                          const isUpdating = updatingFilial === usuario.id;
-                          return (
-                            <TableCell>
-                              <Select
-                                value={currentFilialId ?? "_todas"}
-                                onValueChange={(v) => {
-                                  const newFilialId = v === "_todas" ? null : v;
-                                  const filialNome = newFilialId ? (filiais.find(f => f.id === newFilialId)?.nome ?? newFilialId) : "Todas as filiais";
-                                  setPendingFilial({ usuarioId: usuario.id, filialId: newFilialId, filialNome });
-                                }}
-                                disabled={isUpdating || !can("usuarios", "EDIT")}
-                              >
-                                <SelectTrigger className="w-36 h-8 text-xs">
-                                  <SelectValue>
-                                    {ri?.filial ? (
+                        {filiais.length > 0 &&
+                          (() => {
+                            const ri = roleInfoMap.get(usuario.id);
+                            const currentFilialId = ri?.filialId ?? null;
+                            const isUpdating = updatingFilial === usuario.id;
+                            return (
+                              <TableCell>
+                                <Select
+                                  value={currentFilialId ?? "_todas"}
+                                  onValueChange={(v) => {
+                                    const newFilialId =
+                                      v === "_todas" ? null : v;
+                                    const filialNome = newFilialId
+                                      ? (filiais.find(
+                                          (f) => f.id === newFilialId,
+                                        )?.nome ?? newFilialId)
+                                      : "Todas as filiais";
+                                    setPendingFilial({
+                                      usuarioId: usuario.id,
+                                      filialId: newFilialId,
+                                      filialNome,
+                                    });
+                                  }}
+                                  disabled={
+                                    isUpdating || !can("usuarios", "EDIT")
+                                  }
+                                >
+                                  <SelectTrigger className="w-36 h-8 text-xs">
+                                    <SelectValue>
+                                      {ri?.filial ? (
+                                        <span className="flex items-center gap-1.5">
+                                          <span
+                                            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                                            style={{
+                                              backgroundColor:
+                                                ri.filial.cor ?? "#6b7280",
+                                            }}
+                                          />
+                                          {ri.filial.nome}
+                                        </span>
+                                      ) : (
+                                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                                          <Landmark className="h-3 w-3" />
+                                          Todas
+                                        </span>
+                                      )}
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="_todas">
                                       <span className="flex items-center gap-1.5">
-                                        <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: ri.filial.cor ?? '#6b7280' }} />
-                                        {ri.filial.nome}
-                                      </span>
-                                    ) : (
-                                      <span className="flex items-center gap-1.5 text-muted-foreground">
                                         <Landmark className="h-3 w-3" />
-                                        Todas
-                                      </span>
-                                    )}
-                                  </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="_todas">
-                                    <span className="flex items-center gap-1.5">
-                                      <Landmark className="h-3 w-3" />
-                                      Todas as filiais
-                                    </span>
-                                  </SelectItem>
-                                  {filiais.map((f) => (
-                                    <SelectItem key={f.id} value={f.id}>
-                                      <span className="flex items-center gap-1.5">
-                                        <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: f.cor ?? '#6b7280' }} />
-                                        {f.nome}
+                                        Todas as filiais
                                       </span>
                                     </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                          );
-                        })()}
+                                    {filiais.map((f) => (
+                                      <SelectItem key={f.id} value={f.id}>
+                                        <span className="flex items-center gap-1.5">
+                                          <span
+                                            className="inline-block w-2 h-2 rounded-full"
+                                            style={{
+                                              backgroundColor:
+                                                f.cor ?? "#6b7280",
+                                            }}
+                                          />
+                                          {f.nome}
+                                        </span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            );
+                          })()}
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             {can("usuarios", "EDIT") && (
@@ -591,18 +653,24 @@ export default function UsuariosPage() {
         </div>
 
         {/* Dialog Confirmação Filial */}
-        <Dialog open={!!pendingFilial} onOpenChange={(o) => !o && setPendingFilial(null)}>
+        <Dialog
+          open={!!pendingFilial}
+          onOpenChange={(o) => !o && setPendingFilial(null)}
+        >
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
               <DialogTitle>Confirmar alteração de filial</DialogTitle>
               <DialogDescription>
-                Alterar a filial deste usuário para <strong>{pendingFilial?.filialNome}</strong>?
+                Alterar a filial deste usuário para{" "}
+                <strong>{pendingFilial?.filialNome}</strong>?
                 <br />
                 Isso define quais dados ele poderá acessar no sistema.
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setPendingFilial(null)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => setPendingFilial(null)}>
+                Cancelar
+              </Button>
               <Button onClick={confirmFilialChange}>Confirmar</Button>
             </div>
           </DialogContent>
@@ -630,13 +698,18 @@ export default function UsuariosPage() {
               {/* Perfil de Acesso */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Perfil de Acesso</label>
-                <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                <Select
+                  value={selectedRoleId}
+                  onValueChange={setSelectedRoleId}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecionar perfil..." />
                   </SelectTrigger>
                   <SelectContent>
                     {availableRoles.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>{r.nome}</SelectItem>
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.nome}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -646,7 +719,11 @@ export default function UsuariosPage() {
                   </p>
                 )}
                 <div className="flex justify-end">
-                  <Button size="sm" onClick={handleRoleChange} disabled={!selectedRoleId}>
+                  <Button
+                    size="sm"
+                    onClick={handleRoleChange}
+                    disabled={!selectedRoleId}
+                  >
                     Salvar Perfil
                   </Button>
                 </div>
@@ -655,15 +732,22 @@ export default function UsuariosPage() {
               <div className="border-t pt-4 space-y-2">
                 <label className="text-sm font-medium">Senha de Acesso</label>
                 <p className="text-xs text-muted-foreground">
-                  Gera uma nova senha temporária no Sistema 1 (Manager) para este usuário.
+                  Gera uma nova senha temporária para este usuário.
                 </p>
                 {temporaryPassword ? (
                   <Alert>
                     <KeyRound className="h-4 w-4" />
                     <AlertDescription className="space-y-2">
-                      <p>Senha temporária gerada — copie agora, ela não será exibida novamente:</p>
+                      <p>
+                        Senha temporária gerada — copie agora, ela não será
+                        exibida novamente:
+                      </p>
                       <div className="flex items-center gap-2">
-                        <Input readOnly value={temporaryPassword} className="font-mono" />
+                        <Input
+                          readOnly
+                          value={temporaryPassword}
+                          className="font-mono"
+                        />
                         <Button
                           type="button"
                           size="icon"
@@ -697,15 +781,18 @@ export default function UsuariosPage() {
               </div>
 
               <div className="border-t pt-4 space-y-2">
-                <label className="text-sm font-medium text-destructive">Excluir Usuário</label>
+                <label className="text-sm font-medium text-destructive">
+                  Excluir Usuário
+                </label>
                 {confirmingDelete ? (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription className="space-y-3">
                       <p>
-                        Isso exclui o login deste usuário no Sistema 1 (Manager) — ação
-                        irreversível. O cadastro do profissional e seu histórico clínico
-                        são preservados, só o acesso ao sistema é removido.
+                        Isso exclui o login deste usuário no Sistema 1 (Manager)
+                        — ação irreversível. O cadastro do profissional e seu
+                        histórico clínico são preservados, só o acesso ao
+                        sistema é removido.
                       </p>
                       <div className="flex justify-end gap-2">
                         <Button
@@ -749,7 +836,9 @@ export default function UsuariosPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setManagingUser(null)}>Fechar</Button>
+              <Button variant="outline" onClick={() => setManagingUser(null)}>
+                Fechar
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
