@@ -50,6 +50,7 @@ interface Tarefa {
   pergunta: string;
   descricao?: string;
   criterios_pontuacao?: string;
+  numero?: number | null;
   nivel?: { descricao: string };
   habilidade?: { habilidade: string };
 }
@@ -401,6 +402,15 @@ function VisualizarAvaliacaoPageContent() {
                               <Badge variant="outline">
                                 {tarefa.habilidade.habilidade}
                               </Badge>
+                              {tarefa.numero != null && (
+                                <>
+                                  {" "}
+                                  <span className="text-sm font-medium text-muted-foreground">
+                                    Número:
+                                  </span>{" "}
+                                  <Badge variant="outline">{tarefa.numero}</Badge>
+                                </>
+                              )}
                             </div>
                           )}
                           {tarefa.descricao && (

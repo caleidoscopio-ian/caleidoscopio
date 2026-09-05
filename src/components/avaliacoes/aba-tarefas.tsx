@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -64,6 +65,7 @@ interface Tarefa {
   descricao?: string;
   criterios_pontuacao?: string;
   ordem?: number;
+  numero?: number | null;
   nivel?: { id: string; descricao: string };
   habilidade?: { id: string; habilidade: string };
 }
@@ -88,6 +90,7 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
     pergunta: "",
     nivelId: undefined as string | undefined,
     habilidadeId: undefined as string | undefined,
+    numero: undefined as number | undefined,
     descricao: "",
     criterios_pontuacao: "",
     ordem: 1,
@@ -129,6 +132,7 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
       pergunta: "",
       nivelId: undefined,
       habilidadeId: undefined,
+      numero: undefined,
       descricao: "",
       criterios_pontuacao: "",
       ordem: tarefas.length + 1,
@@ -142,6 +146,7 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
       pergunta: tarefa.pergunta,
       nivelId: tarefa.nivel?.id,
       habilidadeId: tarefa.habilidade?.id,
+      numero: tarefa.numero ?? undefined,
       descricao: tarefa.descricao || "",
       criterios_pontuacao: tarefa.criterios_pontuacao || "",
       ordem: tarefa.ordem || 1,
@@ -192,6 +197,7 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
           pergunta: "",
           nivelId: undefined,
           habilidadeId: undefined,
+          numero: undefined,
           descricao: "",
           criterios_pontuacao: "",
           ordem: 1,
@@ -278,6 +284,7 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
                 <TableHead>Pergunta</TableHead>
                 <TableHead>Nível</TableHead>
                 <TableHead>Habilidade</TableHead>
+                <TableHead>Número</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -289,6 +296,7 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
                   </TableCell>
                   <TableCell>{tarefa.nivel?.descricao || "-"}</TableCell>
                   <TableCell>{tarefa.habilidade?.habilidade || "-"}</TableCell>
+                  <TableCell>{tarefa.numero ?? "-"}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -338,7 +346,7 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
                   rows={2}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="nivel">Nível (opcional)</Label>
                   <Select
@@ -386,6 +394,21 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="numero">Número (opcional)</Label>
+                  <Input
+                    id="numero"
+                    type="number"
+                    placeholder="Ex: 1"
+                    value={formData.numero ?? ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        numero: e.target.value === "" ? undefined : Number(e.target.value),
+                      })
+                    }
+                  />
                 </div>
               </div>
               <div className="grid gap-2">

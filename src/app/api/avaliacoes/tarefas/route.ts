@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { avaliacaoId, pergunta, nivelId, habilidadeId, descricao, criterios_pontuacao, ordem } = body;
+    const { avaliacaoId, pergunta, nivelId, habilidadeId, descricao, criterios_pontuacao, ordem, numero } = body;
 
     if (!avaliacaoId || !pergunta) {
       return NextResponse.json(
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
         descricao,
         criterios_pontuacao,
         ordem,
+        numero: numero === undefined || numero === null || numero === "" ? null : Number(numero),
       },
       include: {
         nivel: true,
@@ -60,7 +61,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, pergunta, nivelId, habilidadeId, descricao, criterios_pontuacao, ordem } = body;
+    const { id, pergunta, nivelId, habilidadeId, descricao, criterios_pontuacao, ordem, numero } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: "ID é obrigatório" }, { status: 400 });
@@ -77,7 +78,15 @@ export async function PUT(request: NextRequest) {
 
     const tarefa = await prisma.avaliacaoTarefa.update({
       where: { id },
-      data: { pergunta, nivelId: nivelId || null, habilidadeId: habilidadeId || null, descricao, criterios_pontuacao, ordem },
+      data: {
+        pergunta,
+        nivelId: nivelId || null,
+        habilidadeId: habilidadeId || null,
+        descricao,
+        criterios_pontuacao,
+        ordem,
+        numero: numero === undefined || numero === null || numero === "" ? null : Number(numero),
+      },
       include: { nivel: true, habilidade: true },
     });
 

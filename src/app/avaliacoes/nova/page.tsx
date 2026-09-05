@@ -68,7 +68,7 @@ function NovaAvaliacaoPageContent() {
       if (result.success) {
         setAvaliacaoId(result.data.id);
         alert(
-          "Avaliação criada com sucesso! Agora você pode adicionar níveis, habilidades e tarefas."
+          "Avaliação criada com sucesso! Agora você pode adicionar níveis, habilidades e tarefas.",
         );
         // Mudar para aba de níveis
         setActiveTab("niveis");
@@ -100,7 +100,7 @@ function NovaAvaliacaoPageContent() {
               </Button>
             </div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Nova Avaliação ABA+
+              Nova Avaliação
             </h1>
             <p className="text-muted-foreground">
               Crie um novo protocolo de avaliação
@@ -180,7 +180,9 @@ function NovaAvaliacaoPageContent() {
 
 export default function NovaAvaliacaoPage() {
   return (
-    <ProtectedRoute requiredPermission={{ resource: 'avaliacoes', action: 'CREATE' }}>
+    <ProtectedRoute
+      requiredPermission={{ resource: "avaliacoes", action: "CREATE" }}
+    >
       <NovaAvaliacaoPageContent />
     </ProtectedRoute>
   );

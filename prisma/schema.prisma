@@ -1307,6 +1307,7 @@ model AvaliacaoTarefa {
   descricao               String?  @db.Text
   criterios_pontuacao     String?  @db.Text
   ordem                   Int?
+  numero                  Int?     // Numera instâncias repetidas da mesma habilidade (ex: MANDO 1, MANDO 3)
 
   avaliacao               Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
   nivel                   AvaliacaoNivel? @relation(fields: [nivelId], references: [id], onDelete: SetNull)
