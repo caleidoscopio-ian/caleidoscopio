@@ -146,3 +146,4 @@ NUNCA: `any` type · query sem `tenantId` · import de `src/` · `dangerouslySet
 | 21 | Histórico de Atendimentos | `/historico-atendimentos` | Implementado |
 | 22 | Relatório de Atendimentos Glosados | `/glosas` | Implementado |
 | 23 | Conciliação de Glosas (Demonstrativo TISS) | `/glosas` (aba Conciliação) | Implementado |
+| 24 | Grade de Horários (disponibilidade por profissional) | `/agenda` (aba Grade de Horários) | Implementado |

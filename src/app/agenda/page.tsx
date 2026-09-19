@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/main-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,7 +23,9 @@ import {
 } from "@/components/ui/select";
 import {
   Calendar,
+  CalendarDays,
   Clock,
+  LayoutGrid,
   Plus,
   ChevronLeft,
   ChevronRight,
@@ -35,6 +38,8 @@ import { AgendaDiariaResumo } from "@/components/agenda/agenda-diaria-resumo";
 import { AgendaSemanal } from "@/components/agenda/agenda-semanal";
 import { AgendaSemanalResumo } from "@/components/agenda/agenda-semanal-resumo";
 import { AgendaMensal } from "@/components/agenda/agenda-mensal";
+import { GradeHorarios } from "@/components/agenda/grade-horarios";
+import { GradeBloco } from "@/components/agenda/grade-horarios-utils";
 import { AgendamentoDetailsDialog } from "@/components/agenda/agendamento-details-dialog";
 import { NovoAgendamentoForm } from "@/components/forms/novo-agendamento-form";
 import { Agendamento, StatusAgendamento } from "@/types/agendamento";
@@ -58,6 +63,7 @@ import { useToast } from "@/hooks/use-toast";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 type ViewMode = "day" | "week" | "month";
+type AgendaTab = "geral" | "grade";
 
 function AgendaPageContent() {
   const { user, isAdmin, tenant } = useAuth();
@@ -87,6 +93,8 @@ function AgendaPageContent() {
 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
+  const [activeTab, setActiveTab] = useState<AgendaTab>("geral");
+  const [grades, setGrades] = useState<GradeBloco[]>([]);
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [pacientes, setPacientes] = useState<
     Array<{ id: string; nome: string; convenioId?: string | null }>
@@ -145,6 +153,7 @@ function AgendaPageContent() {
     try {
       await Promise.all([
         loadAgendamentos(),
+        loadGrades(),
         loadPacientes(),
         loadProfissionais(),
         loadSalas(),
@@ -218,6 +227,33 @@ function AgendaPageContent() {
     } catch (error) {
       console.error("Erro ao carregar agendamentos:", error);
       throw error;
+    }
+  };
+
+  // Grades de atendimento (aba "Grade de Horários") — respeita os mesmos
+  // filtros de filial/profissional aplicados à agenda
+  const loadGrades = async () => {
+    if (!user) return;
+    try {
+      const gradesParams = new URLSearchParams();
+      if (selectedProfissional !== "all")
+        gradesParams.set("profissionalId", selectedProfissional);
+      if (selectedFilialId) gradesParams.set("filialId", selectedFilialId);
+
+      const response = await fetch(`/api/grades?${gradesParams}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": btoa(JSON.stringify(user)),
+          "X-Auth-Token": user.token,
+        },
+      });
+
+      const result = await response.json();
+      setGrades(result.success ? result.data : []);
+    } catch {
+      // Grade ausente não deve bloquear a agenda
+      setGrades([]);
     }
   };
 
@@ -683,6 +719,26 @@ function AgendaPageContent() {
     setShowNovoAgendamento(true);
   };
 
+  // Clique em um slot livre da grade — já sabe o profissional, o dia e a hora
+  const handleSlotLivreGradeClick = (
+    profissionalId: string,
+    data: Date,
+    horario: string
+  ) => {
+    const [hour, minute] = horario.split(":").map(Number);
+    const dataHora = new Date(data);
+    dataHora.setHours(hour, minute, 0, 0);
+
+    setNovoAgendamentoDefaults({ profissionalId, data: dataHora, horario });
+    setShowNovoAgendamento(true);
+  };
+
+  // Clique em um dia na grade mensal — abre o detalhe daquele dia
+  const handleDiaGradeClick = (dia: Date) => {
+    setSelectedDate(dia);
+    setViewMode("day");
+  };
+
   const handleAgendamentoClick = (agendamento: Agendamento) => {
     setSelectedAgendamento(agendamento);
     setShowDetalhes(true);
@@ -910,192 +966,229 @@ function AgendaPageContent() {
           </Card>
         </div>
 
-        {/* Controles da Agenda */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => navigateDate("prev")}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="text-lg font-semibold capitalize">
-                  {format(
-                    selectedDate,
-                    viewMode === "day"
-                      ? "EEEE, d 'de' MMMM 'de' yyyy"
-                      : viewMode === "week"
-                        ? "'Semana de' d 'de' MMMM"
-                        : "MMMM 'de' yyyy",
-                    { locale: ptBR }
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => navigateDate("next")}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={goToToday}>
-                  Hoje
-                </Button>
-              </div>
-              <div className="flex items-center space-x-2">
-                {/* Filtro de filial — visível apenas para admin */}
-                {isAdmin && filiais.length > 0 && (
-                  <Select
-                    value={selectedFilialId ?? "_todas"}
-                    onValueChange={handleFilialChange}
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as AgendaTab)}
+          className="space-y-6"
+        >
+          <TabsList>
+            <TabsTrigger value="geral" className="gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Agenda Geral
+            </TabsTrigger>
+            <TabsTrigger value="grade" className="gap-2">
+              <LayoutGrid className="h-4 w-4" />
+              Grade de Horários
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Controles da Agenda — compartilhados pelas duas abas */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateDate("prev")}
                   >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filial">
-                        {filialSelecionada ? (
-                          <span className="flex items-center gap-2">
-                            <span
-                              className="inline-block w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: filialSelecionada.cor ?? "#6b7280" }}
-                            />
-                            {filialSelecionada.nome}
-                          </span>
-                        ) : (
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="text-lg font-semibold capitalize">
+                    {format(
+                      selectedDate,
+                      viewMode === "day"
+                        ? "EEEE, d 'de' MMMM 'de' yyyy"
+                        : viewMode === "week"
+                          ? "'Semana de' d 'de' MMMM"
+                          : "MMMM 'de' yyyy",
+                      { locale: ptBR }
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateDate("next")}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={goToToday}>
+                    Hoje
+                  </Button>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {/* Filtro de filial — visível apenas para admin */}
+                  {isAdmin && filiais.length > 0 && (
+                    <Select
+                      value={selectedFilialId ?? "_todas"}
+                      onValueChange={handleFilialChange}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filial">
+                          {filialSelecionada ? (
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="inline-block w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: filialSelecionada.cor ?? "#6b7280" }}
+                              />
+                              {filialSelecionada.nome}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-2">
+                              <Landmark className="h-4 w-4 text-muted-foreground" />
+                              Todas as filiais
+                            </span>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_todas">
                           <span className="flex items-center gap-2">
                             <Landmark className="h-4 w-4 text-muted-foreground" />
                             Todas as filiais
                           </span>
-                        )}
-                      </SelectValue>
+                        </SelectItem>
+                        {filiais.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="inline-block w-2 h-2 rounded-full"
+                                style={{ backgroundColor: f.cor ?? "#6b7280" }}
+                              />
+                              {f.nome}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  <Select
+                    value={selectedProfissional}
+                    onValueChange={setSelectedProfissional}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Profissional" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="_todas">
-                        <span className="flex items-center gap-2">
-                          <Landmark className="h-4 w-4 text-muted-foreground" />
-                          Todas as filiais
-                        </span>
+                      <SelectItem value="all">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Todos os profissionais
+                        </div>
                       </SelectItem>
-                      {filiais.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          <span className="flex items-center gap-2">
-                            <span
-                              className="inline-block w-2 h-2 rounded-full"
-                              style={{ backgroundColor: f.cor ?? "#6b7280" }}
-                            />
-                            {f.nome}
-                          </span>
+                      {profissionais.map((prof) => (
+                        <SelectItem key={prof.id} value={prof.id}>
+                          {prof.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                )}
 
-                <Select
-                  value={selectedProfissional}
-                  onValueChange={setSelectedProfissional}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Profissional" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Todos os profissionais
-                      </div>
-                    </SelectItem>
-                    {profissionais.map((prof) => (
-                      <SelectItem key={prof.id} value={prof.id}>
-                        {prof.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant={viewMode === "day" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("day")}
-                >
-                  Dia
-                </Button>
-                <Button
-                  variant={viewMode === "week" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("week")}
-                >
-                  Semana
-                </Button>
-                <Button
-                  variant={viewMode === "month" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("month")}
-                >
-                  Mês
-                </Button>
+                  <Button
+                    variant={viewMode === "day" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("day")}
+                  >
+                    Dia
+                  </Button>
+                  <Button
+                    variant={viewMode === "week" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("week")}
+                  >
+                    Semana
+                  </Button>
+                  <Button
+                    variant={viewMode === "month" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("month")}
+                  >
+                    Mês
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-        </Card>
+            </CardHeader>
+          </Card>
 
-        {/* Visualização da Agenda */}
-        <Card>
-          <CardContent className="p-0">
-            {viewMode === "day" ? (
-              isAdmin && selectedProfissional === "all" ? (
-                <AgendaDiariaResumo
-                  agendamentos={agendamentos}
-                  selectedDate={selectedDate}
-                  onNovoAgendamento={handleNovoAgendamentoSemanalClick}
-                  onAgendamentoClick={handleAgendamentoClick}
-                />
-              ) : (
-                <AgendaDiaria
-                  agendamentos={agendamentos}
+          {/* Visualização da Agenda */}
+          <TabsContent value="geral" className="mt-0">
+            <Card>
+              <CardContent className="p-0">
+                {viewMode === "day" ? (
+                  isAdmin && selectedProfissional === "all" ? (
+                    <AgendaDiariaResumo
+                      agendamentos={agendamentos}
+                      selectedDate={selectedDate}
+                      onNovoAgendamento={handleNovoAgendamentoSemanalClick}
+                      onAgendamentoClick={handleAgendamentoClick}
+                    />
+                  ) : (
+                    <AgendaDiaria
+                      agendamentos={agendamentos}
+                      profissionais={profissionaisFiltrados}
+                      selectedDate={selectedDate}
+                      onNovoAgendamento={handleNovoAgendamentoClick}
+                      onAgendamentoClick={handleAgendamentoClick}
+                    />
+                  )
+                ) : viewMode === "week" ? (
+                  isAdmin && selectedProfissional === "all" ? (
+                    <AgendaSemanalResumo
+                      agendamentos={agendamentos}
+                      selectedDate={selectedDate}
+                      onNovoAgendamento={handleNovoAgendamentoSemanalClick}
+                      onAgendamentoClick={handleAgendamentoClick}
+                    />
+                  ) : (
+                    <AgendaSemanal
+                      agendamentos={agendamentos}
+                      profissionalId={
+                        selectedProfissional !== "all"
+                          ? selectedProfissional
+                          : undefined
+                      }
+                      selectedDate={selectedDate}
+                      onNovoAgendamento={handleNovoAgendamentoSemanalClick}
+                      onAgendamentoClick={handleAgendamentoClick}
+                    />
+                  )
+                ) : (
+                  <AgendaMensal
+                    agendamentos={agendamentos}
+                    profissionalId={
+                      selectedProfissional !== "all"
+                        ? selectedProfissional
+                        : undefined
+                    }
+                    agregado={isAdmin && selectedProfissional === "all"}
+                    selectedDate={selectedDate}
+                    onNovoAgendamento={handleNovoAgendamentoSemanalClick}
+                    onAgendamentoClick={handleAgendamentoClick}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Grade de Horários — disponibilidade por profissional */}
+          <TabsContent value="grade" className="mt-0">
+            <Card>
+              <CardContent className="p-0">
+                <GradeHorarios
                   profissionais={profissionaisFiltrados}
-                  selectedDate={selectedDate}
-                  onNovoAgendamento={handleNovoAgendamentoClick}
-                  onAgendamentoClick={handleAgendamentoClick}
-                />
-              )
-            ) : viewMode === "week" ? (
-              isAdmin && selectedProfissional === "all" ? (
-                <AgendaSemanalResumo
+                  grades={grades}
                   agendamentos={agendamentos}
                   selectedDate={selectedDate}
-                  onNovoAgendamento={handleNovoAgendamentoSemanalClick}
+                  viewMode={viewMode}
+                  onSlotLivreClick={handleSlotLivreGradeClick}
                   onAgendamentoClick={handleAgendamentoClick}
+                  onDiaClick={handleDiaGradeClick}
                 />
-              ) : (
-                <AgendaSemanal
-                  agendamentos={agendamentos}
-                  profissionalId={
-                    selectedProfissional !== "all"
-                      ? selectedProfissional
-                      : undefined
-                  }
-                  selectedDate={selectedDate}
-                  onNovoAgendamento={handleNovoAgendamentoSemanalClick}
-                  onAgendamentoClick={handleAgendamentoClick}
-                />
-              )
-            ) : (
-              <AgendaMensal
-                agendamentos={agendamentos}
-                profissionalId={
-                  selectedProfissional !== "all"
-                    ? selectedProfissional
-                    : undefined
-                }
-                agregado={isAdmin && selectedProfissional === "all"}
-                selectedDate={selectedDate}
-                onNovoAgendamento={handleNovoAgendamentoSemanalClick}
-                onAgendamentoClick={handleAgendamentoClick}
-              />
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Dialog: Novo Agendamento */}
