@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { inicioDoMes } from "@/lib/datas-fuso";
 import { getAuthenticatedUser, isAdminUser } from "@/lib/auth/server";
 
 // API para buscar estatísticas do dashboard
@@ -44,9 +45,8 @@ export async function GET(request: NextRequest) {
     });
 
     // 3. Sessões Finalizadas no Mês Atual (Curriculum)
-    const inicioMes = new Date();
-    inicioMes.setDate(1);
-    inicioMes.setHours(0, 0, 0, 0);
+    // Mês atual no fuso da clínica, não no do servidor
+    const inicioMes = inicioDoMes();
 
     stats.sessoesRealizadasMes = await prisma.sessaoCurriculum.count({
       where: {

@@ -117,7 +117,7 @@ export default function EditarProntuario() {
             "X-Auth-Token": user.token,
           },
         }),
-        fetch("/api/terapeutas", {
+        fetch("/api/terapeutas?atende=true", {
           headers: {
             "Content-Type": "application/json",
             "X-User-Data": userDataEncoded,

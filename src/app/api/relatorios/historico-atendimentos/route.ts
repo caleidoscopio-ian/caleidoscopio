@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
-import { startOfDay, endOfDay } from "date-fns";
+import { parseInicioPeriodo, parseFimPeriodo } from "@/lib/datas-fuso";
 import type { AtendimentoHistorico, HistoricoResumo } from "@/types/historico-atendimento";
 import { Prisma } from "@prisma/client";
 
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
 
-    const dataInicio = startOfDay(new Date(dataInicioParam));
-    const dataFim = endOfDay(new Date(dataFimParam));
+    const dataInicio = parseInicioPeriodo(dataInicioParam);
+    const dataFim = parseFimPeriodo(dataFimParam);
 
     if (isNaN(dataInicio.getTime()) || isNaN(dataFim.getTime()))
       return NextResponse.json({ success: false, error: "Datas inválidas" }, { status: 400 });

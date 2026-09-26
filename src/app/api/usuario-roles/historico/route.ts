@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
+import { parseInicioPeriodo, parseFimPeriodo } from '@/lib/datas-fuso'
 
 // GET /api/usuario-roles/historico — Audit log de alterações de role
 export async function GET(request: NextRequest) {
@@ -26,11 +27,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (usuarioId) where.usuarioId = usuarioId
-    if (dataInicio) where.createdAt = { gte: new Date(dataInicio) }
+    if (dataInicio) where.createdAt = { gte: parseInicioPeriodo(dataInicio) }
     if (dataFim) {
       where.createdAt = {
         ...(typeof where.createdAt === 'object' && where.createdAt !== null ? where.createdAt : {}),
-        lte: new Date(dataFim),
+        // sem isto, "YYYY-MM-DD" virava 00:00 e o último dia ficava de fora
+        lte: parseFimPeriodo(dataFim),
       }
     }
 

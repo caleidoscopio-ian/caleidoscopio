@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { StatusAgendamento } from '@/types/agendamento'
 import { resolverProfissionalIdsDaFilial } from '@/lib/filial-profissionais'
+import { parseInicioPeriodo, parseFimPeriodo, inicioDoDia, fimDoDia } from '@/lib/datas-fuso'
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,18 +21,10 @@ export async function GET(request: NextRequest) {
     const isAdmin = isAdminUser(user)
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
 
-    // Calcular intervalo do dia — parse manual para evitar UTC vs local mismatch
-    let inicioDia: Date
-    let fimDia: Date
-    if (data) {
-      const [y, m, d] = data.split('-').map(Number)
-      inicioDia = new Date(y, m - 1, d, 0, 0, 0, 0)
-      fimDia    = new Date(y, m - 1, d, 23, 59, 59, 999)
-    } else {
-      const now = new Date()
-      inicioDia = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
-      fimDia    = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
-    }
+    // Intervalo do dia no fuso da clínica — o construtor local do Date usaria
+    // o fuso do servidor, que em produção é UTC
+    const inicioDia = data ? parseInicioPeriodo(data) : inicioDoDia()
+    const fimDia = data ? parseFimPeriodo(data) : fimDoDia()
 
     // Filtros de status
     const statusList = statusParam

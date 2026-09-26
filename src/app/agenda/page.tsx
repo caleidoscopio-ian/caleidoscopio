@@ -300,7 +300,9 @@ function AgendaPageContent() {
       // Preparar headers com dados do usuário
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const terapeutasParams = new URLSearchParams();
+      // Só quem tem agenda própria: a recepção acessa a agenda pelo RBAC,
+      // mas não é atendente e não deve aparecer como opção de marcação
+      const terapeutasParams = new URLSearchParams({ atende: "true" });
       if (selectedFilialId) terapeutasParams.set("filialId", selectedFilialId);
 
       const response = await fetch(`/api/terapeutas?${terapeutasParams}`, {
@@ -470,8 +472,16 @@ function AgendaPageContent() {
       const temDatasAdicionais = data.datasAdicionais && data.datasAdicionais.length > 0;
 
       if (temDatasAdicionais) {
-        // Agendamento em massa
-        const todasDatas = [data.data, ...data.datasAdicionais].map((d: Date) => d.toISOString());
+        // Agendamento em massa — cada ocorrência vai como instante completo,
+        // montado aqui no navegador (fuso do usuário), igual ao agendamento
+        // avulso. O servidor não recombina data + horário: em produção ele roda
+        // em UTC e isso deslocava a recorrência em -3h.
+        const [hInicio, mInicio] = data.horario.split(":").map(Number);
+        const todasDatas = [data.data, ...data.datasAdicionais].map((d: Date) => {
+          const inicio = new Date(d);
+          inicio.setHours(hInicio, mInicio, 0, 0);
+          return inicio.toISOString();
+        });
 
         const response = await fetch("/api/agendamentos/batch", {
           method: "POST",
@@ -1082,6 +1092,12 @@ function AgendaPageContent() {
                           {prof.nome}
                         </SelectItem>
                       ))}
+                      {profissionais.length === 0 && (
+                        <div className="px-2 py-3 text-xs text-muted-foreground max-w-[220px]">
+                          Nenhum profissional classificado como clínico. Defina o
+                          tipo de vínculo na ficha em Profissionais.
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
 

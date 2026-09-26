@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
-import { startOfDay, endOfDay } from "date-fns";
+import { parseInicioPeriodo, parseFimPeriodo } from "@/lib/datas-fuso";
 import type { Glosa, GlosaResumo } from "@/types/glosa";
 import { Prisma } from "@prisma/client";
 
@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
       tenantId: user.tenant.id,
       ...(dataInicioParam && dataFimParam ? {
         data_glosa: {
-          gte: startOfDay(new Date(dataInicioParam)),
-          lte: endOfDay(new Date(dataFimParam)),
+          gte: parseInicioPeriodo(dataInicioParam),
+          lte: parseFimPeriodo(dataFimParam),
         },
       } : {}),
       ...(statusParam ? { status: { in: statusParam.split(",") as Prisma.EnumStatusGlosaFilter["in"] } } : {}),
@@ -140,8 +140,8 @@ export async function GET(request: NextRequest) {
           paciente: { tenantId: user.tenant.id },
           status: "ATENDIDO",
           data_hora: {
-            gte: startOfDay(new Date(dataInicioParam)),
-            lte: endOfDay(new Date(dataFimParam)),
+            gte: parseInicioPeriodo(dataInicioParam),
+            lte: parseFimPeriodo(dataFimParam),
           },
         },
         select: {
@@ -201,8 +201,8 @@ export async function GET(request: NextRequest) {
       pageSize,
       resumo,
       periodo: {
-        inicio: dataInicioParam ? startOfDay(new Date(dataInicioParam)).toISOString() : "",
-        fim: dataFimParam ? endOfDay(new Date(dataFimParam)).toISOString() : "",
+        inicio: dataInicioParam ? parseInicioPeriodo(dataInicioParam).toISOString() : "",
+        fim: dataFimParam ? parseFimPeriodo(dataFimParam).toISOString() : "",
       },
     });
   } catch (error) {

@@ -91,7 +91,7 @@ export default function CheckInPage() {
   useEffect(() => {
     if (!user) return;
     const h = authHeaders();
-    fetch("/api/terapeutas", { headers: h })
+    fetch("/api/terapeutas?atende=true", { headers: h })
       .then((r) => r.json())
       .then((d) => { if (d.success || Array.isArray(d)) setProfissionais(Array.isArray(d) ? d : d.data ?? []); })
       .catch(() => {});

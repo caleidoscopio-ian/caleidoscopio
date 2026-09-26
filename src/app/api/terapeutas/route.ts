@@ -83,6 +83,12 @@ export async function GET(request: NextRequest) {
     const filialIdParam = searchParams.get('filialId');
     const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam || null);
 
+    // "atende=true" → apenas quem tem agenda própria (grade de horários, taxa de
+    // ocupação, marcação de agendamento). Uma recepcionista tem permissão total
+    // na agenda via RBAC, mas não é atendente — são eixos independentes.
+    // tipo_vinculo em branco conta como NÃO atende: só entra quem foi classificado.
+    const apenasAtendentes = searchParams.get('atende') === 'true';
+
     console.log(`🔍 Buscando terapeutas para clínica: ${user.tenant.name} (${user.tenant.id})`);
 
     // Quando filtrando por filial, resolver os IDs de profissional vinculados a ela
@@ -97,6 +103,9 @@ export async function GET(request: NextRequest) {
         tenantId: user.tenant.id, // 🔒 CRÍTICO: Filtrar por tenant
         ativo: true,
         ...(profissionalIdsDaFilial ? { id: { in: profissionalIdsDaFilial } } : {}),
+        ...(apenasAtendentes
+          ? { tipo_vinculo: TipoVinculoProfissional.PROFISSIONAL_CLINICO }
+          : {}),
       },
       select: {
         id: true,

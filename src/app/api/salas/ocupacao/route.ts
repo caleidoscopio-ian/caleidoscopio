@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
+import { parseInicioPeriodo, parseFimPeriodo } from '@/lib/datas-fuso'
 
 const STATUS_OCUPADOS = ['AGENDADO', 'CONFIRMADO', 'EM_ATENDIMENTO', 'ATENDIDO'] as const
 const STATUS_CANCELADOS = ['FALTOU', 'CANCELADO'] as const
@@ -25,8 +26,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'dataInicio e dataFim são obrigatórios' }, { status: 400 })
     }
 
-    const inicio = new Date(dataInicio)
-    const fim = new Date(dataFim)
+    const inicio = parseInicioPeriodo(dataInicio)
+    const fim = parseFimPeriodo(dataFim)
     if (isNaN(inicio.getTime()) || isNaN(fim.getTime())) {
       return NextResponse.json({ success: false, error: 'Datas inválidas' }, { status: 400 })
     }

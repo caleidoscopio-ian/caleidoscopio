@@ -75,8 +75,14 @@ export function GradeHorarios({
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <CalendarX2 className="h-10 w-10 text-muted-foreground mb-3" />
         <p className="font-medium">Nenhum profissional encontrado</p>
-        <p className="text-sm text-muted-foreground">
-          Ajuste os filtros de filial ou profissional para ver a grade de horários.
+        <p className="text-sm text-muted-foreground max-w-md">
+          Só aparecem aqui profissionais classificados como clínicos. Quem está
+          cadastrado sem tipo de vínculo — ou como administrativo, caso da recepção —
+          fica de fora, mesmo tendo acesso à agenda.
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Ajuste os filtros de filial ou profissional, ou classifique o vínculo em
+          Profissionais.
         </p>
       </div>
     );

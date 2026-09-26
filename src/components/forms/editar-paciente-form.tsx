@@ -296,7 +296,7 @@ export function EditarPacienteForm({
       .then(r => r.json())
       .then(result => { if (result.success) setConvenios(result.data); })
       .catch(() => {});
-    fetch("/api/terapeutas", { headers })
+    fetch("/api/terapeutas?atende=true", { headers })
       .then(r => r.json())
       .then(result => { if (result.success) setProfissionais(result.data); })
       .catch(() => {});

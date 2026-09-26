@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { parseInicioPeriodo, parseFimPeriodo } from "@/lib/datas-fuso";
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,12 +36,11 @@ export async function GET(request: NextRequest) {
     // Construir filtros de data
     const filtroData: Record<string, unknown> = {};
     if (dataInicio) {
-      filtroData.gte = new Date(dataInicio);
+      filtroData.gte = parseInicioPeriodo(dataInicio);
     }
     if (dataFim) {
-      const dataFimDate = new Date(dataFim);
-      dataFimDate.setHours(23, 59, 59, 999); // Incluir todo o dia
-      filtroData.lte = dataFimDate;
+      // "YYYY-MM-DD" vira o dia inteiro no fuso da clínica
+      filtroData.lte = parseFimPeriodo(dataFim);
     }
 
     // Buscar sessões de curriculum

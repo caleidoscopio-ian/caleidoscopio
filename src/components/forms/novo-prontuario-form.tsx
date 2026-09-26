@@ -112,7 +112,7 @@ export function NovoProntuarioForm({ onSuccess }: NovoProntuarioFormProps) {
             "X-Auth-Token": user.token,
           },
         }),
-        fetch("/api/terapeutas", {
+        fetch("/api/terapeutas?atende=true", {
           headers: {
             "Content-Type": "application/json",
             "X-User-Data": userDataEncoded,

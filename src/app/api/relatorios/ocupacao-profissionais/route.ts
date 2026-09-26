@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { TipoVinculoProfissional } from '@prisma/client'
 import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { calcularMinutosDisponiveis, minutosAgendamento } from '@/lib/ocupacao'
 import type { OcupacaoProfissional, OcupacaoResumo } from '@/types/ocupacao-profissional'
+import { parseInicioPeriodo, parseFimPeriodo } from '@/lib/datas-fuso'
 
 const STATUS_OCUPADOS = ['AGENDADO', 'CONFIRMADO', 'EM_ATENDIMENTO', 'ATENDIDO'] as const
 const STATUS_FALTA = ['FALTOU'] as const
@@ -21,12 +23,15 @@ export async function GET(request: NextRequest) {
     const dataFimParam = searchParams.get('dataFim')
     const filialIdParam = searchParams.get('filialId')
     const profissionalIdParam = searchParams.get('profissionalId')
+    // Ocupação de agenda e configuração de grade só valem para quem atende
+    // (ver o filtro "atende" em /api/terapeutas)
+    const apenasAtendentes = searchParams.get('atende') === 'true'
 
     if (!dataInicioParam || !dataFimParam)
       return NextResponse.json({ success: false, error: 'dataInicio e dataFim são obrigatórios' }, { status: 400 })
 
-    const dataInicio = new Date(dataInicioParam)
-    const dataFim = new Date(dataFimParam)
+    const dataInicio = parseInicioPeriodo(dataInicioParam)
+    const dataFim = parseFimPeriodo(dataFimParam)
     if (isNaN(dataInicio.getTime()) || isNaN(dataFim.getTime()))
       return NextResponse.json({ success: false, error: 'Datas inválidas' }, { status: 400 })
 
@@ -43,6 +48,9 @@ export async function GET(request: NextRequest) {
         tenantId: user.tenant.id,
         ativo: true,
         ...(profissionalIdParam ? { id: profissionalIdParam } : {}),
+        ...(apenasAtendentes
+          ? { tipo_vinculo: TipoVinculoProfissional.PROFISSIONAL_CLINICO }
+          : {}),
         ...(filialFiltro ? {
           OR: [
             { filiais: { some: { filialId: filialFiltro } } },

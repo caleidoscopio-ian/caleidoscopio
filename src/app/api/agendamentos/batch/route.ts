@@ -128,20 +128,41 @@ export async function POST(request: NextRequest) {
 
     // Processar cada data
     const resultados = [];
+
+    // Cada item de `datas` já chega como instante completo, montado no fuso do
+    // navegador. O servidor NÃO recombina data + horário: em produção ele roda
+    // em UTC e `setHours(9, 0)` gravava 09:00 UTC, ou seja 06:00 no horário de
+    // Brasília. Daqui só sai a duração, que independe de fuso.
     const [hourInicio, minuteInicio] = horario.split(":").map(Number);
     const [hourFim, minuteFim] = horario_fim.split(":").map(Number);
+    const duracaoMinutos = hourFim * 60 + minuteFim - (hourInicio * 60 + minuteInicio);
+
+    if (!Number.isFinite(duracaoMinutos) || duracaoMinutos <= 0) {
+      return NextResponse.json(
+        { error: "Horário de término deve ser maior que o horário de início" },
+        { status: 400 }
+      );
+    }
+
     // Agrupa os agendamentos desta recorrência para permitir excluir
     // "este e os futuros" ou "toda a série" depois — só faz sentido com 2+ datas
     const serieId = datas.length > 1 ? randomUUID() : null;
 
     for (const dataStr of datas) {
       try {
-        // Criar data/hora combinando data e horário
+        // Instante recebido do cliente, usado como está
         const dataHora = new Date(dataStr);
-        dataHora.setHours(hourInicio, minuteInicio, 0, 0);
 
-        const dataFim = new Date(dataStr);
-        dataFim.setHours(hourFim, minuteFim, 0, 0);
+        if (Number.isNaN(dataHora.getTime())) {
+          resultados.push({
+            data: dataStr,
+            success: false,
+            error: "Data inválida",
+          });
+          continue;
+        }
+
+        const dataFim = new Date(dataHora.getTime() + duracaoMinutos * 60000);
 
         // Verificar conflito de profissional
         const agendamentosProf = await prisma.agendamento.findMany({

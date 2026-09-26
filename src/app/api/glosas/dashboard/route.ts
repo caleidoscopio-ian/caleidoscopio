@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
-import { startOfDay, endOfDay, format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { format, subMonths } from "date-fns";
+import {
+  inicioDoDia,
+  fimDoDia,
+  parseInicioPeriodo,
+  parseFimPeriodo,
+  partesNoFuso,
+  inicioDoMesEm,
+  fimDoMesEm,
+  mesesAtras,
+} from "@/lib/datas-fuso";
 import type { GlosaDashboard } from "@/types/glosa";
 
 function toNum(v: unknown): number { return Number(v ?? 0); }
@@ -18,12 +28,11 @@ export async function GET(request: NextRequest) {
     const dataInicioParam = searchParams.get("dataInicio");
     const dataFimParam = searchParams.get("dataFim");
 
+    // O cliente manda ISO completo; o default é calculado no fuso da clínica
     const dataInicio = dataInicioParam
-      ? startOfDay(new Date(dataInicioParam))
-      : startOfDay(subMonths(new Date(), 3));
-    const dataFim = dataFimParam
-      ? endOfDay(new Date(dataFimParam))
-      : endOfDay(new Date());
+      ? parseInicioPeriodo(dataInicioParam)
+      : inicioDoDia(subMonths(new Date(), 3));
+    const dataFim = dataFimParam ? parseFimPeriodo(dataFimParam) : fimDoDia();
 
     const where = {
       tenantId: user.tenant.id,
@@ -90,10 +99,13 @@ export async function GET(request: NextRequest) {
 
     // Evolução mensal (últimos 6 meses)
     const evolucao: Array<{ mes: string; glosado: number; recuperado: number }> = [];
+    const hojeNaClinica = partesNoFuso(new Date());
     for (let i = 5; i >= 0; i--) {
-      const mesRef = subMonths(new Date(), i);
-      const mesInicio = startOfMonth(mesRef);
-      const mesFim = endOfMonth(mesRef);
+      const { ano, mes } = mesesAtras(hojeNaClinica.ano, hojeNaClinica.mes, i);
+      const mesInicio = inicioDoMesEm(ano, mes);
+      const mesFim = fimDoMesEm(ano, mes);
+      // Data local só para o rótulo — o mês já veio resolvido no fuso da clínica
+      const mesRef = new Date(ano, mes - 1, 1);
       const mesGlosas = glosas.filter(
         (g) => g.data_glosa >= mesInicio && g.data_glosa <= mesFim
       );

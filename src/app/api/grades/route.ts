@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
-import { Prisma } from '@prisma/client'
+import { Prisma, TipoVinculoProfissional } from '@prisma/client'
 import { resolverProfissionalIdsDaFilial } from '@/lib/filial-profissionais'
 
 // Grades de atendimento em lote — usado pela aba "Grade de Horários" da agenda,
@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
     const where: Prisma.GradeAtendimentoWhereInput = {
       tenantId: user.tenant.id,
       ativo: true,
+      // Só quem tem agenda própria — ver o filtro "atende" em /api/terapeutas
+      profissional: { tipo_vinculo: TipoVinculoProfissional.PROFISSIONAL_CLINICO },
     }
 
     if (profissionalId) {

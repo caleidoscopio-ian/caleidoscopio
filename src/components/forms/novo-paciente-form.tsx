@@ -195,7 +195,7 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
       try {
         console.log("🔄 Carregando profissionais...");
         const userDataEncoded = btoa(JSON.stringify(user));
-        const response = await fetch("/api/terapeutas", {
+        const response = await fetch("/api/terapeutas?atende=true", {
           headers: {
             "X-User-Data": userDataEncoded,
             "X-Auth-Token": user.token,

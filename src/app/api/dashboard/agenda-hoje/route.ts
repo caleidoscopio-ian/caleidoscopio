@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { inicioDoDia, fimDoDia } from "@/lib/datas-fuso";
 import { getAuthenticatedUser, isAdminUser } from "@/lib/auth/server";
 
 // API para buscar agendamentos do dia atual
@@ -29,13 +30,10 @@ export async function GET(request: NextRequest) {
     const tenantId = user.tenant.id;
     const isAdmin = isAdminUser(user);
 
-    // Definir início e fim do dia atual
-    const hoje = new Date();
-    const inicioHoje = new Date(hoje);
-    inicioHoje.setHours(0, 0, 0, 0);
-
-    const fimHoje = new Date(hoje);
-    fimHoje.setHours(23, 59, 59, 999);
+    // Dia atual no fuso da clínica — não no fuso do servidor, que em
+    // produção é UTC e viraria o dia às 21:00 no horário de Brasília
+    const inicioHoje = inicioDoDia();
+    const fimHoje = fimDoDia();
 
     // Buscar agendamentos do dia
     const agendamentosHoje = await prisma.agendamento.findMany({

@@ -47,7 +47,7 @@ function TaxaOcupacaoContent() {
   // Carregar lista de profissionais para o filtro
   useEffect(() => {
     if (!user) return
-    fetch("/api/terapeutas", {
+    fetch("/api/terapeutas?atende=true", {
       headers: {
         "X-User-Data": btoa(JSON.stringify(user)),
         "X-Auth-Token": user.token,
@@ -76,6 +76,7 @@ function TaxaOcupacaoContent() {
       const params = new URLSearchParams({
         dataInicio: startOfDay(filtros.dataInicio).toISOString(),
         dataFim: endOfDay(filtros.dataFim).toISOString(),
+        atende: "true",
       })
       if (filtros.profissionalId) params.set("profissionalId", filtros.profissionalId)
       if (filtros.filialId) params.set("filialId", filtros.filialId)
