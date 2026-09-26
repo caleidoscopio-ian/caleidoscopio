@@ -88,7 +88,12 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
+  // Reidrata o formulário só quando o diálogo abre ou troca de registro.
+  // Depender do objeto faria o form.reset() disparar a cada refetch em segundo
+  // plano (as telas têm polling de 60s), apagando o que o usuário digitou.
+  const pacoteId = pacote?.id ?? null;
   useEffect(() => {
+    if (!open) return;
     if (pacote) {
       form.reset({
         nome: pacote.nome,
@@ -119,7 +124,8 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
         procedimentos: [],
       });
     }
-  }, [pacote, open, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, pacoteId]);
 
   const addProcedimento = () => {
     if (!selectedProc) return;

@@ -31,6 +31,10 @@ model agendamento {
   senha_autorizacao String?         // senha de autorização do convênio (chave de conciliação)
   numero_guia       String?         // número da guia do prestador
   serieId         String?           // Agrupa agendamentos criados na mesma recorrência (null = avulso)
+  // Valor combinado no ato do agendamento quando o paciente é particular.
+  // Paciente com convênio tira o valor da tabela do convênio; particular não
+  // tem tabela, então o valor é informado caso a caso.
+  valor_particular Decimal?         @db.Decimal(10, 2)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @default(now()) @updatedAt
   paciente        paciente          @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
@@ -154,6 +158,9 @@ model atividadePontuacao {
   ordem        Int
   sigla        String   // -, AFT, AFP, AI, AG, AVE, AVG, +
   grau         String   // Erro, Independente, Alta, Média, Baixa
+  // Campo preparado — o uso ainda não foi definido. Texto livre de propósito:
+  // aceita número ou descrição, e converter para Int depois é trivial (o inverso não).
+  passo_dicas  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
   atividade    atividade @relation(fields: [atividadeId], references: [id], onDelete: Cascade)
@@ -423,6 +430,9 @@ model profissional {
   registro_profissional String?           // Legado (texto livre) — derivado automaticamente (conselho + número + UF)
   tipo_vinculo          TipoVinculoProfissional?
   especialidade_clinica EspecialidadeClinica?
+  // Preenchido quando especialidade_clinica = OUTRA: aponta para a especialidade
+  // cadastrada pela própria clínica (enum do banco não aceita valor novo em runtime)
+  especialidadeCustomizadaId String?
   funcao_administrativa FuncaoAdministrativa?
   conselho              ConselhoProfissional?
   numero_registro       String?
@@ -441,9 +451,29 @@ model profissional {
   regrasRepasse         RegraRepasse[]
   filiais               ProfissionalFilial[]
   grades                GradeAtendimento[]
+  especialidadeCustomizada EspecialidadeCustomizada? @relation(fields: [especialidadeCustomizadaId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, cpf])
+  @@index([especialidadeCustomizadaId])
   @@map("profissionais")
+}
+
+// Especialidades clínicas criadas pela própria clínica, para além do enum
+// EspecialidadeClinica. Escopo por tenant — a lista de uma clínica não aparece
+// para outra.
+model EspecialidadeCustomizada {
+  id        String   @id @default(uuid())
+  tenantId  String
+  nome      String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  profissionais profissional[]
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@map("especialidades_customizadas")
 }
 
 enum TipoVinculoProfissional {
@@ -1040,9 +1070,10 @@ model ConvenioTabela {
   procedimentoId      String?         // FK opcional para Procedimento
 
   // Identificação do procedimento
-  codigo_procedimento String          // Código TUSS/TISS do procedimento
+  codigo_procedimento String          // Código TUSS do procedimento
   nome_procedimento   String          // Nome do procedimento
-  codigo_tiss         String?         // Código TISS específico
+  codigo_tiss         String?         // Código próprio da operadora, quando difere do TUSS
+                                      // (nome da coluna é legado: o conteúdo é código de procedimento, não TISS)
 
   // Valores
   valor_convenio      Decimal         @db.Decimal(10, 2) // Valor pago pelo convênio
@@ -1464,6 +1495,7 @@ model AtividadeClonePontuacao {
   ordem            Int
   sigla            String
   grau             String
+  passo_dicas      String?   // espelha atividadePontuacao.passo_dicas
   createdAt        DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
 

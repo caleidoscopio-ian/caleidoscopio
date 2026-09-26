@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -27,9 +28,17 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { StatusAgendamento } from "@/types/agendamento";
-import { horaParaMinutos } from "@/lib/ocupacao";
 import { formatBRL } from "@/lib/preco-procedimento";
 import type { BlocoGrade } from "@/types/ocupacao-profissional";
+import {
+  foraDaGrade as calcularForaDaGrade,
+  temGrade,
+  gerarHorarios,
+  horariosInicioDisponiveis,
+  horariosFimDisponiveis,
+  resumoBlocosDoDia,
+  datasForaDaGrade,
+} from "@/lib/grade-agendamento";
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -39,6 +48,7 @@ const formSchema = z.object({
   datasAdicionais: z.array(z.date()).optional(),
   dataLimite: z.date().optional(),
   diasDaSemana: z.array(z.number()).optional(),
+  valor_particular: z.number().min(0, "Valor não pode ser negativo").optional(),
   horario: z.string().min(1, "Informe o horário de início"),
   horario_fim: z.string().min(1, "Informe o horário de fim"),
   sala: z.string().min(1, "Selecione uma sala"),
@@ -70,15 +80,6 @@ interface NovoAgendamentoFormProps {
   onFetchTabelaConvenio?: (convenioId: string) => Promise<TabelaItem[]>;
 }
 
-function verificarForaDaGrade(grade: BlocoGrade[], diaSemana: number, horario: string, horario_fim: string): boolean {
-  if (grade.length === 0) return false;
-  const ini = horaParaMinutos(horario);
-  const fim = horaParaMinutos(horario_fim);
-  return !grade.some(
-    (b) => b.diaSemana === diaSemana && horaParaMinutos(b.hora_inicio) <= ini && horaParaMinutos(b.hora_fim) >= fim,
-  );
-}
-
 export function NovoAgendamentoForm({
   pacientes,
   profissionais,
@@ -98,6 +99,7 @@ export function NovoAgendamentoForm({
   // Grade
   const [gradeProf, setGradeProf] = useState<BlocoGrade[]>([]);
   const [foraDaGrade, setForaDaGrade] = useState(false);
+  const [erroGrade, setErroGrade] = useState<string | null>(null);
   const gradeCache = useRef<Record<string, BlocoGrade[]>>({});
 
   // Convênio + tabela
@@ -180,7 +182,8 @@ export function NovoAgendamentoForm({
       setForaDaGrade(false);
       return;
     }
-    setForaDaGrade(verificarForaDaGrade(gradeProf, data.getDay(), horario, horario_fim));
+    setForaDaGrade(calcularForaDaGrade(gradeProf, data.getDay(), horario, horario_fim));
+    setErroGrade(null);
   }, [gradeProf, horario, horario_fim, data]);
 
   const gerarDatasRecorrentes = (dataInicial: Date, dataLimite: Date, diasDaSemana: number[]): Date[] => {
@@ -199,6 +202,30 @@ export function NovoAgendamentoForm({
     if (values.dataLimite && values.diasDaSemana && values.diasDaSemana.length > 0) {
       values.datasAdicionais = gerarDatasRecorrentes(values.data, values.dataLimite, values.diasDaSemana);
     }
+
+    // Fora da grade não salva. Vale para a data principal e para cada ocorrência
+    // da recorrência, que pode cair em dia da semana com grade diferente.
+    const todasAsDatas = [values.data, ...(values.datasAdicionais ?? [])];
+    const invalidas = datasForaDaGrade(
+      gradeProf,
+      todasAsDatas,
+      values.horario,
+      values.horario_fim
+    );
+
+    if (invalidas.length > 0) {
+      setErroGrade(
+        invalidas.length === todasAsDatas.length
+          ? "O horário escolhido está fora da grade deste profissional. Ajuste o horário ou a data."
+          : `${invalidas.length} de ${todasAsDatas.length} datas da recorrência caem fora da grade deste profissional (${invalidas
+              .slice(0, 3)
+              .map((d) => format(d, "dd/MM", { locale: ptBR }))
+              .join(", ")}${invalidas.length > 3 ? "…" : ""}). Ajuste o horário ou os dias da semana.`
+      );
+      return;
+    }
+
+    setErroGrade(null);
     setPendingData(values);
     setShowResumo(true);
   };
@@ -217,14 +244,21 @@ export function NovoAgendamentoForm({
     }
   };
 
-  // Gerar opções de horário (10 em 10 minutos)
-  const horarios: string[] = [];
-  for (let hour = 5; hour <= 22; hour++) {
-    for (let minute = 0; minute < 60; minute += 10) {
-      if (hour === 22 && minute > 0) break;
-      horarios.push(`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
-    }
-  }
+  // Opções de horário limitadas à grade do profissional no dia escolhido.
+  // Sem grade cadastrada, mantém a lista completa de 05:00 às 22:00.
+  const todosHorarios = gerarHorarios();
+  const diaSemanaSelecionado = data ? data.getDay() : null;
+  const horariosInicio =
+    diaSemanaSelecionado === null
+      ? todosHorarios
+      : horariosInicioDisponiveis(gradeProf, diaSemanaSelecionado, todosHorarios);
+  const horariosFim =
+    diaSemanaSelecionado === null
+      ? todosHorarios
+      : horariosFimDisponiveis(gradeProf, diaSemanaSelecionado, horario, todosHorarios);
+  const profissionalTemGrade = temGrade(gradeProf);
+  const semAtendimentoNoDia =
+    profissionalTemGrade && diaSemanaSelecionado !== null && horariosInicio.length === 0;
 
   // Dados para o resumo
   const pacienteNome = pacientes.find((p) => p.id === pendingData?.pacienteId)?.nome ?? "—";
@@ -284,13 +318,29 @@ export function NovoAgendamentoForm({
             </FormItem>
           )} />
 
-          {/* Aviso fora da grade */}
-          {foraDaGrade && (
+          {/* Profissional não atende no dia escolhido */}
+          {semAtendimentoNoDia && (
             <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
               <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-500" aria-hidden="true" />
               <div>
-                <span className="font-medium">Fora da grade deste profissional.</span>
-                {" "}O horário selecionado não está dentro dos blocos configurados. O agendamento pode ser salvo mesmo assim.
+                <span className="font-medium">Este profissional não atende neste dia.</span>
+                {" "}Escolha outra data ou ajuste a grade dele em Taxa de Ocupação.
+              </div>
+            </div>
+          )}
+
+          {/* Horário fora da grade — impede o salvamento */}
+          {(foraDaGrade || erroGrade) && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
+              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+              <div>
+                <span className="font-medium">Fora da grade deste profissional.</span>{" "}
+                {erroGrade ??
+                  `O horário selecionado não está dentro dos blocos configurados${
+                    diaSemanaSelecionado !== null && resumoBlocosDoDia(gradeProf, diaSemanaSelecionado)
+                      ? ` (${resumoBlocosDoDia(gradeProf, diaSemanaSelecionado)})`
+                      : ""
+                  }. Não é possível salvar assim.`}
               </div>
             </div>
           )}
@@ -327,7 +377,7 @@ export function NovoAgendamentoForm({
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {horarios.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                    {horariosInicio.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -406,7 +456,7 @@ export function NovoAgendamentoForm({
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {horarios.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                    {horariosFim.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -444,7 +494,14 @@ export function NovoAgendamentoForm({
               onValueChange={(v) => {
                 const id = v === "_particular" ? null : v;
                 setSelectedConvenioId(id);
-                if (!id) { setTabelaItens([]); setSelectedTabelaItem(null); form.setValue("procedimento", undefined); }
+                if (!id) {
+                  setTabelaItens([]);
+                  setSelectedTabelaItem(null);
+                  form.setValue("procedimento", undefined);
+                } else {
+                  // Com convênio o valor vem da tabela — o campo manual sai de cena
+                  form.setValue("valor_particular", undefined);
+                }
               }}
             >
               <SelectTrigger>
@@ -459,6 +516,36 @@ export function NovoAgendamentoForm({
               <p className="text-xs text-muted-foreground">Convênio do paciente pré-selecionado</p>
             )}
           </div>
+
+          {/* Particular não tem tabela: o valor é combinado caso a caso */}
+          {selectedConvenioId === null && (
+            <FormField control={form.control} name="valor_particular" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Valor do atendimento (R$)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="Ex: 180,00"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                    }
+                  />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Opcional. Como o paciente é particular, não existe tabela de preços —
+                  informe aqui o valor combinado para este atendimento.
+                  {" "}Numa recorrência, o mesmo valor vale para todas as ocorrências.
+                </p>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
 
           {/* Procedimento — filtrado pela tabela do convênio */}
           <FormField control={form.control} name="procedimento" render={({ field }) => (

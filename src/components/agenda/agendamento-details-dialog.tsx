@@ -35,15 +35,17 @@ import { Agendamento, StatusAgendamento, STATUS_AGENDAMENTO_LABELS } from '@/typ
 import { cn } from '@/lib/utils'
 import { formatBRL } from '@/lib/preco-procedimento'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { opcoesEscopo, type EscopoSerie } from '@/lib/serie-agendamento'
 
-export type ModoExclusao = 'single' | 'future' | 'all'
+// Mantido como alias para não quebrar quem já importa daqui
+export type ModoExclusao = EscopoSerie
 
 interface AgendamentoDetailsDialogProps {
   agendamento: Agendamento | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirmar?: (id: string) => Promise<void>
-  onCancelar?: (id: string) => Promise<void>
+  onCancelar?: (id: string, escopo: EscopoSerie) => Promise<void>
   onIniciarAtendimento?: (id: string) => void
   onEditar?: (agendamento: Agendamento) => void
   onDeletar?: (id: string, mode: ModoExclusao) => Promise<void>
@@ -62,6 +64,9 @@ export function AgendamentoDetailsDialog({
   const [isLoading, setIsLoading] = useState(false)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
   const [modoExclusao, setModoExclusao] = useState<ModoExclusao>('single')
+  // Cancelamento usa o mesmo painel de escopo da exclusão
+  const [confirmandoCancelamento, setConfirmandoCancelamento] = useState(false)
+  const [modoCancelamento, setModoCancelamento] = useState<EscopoSerie>('single')
 
   if (!agendamento) return null
 
@@ -121,11 +126,22 @@ export function AgendamentoDetailsDialog({
     }
   }
 
-  const handleCancelar = async () => {
+  const handleAbrirConfirmacaoCancelamento = () => {
+    // Sem série, não há escopo a escolher: cancela direto
+    if (!agendamento.serieId) {
+      void handleConfirmarCancelamento('single')
+      return
+    }
+    setModoCancelamento('single')
+    setConfirmandoCancelamento(true)
+  }
+
+  const handleConfirmarCancelamento = async (escopo: EscopoSerie) => {
     if (!onCancelar) return
     setIsLoading(true)
     try {
-      await onCancelar(agendamento.id)
+      await onCancelar(agendamento.id, escopo)
+      setConfirmandoCancelamento(false)
       onOpenChange(false)
     } catch (error) {
       console.error('Erro ao cancelar agendamento:', error)
@@ -153,28 +169,15 @@ export function AgendamentoDetailsDialog({
     }
   }
 
-  const OPCOES_EXCLUSAO: { value: ModoExclusao; label: string; description: string }[] = [
-    {
-      value: 'single',
-      label: 'Excluir apenas este agendamento',
-      description: 'Remove só este registro, mantendo o restante da série.',
-    },
-    {
-      value: 'future',
-      label: 'Excluir este e todos os agendamentos futuros da série',
-      description: 'Remove este registro e todos os que vêm depois dele na mesma recorrência.',
-    },
-    {
-      value: 'all',
-      label: 'Excluir toda a série',
-      description: 'Remove todos os agendamentos vinculados a esta recorrência, incluindo os passados.',
-    },
-  ]
+  const OPCOES_EXCLUSAO = opcoesEscopo('excluir')
+  const OPCOES_CANCELAMENTO = opcoesEscopo('cancelar')
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setConfirmandoExclusao(false)
       setModoExclusao('single')
+      setConfirmandoCancelamento(false)
+      setModoCancelamento('single')
     }
     onOpenChange(next)
   }
@@ -378,8 +381,65 @@ export function AgendamentoDetailsDialog({
           )}
         </div>
 
-        {/* Confirmação de exclusão */}
-        {confirmandoExclusao && onDeletar ? (
+        {/* Confirmação de cancelamento em série */}
+        {confirmandoCancelamento && onCancelar ? (
+          <div className="pt-4 sm:pt-6 border-t">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="space-y-3">
+                <p className="font-medium">Como você quer cancelar este agendamento?</p>
+                <div className="space-y-2">
+                  {OPCOES_CANCELAMENTO.map((opcao) => (
+                    <button
+                      key={opcao.value}
+                      type="button"
+                      onClick={() => setModoCancelamento(opcao.value)}
+                      className={cn(
+                        "w-full text-left p-3 rounded-lg border transition-colors",
+                        modoCancelamento === opcao.value ? "border-red-500 bg-red-50" : "border-border hover:bg-muted/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          "h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
+                          modoCancelamento === opcao.value ? "border-red-600 bg-red-600" : "border-muted-foreground"
+                        )}>
+                          {modoCancelamento === opcao.value && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <div className="text-sm font-medium">{opcao.label}</div>
+                      </div>
+                      <p className="text-xs text-muted-foreground pl-6 mt-1">{opcao.description}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Atendimentos já realizados, com check-in ou com faturamento são
+                  preservados e não entram no cancelamento em lote.
+                </p>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setConfirmandoCancelamento(false)}
+                    disabled={isLoading}
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleConfirmarCancelamento(modoCancelamento)}
+                    disabled={isLoading}
+                  >
+                    Confirmar cancelamento
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : confirmandoExclusao && onDeletar ? (
           <div className="pt-4 sm:pt-6 border-t">
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
@@ -409,6 +469,12 @@ export function AgendamentoDetailsDialog({
                     </button>
                   ))}
                 </div>
+                {agendamento.serieId && (
+                  <p className="text-xs text-muted-foreground">
+                    Atendimentos já realizados, com check-in ou com faturamento são
+                    preservados e não entram na exclusão em lote.
+                  </p>
+                )}
                 <div className="flex justify-end gap-2 pt-2">
                   <Button
                     type="button"
@@ -489,7 +555,7 @@ export function AgendamentoDetailsDialog({
               agendamento.status === StatusAgendamento.CONFIRMADO) &&
               onCancelar && (
                 <Button
-                  onClick={handleCancelar}
+                  onClick={handleAbrirConfirmacaoCancelamento}
                   disabled={isLoading}
                   variant="destructive"
                 >

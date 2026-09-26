@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { FaseAtividade } from "@prisma/client";
 import { randomUUID } from "crypto";
+import { ordenarPontuacoes } from "@/lib/pontuacao";
 
 const FASES_VALIDAS: FaseAtividade[] = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
 
@@ -75,12 +76,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Instrução não encontrada" }, { status: 404 });
     }
 
-    // Ordenar: "+" sempre por último
-    const pontuacoesOrdenadas = [...pontuacoes].sort((a: { sigla: string }, b: { sigla: string }) => {
-      if (a.sigla === "+") return 1;
-      if (b.sigla === "+") return -1;
-      return 0;
-    });
+    // "-" primeiro e "+" último — regra única em src/lib/pontuacao.ts
+    const pontuacoesOrdenadas = ordenarPontuacoes(
+      pontuacoes as Array<{ sigla: string; grau: string }>
+    );
 
     // Delete + recreate para esta instrução/fase
     await prisma.$transaction([

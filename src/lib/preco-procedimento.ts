@@ -1,11 +1,13 @@
 // Helper para calcular o preço efetivo de um procedimento em um atendimento.
-// Regra ATUAL: o valor vem EXCLUSIVAMENTE da tabela do convênio (ConvenioTabela.valor_convenio).
-// O procedimento não tem mais valor próprio — o preço só existe quando o paciente tem convênio
-// E o procedimento está vinculado àquele convênio com um valor.
-//   1. Paciente tem convênio E há entrada em ConvenioTabela p/ o procedimento → valor_convenio
-//   2. Senão → null (sem valor)
+//   1. Valor particular informado no agendamento → vence (foi combinado caso a caso)
+//   2. Paciente com convênio E entrada em ConvenioTabela p/ o procedimento → valor_convenio
+//   3. Senão → null (sem valor)
+//
+// Particular não tem tabela de preços: cada atendimento pode ter um valor
+// diferente, então ele é digitado no momento do agendamento e gravado em
+// agendamento.valor_particular.
 
-export type OrigemPreco = "convenio" | null;
+export type OrigemPreco = "convenio" | "particular" | null;
 
 export interface PrecoCalculado {
   valor: number | null;
@@ -34,8 +36,17 @@ export function calcularPrecoProcedimento(params: {
   procedimento?: ProcedimentoBase | null;
   temConvenio: boolean;
   tabelaConvenio?: ConvenioTabelaBase[] | null;
+  /** Valor combinado no agendamento particular, quando houver */
+  valorParticular?: number | string | null;
 }): PrecoCalculado {
   const { procedimentoId, procedimento, temConvenio, tabelaConvenio } = params;
+
+  // Valor particular é uma decisão explícita de quem agendou: vale mesmo sem
+  // procedimento vinculado
+  const particular = toNumber(params.valorParticular);
+  if (particular !== null) {
+    return { valor: particular, origem: "particular", rotulo: "Valor particular" };
+  }
 
   if (!procedimentoId || !procedimento) {
     return { valor: null, origem: null, rotulo: "Sem procedimento" };

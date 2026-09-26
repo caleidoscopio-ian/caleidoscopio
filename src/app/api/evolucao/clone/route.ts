@@ -209,7 +209,7 @@ export async function PUT(request: NextRequest) {
           const pontuacaoData: Prisma.AtividadeClonePontuacaoCreateManyInput[] =
             pontuacoes.map(
               (
-                pont: { sigla: string; grau: string },
+                pont: { sigla: string; grau: string; passo_dicas?: string | null },
                 index: number
               ) => ({
                 id: randomUUID(),
@@ -217,6 +217,7 @@ export async function PUT(request: NextRequest) {
                 ordem: index + 1,
                 sigla: pont.sigla,
                 grau: pont.grau,
+                passo_dicas: pont.passo_dicas ?? null,
               })
             );
 

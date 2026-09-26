@@ -4,6 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
 import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
+
+const normalizarValorParticular = (v: unknown): number | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+};
 import { resolverProfissionalIdsDaFilial } from "@/lib/filial-profissionais";
 
 // GET - Listar agendamentos com filtros
@@ -247,6 +253,7 @@ export async function GET(request: NextRequest) {
         tabelaConvenio: entrada
           ? [{ procedimentoId: entrada.procedimentoId, valor_convenio: entrada.valor_convenio as unknown as number | null }]
           : null,
+        valorParticular: ag.valor_particular as unknown as number | null,
       });
       return { ...ag, precoCalculado: preco };
     });
@@ -323,6 +330,7 @@ export async function POST(request: NextRequest) {
       procedimento,
       status = StatusAgendamento.AGENDADO,
       observacoes,
+      valor_particular,
     } = body;
 
     // Validações
@@ -486,6 +494,7 @@ export async function POST(request: NextRequest) {
         procedimentoId: procedimento || null,
         status,
         observacoes,
+        valor_particular: normalizarValorParticular(valor_particular),
       },
       include: {
         paciente: {

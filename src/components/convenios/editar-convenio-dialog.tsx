@@ -62,7 +62,12 @@ export function EditarConvenioDialog({
     resolver: zodResolver(convenioSchema) as any,
   });
 
+  // Reidrata o formulário só quando o diálogo abre ou troca de registro.
+  // Depender do objeto faria o form.reset() disparar a cada refetch em segundo
+  // plano (as telas têm polling de 60s), apagando o que o usuário digitou.
+  const convenioId = convenio?.id ?? null;
   useEffect(() => {
+    if (!open) return;
     if (convenio) {
       form.reset({
         razao_social: convenio.razao_social,
@@ -86,7 +91,8 @@ export function EditarConvenioDialog({
         filialId: convenio.filialId ?? null,
       });
     }
-  }, [convenio, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, convenioId]);
 
   const onSubmit = async (data: ConvenioFormData) => {
     if (!user) return;

@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { SIGLA_ERRO, SIGLA_INDEPENDENTE } from "@/lib/pontuacao";
 
 // ============ Interfaces ============
 
@@ -798,8 +799,10 @@ function AplicarCurriculumPageContent() {
                             >
                               {pontuacoesFase.map(
                                 (pontuacao, idx) => {
-                                  const isUltimo = idx === pontuacoesFase.length - 1;
-                                  const isPrimeiro = idx === 0;
+                                  // Verde/vermelho pela sigla, para o destaque
+                                  // nunca contradizer o que o cálculo considera acerto
+                                  const isUltimo = pontuacao.sigla === SIGLA_INDEPENDENTE;
+                                  const isPrimeiro = pontuacao.sigla === SIGLA_ERRO;
                                   const isSelecionado = avalTentativa.nota === idx;
                                   return (
                                     <Button

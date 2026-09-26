@@ -13,15 +13,61 @@ import { resolverProfissionalIdsDaFilial } from "@/lib/filial-profissionais";
 function derivarEspecialidadeLegado(
   tipoVinculo: TipoVinculoProfissional | null | undefined,
   especialidadeClinica: EspecialidadeClinica | null | undefined,
-  funcaoAdministrativa: FuncaoAdministrativa | null | undefined
+  funcaoAdministrativa: FuncaoAdministrativa | null | undefined,
+  nomeCustomizado?: string | null
 ): string | null {
   if (tipoVinculo === "FUNCIONARIO_ADMINISTRATIVO") {
     return funcaoAdministrativa ? FUNCAO_ADMINISTRATIVA_LABELS[funcaoAdministrativa] : null;
   }
   if (tipoVinculo === "PROFISSIONAL_CLINICO") {
+    // "Outra" com especialidade cadastrada pela clínica exibe o nome digitado
+    if (especialidadeClinica === "OUTRA" && nomeCustomizado) return nomeCustomizado;
     return especialidadeClinica ? ESPECIALIDADE_CLINICA_LABELS[especialidadeClinica] : null;
   }
   return null;
+}
+
+// Resolve a especialidade customizada da clínica: reaproveita a existente
+// (casando sem diferenciar maiúsculas) ou cria uma nova. Só se aplica quando a
+// especialidade escolhida é OUTRA — nos demais casos o vínculo é limpo.
+async function resolverEspecialidadeCustomizada(
+  tenantId: string,
+  especialidadeClinica: EspecialidadeClinica | null | undefined,
+  especialidadeCustomizadaId: string | null | undefined,
+  especialidadeCustomizadaNome: string | null | undefined
+): Promise<{ id: string | null; nome: string | null }> {
+  if (especialidadeClinica !== "OUTRA") return { id: null, nome: null };
+
+  if (especialidadeCustomizadaId) {
+    const existente = await prisma.especialidadeCustomizada.findFirst({
+      where: { id: especialidadeCustomizadaId, tenantId },
+      select: { id: true, nome: true },
+    });
+    if (existente) return existente;
+  }
+
+  const nome = especialidadeCustomizadaNome?.trim();
+  if (!nome) return { id: null, nome: null };
+
+  const jaExiste = await prisma.especialidadeCustomizada.findFirst({
+    where: { tenantId, nome: { equals: nome, mode: "insensitive" } },
+    select: { id: true, nome: true, ativo: true },
+  });
+
+  if (jaExiste) {
+    if (!jaExiste.ativo) {
+      await prisma.especialidadeCustomizada.update({
+        where: { id: jaExiste.id },
+        data: { ativo: true },
+      });
+    }
+    return { id: jaExiste.id, nome: jaExiste.nome };
+  }
+
+  return prisma.especialidadeCustomizada.create({
+    data: { tenantId, nome },
+    select: { id: true, nome: true },
+  });
 }
 
 // Deriva o texto legado de "registro_profissional" a partir dos campos estruturados
@@ -117,6 +163,7 @@ export async function GET(request: NextRequest) {
         registro_profissional: true,
         tipo_vinculo: true,
         especialidade_clinica: true,
+        especialidadeCustomizada: { select: { id: true, nome: true } },
         funcao_administrativa: true,
         conselho: true,
         numero_registro: true,
@@ -166,6 +213,8 @@ export async function GET(request: NextRequest) {
         professionalRegistration: profissional.registro_profissional,
         tipoVinculo: profissional.tipo_vinculo,
         especialidadeClinica: profissional.especialidade_clinica,
+        especialidadeCustomizadaId: profissional.especialidadeCustomizada?.id ?? null,
+        especialidadeCustomizadaNome: profissional.especialidadeCustomizada?.nome ?? null,
         funcaoAdministrativa: profissional.funcao_administrativa,
         conselho: profissional.conselho,
         numeroRegistro: profissional.numero_registro,
@@ -263,6 +312,8 @@ export async function POST(request: NextRequest) {
       filialId,
       tipoVinculo,
       especialidadeClinica,
+      especialidadeCustomizadaId,
+      especialidadeCustomizadaNome,
       funcaoAdministrativa,
       conselho,
       numeroRegistro,
@@ -279,7 +330,18 @@ export async function POST(request: NextRequest) {
 
     // Tipo de vínculo: default resiliente para PROFISSIONAL_CLINICO se não enviado
     const tipoVinculoFinal = tipoVinculo || "PROFISSIONAL_CLINICO";
-    const especialidadeLegado = derivarEspecialidadeLegado(tipoVinculoFinal, especialidadeClinica, funcaoAdministrativa);
+    const customizada = await resolverEspecialidadeCustomizada(
+      user.tenant.id,
+      especialidadeClinica,
+      especialidadeCustomizadaId,
+      especialidadeCustomizadaNome
+    );
+    const especialidadeLegado = derivarEspecialidadeLegado(
+      tipoVinculoFinal,
+      especialidadeClinica,
+      funcaoAdministrativa,
+      customizada.nome
+    );
     const registroLegado = derivarRegistroLegado(conselho, numeroRegistro, ufRegistro);
 
     // Verificar se já existe profissional com este CPF na mesma clínica
@@ -332,6 +394,7 @@ export async function POST(request: NextRequest) {
         registro_profissional: registroLegado,
         tipo_vinculo: tipoVinculoFinal,
         especialidade_clinica: especialidadeClinica || null,
+        especialidadeCustomizadaId: customizada.id,
         funcao_administrativa: funcaoAdministrativa || null,
         conselho: conselho || null,
         numero_registro: numeroRegistro || null,
@@ -458,6 +521,8 @@ export async function PUT(request: NextRequest) {
       roomAccess,
       tipoVinculo,
       especialidadeClinica,
+      especialidadeCustomizadaId,
+      especialidadeCustomizadaNome,
       funcaoAdministrativa,
       conselho,
       numeroRegistro,
@@ -531,11 +596,31 @@ export async function PUT(request: NextRequest) {
     // Deriva os campos legados somente quando a classificação estrutural for enviada,
     // sem sobrescrever o que já existia caso o PUT seja parcial.
     const tipoVinculoParaDerivar = tipoVinculo !== undefined ? tipoVinculo : existingProfessional.tipo_vinculo;
+    const especialidadeParaDerivar = especialidadeClinica !== undefined
+      ? especialidadeClinica
+      : existingProfessional.especialidade_clinica;
+    // Só recalcula o vínculo com a especialidade customizada quando a
+    // especialidade foi enviada — PUT parcial não deve limpar o que já existe
+    const customizada = especialidadeClinica !== undefined
+      ? await resolverEspecialidadeCustomizada(
+          user.tenant.id,
+          especialidadeClinica,
+          especialidadeCustomizadaId,
+          especialidadeCustomizadaNome
+        )
+      : null;
+    const nomeCustomizadoAtual = customizada
+      ? customizada.nome
+      : (await prisma.especialidadeCustomizada.findFirst({
+          where: { id: existingProfessional.especialidadeCustomizadaId ?? "", tenantId: user.tenant.id },
+          select: { nome: true },
+        }))?.nome ?? null;
     const especialidadeLegado = (tipoVinculo !== undefined || especialidadeClinica !== undefined || funcaoAdministrativa !== undefined)
       ? derivarEspecialidadeLegado(
           tipoVinculoParaDerivar,
-          especialidadeClinica !== undefined ? especialidadeClinica : existingProfessional.especialidade_clinica,
-          funcaoAdministrativa !== undefined ? funcaoAdministrativa : existingProfessional.funcao_administrativa
+          especialidadeParaDerivar,
+          funcaoAdministrativa !== undefined ? funcaoAdministrativa : existingProfessional.funcao_administrativa,
+          nomeCustomizadoAtual
         )
       : undefined;
     const registroLegado = (conselho !== undefined || numeroRegistro !== undefined || ufRegistro !== undefined)
@@ -556,6 +641,7 @@ export async function PUT(request: NextRequest) {
         email: email,
         ...(tipoVinculo !== undefined ? { tipo_vinculo: tipoVinculo } : {}),
         ...(especialidadeClinica !== undefined ? { especialidade_clinica: especialidadeClinica || null } : {}),
+        ...(customizada ? { especialidadeCustomizadaId: customizada.id } : {}),
         ...(funcaoAdministrativa !== undefined ? { funcao_administrativa: funcaoAdministrativa || null } : {}),
         ...(conselho !== undefined ? { conselho: conselho || null } : {}),
         ...(numeroRegistro !== undefined ? { numero_registro: numeroRegistro || null } : {}),

@@ -37,10 +37,14 @@ import { useAuth } from '@/hooks/useAuth'
 import { formatCPF, formatPhone, UF_OPTIONS } from '@/lib/masks'
 import {
   TIPO_VINCULO_OPTIONS,
-  ESPECIALIDADE_CLINICA_OPTIONS,
   FUNCAO_ADMINISTRATIVA_OPTIONS,
   CONSELHO_OPTIONS,
 } from '@/lib/profissional-constants'
+import {
+  EspecialidadeClinicaField,
+  codificarEspecialidade,
+  decodificarEspecialidade,
+} from '@/components/forms/especialidade-clinica-field'
 
 // Schema de validação
 const terapeutaSchema = z.object({
@@ -49,6 +53,7 @@ const terapeutaSchema = z.object({
     message: 'Tipo de vínculo é obrigatório',
   }),
   especialidadeClinica: z.string().optional(),
+  especialidadeNova: z.string().optional(),
   funcaoAdministrativa: z.string().optional(),
   conselho: z.string().optional(),
   numeroRegistro: z.string().optional(),
@@ -63,6 +68,10 @@ const terapeutaSchema = z.object({
 }).refine(
   (data) => data.tipoVinculo !== 'PROFISSIONAL_CLINICO' || !!data.especialidadeClinica,
   { message: 'Especialidade é obrigatória', path: ['especialidadeClinica'] }
+).refine(
+  // "Outra" exige o nome da especialidade que será criada
+  (data) => data.especialidadeClinica !== 'OUTRA' || !!data.especialidadeNova?.trim(),
+  { message: 'Informe o nome da nova especialidade', path: ['especialidadeNova'] }
 ).refine(
   (data) => data.tipoVinculo !== 'FUNCIONARIO_ADMINISTRATIVO' || !!data.funcaoAdministrativa,
   { message: 'Função é obrigatória', path: ['funcaoAdministrativa'] }
@@ -80,6 +89,7 @@ interface Professional {
   professionalRegistration?: string
   tipoVinculo?: string | null
   especialidadeClinica?: string | null
+  especialidadeCustomizadaId?: string | null
   funcaoAdministrativa?: string | null
   conselho?: string | null
   numeroRegistro?: string | null
@@ -107,7 +117,11 @@ export function EditarTerapeutaForm({ professional, onSuccess }: EditarTerapeuta
       email: professional.email || '',
       telefone: professional.phone || '',
       tipoVinculo: (professional.tipoVinculo as 'PROFISSIONAL_CLINICO' | 'FUNCIONARIO_ADMINISTRATIVO') || 'PROFISSIONAL_CLINICO',
-      especialidadeClinica: professional.especialidadeClinica || '',
+      especialidadeClinica: codificarEspecialidade(
+        professional.especialidadeClinica,
+        professional.especialidadeCustomizadaId
+      ),
+      especialidadeNova: '',
       funcaoAdministrativa: professional.funcaoAdministrativa || '',
       conselho: professional.conselho || '',
       numeroRegistro: professional.numeroRegistro || '',
@@ -148,7 +162,9 @@ export function EditarTerapeutaForm({ professional, onSuccess }: EditarTerapeuta
         phone: data.telefone,
         email: data.email || undefined,
         tipoVinculo: data.tipoVinculo,
-        especialidadeClinica: data.tipoVinculo === 'PROFISSIONAL_CLINICO' ? data.especialidadeClinica : null,
+        ...(data.tipoVinculo === 'PROFISSIONAL_CLINICO'
+          ? decodificarEspecialidade(data.especialidadeClinica, data.especialidadeNova)
+          : { especialidadeClinica: null, especialidadeCustomizadaId: null, especialidadeCustomizadaNome: null }),
         funcaoAdministrativa: data.tipoVinculo === 'FUNCIONARIO_ADMINISTRATIVO' ? data.funcaoAdministrativa : null,
         conselho: data.tipoVinculo === 'PROFISSIONAL_CLINICO' ? (data.conselho || null) : null,
         numeroRegistro: data.tipoVinculo === 'PROFISSIONAL_CLINICO' ? (data.numeroRegistro || null) : null,
@@ -267,21 +283,20 @@ export function EditarTerapeutaForm({ professional, onSuccess }: EditarTerapeuta
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Especialidade *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione a especialidade" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {ESPECIALIDADE_CLINICA_OPTIONS.map((o) => (
-                              <SelectItem key={o.value} value={o.value}>
-                                {o.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <EspecialidadeClinicaField
+                            value={field.value ?? ''}
+                            onChange={field.onChange}
+                            nomeNova={form.watch('especialidadeNova') ?? ''}
+                            onNomeNovaChange={(nome) => form.setValue('especialidadeNova', nome, { shouldValidate: true })}
+                          />
+                        </FormControl>
                         <FormMessage />
+                        {form.formState.errors.especialidadeNova && (
+                          <p className="text-sm font-medium text-destructive">
+                            {form.formState.errors.especialidadeNova.message}
+                          </p>
+                        )}
                       </FormItem>
                     )}
                   />

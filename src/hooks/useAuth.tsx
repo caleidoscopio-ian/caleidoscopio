@@ -4,6 +4,13 @@ import { useState, useEffect, useCallback, createContext, useContext, ReactNode 
 import { useRouter } from 'next/navigation'
 import { managerClient } from '@/lib/manager-client'
 import { installFetchInterceptor } from '@/lib/fetch-interceptor'
+import {
+  registrarExpiracao,
+  limparExpiracao,
+  restanteMs,
+  proximoIntervaloMs,
+  precisaRenovarAoFocar,
+} from '@/lib/sessao-token'
 
 interface AuthUser {
   id: string
@@ -72,6 +79,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     localStorage.removeItem('edu_auth_user')
     localStorage.removeItem('edu_auth_token')
     localStorage.removeItem('edu_session_token')
+    limparExpiracao()
     setUser(null)
 
     if (reason === 'expired' && typeof window !== 'undefined') {
@@ -104,6 +112,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (!result?.token) return false
 
       localStorage.setItem('edu_auth_token', result.token)
+      // O Sistema 1 devolve expiresIn (2h hoje). Guardar a expiração real deixa
+      // o agendamento acompanhar automaticamente se essa validade mudar lá.
+      registrarExpiracao(result.expiresIn)
       setUser((prev) => {
         const base = prev ?? baseUser
         if (!base) return prev
@@ -152,19 +163,54 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Renovar o token periodicamente (a cada 5 minutos) enquanto a aba estiver
-  // aberta e o usuário ativo — mantém a sessão viva por até 7 dias (duração
-  // do token de sessão do Sistema 1) sem nunca expirar no meio do uso.
+  // Renovação do token SSO enquanto a sessão está aberta. Mantém o acesso vivo
+  // por até 7 dias (validade do token de sessão do Sistema 1) sem nunca expirar
+  // no meio do uso. Ver a política em src/lib/sessao-token.ts.
   useEffect(() => {
-    if (user) {
-      const interval = setInterval(async () => {
-        const renovado = await refreshToken()
-        if (!renovado) {
-          logout('expired')
-        }
-      }, 5 * 60 * 1000) // 5 minutos
+    if (!user) return
 
-      return () => clearInterval(interval)
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let cancelado = false
+
+    const limpar = () => {
+      if (timer) clearTimeout(timer)
+      timer = null
+    }
+
+    const renovarAgora = async (): Promise<boolean> => {
+      const renovado = await refreshToken()
+      if (!renovado) {
+        logout('expired')
+        return false
+      }
+      return true
+    }
+
+    const agendar = () => {
+      limpar()
+      if (cancelado) return
+      timer = setTimeout(async () => {
+        if (cancelado) return
+        if (await renovarAgora()) agendar()
+      }, proximoIntervaloMs(restanteMs()))
+    }
+
+    // Nenhum timer cobre o notebook que dormiu: o navegador estrangula (e chega
+    // a congelar) timers de aba em segundo plano. Ao reativar a aba, se o token
+    // está perto do fim, renova na hora — antes que o primeiro clique leve 401.
+    const aoMudarVisibilidade = async () => {
+      if (cancelado || document.visibilityState !== 'visible') return
+      if (!precisaRenovarAoFocar(restanteMs())) return
+      if (await renovarAgora()) agendar()
+    }
+
+    agendar()
+    document.addEventListener('visibilitychange', aoMudarVisibilidade)
+
+    return () => {
+      cancelado = true
+      limpar()
+      document.removeEventListener('visibilitychange', aoMudarVisibilidade)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])

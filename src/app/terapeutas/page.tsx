@@ -37,7 +37,6 @@ import {
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { agruparPorFilial } from "@/lib/agrupar-filial";
-import { ESPECIALIDADE_CLINICA_OPTIONS } from "@/lib/profissional-constants";
 
 interface Professional {
   id: string;
@@ -49,6 +48,7 @@ interface Professional {
   professionalRegistration?: string;
   tipoVinculo?: string | null;
   especialidadeClinica?: string | null;
+  especialidadeCustomizadaId?: string | null;
   funcaoAdministrativa?: string | null;
   conselho?: string | null;
   numeroRegistro?: string | null;
@@ -260,12 +260,18 @@ function TerapeutasPageContent() {
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   };
 
-  const especialidadeStats = ESPECIALIDADE_CLINICA_OPTIONS
-    .map((esp) => ({
-      name: esp.label,
-      count: professionals.filter((p) => p.specialty === esp.label).length,
-    }))
-    .filter((stat) => stat.count > 0);
+  // Agrupa pelas especialidades efetivamente usadas — assim as especialidades
+  // criadas pela clínica entram na contagem junto com as do enum
+  const especialidadeStats = Object.entries(
+    professionals
+      .filter((p) => p.tipoVinculo !== "FUNCIONARIO_ADMINISTRATIVO" && p.specialty)
+      .reduce<Record<string, number>>((acc, p) => {
+        acc[p.specialty as string] = (acc[p.specialty as string] ?? 0) + 1;
+        return acc;
+      }, {})
+  )
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
   return (
     <MainLayout breadcrumbs={breadcrumbs}>

@@ -290,7 +290,7 @@ export default function ConvenioDetalhePage() {
                   <Badge variant="secondary" className="ml-2 text-xs">{tabela.length}</Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="tiss">TISS/SADT</TabsTrigger>
+              <TabsTrigger value="tiss">Regras de Guia (TISS)</TabsTrigger>
               <TabsTrigger value="anexos">
                 Anexos
                 {anexos.length > 0 && (
@@ -512,7 +512,7 @@ export default function ConvenioDetalhePage() {
               )}
             </TabsContent>
 
-            {/* ==================== TISS/SADT ==================== */}
+            {/* ==================== REGRAS DE GUIA (TISS) ==================== */}
             <TabsContent value="tiss" className="mt-4">
               <ConvenioTissForm convenio={convenio} onSuccess={fetchConvenio} />
             </TabsContent>

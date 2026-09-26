@@ -47,13 +47,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
-
-interface Pontuacao {
-  id?: string;
-  ordem: number;
-  sigla: string;
-  grau: string;
-}
+import { reposicionar, type Pontuacao } from "@/components/atividades/pontuacao-utils";
+import { isSiglaFixa, SIGLA_ERRO, SIGLA_INDEPENDENTE } from "@/lib/pontuacao";
 
 interface AbaPontuacaoProps {
   atividadeId: string | null;
@@ -76,6 +71,7 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
     ordem: 1,
     sigla: "",
     grau: "",
+    passo_dicas: "",
   });
 
   const fetchPontuacoes = async () => {
@@ -114,6 +110,7 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
       ordem: pontuacoes.length + 1,
       sigla: "",
       grau: "",
+      passo_dicas: "",
     });
     setDialogOpen(true);
   };
@@ -125,6 +122,7 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
       ordem: pontuacao.ordem,
       sigla: pontuacao.sigla,
       grau: pontuacao.grau,
+      passo_dicas: pontuacao.passo_dicas ?? "",
     });
     setDialogOpen(true);
   };
@@ -135,28 +133,15 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
       return;
     }
 
-    if (editingIndex !== null) {
-      // Editar existente
-      const novasPontuacoes = [...pontuacoes];
-      novasPontuacoes[editingIndex] = {
-        ...novasPontuacoes[editingIndex],
-        ordem: formData.ordem,
-        sigla: formData.sigla,
-        grau: formData.grau,
-      };
-      setPontuacoes(novasPontuacoes);
-    } else {
-      // Adicionar nova
-      setPontuacoes([
-        ...pontuacoes,
-        {
-          ordem: formData.ordem,
-          sigla: formData.sigla,
-          grau: formData.grau,
-        },
-      ]);
-    }
+    const item: Pontuacao = {
+      ...(editingIndex !== null ? pontuacoes[editingIndex] : {}),
+      ordem: formData.ordem,
+      sigla: formData.sigla,
+      grau: formData.grau,
+      passo_dicas: formData.passo_dicas.trim() || null,
+    };
 
+    setPontuacoes(reposicionar(pontuacoes, item, formData.ordem, editingIndex));
     setDialogOpen(false);
   };
 
@@ -256,6 +241,7 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
                     <TableHead className="w-20">Ordem</TableHead>
                     <TableHead>Sigla</TableHead>
                     <TableHead>Grau</TableHead>
+                    <TableHead>Passo de Dicas</TableHead>
                     <TableHead className="w-24 text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -267,6 +253,9 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
                         {pontuacao.sigla}
                       </TableCell>
                       <TableCell>{pontuacao.grau}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {pontuacao.passo_dicas || "—"}
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -332,6 +321,7 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
                 type="number"
                 min="1"
                 value={formData.ordem}
+                disabled={isSiglaFixa(formData.sigla)}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -339,6 +329,11 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
                   })
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                {isSiglaFixa(formData.sigla)
+                  ? `A sigla "${formData.sigla}" tem posição fixa na escala: "${SIGLA_ERRO}" é sempre o primeiro e "${SIGLA_INDEPENDENTE}" sempre o último, porque o cálculo de acerto e a evolução de fase dependem disso.`
+                  : "Alterar a ordem move a linha para essa posição e renumera as demais."}
+              </p>
             </div>
 
             <div className="grid gap-2">
@@ -385,6 +380,18 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="passo_dicas">Passo de Dicas</Label>
+              <Input
+                id="passo_dicas"
+                placeholder="Opcional"
+                value={formData.passo_dicas}
+                onChange={(e) =>
+                  setFormData({ ...formData, passo_dicas: e.target.value })
+                }
+              />
             </div>
           </div>
           <DialogFooter>

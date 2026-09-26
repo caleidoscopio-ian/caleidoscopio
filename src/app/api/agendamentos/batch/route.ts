@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       procedimento,
       status = StatusAgendamento.AGENDADO,
       observacoes,
+      valor_particular,
     } = body;
 
     // Validações
@@ -148,6 +149,14 @@ export async function POST(request: NextRequest) {
     // "este e os futuros" ou "toda a série" depois — só faz sentido com 2+ datas
     const serieId = datas.length > 1 ? randomUUID() : null;
 
+    // Mesmo valor particular para todas as ocorrências da recorrência
+    const valorParticularNormalizado =
+      valor_particular === null || valor_particular === undefined || valor_particular === ""
+        ? null
+        : Number.isFinite(Number(valor_particular)) && Number(valor_particular) >= 0
+          ? Number(valor_particular)
+          : null;
+
     for (const dataStr of datas) {
       try {
         // Instante recebido do cliente, usado como está
@@ -239,6 +248,7 @@ export async function POST(request: NextRequest) {
             procedimentoId: procedimento || null,
             status,
             observacoes,
+            valor_particular: valorParticularNormalizado,
             serieId,
           },
           include: {

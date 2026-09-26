@@ -2,6 +2,8 @@
 // Cliente para comunicação com o Sistema 1 (Caleidoscópio Manager)
 // Seguindo protocolo REAL conforme análise do Sistema 1
 
+import { registrarExpiracao } from "@/lib/sessao-token";
+
 // URL base do Sistema 1 (Manager)
 const MANAGER_API_URL =
   process.env.NEXT_PUBLIC_MANAGER_API_URL || "http://localhost:3000";
@@ -239,6 +241,10 @@ class ManagerClient {
     if (!ssoResult?.token) {
       throw new Error("Erro ao gerar token de acesso");
     }
+
+    // Registra a expiração já no login — sem isso, o primeiro agendamento de
+    // renovação usaria o intervalo padrão em vez da validade real do token
+    registrarExpiracao(ssoResult.expiresIn);
 
     // Retornar dados no formato esperado pelo Sistema 2
     return {

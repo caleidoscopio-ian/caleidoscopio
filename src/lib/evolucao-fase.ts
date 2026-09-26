@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { FaseAtividade } from '@prisma/client'
 import { randomUUID } from 'crypto'
+import { isTentativaCorreta } from '@/lib/pontuacao'
 
 interface AvaliacaoData {
   id: string
@@ -35,14 +36,8 @@ export interface EvolucaoResultado {
   instrucoes: InstrucaoEvolucaoResultado[]
 }
 
-/**
- * Determina se uma tentativa é "correta" (acerto/independente).
- * O último botão da escala ("+"/Independente) é sempre o correto.
- */
-function isTentativaCorreta(nota: number, qtdPontuacoes: number): boolean {
-  if (qtdPontuacoes <= 0) return false
-  return nota === qtdPontuacoes - 1
-}
+// A regra de acerto vive em src/lib/pontuacao.ts: o botão correto é o "+"
+// (independente), identificado pela sigla e não pela posição na escala.
 
 /**
  * Calcula progresso de uma atividade como % de instruções que atingiram
@@ -95,11 +90,9 @@ export async function calcularEvolucaoAposFinalizacao(
       const pontuacoesFase = instrucao.pontuacoes.filter(
         (p) => p.fase === instrucao.faseAtual
       )
-      const qtdPontuacoes = pontuacoesFase.length
-
       const totalTentativas = avaliacoesInstrucao.length
       const tentativasCorretas = avaliacoesInstrucao.filter(
-        (a) => isTentativaCorreta(a.nota, qtdPontuacoes)
+        (a) => isTentativaCorreta(a.nota, pontuacoesFase)
       ).length
       const porcentagemAcerto =
         totalTentativas > 0
@@ -146,7 +139,7 @@ export async function calcularEvolucaoAposFinalizacao(
             clone.id,
             sessaoCurriculumId,
             criterioFaseAtual.porcentagem_acerto,
-            qtdPontuacoes,
+            pontuacoesFase,
             criterioFaseAtual.qtd_sessoes_consecutivas - 1
           )
           atingiuCriterioGeral = sessoesConsec.todasAtingiram
@@ -249,7 +242,7 @@ async function buscarSessoesConsecutivasPorInstrucao(
   atividadeCloneId: string,
   sessaoAtualId: string,
   porcentagemCriterio: number,
-  qtdPontuacoes: number,
+  pontuacoesFase: Array<{ sigla: string }>,
   quantidadeNecessaria: number
 ): Promise<{ todasAtingiram: boolean }> {
   const sessoesComAvaliacoes = await prisma.sessaoCurriculum.findMany({
@@ -276,7 +269,7 @@ async function buscarSessoesConsecutivasPorInstrucao(
   for (const sessao of sessoesComAvaliacoes) {
     const total = sessao.avaliacoes.length
     const corretas = sessao.avaliacoes.filter(
-      (a) => isTentativaCorreta(a.nota, qtdPontuacoes)
+      (a) => isTentativaCorreta(a.nota, pontuacoesFase)
     ).length
     const porcentagem = total > 0 ? Math.round((corretas / total) * 100) : 0
 

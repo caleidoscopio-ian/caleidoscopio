@@ -3,6 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
+import { ordenarPontuacoes } from "@/lib/pontuacao";
+
+// Respeita a ordem enviada pelo cliente, mas garante "-" no início e "+" no fim.
+// A nota de uma tentativa é o índice do botão, então o "+" fora da última
+// posição corromperia o cálculo de acerto e a evolução de fase.
+function normalizarPontuacoes(lista: { ordem?: number; sigla: string }[]) {
+  const porOrdem = [...lista].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+  return ordenarPontuacoes(porOrdem);
+}
 
 // API para listar atividades da clínica
 export async function GET(request: NextRequest) {
@@ -234,12 +243,13 @@ export async function POST(request: NextRequest) {
       // Criar pontuações (se houver)
       if (pontuacoes && Array.isArray(pontuacoes) && pontuacoes.length > 0) {
         await tx.atividadePontuacao.createMany({
-          data: pontuacoes.map((pont: any) => ({
+          data: normalizarPontuacoes(pontuacoes).map((pont: any, index: number) => ({
             id: randomUUID(),
             atividadeId: atividade.id,
-            ordem: pont.ordem,
+            ordem: index + 1,
             sigla: pont.sigla,
             grau: pont.grau,
+            passo_dicas: pont.passo_dicas ?? null,
             createdAt: new Date(),
             updatedAt: new Date(),
           })),
@@ -425,12 +435,13 @@ export async function PUT(request: NextRequest) {
         // Criar novas pontuações
         if (pontuacoes.length > 0) {
           await tx.atividadePontuacao.createMany({
-            data: pontuacoes.map((pont: any) => ({
+            data: normalizarPontuacoes(pontuacoes).map((pont: any, index: number) => ({
               id: randomUUID(),
               atividadeId: atividade.id,
-              ordem: pont.ordem,
+              ordem: index + 1,
               sigla: pont.sigla,
               grau: pont.grau,
+              passo_dicas: pont.passo_dicas ?? null,
               createdAt: new Date(),
               updatedAt: new Date(),
             })),

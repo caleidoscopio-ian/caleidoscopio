@@ -75,7 +75,9 @@ export function ConvenioTabelaForm({
     defaultValues: { valor_convenio: 0 },
   });
 
-  // Pré-preencher ao editar
+  // Pré-preencher ao editar. Depende só de open/itemId: depender do objeto faria
+  // o form.reset() disparar a cada refetch em segundo plano, apagando a digitação.
+  const itemId = item?.id ?? null;
   useEffect(() => {
     if (!open) return;
     if (item) {
@@ -104,7 +106,8 @@ export function ConvenioTabelaForm({
       setSelectedProc(null);
       form.reset({ valor_convenio: 0 });
     }
-  }, [item, open, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, itemId]);
 
   // Carregar lista de procedimentos da clínica
   useEffect(() => {
@@ -282,7 +285,7 @@ export function ConvenioTabelaForm({
                   name="codigo_procedimento"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Código *</FormLabel>
+                      <FormLabel>Código (TUSS) *</FormLabel>
                       <FormControl>
                         <Input placeholder="Ex: 50000470" {...field} disabled={isEditing} />
                       </FormControl>
@@ -295,10 +298,13 @@ export function ConvenioTabelaForm({
                   name="codigo_tiss"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Código TISS</FormLabel>
+                      <FormLabel>Código específico do convênio</FormLabel>
                       <FormControl>
-                        <Input placeholder="Código TISS" {...field} />
+                        <Input placeholder="Só se a operadora usar código próprio" {...field} />
                       </FormControl>
+                      <p className="text-xs text-muted-foreground">
+                        Preencha apenas quando a operadora usar um código diferente do TUSS.
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -322,17 +328,20 @@ export function ConvenioTabelaForm({
               />
             )}
 
-            {/* Código TISS (modo clínica) */}
+            {/* Código próprio da operadora (modo clínica) */}
             {modo === "clinica" && (
               <FormField
                 control={form.control}
                 name="codigo_tiss"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Código TISS (opcional)</FormLabel>
+                    <FormLabel>Código específico do convênio (opcional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Código TISS específico" {...field} />
+                      <Input placeholder="Só se a operadora usar código próprio" {...field} />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Sobrescreve o código TUSS do procedimento apenas neste convênio.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}

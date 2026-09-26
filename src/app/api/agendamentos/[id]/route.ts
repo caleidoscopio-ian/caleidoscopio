@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
+import { Prisma } from "@prisma/client";
+import {
+  isEscopoSerie,
+  filtroDataDoEscopo,
+  temHistoricoProtegido,
+} from "@/lib/serie-agendamento";
 
 // GET - Buscar agendamento específico
 export async function GET(
@@ -78,6 +84,8 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
+    // Escopo da edição na série: single (padrão) | past | future | all
+    const modo = new URL(request.url).searchParams.get("mode") || "single";
 
     // Autenticar usuário
     const user = await getAuthenticatedUser(request);
@@ -218,6 +226,13 @@ export async function PUT(
     if (body.status) updateData.status = body.status;
     if (body.observacoes !== undefined)
       updateData.observacoes = body.observacoes;
+    if (body.valor_particular !== undefined) {
+      const v = body.valor_particular;
+      updateData.valor_particular =
+        v === null || v === "" || !Number.isFinite(Number(v)) || Number(v) < 0
+          ? null
+          : Number(v);
+    }
 
     // Atualizar agendamento
     const agendamento = await prisma.agendamento.update({
@@ -259,7 +274,77 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(agendamento);
+    // Propagação para a série. A data de cada ocorrência é própria dela, então
+    // não é copiada: o que se propaga é a HORA do dia (deslocando cada
+    // agendamento no seu próprio dia) e os demais campos enviados.
+    let propagados = 0;
+    let preservados = 0;
+
+    if (isEscopoSerie(modo) && modo !== "single" && agendamentoExistente.serieId) {
+      const daSerie = await prisma.agendamento.findMany({
+        where: {
+          serieId: agendamentoExistente.serieId,
+          id: { not: id },
+          paciente: { tenantId: user.tenant.id }, // 🔒 isolamento de tenant
+          ...filtroDataDoEscopo(modo, agendamentoExistente.data_hora),
+        },
+        select: {
+          id: true,
+          data_hora: true,
+          horario_fim: true,
+          status: true,
+          hora_chegada: true,
+          senha_autorizacao: true,
+          numero_guia: true,
+          _count: { select: { glosas: true } },
+        },
+      });
+
+      // Campos que valem para toda a série (a data, não)
+      const camposComuns: Prisma.agendamentoUncheckedUpdateInput = {};
+      if (body.pacienteId) camposComuns.pacienteId = body.pacienteId;
+      if (body.profissionalId) camposComuns.profissionalId = body.profissionalId;
+      if (body.sala !== undefined) {
+        camposComuns.salaId = body.sala;
+        camposComuns.sala = body.sala;
+      }
+      if (body.procedimento !== undefined) camposComuns.procedimentoId = body.procedimento;
+      if (body.status) camposComuns.status = body.status;
+      if (body.observacoes !== undefined) camposComuns.observacoes = body.observacoes;
+      if (body.valor_particular !== undefined)
+        camposComuns.valor_particular = updateData.valor_particular;
+
+      // Nova hora do dia, aplicada a cada ocorrência na data dela
+      const novoInicio = body.data_hora ? new Date(body.data_hora) : null;
+      const novoFim = body.horario_fim ? new Date(body.horario_fim) : null;
+      const duracaoMin =
+        novoInicio && novoFim
+          ? Math.round((novoFim.getTime() - novoInicio.getTime()) / 60000)
+          : null;
+
+      for (const ocorrencia of daSerie) {
+        // Não reescreve atendimento já realizado, com check-in ou faturado
+        if (temHistoricoProtegido(ocorrencia)) {
+          preservados++;
+          continue;
+        }
+
+        const dados: Prisma.agendamentoUncheckedUpdateInput = { ...camposComuns };
+
+        if (novoInicio && duracaoMin !== null) {
+          const inicio = new Date(ocorrencia.data_hora);
+          inicio.setHours(novoInicio.getHours(), novoInicio.getMinutes(), 0, 0);
+          dados.data_hora = inicio;
+          dados.horario_fim = new Date(inicio.getTime() + duracaoMin * 60000);
+          dados.duracao_minutos = duracaoMin;
+        }
+
+        await prisma.agendamento.update({ where: { id: ocorrencia.id }, data: dados });
+        propagados++;
+      }
+    }
+
+    return NextResponse.json({ ...agendamento, propagados, preservados });
   } catch (error) {
     console.error("Erro ao atualizar agendamento:", error);
     return NextResponse.json(
@@ -277,7 +362,7 @@ export async function DELETE(
   try {
     const { id } = await params
     const { searchParams } = new URL(request.url);
-    const mode = searchParams.get("mode") || "single"; // single | future | all
+    const mode = searchParams.get("mode") || "single"; // single | past | future | all
 
     // Autenticar usuário
     const user = await getAuthenticatedUser(request);
@@ -315,18 +400,40 @@ export async function DELETE(
       );
     }
 
-    // "future"/"all" só fazem sentido pra agendamentos que fazem parte de uma
-    // série (serieId) — sem isso, cai pro comportamento padrão (só este)
-    if ((mode === "future" || mode === "all") && agendamento.serieId) {
-      const result = await prisma.agendamento.deleteMany({
+    // Escopos de série só fazem sentido pra agendamentos com serieId —
+    // sem isso, cai pro comportamento padrão (só este)
+    if (isEscopoSerie(mode) && mode !== "single" && agendamento.serieId) {
+      const daSerie = await prisma.agendamento.findMany({
         where: {
           serieId: agendamento.serieId,
           paciente: { tenantId: user.tenant.id }, // 🔒 CRÍTICO: isolamento de tenant
-          ...(mode === "future" ? { data_hora: { gte: agendamento.data_hora } } : {}),
+          ...filtroDataDoEscopo(mode, agendamento.data_hora),
+        },
+        select: {
+          id: true,
+          status: true,
+          hora_chegada: true,
+          senha_autorizacao: true,
+          numero_guia: true,
+          _count: { select: { glosas: true } },
         },
       });
 
-      return NextResponse.json({ success: true, count: result.count });
+      // Atendimento já realizado, com check-in ou com faturamento fica de fora:
+      // Glosa tem onDelete Cascade, então apagar em lote levaria junto o
+      // histórico financeiro
+      const protegidos = daSerie.filter(temHistoricoProtegido);
+      const removiveis = daSerie.filter((a) => !temHistoricoProtegido(a));
+
+      const result = await prisma.agendamento.deleteMany({
+        where: { id: { in: removiveis.map((a) => a.id) } },
+      });
+
+      return NextResponse.json({
+        success: true,
+        count: result.count,
+        preservados: protegidos.length,
+      });
     }
 
     // Deletar apenas este agendamento

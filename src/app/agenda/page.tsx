@@ -41,6 +41,11 @@ import { AgendaMensal } from "@/components/agenda/agenda-mensal";
 import { GradeHorarios } from "@/components/agenda/grade-horarios";
 import { GradeBloco } from "@/components/agenda/grade-horarios-utils";
 import { AgendamentoDetailsDialog } from "@/components/agenda/agendamento-details-dialog";
+import {
+  descreverResultadoSerie,
+  opcoesEscopo,
+  type EscopoSerie,
+} from "@/lib/serie-agendamento";
 import { NovoAgendamentoForm } from "@/components/forms/novo-agendamento-form";
 import { Agendamento, StatusAgendamento } from "@/types/agendamento";
 import { useAuth } from "@/hooks/useAuth";
@@ -116,6 +121,8 @@ function AgendaPageContent() {
   // Dialogs
   const [showNovoAgendamento, setShowNovoAgendamento] = useState(false);
   const [showEditarAgendamento, setShowEditarAgendamento] = useState(false);
+  // Escopo da edição quando o agendamento faz parte de uma recorrência
+  const [escopoEdicao, setEscopoEdicao] = useState<EscopoSerie>("single");
   const [selectedAgendamento, setSelectedAgendamento] =
     useState<Agendamento | null>(null);
   const [showDetalhes, setShowDetalhes] = useState(false);
@@ -500,6 +507,7 @@ function AgendaPageContent() {
             procedimento: data.procedimento,
             status: data.status,
             observacoes: data.observacoes,
+            valor_particular: data.valor_particular ?? null,
           }),
         });
 
@@ -549,6 +557,7 @@ function AgendaPageContent() {
             procedimento: data.procedimento,
             status: data.status,
             observacoes: data.observacoes,
+            valor_particular: data.valor_particular ?? null,
           }),
         });
 
@@ -613,7 +622,10 @@ function AgendaPageContent() {
     }
   };
 
-  const handleCancelarAgendamento = async (id: string) => {
+  const handleCancelarAgendamento = async (
+    id: string,
+    escopo: EscopoSerie = "single"
+  ) => {
     try {
       // Verificar autenticação
       if (!user) {
@@ -623,7 +635,7 @@ function AgendaPageContent() {
       // Preparar headers com dados do usuário
       const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch(`/api/agendamentos/${id}`, {
+      const response = await fetch(`/api/agendamentos/${id}?mode=${escopo}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -635,9 +647,16 @@ function AgendaPageContent() {
 
       if (!response.ok) throw new Error("Erro ao cancelar agendamento");
 
+      const resultado = await response.json();
+      const total = 1 + (resultado.propagados ?? 0);
+
       toast({
         title: "Sucesso",
-        description: "Agendamento cancelado",
+        description: descreverResultadoSerie(
+          total,
+          resultado.preservados ?? 0,
+          "cancelado"
+        ),
       });
 
       loadAgendamentos();
@@ -651,7 +670,10 @@ function AgendaPageContent() {
     }
   };
 
-  const handleDeletarAgendamento = async (id: string, mode: "single" | "future" | "all" = "single") => {
+  const handleDeletarAgendamento = async (
+    id: string,
+    mode: EscopoSerie = "single"
+  ) => {
     try {
       // Verificar autenticação
       if (!user) {
@@ -676,10 +698,11 @@ function AgendaPageContent() {
 
       toast({
         title: "Sucesso",
-        description:
-          result.count > 1
-            ? `${result.count} agendamentos excluídos`
-            : "Agendamento excluído",
+        description: descreverResultadoSerie(
+          result.count ?? 1,
+          result.preservados ?? 0,
+          "excluído"
+        ),
       });
 
       loadAgendamentos();
@@ -774,8 +797,13 @@ function AgendaPageContent() {
       procedimento: agendamento.procedimentoId || undefined,
       status: agendamento.status,
       observacoes: agendamento.observacoes || "",
+      valor_particular:
+        agendamento.valor_particular != null
+          ? Number(agendamento.valor_particular)
+          : undefined,
     });
     setSelectedAgendamento(agendamento);
+    setEscopoEdicao("single");
     setShowEditarAgendamento(true);
   };
 
@@ -798,7 +826,7 @@ function AgendaPageContent() {
       const dataHoraFim = new Date(data.data);
       dataHoraFim.setHours(hourFim, minuteFim, 0, 0);
 
-      const response = await fetch(`/api/agendamentos/${data.id}`, {
+      const response = await fetch(`/api/agendamentos/${data.id}?mode=${escopoEdicao}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -814,6 +842,7 @@ function AgendaPageContent() {
           procedimento: data.procedimento,
           status: data.status,
           observacoes: data.observacoes,
+          valor_particular: data.valor_particular ?? null,
         }),
       });
 
@@ -822,9 +851,16 @@ function AgendaPageContent() {
         throw new Error(error.error || "Erro ao atualizar agendamento");
       }
 
+      const resultado = await response.json();
+      const total = 1 + (resultado.propagados ?? 0);
+
       toast({
         title: "Sucesso",
-        description: "Agendamento atualizado com sucesso",
+        description: descreverResultadoSerie(
+          total,
+          resultado.preservados ?? 0,
+          "atualizado"
+        ),
       });
 
       setShowEditarAgendamento(false);
@@ -1246,6 +1282,43 @@ function AgendaPageContent() {
           <DialogHeader>
             <DialogTitle>Editar Agendamento</DialogTitle>
           </DialogHeader>
+
+          {/* Recorrência: escolher o alcance da edição antes de salvar */}
+          {selectedAgendamento?.serieId && (
+            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+              <p className="text-sm font-medium">
+                Este agendamento faz parte de uma recorrência. Aplicar as alterações a:
+              </p>
+              <div className="space-y-1.5">
+                {opcoesEscopo("editar").map((opcao) => (
+                  <label
+                    key={opcao.value}
+                    className="flex items-start gap-2 text-sm cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="escopo-edicao"
+                      className="mt-1"
+                      checked={escopoEdicao === opcao.value}
+                      onChange={() => setEscopoEdicao(opcao.value)}
+                    />
+                    <span>
+                      <span className="font-medium">{opcao.label}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {opcao.description}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A data de cada ocorrência é preservada — o que se propaga é o horário
+                e os demais campos. Atendimentos já realizados, com check-in ou com
+                faturamento não são alterados.
+              </p>
+            </div>
+          )}
+
           <NovoAgendamentoForm
             pacientes={pacientes}
             profissionais={profissionais}

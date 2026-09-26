@@ -117,7 +117,12 @@ export function RegraRepasseForm({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
+  // Reidrata o formulário só quando o diálogo abre ou troca de registro.
+  // Depender do objeto faria o form.reset() disparar a cada refetch em segundo
+  // plano (as telas têm polling de 60s), apagando o que o usuário digitou.
+  const regraId = regra?.id ?? null;
   useEffect(() => {
+    if (!open) return;
     if (regra) {
       form.reset({
         tipo: regra.tipo,
@@ -141,7 +146,8 @@ export function RegraRepasseForm({
         prioridade: 0,
       });
     }
-  }, [regra, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, regraId]);
 
   const onSubmit = async (data: RegraRepasseFormData) => {
     if (!user) return;

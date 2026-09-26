@@ -22,6 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  PROTOCOLO_OPTIONS,
+  habilidadesDoProtocolo,
+  habilidadeValida,
+} from "@/lib/protocolo-habilidades";
 
 interface AbaGeralProps {
   atividadeId: string | null;
@@ -44,6 +49,13 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
     procedimento_correcao: "",
     materiais_utilizados: "",
   });
+
+  const habilidadesDisponiveis = habilidadesDoProtocolo(formData.protocolo);
+  // Combinação gravada antes do catálogo atual (ex.: AFLS + "Imitação Motora")
+  const habilidadeLegada =
+    formData.habilidade && !habilidadesDisponiveis.includes(formData.habilidade)
+      ? formData.habilidade
+      : null;
 
   useEffect(() => {
     if (atividadeId) {
@@ -150,26 +162,25 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
             <Select
               value={formData.protocolo}
               onValueChange={(value) =>
-                setFormData({ ...formData, protocolo: value })
+                setFormData((prev) => ({
+                  ...prev,
+                  protocolo: value,
+                  // Trocar de protocolo invalida a habilidade que não pertence a ele
+                  habilidade: habilidadeValida(value, prev.habilidade)
+                    ? prev.habilidade
+                    : "",
+                }))
               }
             >
               <SelectTrigger id="protocolo">
                 <SelectValue placeholder="Selecione o protocolo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="VB-MAPP">VB-MAPP</SelectItem>
-                <SelectItem value="AFLS">AFLS</SelectItem>
-                <SelectItem value="Socially Savvy">Socially Savvy</SelectItem>
-                <SelectItem value="Barreiras comportamentais">
-                  Barreiras comportamentais
-                </SelectItem>
-                <SelectItem value="Portage">Portage</SelectItem>
-                <SelectItem value="Denver">Denver</SelectItem>
-                <SelectItem value="Escala de Desenvolvimento Motor">
-                  Escala de Desenvolvimento Motor
-                </SelectItem>
-                <SelectItem value="Vineland-3">Vineland-3</SelectItem>
-                <SelectItem value="Outros">Outros</SelectItem>
+                {PROTOCOLO_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -195,60 +206,38 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
               onValueChange={(value) =>
                 setFormData({ ...formData, habilidade: value })
               }
+              disabled={!formData.protocolo}
             >
               <SelectTrigger id="habilidade">
-                <SelectValue placeholder="Selecione a habilidade" />
+                <SelectValue
+                  placeholder={
+                    formData.protocolo
+                      ? "Selecione a habilidade"
+                      : "Selecione o protocolo primeiro"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Competências Sociais">
-                  Competências Sociais
-                </SelectItem>
-                <SelectItem value="Comportamentos de Atenção Conjunta">
-                  Comportamentos de Atenção Conjunta
-                </SelectItem>
-                <SelectItem value="Competências Sociais com Pares">
-                  Competências Sociais com Pares
-                </SelectItem>
-                <SelectItem value="Cognição">Cognição</SelectItem>
-                <SelectItem value="Jogo">Jogo</SelectItem>
-                <SelectItem value="Jogo de Representação">
-                  Jogo de Representação
-                </SelectItem>
-                <SelectItem value="Motricidade Fina">
-                  Motricidade Fina
-                </SelectItem>
-                <SelectItem value="Motricidade Grossa">
-                  Motricidade Grossa
-                </SelectItem>
-                <SelectItem value="Comportamento">Comportamento</SelectItem>
-                <SelectItem value="Comunicação Receptiva">
-                  Comunicação Receptiva
-                </SelectItem>
-                <SelectItem value="Comunicação Expressiva">
-                  Comunicação Expressiva
-                </SelectItem>
-                <SelectItem value="Independência Pessoal">
-                  Independência Pessoal
-                </SelectItem>
-                <SelectItem value="Independência Pessoal:Alimentação">
-                  Independência Pessoal:Alimentação
-                </SelectItem>
-                <SelectItem value="Independência Pessoal:Vestir">
-                  Independência Pessoal:Vestir
-                </SelectItem>
-                <SelectItem value="Independência Pessoal:Higiene">
-                  Independência Pessoal:Higiene
-                </SelectItem>
-                <SelectItem value="Independência Pessoal:Tarefas">
-                  Independência Pessoal:Tarefas
-                </SelectItem>
-                <SelectItem value="Independência Pessoal:Adultos">
-                  Independência Pessoal:Adultos
-                </SelectItem>
-                <SelectItem value="Imitação Motora">Imitação Motora</SelectItem>
-                <SelectItem value="Outros">Outros</SelectItem>
+                {habilidadesDisponiveis.map((h) => (
+                  <SelectItem key={h} value={h}>
+                    {h}
+                  </SelectItem>
+                ))}
+                {/* Habilidade gravada antes deste catálogo: continua selecionável
+                    para não ser apagada em silêncio ao editar a atividade */}
+                {habilidadeLegada && (
+                  <SelectItem value={habilidadeLegada}>
+                    {habilidadeLegada} (fora do protocolo)
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
+            {habilidadeLegada && (
+              <p className="text-xs text-amber-600">
+                Esta habilidade não pertence ao protocolo {formData.protocolo}.
+                Ela foi mantida como estava; escolha outra para atualizar.
+              </p>
+            )}
           </div>
 
           <div className="grid gap-2">

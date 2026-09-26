@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -180,8 +180,15 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
     },
   });
 
+  // Preenche o formulário uma única vez por anamnese carregada. Sem esse guarda,
+  // qualquer recarregamento da lista de pacientes em segundo plano dispararia o
+  // form.reset() e apagaria o que o usuário já tinha digitado.
+  const hidratadoRef = useRef<string | null>(null);
   useEffect(() => {
     if (initialData && pacientes.length > 0) {
+      const chave = anamneseId ?? "novo";
+      if (hidratadoRef.current === chave) return;
+      hidratadoRef.current = chave;
       if (initialData.paciente && !pacientes.find((p) => p.id === initialData.paciente.id)) {
         setPacientes((prev) => [...prev, { id: initialData.paciente.id, name: initialData.paciente.nome }]);
       }

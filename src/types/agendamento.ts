@@ -50,6 +50,8 @@ export interface Agendamento {
   senha_autorizacao?: string | null
   numero_guia?: string | null
   serieId?: string | null
+  // Valor combinado no agendamento quando o paciente é particular
+  valor_particular?: number | string | null
   createdAt: Date | string
   updatedAt: Date | string
 

@@ -54,7 +54,18 @@ export const procedimentoSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   codigo: z.string().optional().nullable(),
   descricao: z.string().optional().nullable(),
-  // valor/valor_particular e duração foram removidos — o valor é definido por convênio.
+  // valor/valor_particular continuam fora do formulário — o valor é definido por convênio.
+  // A duração da sessão voltou como campo obrigatório: é ela que dimensiona o
+  // slot na agenda. No banco a coluna segue nullable (registros antigos ainda
+  // não têm valor); a obrigatoriedade é garantida aqui e na API.
+  // O campo do formulário já entrega number (ou undefined quando vazio), então
+  // não usamos z.coerce — ele tornaria o tipo de entrada `unknown` e quebraria
+  // a tipagem do react-hook-form.
+  duracao_padrao: z
+    .number({ error: 'Duração da sessão é obrigatória' })
+    .int('Use minutos inteiros')
+    .min(1, 'Duração deve ser maior que zero')
+    .max(600, 'Duração máxima de 600 minutos'),
   especialidade: z.string().optional().nullable(),
   requer_autorizacao: z.boolean().optional(),
   observacoes: z.string().optional().nullable(),

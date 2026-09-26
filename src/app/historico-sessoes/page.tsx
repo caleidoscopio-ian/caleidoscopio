@@ -54,6 +54,7 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scrollarea";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { isTentativaCorreta } from "@/lib/pontuacao";
 
 interface Paciente {
   id: string;
@@ -379,7 +380,7 @@ function HistoricoSessoesPageContent() {
         .filter((p) => p.fase === instrucao.faseAtual)
         .sort((a, b) => a.ordem - b.ordem);
       totalTentativas++;
-      if (ponts.length > 0 && av.nota === ponts.length - 1) tentativasCorretas++;
+      if (isTentativaCorreta(av.nota, ponts)) tentativasCorretas++;
     }
 
     const percentAcerto =
@@ -1060,8 +1061,8 @@ function HistoricoSessoesPageContent() {
                                                         const ponts = (instrucao.pontuacoes || [])
                                                           .filter((p) => p.fase === instrucao.faseAtual)
                                                           .sort((a, b) => a.ordem - b.ordem);
-                                                        const corretas = avsInstrucao.filter(
-                                                          (av) => ponts.length > 0 && av.nota === ponts.length - 1
+                                                        const corretas = avsInstrucao.filter((av) =>
+                                                          isTentativaCorreta(av.nota, ponts)
                                                         ).length;
                                                         const percentInstrucao =
                                                           avsInstrucao.length > 0
@@ -1106,8 +1107,7 @@ function HistoricoSessoesPageContent() {
                                                                 </span>
                                                                 {avsInstrucao.map((av) => {
                                                                   const sigla = ponts[av.nota]?.sigla ?? String(av.nota);
-                                                                  const isCorreto =
-                                                                    ponts.length > 0 && av.nota === ponts.length - 1;
+                                                                  const isCorreto = isTentativaCorreta(av.nota, ponts);
                                                                   return (
                                                                     <Badge
                                                                       key={av.id}

@@ -66,6 +66,14 @@ export async function POST(request: NextRequest) {
 
     if (!nome) return NextResponse.json({ success: false, error: 'Nome é obrigatório' }, { status: 400 })
 
+    const duracaoSessao = Number(duracao_padrao)
+    if (!Number.isInteger(duracaoSessao) || duracaoSessao < 1 || duracaoSessao > 600) {
+      return NextResponse.json(
+        { success: false, error: 'Duração da sessão (minutos) é obrigatória e deve ser um inteiro entre 1 e 600' },
+        { status: 400 }
+      )
+    }
+
     if (codigo) {
       const dup = await prisma.procedimento.findFirst({
         where: { tenantId: user.tenant.id, codigo, ativo: true },
@@ -81,7 +89,7 @@ export async function POST(request: NextRequest) {
         descricao: descricao || null,
         valor: valor != null ? new Prisma.Decimal(valor) : null,
         valor_particular: valor_particular != null ? new Prisma.Decimal(valor_particular) : null,
-        duracao_padrao: duracao_padrao || null,
+        duracao_padrao: duracaoSessao,
         tempo_minimo: tempo_minimo || null,
         tempo_maximo: tempo_maximo || null,
         especialidade: especialidade || null,
@@ -111,6 +119,14 @@ export async function PUT(request: NextRequest) {
 
     if (!id || !nome) return NextResponse.json({ success: false, error: 'ID e nome são obrigatórios' }, { status: 400 })
 
+    const duracaoSessao = Number(duracao_padrao)
+    if (!Number.isInteger(duracaoSessao) || duracaoSessao < 1 || duracaoSessao > 600) {
+      return NextResponse.json(
+        { success: false, error: 'Duração da sessão (minutos) é obrigatória e deve ser um inteiro entre 1 e 600' },
+        { status: 400 }
+      )
+    }
+
     const existing = await prisma.procedimento.findFirst({
       where: { id, tenantId: user.tenant.id },
     })
@@ -131,7 +147,7 @@ export async function PUT(request: NextRequest) {
         descricao: descricao || null,
         valor: valor != null ? new Prisma.Decimal(valor) : null,
         valor_particular: valor_particular != null ? new Prisma.Decimal(valor_particular) : null,
-        duracao_padrao: duracao_padrao || null,
+        duracao_padrao: duracaoSessao,
         tempo_minimo: tempo_minimo || null,
         tempo_maximo: tempo_maximo || null,
         especialidade: especialidade || null,

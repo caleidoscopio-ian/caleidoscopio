@@ -55,16 +55,23 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
       observacoes: "",
       cor: null,
       icone: null,
+      duracao_padrao: undefined,
     },
   });
 
+  // Reidrata o formulário só quando o diálogo abre ou troca de registro.
+  // Depender do objeto faria o form.reset() disparar a cada refetch em segundo
+  // plano (as telas têm polling de 60s), apagando o que o usuário digitou.
+  const procedimentoId = procedimento?.id ?? null;
   useEffect(() => {
+    if (!open) return;
     if (procedimento) {
       form.reset({
         nome: procedimento.nome,
         codigo: procedimento.codigo || "",
         descricao: procedimento.descricao || "",
         especialidade: procedimento.especialidade || null,
+        duracao_padrao: procedimento.duracao_padrao ?? undefined,
         requer_autorizacao: procedimento.requer_autorizacao,
         observacoes: procedimento.observacoes || "",
         cor: procedimento.cor || null,
@@ -75,10 +82,12 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
       form.reset({
         nome: "", codigo: "", descricao: "",
         especialidade: null, requer_autorizacao: false,
+        duracao_padrao: undefined,
         observacoes: "", cor: null, icone: null, filialId: null,
       });
     }
-  }, [procedimento, open, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, procedimentoId]);
 
   const onSubmit = async (data: ProcedimentoFormData) => {
     if (!user) return;
@@ -142,6 +151,28 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
                         {ESPECIALIDADES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="duracao_padrao" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Duração da Sessão (minutos) *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={600}
+                        step={5}
+                        placeholder="Ex: 45"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        value={field.value ?? ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                        }
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
