@@ -162,7 +162,7 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
                         type="number"
                         min={1}
                         max={600}
-                        step={5}
+                        step={1}
                         placeholder="Ex: 45"
                         name={field.name}
                         ref={field.ref}

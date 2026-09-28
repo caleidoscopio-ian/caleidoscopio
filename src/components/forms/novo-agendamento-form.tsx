@@ -94,6 +94,8 @@ export function NovoAgendamentoForm({
 }: NovoAgendamentoFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modoRecorrente, setModoRecorrente] = useState(false);
+  // Na edição o agendamento base já existe: a recorrência só acrescenta ocorrências
+  const editandoExistente = Boolean(defaultValues?.id);
   const [diasSemana, setDiasSemana] = useState<number[]>([]);
 
   // Grade
@@ -741,7 +743,19 @@ export function NovoAgendamentoForm({
               <>
                 <Separator />
                 <div className="rounded-md bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-800">
-                  Agendamento recorrente: <strong>{pendingData.datasAdicionais.length + 1}</strong> sessões serão criadas.
+                  {editandoExistente ? (
+                    <>
+                      Recorrência: <strong>{pendingData.datasAdicionais.length}</strong>{" "}
+                      nova{pendingData.datasAdicionais.length === 1 ? "" : "s"} ocorrência
+                      {pendingData.datasAdicionais.length === 1 ? "" : "s"} serão criadas,
+                      além deste agendamento — todas ficam na mesma série.
+                    </>
+                  ) : (
+                    <>
+                      Agendamento recorrente:{" "}
+                      <strong>{pendingData.datasAdicionais.length + 1}</strong> sessões serão criadas.
+                    </>
+                  )}
                 </div>
               </>
             )}

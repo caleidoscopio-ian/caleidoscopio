@@ -854,13 +854,62 @@ function AgendaPageContent() {
       const resultado = await response.json();
       const total = 1 + (resultado.propagados ?? 0);
 
+      // Recorrência ligada durante a edição de um agendamento avulso: as datas
+      // novas são criadas aqui e amarradas à mesma série do original
+      const novasDatas: Date[] = data.datasAdicionais ?? [];
+      let criadas = 0;
+      let falhas = 0;
+
+      if (novasDatas.length > 0) {
+        const datasISO = novasDatas.map((d: Date) => {
+          const inicio = new Date(d);
+          inicio.setHours(hourInicio, minuteInicio, 0, 0);
+          return inicio.toISOString();
+        });
+
+        const respRecorrencia = await fetch("/api/agendamentos/batch", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-Data": userDataEncoded,
+            "X-Auth-Token": user.token,
+          },
+          body: JSON.stringify({
+            pacienteId: data.pacienteId,
+            profissionalId: data.profissionalId,
+            datas: datasISO,
+            horario: data.horario,
+            horario_fim: data.horario_fim,
+            salaId: data.sala,
+            procedimento: data.procedimento,
+            status: data.status,
+            observacoes: data.observacoes,
+            valor_particular: data.valor_particular ?? null,
+            agendamentoOrigemId: data.id,
+          }),
+        });
+
+        if (!respRecorrencia.ok) {
+          const erro = await respRecorrencia.json();
+          throw new Error(erro.error || "Erro ao criar as ocorrências da recorrência");
+        }
+
+        const resumo = await respRecorrencia.json();
+        criadas = resumo.resumo?.sucessos ?? 0;
+        falhas = resumo.resumo?.falhas ?? 0;
+      }
+
       toast({
         title: "Sucesso",
-        description: descreverResultadoSerie(
-          total,
-          resultado.preservados ?? 0,
-          "atualizado"
-        ),
+        description:
+          novasDatas.length > 0
+            ? `${descreverResultadoSerie(total, resultado.preservados ?? 0, "atualizado")} ${criadas} ocorrência${
+                criadas === 1 ? "" : "s"
+              } criada${criadas === 1 ? "" : "s"}${
+                falhas > 0 ? ` e ${falhas} com conflito de horário` : ""
+              }.`
+            : descreverResultadoSerie(total, resultado.preservados ?? 0, "atualizado"),
+        variant: falhas > 0 ? "destructive" : "default",
       });
 
       setShowEditarAgendamento(false);

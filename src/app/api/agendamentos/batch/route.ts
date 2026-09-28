@@ -51,6 +51,10 @@ export async function POST(request: NextRequest) {
       status = StatusAgendamento.AGENDADO,
       observacoes,
       valor_particular,
+      // Quando a recorrência é adicionada a um agendamento que já existe
+      // (editar um avulso e ligar a repetição), o id dele vem aqui para que
+      // todas as ocorrências fiquem na mesma série
+      agendamentoOrigemId,
     } = body;
 
     // Validações
@@ -145,9 +149,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Agrupa os agendamentos desta recorrência para permitir excluir
-    // "este e os futuros" ou "toda a série" depois — só faz sentido com 2+ datas
-    const serieId = datas.length > 1 ? randomUUID() : null;
+    // Agrupa os agendamentos desta recorrência para permitir excluir, cancelar
+    // ou editar "este e os futuros" / "toda a série" depois.
+    let serieId: string | null = datas.length > 1 ? randomUUID() : null;
+
+    if (agendamentoOrigemId) {
+      const origem = await prisma.agendamento.findFirst({
+        where: {
+          id: agendamentoOrigemId,
+          paciente: { tenantId: user.tenant.id }, // 🔒 isolamento de tenant
+        },
+        select: { id: true, serieId: true },
+      });
+
+      if (!origem) {
+        return NextResponse.json(
+          { error: "Agendamento de origem não encontrado ou não pertence a esta clínica" },
+          { status: 404 }
+        );
+      }
+
+      // Reaproveita a série existente; se o agendamento era avulso, cria a
+      // série agora e marca a origem, para ela entrar nas operações em lote
+      serieId = origem.serieId ?? randomUUID();
+      if (!origem.serieId) {
+        await prisma.agendamento.update({
+          where: { id: origem.id },
+          data: { serieId },
+        });
+      }
+    }
 
     // Mesmo valor particular para todas as ocorrências da recorrência
     const valorParticularNormalizado =
