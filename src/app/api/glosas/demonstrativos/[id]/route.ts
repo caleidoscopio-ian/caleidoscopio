@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import type { StatusConciliacao } from "@/types/conciliacao";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -78,8 +79,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error("Erro ao buscar demonstrativo:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/glosas/demonstrativos/[id]", acao: "GET" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -100,7 +104,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.demonstrativoImportacao.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Erro ao excluir demonstrativo:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/glosas/demonstrativos/[id]", acao: "DELETE" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

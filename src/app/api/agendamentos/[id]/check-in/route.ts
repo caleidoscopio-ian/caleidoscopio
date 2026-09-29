@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { StatusAgendamento } from '@/types/agendamento'
 import type { CheckInAction } from '@/types/check-in'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // Transições de status permitidas por ação
 const TRANSICOES: Record<CheckInAction, StatusAgendamento[]> = {
@@ -124,7 +125,9 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: atualizado })
   } catch (error) {
-    console.error('Erro ao executar ação de check-in:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos/[id]/check-in", acao: "PATCH" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

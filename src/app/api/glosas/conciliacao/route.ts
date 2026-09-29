@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import type { ComparativoConciliacao } from "@/types/conciliacao";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 function toNum(v: unknown): number { return Number(v ?? 0); }
 
@@ -60,7 +61,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: comparativo });
   } catch (error) {
-    console.error("Erro no comparativo de conciliação:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/glosas/conciliacao", acao: "GET" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

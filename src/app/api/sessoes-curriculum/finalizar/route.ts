@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { calcularEvolucaoAposFinalizacao } from "@/lib/evolucao-fase";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // POST - Finalizar sessão de curriculum
 export async function POST(request: NextRequest) {
@@ -146,14 +147,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao finalizar sessão:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/sessoes-curriculum/finalizar", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

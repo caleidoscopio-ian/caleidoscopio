@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
 import { parseInicioPeriodo, parseFimPeriodo } from '@/lib/datas-fuso'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET /api/usuario-roles/historico — Audit log de alterações de role
 export async function GET(request: NextRequest) {
@@ -97,7 +98,9 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
     })
   } catch (error) {
-    console.error('GET /api/usuario-roles/historico error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuario-roles/historico", acao: "GET" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

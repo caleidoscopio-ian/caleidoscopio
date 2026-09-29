@@ -4,6 +4,7 @@ import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/ser
 import { StatusAgendamento } from '@/types/agendamento'
 import { resolverProfissionalIdsDaFilial } from '@/lib/filial-profissionais'
 import { parseInicioPeriodo, parseFimPeriodo, inicioDoDia, fimDoDia } from '@/lib/datas-fuso'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,7 +73,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: agendamentos, total: agendamentos.length })
   } catch (error) {
-    console.error('Erro ao buscar check-in:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos/check-in", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

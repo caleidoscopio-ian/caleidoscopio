@@ -5,6 +5,7 @@ import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/ser
 import { calcularMinutosDisponiveis, minutosAgendamento } from '@/lib/ocupacao'
 import type { OcupacaoProfissional, OcupacaoResumo } from '@/types/ocupacao-profissional'
 import { parseInicioPeriodo, parseFimPeriodo } from '@/lib/datas-fuso'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const STATUS_OCUPADOS = ['AGENDADO', 'CONFIRMADO', 'EM_ATENDIMENTO', 'ATENDIDO'] as const
 const STATUS_FALTA = ['FALTOU'] as const
@@ -178,7 +179,9 @@ export async function GET(request: NextRequest) {
       resumo,
     })
   } catch (error) {
-    console.error('Erro ao calcular ocupação:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/relatorios/ocupacao-profissionais", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

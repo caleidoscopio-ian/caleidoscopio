@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -32,8 +33,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true, data: grades })
   } catch (error) {
-    console.error('Erro ao buscar grade:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/terapeutas/[id]/grade", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -93,7 +96,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true, data: grades })
   } catch (error) {
-    console.error('Erro ao salvar grade:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/terapeutas/[id]/grade", acao: "PUT" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

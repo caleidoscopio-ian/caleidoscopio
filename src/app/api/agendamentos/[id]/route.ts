@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
 import { Prisma } from "@prisma/client";
+import { registrarErroApi } from "@/lib/erro-prisma";
 import {
   isEscopoSerie,
   filtroDataDoEscopo,
@@ -69,10 +70,10 @@ export async function GET(
 
     return NextResponse.json(agendamento);
   } catch (error) {
-    console.error("Erro ao buscar agendamento:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos/[id]", acao: "GET" }, error);
     return NextResponse.json(
-      { error: "Erro ao buscar agendamento" },
-      { status: 500 }
+      { error: classificacao.mensagem ?? "Erro ao buscar agendamento", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -346,10 +347,10 @@ export async function PUT(
 
     return NextResponse.json({ ...agendamento, propagados, preservados });
   } catch (error) {
-    console.error("Erro ao atualizar agendamento:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos/[id]", acao: "PUT" }, error);
     return NextResponse.json(
-      { error: "Erro ao atualizar agendamento" },
-      { status: 500 }
+      { error: classificacao.mensagem ?? "Erro ao atualizar agendamento", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -443,10 +444,10 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, count: 1 });
   } catch (error) {
-    console.error("Erro ao deletar agendamento:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos/[id]", acao: "DELETE" }, error);
     return NextResponse.json(
-      { error: "Erro ao deletar agendamento" },
-      { status: 500 }
+      { error: classificacao.mensagem ?? "Erro ao deletar agendamento", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

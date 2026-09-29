@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
 import { parseInicioPeriodo, parseFimPeriodo } from '@/lib/datas-fuso'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const STATUS_OCUPADOS = ['AGENDADO', 'CONFIRMADO', 'EM_ATENDIMENTO', 'ATENDIDO'] as const
 const STATUS_CANCELADOS = ['FALTOU', 'CANCELADO'] as const
@@ -128,7 +129,9 @@ export async function GET(request: NextRequest) {
       periodo: { inicio: inicio.toISOString(), fim: fim.toISOString() },
     })
   } catch (error) {
-    console.error('Erro ao buscar ocupação de salas:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/salas/ocupacao", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

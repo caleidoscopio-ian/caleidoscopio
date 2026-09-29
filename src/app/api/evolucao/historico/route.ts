@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET - Histórico de mudanças de fase de uma atividade clone
 export async function GET(request: NextRequest) {
@@ -34,14 +35,13 @@ export async function GET(request: NextRequest) {
       data: historico,
     });
   } catch (error) {
-    console.error("Erro ao buscar histórico:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/evolucao/historico", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

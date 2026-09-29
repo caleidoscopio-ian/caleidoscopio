@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // API para atribuir atividade a um paciente
 export async function POST(request: NextRequest) {
@@ -125,14 +126,13 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao atribuir atividade:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/atividades/atribuir", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -240,14 +240,13 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao listar atividades atribuídas:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/atividades/atribuir", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -334,14 +333,13 @@ export async function DELETE(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao remover atribuição:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/atividades/atribuir", acao: "DELETE" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

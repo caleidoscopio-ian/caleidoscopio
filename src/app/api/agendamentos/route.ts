@@ -11,6 +11,7 @@ const normalizarValorParticular = (v: unknown): number | null => {
   return Number.isFinite(n) && n >= 0 ? n : null;
 };
 import { resolverProfissionalIdsDaFilial } from "@/lib/filial-profissionais";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET - Listar agendamentos com filtros
 export async function GET(request: NextRequest) {
@@ -264,7 +265,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(agendamentosComPreco);
   } catch (error) {
-    console.error("Erro ao buscar agendamentos:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos", acao: "GET" }, error);
 
     if (error instanceof Error) {
       if (error.message === "Usuário não autenticado") {
@@ -276,8 +277,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: "Erro ao buscar agendamentos" },
-      { status: 500 }
+      { error: classificacao.mensagem ?? "Erro ao buscar agendamentos", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -538,7 +539,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(agendamento, { status: 201 });
   } catch (error) {
-    console.error("Erro ao criar agendamento:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos", acao: "POST" }, error);
 
     if (error instanceof Error) {
       if (error.message === "Usuário não autenticado") {
@@ -550,8 +551,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: "Erro ao criar agendamento" },
-      { status: 500 }
+      { error: classificacao.mensagem ?? "Erro ao criar agendamento", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

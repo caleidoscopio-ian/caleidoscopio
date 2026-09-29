@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { managerClient } from "@/lib/manager-client";
 import { LoginCredentials } from "@/types/auth";
 import { ensureDefaultRole } from "@/lib/auth/bootstrap-roles";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,8 +43,7 @@ export async function POST(request: NextRequest) {
     try {
       await ensureDefaultRole(user.id, tenant.id, user.role, { name: user.name, email: user.email })
     } catch (err) {
-      console.error('[RBAC Bootstrap] Erro ao atribuir role (login continua):', err)
-      // Não bloqueia o login — o usuário pode acessar via SSO-fallback
+      registrarErroApi({ rota: "/api/auth/login", acao: "POST" }, err);// Não bloqueia o login — o usuário pode acessar via SSO-fallback
     }
 
     // Criar resposta de sucesso
@@ -72,10 +72,10 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Erro no login do Caleidoscópio:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/auth/login", acao: "POST" }, error);
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 }
+      { error: classificacao.mensagem ?? "Erro interno do servidor", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const prisma = new PrismaClient();
 
@@ -48,8 +49,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: tarefa });
   } catch (error) {
-    console.error("❌ Erro:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes/tarefas", acao: "POST" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -92,8 +96,11 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: tarefa });
   } catch (error) {
-    console.error("❌ Erro:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes/tarefas", acao: "PUT" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -123,7 +130,10 @@ export async function DELETE(request: NextRequest) {
     await prisma.avaliacaoTarefa.delete({ where: { id } });
     return NextResponse.json({ success: true, message: "Tarefa excluída" });
   } catch (error) {
-    console.error("❌ Erro:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes/tarefas", acao: "DELETE" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

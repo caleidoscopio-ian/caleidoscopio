@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET - Buscar anamneses da clínica do usuário logado
 export async function GET(request: NextRequest) {
@@ -94,15 +95,14 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar anamneses:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/anamneses", acao: "GET" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -225,15 +225,14 @@ export async function POST(request: NextRequest) {
       }
     }, { status: 201 });
   } catch (error) {
-    console.error("❌ Erro ao criar anamnese:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/anamneses", acao: "POST" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

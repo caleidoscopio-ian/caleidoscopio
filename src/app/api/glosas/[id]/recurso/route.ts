@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { Prisma } from "@prisma/client";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -102,7 +103,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error("Erro ao processar recurso:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/glosas/[id]/recurso", acao: "PATCH" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

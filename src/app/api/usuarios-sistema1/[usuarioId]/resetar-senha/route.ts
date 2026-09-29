@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { managerClient } from "@/lib/manager-client";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // POST - Resetar a senha de um usuário (delega ao Sistema 1, que é quem manda nas credenciais)
 export async function POST(
@@ -47,13 +48,12 @@ export async function POST(
       temporaryPassword: result.temporaryPassword,
     });
   } catch (error) {
-    console.error("Erro ao resetar senha do usuário:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuarios-sistema1/[usuarioId]/resetar-senha", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Erro interno do servidor",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error instanceof Error ? error.message : "Erro interno do servidor"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

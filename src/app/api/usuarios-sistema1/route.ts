@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { managerClient } from "@/lib/manager-client";
 import { prisma } from "@/lib/prisma";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET - Buscar usuários do Sistema 1 com informações de vínculo do Sistema 2
 export async function GET(request: NextRequest) {
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
       vinculados,
     });
   } catch (error) {
-    console.error("Erro ao buscar usuários do Sistema 1:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuarios-sistema1", acao: "GET" }, error);
 
     if (error instanceof Error) {
       return NextResponse.json(
@@ -128,8 +129,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: "Erro ao buscar usuários" },
-      { status: 500 }
+      { error: classificacao.mensagem ?? "Erro ao buscar usuários", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

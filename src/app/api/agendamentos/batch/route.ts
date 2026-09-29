@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // API para criar múltiplos agendamentos de uma vez
 export async function POST(request: NextRequest) {
@@ -322,7 +323,7 @@ export async function POST(request: NextRequest) {
           agendamento,
         });
       } catch (error) {
-        console.error(`Erro ao criar agendamento para data ${dataStr}:`, error);
+        registrarErroApi({ rota: "/api/agendamentos/batch", acao: "POST" }, error);
         resultados.push({
           data: dataStr,
           success: false,
@@ -349,15 +350,14 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao criar agendamentos em massa:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos/batch", acao: "POST" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

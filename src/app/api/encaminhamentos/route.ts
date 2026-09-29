@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // API para buscar encaminhamentos
 export async function GET(request: NextRequest) {
@@ -65,15 +66,14 @@ export async function GET(request: NextRequest) {
       total: encaminhamentos.length,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar encaminhamentos:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/encaminhamentos", acao: "GET" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -177,15 +177,14 @@ export async function POST(request: NextRequest) {
       data: encaminhamento,
     });
   } catch (error) {
-    console.error("❌ Erro ao criar encaminhamento:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/encaminhamentos", acao: "POST" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -285,15 +284,14 @@ export async function PUT(request: NextRequest) {
       data: encaminhamento,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar encaminhamento:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/encaminhamentos", acao: "PUT" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -364,15 +362,14 @@ export async function DELETE(request: NextRequest) {
       message: "Encaminhamento excluído com sucesso",
     });
   } catch (error) {
-    console.error("❌ Erro ao excluir encaminhamento:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/encaminhamentos", acao: "DELETE" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

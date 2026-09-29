@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
 import { Prisma, StatusSessao } from "@prisma/client";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // Inclui clones com instruções e pontuações para uso na sessão
 const atividadesCloneInclude = {
@@ -226,14 +227,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao iniciar sessão de curriculum:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/sessoes-curriculum", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -392,14 +392,13 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar sessão(ões):", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/sessoes-curriculum", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const prisma = new PrismaClient();
 
@@ -96,14 +97,13 @@ export async function GET(request: NextRequest) {
       data: avaliacoes,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar avaliações:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -158,14 +158,13 @@ export async function POST(request: NextRequest) {
       data: avaliacao,
     });
   } catch (error) {
-    console.error("❌ Erro ao criar avaliação:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -234,14 +233,13 @@ export async function PUT(request: NextRequest) {
       data: avaliacao,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar avaliação:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes", acao: "PUT" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -301,14 +299,13 @@ export async function DELETE(request: NextRequest) {
       message: "Avaliação excluída com sucesso",
     });
   } catch (error) {
-    console.error("❌ Erro ao excluir avaliação:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes", acao: "DELETE" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

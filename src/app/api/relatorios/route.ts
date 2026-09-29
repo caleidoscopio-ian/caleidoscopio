@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,13 +50,12 @@ export async function GET(request: NextRequest) {
       data: relatorios,
     });
   } catch (error: any) {
-    console.error("Erro ao buscar relatórios:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/relatorios", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao buscar relatórios",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao buscar relatórios"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -137,13 +137,12 @@ export async function POST(request: NextRequest) {
       data: relatorio,
     });
   } catch (error: any) {
-    console.error("Erro ao criar relatório:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/relatorios", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao criar relatório",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao criar relatório"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -240,13 +239,12 @@ export async function PUT(request: NextRequest) {
       data: relatorio,
     });
   } catch (error: any) {
-    console.error("Erro ao atualizar relatório:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/relatorios", acao: "PUT" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao atualizar relatório",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao atualizar relatório"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -315,13 +313,12 @@ export async function DELETE(request: NextRequest) {
       message: "Relatório excluído com sucesso",
     });
   } catch (error: any) {
-    console.error("Erro ao excluir relatório:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/relatorios", acao: "DELETE" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao excluir relatório",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao excluir relatório"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

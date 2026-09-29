@@ -4,6 +4,7 @@ import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { FaseAtividade } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { ordenarPontuacoes } from "@/lib/pontuacao";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const FASES_VALIDAS: FaseAtividade[] = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
 
@@ -35,8 +36,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: pontuacoes });
   } catch (error) {
-    console.error("Erro ao buscar pontuações:", error);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/evolucao/pontuacoes", acao: "GET" }, error);
+    return NextResponse.json(
+      { error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -105,7 +109,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: resultado });
   } catch (error) {
-    console.error("Erro ao salvar pontuações:", error);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/evolucao/pontuacoes", acao: "PUT" }, error);
+    return NextResponse.json(
+      { error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

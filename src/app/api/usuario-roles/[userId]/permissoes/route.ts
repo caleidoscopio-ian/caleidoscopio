@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { getEffectivePermissions } from '@/lib/auth/permission-service'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET /api/usuario-roles/[userId]/permissoes — Permissões efetivas de um usuário
 export async function GET(
@@ -44,7 +45,9 @@ export async function GET(
       source: 'rbac',
     })
   } catch (error) {
-    console.error('GET /api/usuario-roles/[userId]/permissoes error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuario-roles/[userId]/permissoes", acao: "GET" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

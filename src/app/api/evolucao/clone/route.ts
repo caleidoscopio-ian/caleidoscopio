@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // PUT - Atualizar dados de uma atividade clonada (geral, instruções, pontuações)
 export async function PUT(request: NextRequest) {
@@ -242,14 +243,13 @@ export async function PUT(request: NextRequest) {
       data: cloneAtualizado,
     });
   } catch (error) {
-    console.error("Erro ao atualizar clone:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/evolucao/clone", acao: "PUT" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

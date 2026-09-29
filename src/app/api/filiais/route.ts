@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { isValidCNPJ } from '@/lib/masks'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,8 +37,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: filiais, total: filiais.length })
   } catch (error) {
-    console.error('Erro ao buscar filiais:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/filiais", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -110,8 +113,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: filial }, { status: 201 })
   } catch (error) {
-    console.error('Erro ao criar filial:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/filiais", acao: "POST" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -182,8 +187,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: filial })
   } catch (error) {
-    console.error('Erro ao atualizar filial:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/filiais", acao: "PUT" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -213,7 +220,9 @@ export async function DELETE(request: NextRequest) {
     await prisma.filial.delete({ where: { id } })
     return NextResponse.json({ success: true, message: 'Filial removida com sucesso' })
   } catch (error) {
-    console.error('Erro ao excluir filial:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/filiais", acao: "DELETE" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

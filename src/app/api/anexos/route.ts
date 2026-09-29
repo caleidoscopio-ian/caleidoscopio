@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,13 +50,12 @@ export async function GET(request: NextRequest) {
       data: anexos,
     });
   } catch (error: any) {
-    console.error("Erro ao buscar anexos:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/anexos", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao buscar anexos",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao buscar anexos"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -148,13 +148,12 @@ export async function POST(request: NextRequest) {
       data: anexo,
     });
   } catch (error: any) {
-    console.error("Erro ao criar anexo:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/anexos", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao criar anexo",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao criar anexo"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -240,13 +239,12 @@ export async function PUT(request: NextRequest) {
       data: anexo,
     });
   } catch (error: any) {
-    console.error("Erro ao atualizar anexo:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/anexos", acao: "PUT" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao atualizar anexo",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao atualizar anexo"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -315,13 +313,12 @@ export async function DELETE(request: NextRequest) {
       message: "Anexo excluído com sucesso",
     });
   } catch (error: any) {
-    console.error("Erro ao excluir anexo:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/anexos", acao: "DELETE" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao excluir anexo",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao excluir anexo"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

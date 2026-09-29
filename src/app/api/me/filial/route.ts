@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser } from '@/lib/auth/server'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN']
 
@@ -33,7 +34,9 @@ export async function GET(request: NextRequest) {
       isAdmin,
     })
   } catch (error) {
-    console.error('GET /api/me/filial error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/me/filial", acao: "GET" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

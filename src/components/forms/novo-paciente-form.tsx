@@ -348,7 +348,12 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Erro ao criar paciente");
+        // `error` já vem traduzido pela API; `ref` casa a tela com o log da
+        // Vercel. Sem isso, qualquer falha virava só "Erro interno do servidor".
+        const base = result.error || "Erro ao criar paciente";
+        throw new Error(result.ref ? `${base}
+
+(referência: ${result.ref})` : base);
       }
 
       console.log("✅ Paciente criado com sucesso:", result.data.name);

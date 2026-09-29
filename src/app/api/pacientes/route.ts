@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { isValidCPF } from "@/lib/masks";
 import { Sexo, ParentescoResponsavel } from "@prisma/client";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isValidUuid(v: unknown): v is string {
@@ -65,11 +66,13 @@ function derivarConvenioLegado(convenios: ConvenioInput[] | undefined) {
 
 // API para buscar pacientes da clínica do usuário logado
 export async function GET(request: NextRequest) {
+  // Declarado fora do try para o catch poder registrar tenant e usuário no log
+  let user: Awaited<ReturnType<typeof getAuthenticatedUser>> = null;
   try {
     console.log("🔍 API Pacientes - Iniciando busca com autenticação...");
 
     // Autenticar usuário
-    const user = await getAuthenticatedUser(request);
+    user = await getAuthenticatedUser(request);
 
     if (!user) {
       console.error("❌ API Pacientes - Falha na autenticação");
@@ -257,7 +260,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar pacientes:", error);
+    registrarErroApi({ rota: "/api/pacientes", acao: "GET" }, error);
 
     if (error instanceof Error) {
       if (error.message === "Usuário não autenticado") {
@@ -268,24 +271,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const { ref, classificacao } = registrarErroApi(
+      { rota: "/api/pacientes", acao: "listar", tenantId: user?.tenant?.id, usuarioId: user?.id },
+      error
+    );
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: `${classificacao.detalhe} (ref ${ref})`,
+        ref,
       },
-      { status: 500 }
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
 
 // API para criar novo paciente
 export async function POST(request: NextRequest) {
+  // Declarado fora do try para o catch poder registrar tenant e usuário no log
+  let user: Awaited<ReturnType<typeof getAuthenticatedUser>> = null;
   try {
     console.log("📝 API Pacientes - Criando novo paciente com autenticação...");
 
     // Autenticar usuário
-    const user = await getAuthenticatedUser(request);
+    user = await getAuthenticatedUser(request);
 
     if (!user) {
       console.error("❌ API Pacientes POST - Falha na autenticação");
@@ -315,7 +325,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log("📥 API Pacientes POST - Body recebido:", body);
+    // Nunca logar o corpo: ele carrega nome, CPF, telefone e endereço do
+    // paciente e dos responsáveis. Só a forma do que chegou.
+    console.log("📥 API Pacientes POST - campos recebidos:", {
+      temCpf: Boolean(body?.cpf),
+      temNascimento: Boolean(body?.birthDate),
+      sexo: body?.sexo ?? null,
+      responsaveis: Array.isArray(body?.responsaveis) ? body.responsaveis.length : 0,
+      convenios: Array.isArray(body?.convenios) ? body.convenios.length : 0,
+      temFilial: Boolean(body?.filialId),
+      temProfissional: Boolean(body?.profissionalId),
+    });
 
     const {
       name,
@@ -347,7 +367,12 @@ export async function POST(request: NextRequest) {
 
     const isAdmin = isAdminUser(user)
     // Admin usa filialId enviado pelo form; não-admin usa a filial do seu perfil
-    const filialIdToSave = isAdmin ? (filialId || null) : (user.filialId ?? null)
+    // Sem validar, um filialId/profissionalId que não seja uuid (sentinela do
+    // select, string vazia, id de outro tenant) estoura como violação de FK e
+    // vira 500 sem explicação
+    const filialIdToSave = isAdmin
+      ? (isValidUuid(filialId) ? filialId : null)
+      : (isValidUuid(user.filialId) ? user.filialId : null)
 
     console.log("🔑 profissionalId extraído do body:", profissionalId);
 
@@ -426,7 +451,7 @@ export async function POST(request: NextRequest) {
         plano_saude: healthInsurance === "particular" ? null : healthInsurance,
         convenioId: convenios !== undefined ? convenioLegado.convenioId : (isValidUuid(convenioId) ? convenioId : null),
         matricula: convenios !== undefined ? convenioLegado.matricula : healthInsuranceNumber,
-        profissionalId: profissionalId || null,
+        profissionalId: isValidUuid(profissionalId) ? profissionalId : null,
         filialId: filialIdToSave,
         ativo: true,
         responsaveis: responsaveis && responsaveis.length > 0
@@ -512,7 +537,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao criar paciente:", error);
+    registrarErroApi({ rota: "/api/pacientes", acao: "POST" }, error);
 
     if (error instanceof Error) {
       if (error.message === "Usuário não autenticado") {
@@ -523,24 +548,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const { ref, classificacao } = registrarErroApi(
+      { rota: "/api/pacientes", acao: "criar", tenantId: user?.tenant?.id, usuarioId: user?.id },
+      error
+    );
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: `${classificacao.detalhe} (ref ${ref})`,
+        ref,
       },
-      { status: 500 }
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
 
 // API para atualizar paciente
 export async function PUT(request: NextRequest) {
+  // Declarado fora do try para o catch poder registrar tenant e usuário no log
+  let user: Awaited<ReturnType<typeof getAuthenticatedUser>> = null;
   try {
     console.log("✏️ API Pacientes - Atualizando paciente com autenticação...");
 
     // Autenticar usuário
-    const user = await getAuthenticatedUser(request);
+    user = await getAuthenticatedUser(request);
 
     if (!user) {
       console.error("❌ API Pacientes PUT - Falha na autenticação");
@@ -805,26 +837,33 @@ export async function PUT(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar paciente:", error);
+    registrarErroApi({ rota: "/api/pacientes", acao: "PUT" }, error);
 
+    const { ref, classificacao } = registrarErroApi(
+      { rota: "/api/pacientes", acao: "atualizar", tenantId: user?.tenant?.id, usuarioId: user?.id },
+      error
+    );
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: `${classificacao.detalhe} (ref ${ref})`,
+        ref,
       },
-      { status: 500 }
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
 
 // API para deletar paciente (soft delete)
 export async function DELETE(request: NextRequest) {
+  // Declarado fora do try para o catch poder registrar tenant e usuário no log
+  let user: Awaited<ReturnType<typeof getAuthenticatedUser>> = null;
   try {
     console.log("🗑️ API Pacientes - Deletando paciente com autenticação...");
 
     // Autenticar usuário
-    const user = await getAuthenticatedUser(request);
+    user = await getAuthenticatedUser(request);
 
     if (!user) {
       console.error("❌ API Pacientes DELETE - Falha na autenticação");
@@ -900,15 +939,20 @@ export async function DELETE(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar paciente:", error);
+    registrarErroApi({ rota: "/api/pacientes", acao: "DELETE" }, error);
 
+    const { ref, classificacao } = registrarErroApi(
+      { rota: "/api/pacientes", acao: "excluir", tenantId: user?.tenant?.id, usuarioId: user?.id },
+      error
+    );
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: `${classificacao.detalhe} (ref ${ref})`,
+        ref,
       },
-      { status: 500 }
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

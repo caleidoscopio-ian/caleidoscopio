@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET - Buscar atividades e instruções disponíveis para seleção na sessão
 // ?pacienteId=X&curriculumId=Y
@@ -94,7 +95,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Erro ao buscar instruções disponíveis:", error);
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/sessoes-curriculum/instrucoes-disponiveis", acao: "GET" }, error);
+    return NextResponse.json(
+      { error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

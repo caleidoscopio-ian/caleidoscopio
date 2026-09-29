@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET - Buscar anamnese específica por ID
 export async function GET(
@@ -73,15 +74,14 @@ export async function GET(
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar anamnese:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/anamneses/[id]", acao: "GET" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -185,15 +185,14 @@ export async function PUT(
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar anamnese:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/anamneses/[id]", acao: "PUT" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -266,15 +265,14 @@ export async function DELETE(
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar anamnese:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/anamneses/[id]", acao: "DELETE" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

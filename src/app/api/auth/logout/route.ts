@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from "next/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,10 +20,10 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Erro no logout:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/auth/logout", acao: "POST" }, error);
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 }
+      { error: classificacao.mensagem ?? "Erro interno do servidor", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

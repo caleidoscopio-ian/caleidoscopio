@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET - Listar atividades clonadas de um paciente com dados de fase
 export async function GET(request: NextRequest) {
@@ -101,14 +102,13 @@ export async function GET(request: NextRequest) {
       paciente: { id: paciente.id, nome: paciente.nome },
     });
   } catch (error) {
-    console.error("Erro ao buscar evolução:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/evolucao", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

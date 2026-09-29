@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { Prisma, TipoVinculoProfissional } from '@prisma/client'
 import { resolverProfissionalIdsDaFilial } from '@/lib/filial-profissionais'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // Grades de atendimento em lote — usado pela aba "Grade de Horários" da agenda,
 // que precisa da grade de vários profissionais de uma vez (a rota
@@ -54,7 +55,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: grades })
   } catch (error) {
-    console.error('Erro ao buscar grades:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/grades", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

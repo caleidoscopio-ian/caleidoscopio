@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -25,8 +26,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true, data: profissionais })
   } catch (error) {
-    console.error('Erro ao listar profissionais da filial:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/filiais/[id]/profissionais", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -59,8 +62,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true, data: vinculo }, { status: 201 })
   } catch (error) {
-    console.error('Erro ao vincular profissional à filial:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/filiais/[id]/profissionais", acao: "POST" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -84,7 +89,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.profissionalFilial.delete({ where: { profissionalId_filialId: { profissionalId, filialId } } })
     return NextResponse.json({ success: true, message: 'Vínculo removido com sucesso' })
   } catch (error) {
-    console.error('Erro ao desvincular profissional da filial:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/filiais/[id]/profissionais", acao: "DELETE" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

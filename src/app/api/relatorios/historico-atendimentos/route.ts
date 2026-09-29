@@ -5,6 +5,7 @@ import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
 import { parseInicioPeriodo, parseFimPeriodo } from "@/lib/datas-fuso";
 import type { AtendimentoHistorico, HistoricoResumo } from "@/types/historico-atendimento";
 import { Prisma } from "@prisma/client";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const STATUS_HISTORICO = ["ATENDIDO", "FALTOU", "CANCELADO"] as const;
 
@@ -242,7 +243,10 @@ export async function GET(request: NextRequest) {
       periodo: { inicio: dataInicio.toISOString(), fim: dataFim.toISOString() },
     });
   } catch (error) {
-    console.error("Erro ao buscar histórico de atendimentos:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/relatorios/historico-atendimentos", acao: "GET" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

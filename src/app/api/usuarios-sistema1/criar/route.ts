@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { managerClient } from "@/lib/manager-client";
 import { prisma } from "@/lib/prisma";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // POST - Criar usuário no Sistema 1 e profissional vinculado no Sistema 2
 export async function POST(request: NextRequest) {
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Erro ao criar usuário+profissional:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuarios-sistema1/criar", acao: "POST" }, error);
 
     if (error instanceof Error) {
       return NextResponse.json(
@@ -151,8 +152,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: "Erro ao criar usuário e profissional" },
-      { status: 500 }
+      { error: classificacao.mensagem ?? "Erro ao criar usuário e profissional", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

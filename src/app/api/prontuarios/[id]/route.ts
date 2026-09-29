@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // API para buscar um prontuário específico por ID
 export async function GET(
@@ -137,7 +138,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar prontuário:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/prontuarios/[id]", acao: "GET" }, error);
 
     if (error instanceof Error) {
       if (error.message === "Usuário não autenticado") {
@@ -154,10 +155,9 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

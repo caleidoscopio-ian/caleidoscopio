@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { invalidateRoleCache } from '@/lib/auth/permission-service'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // POST /api/roles/[id]/clone — Clonar permissões de outra role para esta
 export async function POST(
@@ -58,7 +59,9 @@ export async function POST(
 
     return NextResponse.json({ success: true, total: novasPermissoes.length })
   } catch (error) {
-    console.error('POST /api/roles/[id]/clone error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/roles/[id]/clone", acao: "POST" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

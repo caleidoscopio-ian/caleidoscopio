@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(
   request: NextRequest,
@@ -49,8 +50,10 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: tabela, total: tabela.length })
   } catch (error) {
-    console.error('Erro ao buscar tabela:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios/[id]/tabela", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -121,8 +124,10 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: item }, { status: 201 })
   } catch (error) {
-    console.error('Erro ao adicionar à tabela:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios/[id]/tabela", acao: "POST" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -158,8 +163,10 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: atualizado })
   } catch (error) {
-    console.error('Erro ao atualizar item da tabela:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios/[id]/tabela", acao: "PUT" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -189,7 +196,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Procedimento removido da tabela' })
   } catch (error) {
-    console.error('Erro ao remover da tabela:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios/[id]/tabela", acao: "DELETE" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

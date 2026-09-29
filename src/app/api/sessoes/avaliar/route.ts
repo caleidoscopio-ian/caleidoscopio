@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // API para avaliar uma instrução durante a sessão
 export async function POST(request: NextRequest) {
@@ -203,14 +204,13 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao avaliar instrução:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/sessoes/avaliar", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

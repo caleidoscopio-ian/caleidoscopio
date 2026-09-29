@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -69,8 +70,10 @@ export async function GET(request: NextRequest) {
       tenant: { id: user.tenant.id, name: user.tenant.name },
     })
   } catch (error) {
-    console.error('Erro ao buscar convênios:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -155,8 +158,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: convenio }, { status: 201 })
   } catch (error) {
-    console.error('Erro ao criar convênio:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios", acao: "POST" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -239,8 +244,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: convenioAtualizado })
   } catch (error) {
-    console.error('Erro ao atualizar convênio:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios", acao: "PUT" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -297,7 +304,9 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Convênio desativado com sucesso' })
   } catch (error) {
-    console.error('Erro ao desativar convênio:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios", acao: "DELETE" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

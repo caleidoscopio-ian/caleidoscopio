@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { FaseAtividade } from "@prisma/client";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const FASES_VALIDAS: FaseAtividade[] = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
 
@@ -41,8 +42,11 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ error: "instrucaoId ou atividadeCloneId é obrigatório" }, { status: 400 });
   } catch (error) {
-    console.error("Erro ao buscar critérios:", error);
-    return NextResponse.json({ success: false, error: "Erro interno do servidor" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/evolucao/criterios", acao: "GET" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno do servidor", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -120,7 +124,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ error: "instrucaoId ou atividadeCloneId é obrigatório" }, { status: 400 });
   } catch (error) {
-    console.error("Erro ao atualizar critérios:", error);
-    return NextResponse.json({ success: false, error: "Erro interno do servidor" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/evolucao/criterios", acao: "PUT" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno do servidor", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { Prisma } from '@prisma/client'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET /api/roles — Listar roles do tenant
 export async function GET(request: NextRequest) {
@@ -39,8 +40,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(roles)
   } catch (error) {
-    console.error('GET /api/roles error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/roles", acao: "GET" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -81,7 +84,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(role, { status: 201 })
   } catch (error) {
-    console.error('POST /api/roles error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/roles", acao: "POST" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

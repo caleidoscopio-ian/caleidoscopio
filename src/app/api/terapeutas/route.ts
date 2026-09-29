@@ -8,6 +8,7 @@ import {
 } from "@/lib/profissional-constants";
 import { TipoVinculoProfissional, EspecialidadeClinica, FuncaoAdministrativa, ConselhoProfissional } from "@prisma/client";
 import { resolverProfissionalIdsDaFilial } from "@/lib/filial-profissionais";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // Deriva o texto legado de "especialidade" a partir dos campos estruturados
 function derivarEspecialidadeLegado(
@@ -237,7 +238,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar terapeutas:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/terapeutas", acao: "GET" }, error);
 
     if (error instanceof Error) {
       if (error.message === 'Usuário não autenticado') {
@@ -251,10 +252,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -446,7 +446,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao criar terapeuta:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/terapeutas", acao: "POST" }, error);
 
     if (error instanceof Error) {
       if (error.message === 'Usuário não autenticado') {
@@ -460,10 +460,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -683,15 +682,14 @@ export async function PUT(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar terapeuta:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/terapeutas", acao: "PUT" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -784,15 +782,14 @@ export async function DELETE(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar terapeuta:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/terapeutas", acao: "DELETE" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { prisma } from '@/lib/prisma'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // POST - Vincular usuário existente do Sistema 1 a um profissional do Sistema 2
 export async function POST(request: NextRequest) {
@@ -115,9 +116,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erro ao vincular usuário:', error)
-
-    if (error instanceof Error) {
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuarios-sistema1/vincular", acao: "POST" }, error);if (error instanceof Error) {
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
@@ -125,8 +124,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Erro ao vincular usuário' },
-      { status: 500 }
-    )
+      { error: classificacao.mensagem ?? 'Erro ao vincular usuário', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

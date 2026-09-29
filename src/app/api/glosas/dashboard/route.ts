@@ -13,6 +13,7 @@ import {
   mesesAtras,
 } from "@/lib/datas-fuso";
 import type { GlosaDashboard } from "@/types/glosa";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 function toNum(v: unknown): number { return Number(v ?? 0); }
 
@@ -147,7 +148,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: dashboard });
   } catch (error) {
-    console.error("Erro ao buscar dashboard de glosas:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/glosas/dashboard", acao: "GET" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

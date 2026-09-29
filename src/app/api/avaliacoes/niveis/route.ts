@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const prisma = new PrismaClient();
 
@@ -50,10 +51,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: nivel });
   } catch (error) {
-    console.error("❌ Erro ao criar nível:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes/niveis", acao: "POST" }, error);
     return NextResponse.json(
-      { success: false, error: "Erro interno" },
-      { status: 500 }
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -100,10 +101,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: nivel });
   } catch (error) {
-    console.error("❌ Erro ao atualizar nível:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes/niveis", acao: "PUT" }, error);
     return NextResponse.json(
-      { success: false, error: "Erro interno" },
-      { status: 500 }
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -147,10 +148,10 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: "Nível excluído" });
   } catch (error) {
-    console.error("❌ Erro ao excluir nível:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes/niveis", acao: "DELETE" }, error);
     return NextResponse.json(
-      { success: false, error: "Erro interno" },
-      { status: 500 }
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

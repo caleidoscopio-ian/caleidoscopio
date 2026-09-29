@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(
   request: NextRequest,
@@ -27,8 +28,10 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: anexos })
   } catch (error) {
-    console.error('Erro ao buscar anexos:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios/[id]/anexos", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -74,8 +77,10 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: anexo }, { status: 201 })
   } catch (error) {
-    console.error('Erro ao criar anexo:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios/[id]/anexos", acao: "POST" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -105,7 +110,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Anexo excluído com sucesso' })
   } catch (error) {
-    console.error('Erro ao excluir anexo:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios/[id]/anexos", acao: "DELETE" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

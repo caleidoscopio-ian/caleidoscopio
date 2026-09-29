@@ -5,6 +5,7 @@ import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
 import { parseInicioPeriodo, parseFimPeriodo } from "@/lib/datas-fuso";
 import type { Glosa, GlosaResumo } from "@/types/glosa";
 import { Prisma } from "@prisma/client";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 function toNum(v: unknown): number {
   return Number(v ?? 0);
@@ -206,8 +207,11 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Erro ao listar glosas:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/glosas", acao: "GET" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -274,8 +278,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: buildGlosa(glosa) }, { status: 201 });
   } catch (error) {
-    console.error("Erro ao criar glosa:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/glosas", acao: "POST" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 

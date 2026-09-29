@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,13 +111,12 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Erro ao fazer upload:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/upload", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao fazer upload do arquivo",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao fazer upload do arquivo"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

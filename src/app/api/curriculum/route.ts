@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET - Listar curriculums ou buscar por ID
 export async function GET(request: NextRequest) {
@@ -111,14 +112,13 @@ export async function GET(request: NextRequest) {
       total: curriculums.length,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar curriculums:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/curriculum", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -206,14 +206,13 @@ export async function POST(request: NextRequest) {
       data: novoCurriculum,
     });
   } catch (error) {
-    console.error("❌ Erro ao criar curriculum:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/curriculum", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -326,14 +325,13 @@ export async function PUT(request: NextRequest) {
       data: curriculumAtualizado,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar curriculum:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/curriculum", acao: "PUT" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -400,14 +398,13 @@ export async function DELETE(request: NextRequest) {
       message: "Curriculum removido com sucesso",
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar curriculum:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/curriculum", acao: "DELETE" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

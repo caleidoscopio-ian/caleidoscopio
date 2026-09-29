@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // API para buscar sessões recentes para o dashboard
 export async function GET(request: NextRequest) {
@@ -94,14 +95,13 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar sessões recentes:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/dashboard/sessoes-recentes", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

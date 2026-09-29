@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // Especialidades clínicas cadastradas pela própria clínica — complementam o enum
 // EspecialidadeClinica, que é fixo no banco e não aceita valor novo em runtime.
@@ -21,7 +22,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: especialidades });
   } catch (error) {
-    console.error("Erro ao buscar especialidades:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/especialidades", acao: "GET" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { invalidatePermissionCache } from '@/lib/auth/permission-service'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // GET /api/usuario-roles — Listar usuários do tenant com suas roles
 export async function GET(request: NextRequest) {
@@ -64,8 +65,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('GET /api/usuario-roles error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuario-roles", acao: "GET" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -133,8 +136,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(usuarioRole, { status: 201 })
   } catch (error) {
-    console.error('POST /api/usuario-roles error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuario-roles", acao: "POST" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -198,8 +203,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('PUT /api/usuario-roles error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuario-roles", acao: "PUT" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -257,7 +264,9 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('PATCH /api/usuario-roles error:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuario-roles", acao: "PATCH" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

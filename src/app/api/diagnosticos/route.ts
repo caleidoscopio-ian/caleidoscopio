@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,13 +50,12 @@ export async function GET(request: NextRequest) {
       data: diagnosticos,
     });
   } catch (error: any) {
-    console.error("Erro ao buscar diagnósticos:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/diagnosticos", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao buscar diagnósticos",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao buscar diagnósticos"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -134,13 +134,12 @@ export async function POST(request: NextRequest) {
       data: diagnostico,
     });
   } catch (error: any) {
-    console.error("Erro ao criar diagnóstico:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/diagnosticos", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao criar diagnóstico",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao criar diagnóstico"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -235,13 +234,12 @@ export async function PUT(request: NextRequest) {
       data: diagnostico,
     });
   } catch (error: any) {
-    console.error("Erro ao atualizar diagnóstico:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/diagnosticos", acao: "PUT" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao atualizar diagnóstico",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao atualizar diagnóstico"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -310,13 +308,12 @@ export async function DELETE(request: NextRequest) {
       message: "Diagnóstico excluído com sucesso",
     });
   } catch (error: any) {
-    console.error("Erro ao excluir diagnóstico:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/diagnosticos", acao: "DELETE" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao excluir diagnóstico",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao excluir diagnóstico"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

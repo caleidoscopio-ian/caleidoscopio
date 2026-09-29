@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(
   request: NextRequest,
@@ -56,7 +57,9 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: convenio })
   } catch (error) {
-    console.error('Erro ao buscar convênio:', error)
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor' }, { status: 500 })
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/convenios/[id]", acao: "GET" }, error);return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

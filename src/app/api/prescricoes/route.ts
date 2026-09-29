@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,13 +50,12 @@ export async function GET(request: NextRequest) {
       data: prescricoes,
     });
   } catch (error: any) {
-    console.error("Erro ao buscar prescrições:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/prescricoes", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao buscar prescrições",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao buscar prescrições"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -141,13 +141,12 @@ export async function POST(request: NextRequest) {
       data: prescricao,
     });
   } catch (error: any) {
-    console.error("Erro ao criar prescrição:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/prescricoes", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao criar prescrição",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao criar prescrição"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -242,13 +241,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: prescricao });
   } catch (error: any) {
-    console.error("Erro ao atualizar prescrição:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/prescricoes", acao: "PUT" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Erro ao atualizar prescrição",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error.message || "Erro ao atualizar prescrição"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -300,10 +298,10 @@ export async function DELETE(request: NextRequest) {
       message: "Prescrição excluída com sucesso",
     });
   } catch (error: any) {
-    console.error("Erro ao excluir prescrição:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/prescricoes", acao: "DELETE" }, error);
     return NextResponse.json(
-      { success: false, error: error.message || "Erro ao excluir prescrição" },
-      { status: 500 }
+      { success: false, error: classificacao.mensagem ?? (error.message || "Erro ao excluir prescrição"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 const prisma = new PrismaClient();
 
@@ -49,10 +50,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: pontuacao });
   } catch (error) {
-    console.error("❌ Erro ao criar pontuação:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes/pontuacoes", acao: "POST" }, error);
     return NextResponse.json(
-      { success: false, error: "Erro interno" },
-      { status: 500 }
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -99,10 +100,10 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: pontuacao });
   } catch (error) {
-    console.error("❌ Erro ao atualizar pontuação:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes/pontuacoes", acao: "PUT" }, error);
     return NextResponse.json(
-      { success: false, error: "Erro interno" },
-      { status: 500 }
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -146,10 +147,10 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: "Pontuação excluída" });
   } catch (error) {
-    console.error("❌ Erro ao excluir pontuação:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/avaliacoes/pontuacoes", acao: "DELETE" }, error);
     return NextResponse.json(
-      { success: false, error: "Erro interno" },
-      { status: 500 }
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

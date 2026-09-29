@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { parseInicioPeriodo, parseFimPeriodo } from "@/lib/datas-fuso";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -262,13 +263,12 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar relatório:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/relatorios/profissionais", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Erro ao buscar relatório",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error instanceof Error ? error.message : "Erro ao buscar relatório"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

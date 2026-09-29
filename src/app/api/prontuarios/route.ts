@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // API para buscar prontuários da clínica do usuário logado
 export async function GET(request: NextRequest) {
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar prontuários:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/prontuarios", acao: "GET" }, error);
 
     if (error instanceof Error) {
       if (error.message === 'Usuário não autenticado') {
@@ -126,10 +127,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -290,7 +290,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao criar prontuário:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/prontuarios", acao: "POST" }, error);
 
     if (error instanceof Error) {
       if (error.message === 'Usuário não autenticado') {
@@ -304,10 +304,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -495,15 +494,14 @@ export async function PUT(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar prontuário:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/prontuarios", acao: "PUT" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -600,15 +598,14 @@ export async function DELETE(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar prontuário:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/prontuarios", acao: "DELETE" }, error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

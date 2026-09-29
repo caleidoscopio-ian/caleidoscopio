@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ensureDefaultRole } from '@/lib/auth/bootstrap-roles'
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,8 +19,7 @@ export async function POST(request: NextRequest) {
       try {
         await ensureDefaultRole(userId, tenantId, ssoRole, { name: userName, email: userEmail })
       } catch (err) {
-        console.error('[RBAC Bootstrap] Erro no set-cookie (login continua):', err)
-      }
+        registrarErroApi({ rota: "/api/auth/set-cookie", acao: "POST" }, err);}
     }
 
     const response = NextResponse.json({ success: true })
@@ -39,10 +39,9 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('❌ Erro ao definir cookie:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/auth/set-cookie", acao: "POST" }, error);return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno do servidor', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

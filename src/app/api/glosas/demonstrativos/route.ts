@@ -4,6 +4,7 @@ import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { parseDemonstrativo, TissParseError } from "@/lib/tiss";
 import { conciliarGuias, mapearCategoriaGlosa, type AtendimentoIndexavel } from "@/lib/tiss/conciliacao";
 import { Prisma } from "@prisma/client";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 function toNum(v: unknown): number { return Number(v ?? 0); }
 
@@ -42,8 +43,11 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("Erro ao listar demonstrativos:", error);
-    return NextResponse.json({ success: false, error: "Erro interno" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/glosas/demonstrativos", acao: "GET" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }
 
@@ -70,6 +74,7 @@ export async function POST(request: NextRequest) {
     try {
       demonstrativo = parseDemonstrativo(buffer);
     } catch (e) {
+    registrarErroApi({ rota: "/api/glosas/demonstrativos", acao: "POST" }, e);
       if (e instanceof TissParseError)
         return NextResponse.json({ success: false, error: e.message }, { status: 422 });
       throw e;
@@ -216,7 +221,10 @@ export async function POST(request: NextRequest) {
       },
     }, { status: 201 });
   } catch (error) {
-    console.error("Erro ao importar demonstrativo:", error);
-    return NextResponse.json({ success: false, error: "Erro interno ao processar o arquivo" }, { status: 500 });
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/glosas/demonstrativos", acao: "POST" }, error);
+    return NextResponse.json(
+      { success: false, error: classificacao.mensagem ?? "Erro interno ao processar o arquivo", details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
+    );
   }
 }

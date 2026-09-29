@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { managerClient } from "@/lib/manager-client";
 import { prisma } from "@/lib/prisma";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // DELETE - Excluir um usuário (delega ao Sistema 1, que é quem manda nas credenciais).
 // Localmente, apenas desvincula o profissional (o cadastro/histórico clínico continua
@@ -70,13 +71,12 @@ export async function DELETE(
       message: "Usuário excluído com sucesso",
     });
   } catch (error) {
-    console.error("Erro ao excluir usuário:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/usuarios-sistema1/[usuarioId]", acao: "DELETE" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Erro interno do servidor",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? (error instanceof Error ? error.message : "Erro interno do servidor"), details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

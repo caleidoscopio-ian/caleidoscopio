@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
 import { ordenarPontuacoes } from "@/lib/pontuacao";
+import { registrarErroApi } from "@/lib/erro-prisma";
 
 // Respeita a ordem enviada pelo cliente, mas garante "-" no início e "+" no fim.
 // A nota de uma tentativa é o índice do botão, então o "+" fora da última
@@ -130,14 +131,13 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar atividades:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/atividades", acao: "GET" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -281,14 +281,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao criar atividade:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/atividades", acao: "POST" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -474,14 +473,13 @@ export async function PUT(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar atividade:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/atividades", acao: "PUT" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }
@@ -562,14 +560,13 @@ export async function DELETE(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar atividade:", error);
+    const { ref, classificacao } = registrarErroApi({ rota: "/api/atividades", acao: "DELETE" }, error);
     return NextResponse.json(
       {
         success: false,
-        error: "Erro interno do servidor",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
-      },
-      { status: 500 }
+        error: classificacao.mensagem ?? "Erro interno do servidor",
+        details: error instanceof Error ? error.message : "Erro desconhecido", ref },
+      { status: classificacao.mensagem && classificacao.categoria !== "conexao" ? 400 : 500 }
     );
   }
 }

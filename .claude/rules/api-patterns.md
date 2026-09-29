@@ -31,8 +31,15 @@ export async function GET(request: NextRequest) {
     // 5. Retornar resposta
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Erro:', error);
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 });
+    // Nunca console.error solto — ver "Tratamento de erro" abaixo
+    const { ref, classificacao } = registrarErroApi(
+      { rota: '/api/recurso', acao: 'GET' },
+      error
+    );
+    return NextResponse.json(
+      { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },
+      { status: classificacao.mensagem && classificacao.categoria !== 'conexao' ? 400 : 500 }
+    );
   }
 }
 ```
@@ -121,6 +128,61 @@ preencher a ficha em `/terapeutas`.
 Usar `atende=true` em telas de atendimento (agenda, check-in, taxa de ocupação,
 prontuário, terapeuta responsável do paciente). O default da rota continua trazendo
 todos, para as telas administrativas (cadastro de profissionais, relatórios).
+
+## Tratamento de erro — `@/lib/erro-prisma`
+
+`console.error` solto num catch produz duas falhas: o usuário vê "Erro interno do
+servidor" sem saber o que houve, e o motivo real só existe no log da Vercel, sem
+como casar com o relato dele. Todo catch de API route usa `registrarErroApi`.
+
+```typescript
+import { registrarErroApi } from '@/lib/erro-prisma';
+
+} catch (error) {
+  const { ref, classificacao } = registrarErroApi(
+    { rota: '/api/pacientes', acao: 'POST', tenantId: user?.tenant?.id, usuarioId: user?.id },
+    error
+  );
+  return NextResponse.json(
+    { success: false, error: classificacao.mensagem ?? 'Erro interno do servidor',
+      details: classificacao.detalhe, ref },
+    { status: classificacao.mensagem && classificacao.categoria !== 'conexao' ? 400 : 500 }
+  );
+}
+```
+
+O que isso garante:
+
+- **Mensagem útil na tela.** O erro do Prisma vira texto que a clínica entende
+  ("Já existe um registro com este CPF", "O convênio informado não existe").
+- **Referência curta.** A mesma `ref` vai para a resposta e para o log, então o
+  usuário reporta "erro, ref a3f9c1" e a linha é achada com uma busca só.
+- **Status coerente.** Erro de dado responde 400; erro de conexão continua 500,
+  para não mascarar indisponibilidade no monitoramento.
+
+Categorias de `classificarErro`: `constraint` (P2002), `vinculo` (P2003, P2025),
+`validacao` (P2000, P2011, valor/enum/data inválidos), `conexao` (P2024, P1001,
+P1002, P1008, P1017, falha de inicialização — inclui pool esgotado do Neon),
+`concorrencia` (P2028, P2034) e `desconhecido`.
+
+### Nunca logar dado de paciente
+
+É um sistema clínico: nome, CPF, telefone, endereço e dados dos responsáveis
+**não podem** ir para o log. Para diagnosticar, logar a forma do que chegou, não
+o conteúdo:
+
+```typescript
+// ERRADO — despeja PII no log da Vercel
+console.log('Body recebido:', body);
+
+// CORRETO — o que serve para diagnóstico, sem identificar ninguém
+console.log('campos recebidos:', {
+  temCpf: Boolean(body?.cpf), responsaveis: body?.responsaveis?.length ?? 0,
+});
+```
+
+O campo `referencias` de `registrarErroApi` aceita apenas ids e contagens, nunca
+dado identificável.
 
 ## Client-side (src/lib/api.ts)
 
