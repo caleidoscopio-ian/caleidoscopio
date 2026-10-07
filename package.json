@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "verificar:tenant": "node tools/verificar-isolamento-tenant.mjs",
+    "verificar:tenant:ci": "node tools/verificar-isolamento-tenant.mjs --ci"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

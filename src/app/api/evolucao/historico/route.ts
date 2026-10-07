@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { cloneEhDoTenant } from "@/lib/escopo-tenant";
 
 // GET - Histórico de mudanças de fase de uma atividade clone
 export async function GET(request: NextRequest) {
@@ -22,6 +23,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: "ID da atividade clone é obrigatório" },
         { status: 400 }
+      );
+    }
+
+    // 🔒 O id vem da URL: sem conferir a posse, daria para ler o histórico de
+    // evolução de um paciente de outra clínica
+    if (!user.tenant?.id || !(await cloneEhDoTenant(atividadeCloneId, user.tenant.id))) {
+      return NextResponse.json(
+        { success: false, error: "Atividade não encontrada" },
+        { status: 404 }
       );
     }
 

@@ -3,12 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { FaseAtividade } from "@prisma/client";
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { cloneEhDoTenant, instrucaoEhDoTenant } from "@/lib/escopo-tenant";
 
 const FASES_VALIDAS: FaseAtividade[] = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
 
 function validarFase(fase: string): fase is FaseAtividade {
   return FASES_VALIDAS.includes(fase as FaseAtividade);
 }
+
+// 404 em vez de 403: não confirma a existência de registro de outra clínica
+const naoEncontrado = () =>
+  NextResponse.json({ success: false, error: "Registro não encontrado" }, { status: 404 });
 
 // GET - Critérios por instrução (?instrucaoId=) ou por atividade (?atividadeCloneId=, legado)
 export async function GET(request: NextRequest) {
@@ -17,6 +22,10 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ success: false, error: "Usuário não autenticado" }, { status: 401 });
     }
+    if (!user.tenant?.id) {
+      return NextResponse.json({ success: false, error: "Usuário sem clínica associada" }, { status: 403 });
+    }
+    const tenantId = user.tenant.id;
 
     const url = new URL(request.url);
     const instrucaoId = url.searchParams.get("instrucaoId");
@@ -24,6 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Modo instrução (novo)
     if (instrucaoId) {
+      if (!(await instrucaoEhDoTenant(instrucaoId, tenantId))) return naoEncontrado();
       const fases = await prisma.instrucaoFase.findMany({
         where: { instrucaoId },
         orderBy: { fase: "asc" },
@@ -33,6 +43,7 @@ export async function GET(request: NextRequest) {
 
     // Modo atividade (legado)
     if (atividadeCloneId) {
+      if (!(await cloneEhDoTenant(atividadeCloneId, tenantId))) return naoEncontrado();
       const fases = await prisma.atividadeFase.findMany({
         where: { atividadeCloneId },
         orderBy: { fase: "asc" },
@@ -57,6 +68,10 @@ export async function PUT(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ success: false, error: "Usuário não autenticado" }, { status: 401 });
     }
+    if (!user.tenant?.id) {
+      return NextResponse.json({ success: false, error: "Usuário sem clínica associada" }, { status: 403 });
+    }
+    const tenantId = user.tenant.id;
 
     if (!await hasPermission(user, "edit_activities")) {
       return NextResponse.json({ success: false, error: "Sem permissão" }, { status: 403 });
@@ -90,6 +105,7 @@ export async function PUT(request: NextRequest) {
 
     // Modo instrução (novo)
     if (instrucaoId) {
+      if (!(await instrucaoEhDoTenant(instrucaoId, tenantId))) return naoEncontrado();
       const faseAtualizada = await prisma.instrucaoFase.upsert({
         where: { instrucaoId_fase: { instrucaoId, fase: fase as FaseAtividade } },
         update: dataUpdate,
@@ -107,6 +123,7 @@ export async function PUT(request: NextRequest) {
 
     // Modo atividade (legado)
     if (atividadeCloneId) {
+      if (!(await cloneEhDoTenant(atividadeCloneId, tenantId))) return naoEncontrado();
       const faseAtualizada = await prisma.atividadeFase.upsert({
         where: { atividadeCloneId_fase: { atividadeCloneId, fase: fase as FaseAtividade } },
         update: dataUpdate,

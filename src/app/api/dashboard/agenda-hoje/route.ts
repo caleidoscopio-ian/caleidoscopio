@@ -39,6 +39,9 @@ export async function GET(request: NextRequest) {
     // Buscar agendamentos do dia
     const agendamentosHoje = await prisma.agendamento.findMany({
       where: {
+        // 🔒 CRÍTICO: agendamento não tem tenantId próprio — o isolamento vem
+        // pelo paciente. Sem isto, um admin via a agenda de TODAS as clínicas.
+        paciente: { tenantId },
         data_hora: {
           gte: inicioHoje,
           lte: fimHoje,
