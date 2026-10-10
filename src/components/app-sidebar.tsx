@@ -54,12 +54,14 @@ function groupItems(
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, logout } = useAuth();
+  const { user, logout, roleEfetivo, rbacCarregado } = useAuth();
   const pathname = usePathname();
   const { state } = useSidebar();
   const { can, loading: permsLoading } = usePermissions();
 
-  const userRole = user?.role || "user";
+  // Perfil RBAC manda no menu. Antes do RBAC chegar, cai no role do SSO só para
+  // não piscar um menu vazio — o conteúdo real é filtrado por `can()` abaixo.
+  const userRole = (rbacCarregado ? roleEfetivo : user?.role) || "user";
   const professional = isProfessionalRole(userRole);
 
   const groupedNavigation = React.useMemo(() => {

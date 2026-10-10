@@ -46,6 +46,12 @@ interface AuthContextType {
   logout: () => void
   isAuthenticated: boolean
   isAdmin: boolean
+  /** Nome do perfil RBAC (página de permissões). null enquanto carrega. */
+  rbacRole: string | null
+  /** Perfil que vale de fato: RBAC quando conhecido, senão o do SSO */
+  roleEfetivo: string
+  /** false enquanto o perfil RBAC ainda não voltou do servidor */
+  rbacCarregado: boolean
   tenant: AuthUser['tenant'] | null
   config: AuthUser['config'] | null
 }
@@ -58,6 +64,11 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<AuthUser | null>(null)
+  // O perfil RBAC é a fonte de verdade de autorização, mas vive só no Sistema 2
+  // — o objeto de sessão vindo do login do Manager carrega apenas o role do SSO.
+  // Sem buscá-lo aqui, a interface decide por um valor que o servidor ignora.
+  const [rbacRole, setRbacRole] = useState<string | null>(null)
+  const [rbacCarregado, setRbacCarregado] = useState(false)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -215,13 +226,53 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
+  // Busca o perfil RBAC sempre que a sessão muda
+  useEffect(() => {
+    if (!user) {
+      setRbacRole(null)
+      setRbacCarregado(false)
+      return
+    }
+
+    let cancelado = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/me/filial', {
+          headers: {
+            'X-User-Data': btoa(JSON.stringify(user)),
+            'X-Auth-Token': user.token,
+          },
+        })
+        const dados = await res.json()
+        if (cancelado) return
+        setRbacRole(dados?.rbacRole ?? null)
+      } catch {
+        // Falha de rede não deve conceder acesso: mantém o perfil desconhecido
+        if (!cancelado) setRbacRole(null)
+      } finally {
+        if (!cancelado) setRbacCarregado(true)
+      }
+    })()
+
+    return () => {
+      cancelado = true
+    }
+  }, [user])
+
+  // Enquanto o RBAC não chega, não assume privilégio: a interface mostra menos,
+  // nunca mais. O servidor valida de novo em toda requisição.
+  const roleEfetivo = (rbacRole ?? (rbacCarregado ? user?.role : null) ?? '').toUpperCase()
+
   const value: AuthContextType = {
     user,
     loading,
     login,
     logout,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN',
+    isAdmin: roleEfetivo === 'ADMIN' || roleEfetivo === 'SUPER_ADMIN',
+    rbacRole,
+    roleEfetivo,
+    rbacCarregado,
     tenant: user?.tenant || null,
     config: user?.config || null
   }
