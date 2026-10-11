@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
+import { escopoFilialDoUsuario, intersecaoFilial } from "@/lib/filial-pessoa";
 import {
   ESPECIALIDADE_CLINICA_LABELS,
   FUNCAO_ADMINISTRATIVA_LABELS,
@@ -128,7 +129,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const isAdmin = isAdminUser(user);
     const filialIdParam = searchParams.get('filialId');
-    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam || null);
+    // Não-admin fica restrito às PRÓPRIAS filiais (Módulo 26: a pessoa pode
+    // operar em mais de uma); admin filtra via query param.
+    const escopoFilial = await escopoFilialDoUsuario(user.tenant.id, user.id, isAdmin);
+    const filiaisVisiveis = intersecaoFilial(
+      escopoFilial,
+      filialIdParam ? [filialIdParam] : null
+    );
 
     // "atende=true" → apenas quem tem agenda própria (grade de horários, taxa de
     // ocupação, marcação de agendamento). Uma recepcionista tem permissão total
@@ -138,10 +145,11 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔍 Buscando terapeutas para clínica: ${user.tenant.name} (${user.tenant.id})`);
 
-    // Quando filtrando por filial, resolver os IDs de profissional vinculados a ela
-    // (mesma fonte de verdade usada em /api/agendamentos pro filtro por filial)
-    const profissionalIdsDaFilial = filialFiltro
-      ? await resolverProfissionalIdsDaFilial(user.tenant.id, filialFiltro)
+    // Aqui a pergunta É "quais profissionais pertencem a esta filial", que é
+    // exatamente o que `resolverProfissionalIdsDaFilial` responde. Diferente do
+    // filtro de AGENDAMENTO, que desde o Módulo 26 usa `agendamento.filialId`.
+    const profissionalIdsDaFilial = filiaisVisiveis
+      ? await resolverProfissionalIdsDaFilial(user.tenant.id, filiaisVisiveis)
       : null;
 
     // Buscar profissionais APENAS da clínica do usuário (isolamento multi-tenant)

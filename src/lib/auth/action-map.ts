@@ -60,6 +60,9 @@ export const ACTION_MAP: Record<string, ResourceAction> = {
 
   // Agenda
   view_schedule:            { resource: 'agenda',        action: 'VIEW'   },
+  // "Ver a agenda dos OUTROS profissionais", não só a própria. É permissão, não
+  // cargo: um coordenador que atende também pode precisar dela.
+  view_all_schedules:       { resource: 'agenda',        action: 'VIEW_ALL' },
   create_schedule:          { resource: 'agenda',        action: 'CREATE' },
   edit_schedule:            { resource: 'agenda',        action: 'UPDATE' },
   delete_schedule:          { resource: 'agenda',        action: 'DELETE' },

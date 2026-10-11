@@ -27,12 +27,21 @@ export function calcularMinutosDisponiveis(
   grade: BlocoGradeSimples[],
   dataInicio: Date,
   dataFim: Date,
-  filialFiltro?: string | null,
+  /**
+   * Unidades a considerar. Lista porque, desde o Módulo 26, o usuário pode
+   * operar em mais de uma filial — e aí os minutos disponíveis são a soma dos
+   * blocos das unidades que ele vê, não de uma só.
+   * Bloco com `filialId` nulo vale em qualquer unidade.
+   */
+  filialFiltro?: string | string[] | null,
 ): number {
+  const filiais = filialFiltro
+    ? (Array.isArray(filialFiltro) ? filialFiltro : [filialFiltro]).filter(Boolean)
+    : []
   const blocosAtivos = grade.filter(
     (b) =>
       b.ativo !== false &&
-      (!filialFiltro || b.filialId == null || b.filialId === filialFiltro),
+      (filiais.length === 0 || b.filialId == null || filiais.includes(b.filialId)),
   )
   if (blocosAtivos.length === 0) return 0
 

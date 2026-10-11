@@ -4,6 +4,7 @@ import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { StatusAgendamento } from '@/types/agendamento'
 import type { CheckInAction } from '@/types/check-in'
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { resolverValorCobrado } from '@/lib/carimbo-agendamento'
 
 // Transições de status permitidas por ação
 const TRANSICOES: Record<CheckInAction, StatusAgendamento[]> = {
@@ -78,6 +79,7 @@ export async function PATCH(
       motivo_falta?: string | null
       senha_autorizacao?: string | null
       numero_guia?: string | null
+      valor_cobrado?: number | null
     }
 
     let updateData: AgendamentoUpdate = {}
@@ -102,7 +104,13 @@ export async function PATCH(
         updateData = { status: StatusAgendamento.EM_ATENDIMENTO, hora_inicio_real: now }
         break
       case 'finalizar':
-        updateData = { status: StatusAgendamento.ATENDIDO, hora_fim_real: now }
+        // O atendimento vira receita aqui: congela o valor praticado, para que
+        // renegociação futura da tabela do convênio não altere o passado.
+        updateData = {
+          status: StatusAgendamento.ATENDIDO,
+          hora_fim_real: now,
+          valor_cobrado: await resolverValorCobrado(id, user.tenant.id),
+        }
         break
       case 'no-show':
         updateData = { status: StatusAgendamento.FALTOU, motivo_falta: motivo || null }

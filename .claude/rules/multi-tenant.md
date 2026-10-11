@@ -102,3 +102,27 @@ Para liberar um caso já revisado, anotar na linha anterior à query:
 ```typescript
 // tenant-ok: id já validado contra o tenant na linha 42
 ```
+
+## Filial não é tenant
+
+Confundir os dois é tentador e errado:
+
+| | Tenant | Filial |
+|---|---|---|
+| O que é | A clínica | Uma unidade da clínica |
+| Papel | **Isolamento** — dado de uma clínica nunca aparece para outra | **Autorização** — quem pode ver/operar em qual unidade |
+| Se falhar | Vazamento entre clientes | Usuário vê unidade que não é dele |
+| Onde entra | Sempre, em toda query | Onde o escopo do usuário importa |
+
+`tenantId` é obrigatório e não negociável. O escopo de filial é uma camada
+**acima** dele: dentro do tenant, restringe o que cada pessoa vê. Nunca usar
+filial como substituto do `tenantId`.
+
+Escopo de filial via `@/lib/filial-pessoa` — e cuidado com a diferença entre
+`null` (sem restrição) e `[]` (nenhuma permitida), detalhada em
+`.claude/rules/api-patterns.md`.
+
+Ao validar filial vinda da requisição, conferir que ela pertence ao tenant antes
+de usá-la. Um `filialId` de outra clínica num `where` não vaza dado (o `tenantId`
+continua lá), mas num `create` cria vínculo cross-tenant — foi por isso que
+`PATCH /api/usuario-roles` recusa a lista inteira se qualquer filial for de fora.

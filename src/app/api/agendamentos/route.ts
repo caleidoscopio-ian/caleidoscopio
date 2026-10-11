@@ -10,8 +10,11 @@ const normalizarValorParticular = (v: unknown): number | null => {
   const n = Number(v);
   return Number.isFinite(n) && n >= 0 ? n : null;
 };
-import { resolverProfissionalIdsDaFilial } from "@/lib/filial-profissionais";
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { montarCarimboCriacao } from "@/lib/carimbo-agendamento";
+import { escopoFilialDoUsuario, intersecaoFilial } from "@/lib/filial-pessoa";
+import { validarFilialDaSala } from "@/lib/validar-filial-agendamento";
+import { avisosDoAgendamento } from "@/lib/avisos-agendamento";
 
 // GET - Listar agendamentos com filtros
 export async function GET(request: NextRequest) {
@@ -71,14 +74,23 @@ export async function GET(request: NextRequest) {
     // 🔒 CRÍTICO: Se não for admin, terapeuta só vê seus próprios agendamentos
     const isAdmin = isAdminUser(user);
     const filialIdParam = searchParams.get("filialId");
-    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam || null);
 
-    // A filial "dona" de um agendamento é a do profissional (cadastro), não a
-    // da sala onde ele acontece — a sala é só o espaço físico, e um profissional
-    // não deveria (nem pode, na criação) usar sala de outra filial.
-    const profissionalIdsDaFilial = filialFiltro
-      ? await resolverProfissionalIdsDaFilial(user.tenant.id, filialFiltro)
-      : null;
+    // Módulo 26, Fase 3: a filial do agendamento é um CAMPO dele, não mais algo
+    // derivado do perfil do profissional.
+    //
+    // A derivação antiga (`resolverProfissionalIdsDaFilial`) respondia "quais
+    // profissionais pertencem a esta filial", que é outra pergunta. Como os 4
+    // profissionais que atendem têm todos perfil em Bragança mas trabalham em
+    // três unidades, o filtro dizia que 944 de 945 agendamentos eram de Bragança
+    // enquanto a sala dizia 605/286/54.
+    //
+    // O escopo do usuário entra pela interseção: quem está vinculado a uma ou
+    // mais unidades só vê as suas, qualquer que seja o parâmetro recebido.
+    const escopoFilial = await escopoFilialDoUsuario(user.tenant.id, user.id, isAdmin);
+    const filiaisVisiveis = intersecaoFilial(
+      escopoFilial,
+      filialIdParam ? [filialIdParam] : null
+    );
 
     // Construir query com filtros e isolamento multi-tenant
     const where: any = {
@@ -92,34 +104,46 @@ export async function GET(request: NextRequest) {
         tenantId: user.tenant.id,
         ativo: true,
       },
-      ...(profissionalIdsDaFilial ? { profissionalId: { in: profissionalIdsDaFilial } } : {}),
+      ...(filiaisVisiveis ? { filialId: { in: filiaisVisiveis } } : {}),
     };
 
 
-    if (!isAdmin) {
-      // Buscar profissional vinculado ao usuário
+    // Quem pode ver a agenda dos OUTROS profissionais?
+    //
+    // Antes o portão era `isAdmin`, o que confundia dois conceitos: ser
+    // administrador e poder ver a agenda da clínica. O efeito era que uma
+    // secretária não-admin abria a agenda e via VAZIO — enquanto o check-in,
+    // que nunca teve essa restrição, mostrava a recepção inteira. As duas telas
+    // da recepção discordavam.
+    //
+    // Agora é permissão (`agenda` + `VIEW_ALL`), não cargo:
+    //   terapeuta           → só a própria agenda
+    //   recepção/coordenação → toda a agenda, dentro das filiais do vínculo
+    //   admin                → tudo (MANAGE implica VIEW_ALL)
+    //
+    // A escolha é permissão e não `tipo_vinculo` porque um coordenador que
+    // atende também precisa ver os outros — cargo não expressa isso.
+    const podeVerTodas = await hasPermission(user, "view_all_schedules");
+
+    if (!podeVerTodas) {
       const profissionalDoUsuario = await prisma.profissional.findFirst({
         where: {
           usuarioId: user.id,
           tenantId: user.tenant.id,
           ativo: true,
         },
+        select: { id: true },
       });
 
       if (profissionalDoUsuario) {
         where.profissionalId = profissionalDoUsuario.id;
-        console.log(
-          `🔒 Terapeuta ${user.email} - filtrando agendamentos do profissional ${profissionalDoUsuario.nome}`
-        );
       } else {
-        // Se não encontrou profissional vinculado, não retorna nada
-        console.log(
-          `⚠️ Usuário ${user.email} (role: ${user.role}) não tem profissional vinculado`
-        );
+        // Sem agenda própria e sem permissão de ver as outras: nada a mostrar.
+        // Não é erro — é cadastro incompleto ou perfil sem acesso à agenda.
         return NextResponse.json([]);
       }
     } else if (profissionalId) {
-      // Admin pode filtrar por profissional específico
+      // Quem vê todas pode recortar por profissional
       where.profissionalId = profissionalId;
     }
 
@@ -332,6 +356,9 @@ export async function POST(request: NextRequest) {
       status = StatusAgendamento.AGENDADO,
       observacoes,
       valor_particular,
+      // Módulo 26: unidade do atendimento, escolhida no formulário.
+      // Ausente = derivada da sala pela validação.
+      filialId,
     } = body;
 
     // Validações
@@ -413,21 +440,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar disponibilidade da sala (obrigatória agora)
-    const salaExistente = await prisma.sala.findFirst({
-      where: {
-        id: sala,
-        tenantId: user.tenant.id,
-        ativo: true,
-      },
+    // Sala + filial: a validação confere que a sala existe, é do tenant, está
+    // ativa, pertence à filial escolhida e que o usuário pode agendar nela.
+    // Antes daqui só se conferia o tenant — e foi isso que permitiu 339 de 945
+    // agendamentos com filial divergente (ver @/lib/validar-filial-agendamento).
+    const escopo = await escopoFilialDoUsuario(user.tenant.id, user.id, isAdminUser(user));
+    const validacao = await validarFilialDaSala({
+      tenantId: user.tenant.id,
+      salaId: sala,
+      filialId: filialId ?? null,
+      escopo,
     });
 
-    if (!salaExistente) {
+    if (!validacao.ok) {
       return NextResponse.json(
-        { error: "Sala não encontrada ou não pertence a esta clínica" },
-        { status: 404 }
+        { error: validacao.erro, details: validacao.detalhe },
+        { status: validacao.status ?? 400 }
       );
     }
+
+    const filialResolvida = validacao.filialId;
+
 
     // Verificar conflito de horário na sala
     const agendamentosSala = await prisma.agendamento.findMany({
@@ -496,6 +529,9 @@ export async function POST(request: NextRequest) {
         status,
         observacoes,
         valor_particular: normalizarValorParticular(valor_particular),
+        // Congela filial e especialidade da competência. A filial vem validada
+        // contra a sala, não derivada do perfil do profissional.
+        ...(await montarCarimboCriacao(user.tenant.id, profissionalId, filialResolvida)),
       },
       include: {
         paciente: {
@@ -537,7 +573,20 @@ export async function POST(request: NextRequest) {
       `✅ Agendamento criado com sucesso para clínica "${user.tenant.name}"`
     );
 
-    return NextResponse.json(agendamento, { status: 201 });
+    // Conferência de grade: AVISA, não bloqueia (ver @/lib/avisos-agendamento).
+    // Fica depois do create de propósito — é diagnóstico, e não pode impedir o
+    // agendamento de existir.
+    const avisos = await avisosDoAgendamento({
+      tenantId: user.tenant.id,
+      profissionalId,
+      filialId: filialResolvida,
+      ocorrencias: [{ inicio: dataHora, fim: dataFim }],
+    });
+
+    return NextResponse.json(
+      avisos.length > 0 ? { ...agendamento, avisos } : agendamento,
+      { status: 201 }
+    );
   } catch (error) {
     const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos", acao: "POST" }, error);
 

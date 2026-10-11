@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
+import { escopoFilialDoUsuario, intersecaoFilial } from '@/lib/filial-pessoa'
 import { Prisma } from '@prisma/client'
 import { parseInicioPeriodo, parseFimPeriodo } from '@/lib/datas-fuso'
 import { registrarErroApi } from "@/lib/erro-prisma";
@@ -41,15 +42,15 @@ export async function GET(request: NextRequest) {
 
     const isAdmin = isAdminUser(user)
 
-    // Filtro de filial: non-admin usa a filial do usuário
-    const filialFiltro = !isAdmin
-      ? (user.filialId ?? undefined)
-      : (filialId ?? undefined)
+    // Filtro de filial: non-admin usa as PRÓPRIAS filiais (Módulo 26 — a pessoa
+    // pode operar em mais de uma unidade)
+    const escopoFilial = await escopoFilialDoUsuario(user.tenant.id, user.id, isAdmin)
+    const filiaisVisiveis = intersecaoFilial(escopoFilial, filialId ? [filialId] : null)
 
     const salaWhere: Prisma.SalaWhereInput = {
       tenantId: user.tenant.id,
       ativo: true,
-      ...(filialFiltro ? { filialId: filialFiltro } : {}),
+      ...(filiaisVisiveis ? { filialId: { in: filiaisVisiveis } } : {}),
       ...(salaId ? { id: salaId } : {}),
     }
 

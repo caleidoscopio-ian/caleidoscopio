@@ -28,6 +28,11 @@ export async function GET(request: NextRequest) {
         nome: true,
         email: true,
         especialidade: true,
+        // Módulo 26: a pessoa pode operar em VÁRIAS filiais. A lista mora em
+        // ProfissionalFilial; UsuarioRole.filialId virou compatibilidade.
+        filiais: {
+          select: { filialId: true, principal: true, filial: { select: { id: true, nome: true, cor: true } } },
+        },
       },
       orderBy: { nome: 'asc' },
     })
@@ -59,8 +64,15 @@ export async function GET(request: NextRequest) {
         usuarioRoleId: roleMap.get(p.usuarioId!)?.id ?? null,
         ativo: roleMap.get(p.usuarioId!)?.ativo ?? true,
         especialidade: p.especialidade,
+        // Campo antigo, mantido para não quebrar quem já consome
         filialId: roleMap.get(p.usuarioId!)?.filialId ?? null,
         filial: roleMap.get(p.usuarioId!)?.filial ?? null,
+        // Verdade atual: lista vazia = sem restrição de filial
+        filiais: p.filiais.map((f) => f.filial),
+        filialIds: p.filiais.map((f) => f.filialId),
+        filialPrincipalId:
+          p.filiais.find((f) => f.principal)?.filialId ?? p.filiais[0]?.filialId ?? null,
+        profissionalId: p.id,
       }))
 
     return NextResponse.json(result)
@@ -210,7 +222,15 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// PATCH /api/usuario-roles — Atualizar filialId de um usuário
+// PATCH /api/usuario-roles — Atualizar as filiais em que o usuário opera.
+//
+// Aceita `filialIds: string[]` (Módulo 26) e também o `filialId` único antigo,
+// para não quebrar nenhum chamador existente. A verdade passa a morar em
+// ProfissionalFilial; `UsuarioRole.filialId` continua sendo gravado com a
+// filial principal, como compatibilidade e fallback.
+//
+// Lista vazia significa SEM RESTRIÇÃO — é o mesmo que `filialId = null` sempre
+// significou. Não é "nenhuma filial".
 export async function PATCH(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser(request)
@@ -221,13 +241,47 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { usuarioId, filialId } = body
+    const { usuarioId, filialId, filialIds, filialPrincipalId } = body as {
+      usuarioId?: string
+      filialId?: string | null
+      filialIds?: string[]
+      filialPrincipalId?: string | null
+    }
 
     if (!usuarioId) {
       return NextResponse.json({ error: 'usuarioId é obrigatório' }, { status: 400 })
     }
 
     const tenantId = user.tenant.id
+
+    // Forma nova (lista) tem precedência; sem ela, cai no campo único antigo
+    const listaPedida: string[] = Array.isArray(filialIds)
+      ? [...new Set(filialIds.filter((f): f is string => typeof f === 'string' && f.length > 0))]
+      : filialId
+        ? [filialId]
+        : []
+
+    // Toda filial precisa existir NESTE tenant: um id de outra clínica criaria
+    // vínculo cross-tenant, que é justamente o que o isolamento existe para impedir.
+    if (listaPedida.length > 0) {
+      const validas = await prisma.filial.findMany({
+        where: { tenantId, id: { in: listaPedida } },
+        select: { id: true },
+      })
+      const encontradas = new Set(validas.map((f) => f.id))
+      const invalidas = listaPedida.filter((f) => !encontradas.has(f))
+      if (invalidas.length > 0) {
+        return NextResponse.json(
+          { error: 'Filial não encontrada nesta clínica', details: invalidas.join(', ') },
+          { status: 400 }
+        )
+      }
+    }
+
+    const principal =
+      filialPrincipalId && listaPedida.includes(filialPrincipalId)
+        ? filialPrincipalId
+        : (listaPedida[0] ?? null)
 
     let existing = await prisma.usuarioRole.findUnique({
       where: { usuarioId_tenantId: { usuarioId, tenantId } },
@@ -253,16 +307,51 @@ export async function PATCH(request: NextRequest) {
       })
     }
 
-    // filialId null = sem restrição de filial (admin)
-    const updated = await prisma.usuarioRole.update({
-      where: { id: existing.id },
-      data: { filialId: filialId ?? null },
-      include: { filial: { select: { id: true, nome: true, cor: true } } },
+    // O vínculo multi-filial mora em ProfissionalFilial, que é por profissional.
+    // Usuário sem registro em `profissional` não tem onde guardar a lista: nesse
+    // caso só o campo único é atualizado, e a resposta avisa.
+    const profissional = await prisma.profissional.findFirst({
+      where: { tenantId, usuarioId },
+      select: { id: true },
+    })
+
+    const [updated] = await prisma.$transaction(async (tx) => {
+      const role = await tx.usuarioRole.update({
+        where: { id: existing!.id },
+        data: { filialId: principal },
+        include: { filial: { select: { id: true, nome: true, cor: true } } },
+      })
+
+      if (profissional) {
+        // Sincroniza o conjunto: remove só o que saiu da seleção deste
+        // profissional, nunca de outro, e nunca linha de outra tabela.
+        await tx.profissionalFilial.deleteMany({
+          where: {
+            profissionalId: profissional.id,
+            ...(listaPedida.length > 0 ? { filialId: { notIn: listaPedida } } : {}),
+          },
+        })
+        for (const f of listaPedida) {
+          await tx.profissionalFilial.upsert({
+            where: { profissionalId_filialId: { profissionalId: profissional.id, filialId: f } },
+            create: { profissionalId: profissional.id, filialId: f, principal: f === principal },
+            update: { principal: f === principal },
+          })
+        }
+      }
+
+      return [role]
     })
 
     invalidatePermissionCache(usuarioId, tenantId)
 
-    return NextResponse.json(updated)
+    return NextResponse.json({
+      ...updated,
+      filialIds: listaPedida,
+      filialPrincipalId: principal,
+      // false = a lista não pôde ser guardada (usuário sem registro de profissional)
+      multiFilialSalva: !!profissional,
+    })
   } catch (error) {
     const { ref, classificacao } = registrarErroApi({ rota: "/api/usuario-roles", acao: "PATCH" }, error);return NextResponse.json(
       { error: classificacao.mensagem ?? 'Erro interno', details: classificacao.detalhe, ref },

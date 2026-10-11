@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { montarCarimboCriacao } from "@/lib/carimbo-agendamento";
+import { escopoFilialDoUsuario } from "@/lib/filial-pessoa";
+import { validarFilialDaSala } from "@/lib/validar-filial-agendamento";
+import { avisosDoAgendamento } from "@/lib/avisos-agendamento";
 
 // API para criar múltiplos agendamentos de uma vez
 export async function POST(request: NextRequest) {
@@ -56,6 +60,8 @@ export async function POST(request: NextRequest) {
       // (editar um avulso e ligar a repetição), o id dele vem aqui para que
       // todas as ocorrências fiquem na mesma série
       agendamentoOrigemId,
+      // Módulo 26: a unidade vale para toda a série
+      filialId,
     } = body;
 
     // Validações
@@ -153,6 +159,27 @@ export async function POST(request: NextRequest) {
     // Agrupa os agendamentos desta recorrência para permitir excluir, cancelar
     // ou editar "este e os futuros" / "toda a série" depois.
     let serieId: string | null = datas.length > 1 ? randomUUID() : null;
+
+    // Sala e filial são as mesmas para toda a série, então valida uma vez.
+    const validacao = await validarFilialDaSala({
+      tenantId: user.tenant.id,
+      salaId,
+      filialId: filialId ?? null,
+      escopo: await escopoFilialDoUsuario(user.tenant.id, user.id, isAdminUser(user)),
+    });
+    if (!validacao.ok) {
+      return NextResponse.json(
+        { error: validacao.erro, details: validacao.detalhe },
+        { status: validacao.status ?? 400 }
+      );
+    }
+
+    // Mesmo carimbo de competência para todas as ocorrências da recorrência
+    const carimbo = await montarCarimboCriacao(
+      user.tenant.id,
+      profissionalId,
+      validacao.filialId
+    );
 
     if (agendamentoOrigemId) {
       const origem = await prisma.agendamento.findFirst({
@@ -281,6 +308,7 @@ export async function POST(request: NextRequest) {
             status,
             observacoes,
             valor_particular: valorParticularNormalizado,
+            ...carimbo,
             serieId,
           },
           include: {
@@ -335,6 +363,23 @@ export async function POST(request: NextRequest) {
     const sucessos = resultados.filter((r) => r.success).length;
     const falhas = resultados.filter((r) => !r.success).length;
 
+    // Conferência de grade sobre a série inteira: AVISA, não bloqueia.
+    // Diz quantas das ocorrências criadas caíram fora da grade — numa
+    // recorrência isso é o que importa, porque datas diferentes caem em dias da
+    // semana com grade diferente.
+    const avisos = await avisosDoAgendamento({
+      tenantId: user.tenant.id,
+      profissionalId,
+      filialId: validacao.filialId,
+      ocorrencias: (datas as string[])
+        .map((d) => new Date(d))
+        .filter((d) => !isNaN(d.getTime()))
+        .map((inicio) => ({
+          inicio,
+          fim: new Date(inicio.getTime() + duracaoMinutos * 60000),
+        })),
+    });
+
     console.log(
       `✅ Agendamento em massa concluído: ${sucessos} sucessos, ${falhas} falhas`
     );
@@ -348,6 +393,7 @@ export async function POST(request: NextRequest) {
         sucessos,
         falhas,
       },
+      ...(avisos.length > 0 ? { avisos } : {}),
     });
   } catch (error) {
     const { ref, classificacao } = registrarErroApi({ rota: "/api/agendamentos/batch", acao: "POST" }, error);

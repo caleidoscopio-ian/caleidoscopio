@@ -45,6 +45,7 @@ const ACOES = [
   { slug: 'DELETE', nome: 'Excluir' },
   { slug: 'EXPORT', nome: 'Exportar' },
   { slug: 'APPROVE', nome: 'Aprovar' },
+  { slug: 'VIEW_ALL', nome: 'Ver de todos' },
   { slug: 'MANAGE', nome: 'Tudo' },
 ]
 

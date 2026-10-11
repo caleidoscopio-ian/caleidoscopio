@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
+import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
 import { StatusAgendamento } from "@/types/agendamento";
 import { Prisma } from "@prisma/client";
 import { registrarErroApi } from "@/lib/erro-prisma";
@@ -10,6 +10,9 @@ import {
   filtroDataDoEscopo,
   temHistoricoProtegido,
 } from "@/lib/serie-agendamento";
+import { montarCarimboCriacao, resolverValorCobrado } from "@/lib/carimbo-agendamento";
+import { escopoFilialDoUsuario } from "@/lib/filial-pessoa";
+import { validarFilialDaSala } from "@/lib/validar-filial-agendamento";
 
 // GET - Buscar agendamento específico
 export async function GET(
@@ -219,12 +222,49 @@ export async function PUT(
       updateData.duracao_minutos = Math.round((fim.getTime() - inicio.getTime()) / 60000);
     }
 
+    // Trocar a sala pode trocar a unidade do atendimento. A filial é revalidada
+    // e regravada junto, para o par sala×filial nunca ficar inconsistente.
+    let filialResolvida: string | null | undefined;
+    if (body.sala !== undefined || body.filialId !== undefined) {
+      const salaAlvo = body.sala ?? agendamentoExistente.salaId;
+      const validacao = await validarFilialDaSala({
+        tenantId: user.tenant.id,
+        salaId: salaAlvo,
+        filialId: body.filialId ?? null,
+        escopo: await escopoFilialDoUsuario(user.tenant.id, user.id, isAdminUser(user)),
+      });
+      if (!validacao.ok) {
+        return NextResponse.json(
+          { success: false, error: validacao.erro, details: validacao.detalhe },
+          { status: validacao.status ?? 400 }
+        );
+      }
+      filialResolvida = validacao.filialId;
+      updateData.filialId = filialResolvida;
+    }
+
     if (body.sala !== undefined) {
       updateData.salaId = body.sala;
       updateData.sala = body.sala; // Manter campo legado
     }
     if (body.procedimento !== undefined) updateData.procedimentoId = body.procedimento;
     if (body.status) updateData.status = body.status;
+
+    // Trocar o profissional redefine de quem é o atendimento — o carimbo de
+    // competência tem de acompanhar, senão filial e especialidade ficam do
+    // profissional antigo.
+    if (body.profissionalId && body.profissionalId !== agendamentoExistente.profissionalId) {
+      // A filial NÃO muda por troca de profissional: o atendimento continua na
+      // mesma unidade física. Só a especialidade acompanha.
+      Object.assign(
+        updateData,
+        await montarCarimboCriacao(
+          user.tenant.id,
+          body.profissionalId,
+          filialResolvida !== undefined ? filialResolvida : agendamentoExistente.filialId
+        )
+      );
+    }
     if (body.observacoes !== undefined)
       updateData.observacoes = body.observacoes;
     if (body.valor_particular !== undefined) {
@@ -274,6 +314,17 @@ export async function PUT(
         },
       },
     });
+
+    // O atendimento virou receita: congela o valor praticado. Depois do update
+    // para enxergar valor_particular/procedimento já atualizados nesta mesma
+    // requisição. Null é estado normal — procedimento sem preço cadastrado.
+    if (updateData.status === StatusAgendamento.ATENDIDO) {
+      const valor = await resolverValorCobrado(id, user.tenant.id);
+      await prisma.agendamento.update({
+        where: { id },
+        data: { valor_cobrado: valor },
+      });
+    }
 
     // Propagação para a série. A data de cada ocorrência é própria dela, então
     // não é copiada: o que se propaga é a HORA do dia (deslocando cada

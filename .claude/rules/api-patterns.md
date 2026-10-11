@@ -106,7 +106,7 @@ const fim = parseFimPeriodo(param);        // "2026-09-28" → 23:59:59.999 BRT
 Atenção: `new Date("2026-09-28")` é interpretado como **meia-noite UTC**, então usar
 esse valor como `lte` corta o dia inteiro do filtro.
 
-## Permissão x vínculo — eixos independentes
+## Permissão x vínculo x unidade — três eixos independentes
 
 Todo usuário do sistema vira um registro em `profissional`, inclusive recepção e
 financeiro. Dois eixos diferentes governam o que acontece com ele:
@@ -115,6 +115,7 @@ financeiro. Dois eixos diferentes governam o que acontece com ele:
 |------|-----------|----------|
 | **Permissão** | RBAC (`UsuarioRole` → `Role`), via `hasPermission` | O que a pessoa pode fazer |
 | **Vínculo** | `profissional.tipo_vinculo` | Se a pessoa tem agenda própria |
+| **Unidade** | `ProfissionalFilial` (N:N), via `@/lib/filial-pessoa` | Em quais filiais ela opera |
 
 Uma recepcionista tem `view_schedule` e marca agendamentos, mas **não** é atendente:
 não entra na grade de horários, na taxa de ocupação nem no dropdown de profissional
@@ -128,6 +129,86 @@ preencher a ficha em `/terapeutas`.
 Usar `atende=true` em telas de atendimento (agenda, check-in, taxa de ocupação,
 prontuário, terapeuta responsável do paciente). O default da rota continua trazendo
 todos, para as telas administrativas (cadastro de profissionais, relatórios).
+
+### Escopo de filial — `@/lib/filial-pessoa`
+
+Uma pessoa pode operar em **várias** unidades (uma secretária que atende duas
+recepções). O vínculo mora em `ProfissionalFilial`; `UsuarioRole.filialId` é
+compatibilidade legada (cabe uma só) e serve de fallback.
+
+```typescript
+import { escopoFilialDoUsuario, intersecaoFilial } from '@/lib/filial-pessoa';
+
+const escopo = await escopoFilialDoUsuario(tenantId, user.id, isAdminUser(user));
+const filiais = intersecaoFilial(escopo, filialParam ? [filialParam] : null);
+
+// filiais === null  → sem restrição: NÃO filtrar
+// filiais === []    → nenhuma permitida: filtrar por NADA
+where = { ...(filiais ? { filialId: { in: filiais } } : {}) };
+```
+
+**`null` e `[]` significam coisas opostas, e confundi-los é falha de segurança.**
+`intersecaoFilial` devolve `[]` quando o usuário pede uma unidade fora do escopo
+dele. Escrever `filiais && filiais.length > 0` trata `[]` como "não filtrar" e um
+não-admin de Bragança pedindo "Extrema" passa a ver **todas** as unidades. A
+condição correta é `filiais ? ... : ...` — em JS `[]` é truthy, e `in: []` casa
+com nada.
+
+### Filial do agendamento é um CAMPO, não uma derivação
+
+`agendamento.filialId` é escolhido na marcação e validado contra a sala
+(`@/lib/validar-filial-agendamento`). **Nunca** derivar a filial de um
+agendamento do perfil do profissional: ele é um vínculo administrativo, não um
+lugar, e a mesma pessoa atende em duas unidades na mesma semana.
+
+A derivação antiga (via `resolverProfissionalIdsDaFilial`) atribuía 944 de 945
+agendamentos a Bragança, enquanto a sala dizia 605/286/54. `resolverProfissionalIdsDaFilial`
+continua válido para o que ele realmente responde: **quais profissionais
+pertencem a uma unidade** (dropdown de profissional, taxa de ocupação).
+
+### "Ver de todos" é permissão, não cargo
+
+`agenda` + `VIEW_ALL` (action-key `view_all_schedules`) decide quem vê a agenda
+dos **outros** profissionais:
+
+```typescript
+const podeVerTodas = await hasPermission(user, 'view_all_schedules');
+if (!podeVerTodas) where.profissionalId = <o próprio>;
+```
+
+- terapeuta → só a própria agenda
+- recepção/coordenação → toda a agenda, **dentro das filiais do vínculo**
+- admin → tudo (`MANAGE` implica `VIEW_ALL`)
+
+Antes o portão era `isAdmin`, e uma secretária não-admin abria a agenda e via
+vazio — enquanto o check-in, que não tinha restrição, mostrava a recepção
+inteira. Usar `tipo_vinculo` aqui também estaria errado: um coordenador que
+atende precisa ver os outros, e cargo não expressa isso.
+
+> Atenção ao criar um perfil de recepção: `GET /api/agendamentos` exige
+> `view_patients` e o `POST` exige `create_patients` — o recurso é `pacientes`,
+> não `agenda`. Sem eles, marcar "Agenda: ver de todos" não resolve.
+
+### Regra validada no cliente precisa ter par no servidor
+
+A grade de atendimento era conferida **só no formulário**. Um `POST` direto na
+API — script, Postman, integração — gravava horário que a tela recusa:
+demonstrado criando um agendamento de domingo 04:00 para quem tem grade seg–sex,
+com status 201.
+
+Hoje o servidor **avisa** (`@/lib/avisos-agendamento`), não bloqueia: a decisão
+(11/10/2026) foi observar antes de travar, porque a clínica ainda vai configurar
+a grade de vários profissionais e uma importação em uso passaria a falhar. O
+aviso vai no corpo da resposta (`avisos: string[]`), não em log.
+
+Dois cuidados ao escrever conferência de horário no servidor:
+
+- **Reusar as funções puras do cliente** (`@/lib/grade-agendamento`), nunca
+  reimplementar a regra. Tela e API divergirem é pior que não validar.
+- **Dia da semana e hora SEMPRE no fuso da clínica**, via `relogioNoFuso` de
+  `@/lib/datas-fuso`. `getDay()`/`getHours()` usam o fuso do processo, que em
+  produção é UTC: `2026-06-15T02:00Z` é **domingo 23:00** em Brasília, mas
+  `getUTCDay()` responde segunda.
 
 ## Tratamento de erro — `@/lib/erro-prisma`
 
@@ -190,3 +271,26 @@ Usar as funções utilitárias que já injetam headers automaticamente:
 ```typescript
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 ```
+
+## Rota resolvida por catálogo (Central de Relatórios)
+
+`GET /api/relatorios/[slug]` serve **todos** os relatórios da central: o slug
+resolve a definição em `@/lib/relatorios/definicoes`, que declara filtros,
+dimensões e métricas. Não criar rota nova por relatório.
+
+Regras que a rota aplica, e que valem para qualquer rota desse tipo:
+
+- **Só dimensão declarada.** Agrupamento vindo da query é validado contra
+  `definicao.dimensoes` e responde 400 nomeando a dimensão recusada — nunca
+  interpolar chave de agrupamento recebida do cliente numa query.
+- **Permissão vem da definição**, via `hasPermission(user, definicao.acaoVisualizar)`.
+- **Slug fora da central responde 404** (relatório externo ou ainda não pronto),
+  para a URL montada à mão não cair em caminho meio implementado.
+- **Filial de não-admin é imposta pelo servidor**: `isAdmin ? param : user.filialId`.
+  O parâmetro recebido é ignorado — não apenas escondido na tela.
+- **Teto de linhas.** Agregação em memória tem limite explícito
+  (`LIMITE_LINHAS`); acima dele responde 400 pedindo período menor, em vez de
+  derrubar o processo.
+- Segmento estático tem precedência sobre o dinâmico no Next, então
+  `/api/relatorios/opcoes` e as rotas antigas continuam funcionando ao lado de
+  `[slug]`.

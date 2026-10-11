@@ -44,6 +44,7 @@ const ACOES = [
   { slug: 'EXPORT',  nome: 'Exportar',   ordem: 5 },
   { slug: 'APPROVE', nome: 'Aprovar',    ordem: 6 },
   { slug: 'MANAGE',  nome: 'Gerenciar',  ordem: 7 }, // MANAGE = todas as ações
+  { slug: 'VIEW_ALL', nome: 'Ver de todos', ordem: 8 }, // ver além do próprio (ex: agenda da clínica)
 ]
 
 // ─── Permissões por Role ────────────────────────────────────────────────────

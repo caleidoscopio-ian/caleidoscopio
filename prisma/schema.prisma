@@ -35,6 +35,20 @@ model agendamento {
   // Paciente com convênio tira o valor da tabela do convênio; particular não
   // tem tabela, então o valor é informado caso a caso.
   valor_particular Decimal?         @db.Decimal(10, 2)
+
+  // ───── Carimbo histórico (Módulo 25) ─────
+  // Filial e especialidade eram derivadas do profissional em tempo de consulta.
+  // Se ele muda de filial ou de especialidade, TODO o histórico financeiro dele
+  // migrava junto, retroativamente — um fechamento de setembro dava outro número
+  // em dezembro. Estes campos congelam a competência do atendimento.
+  //
+  // Sem relação com Filial de propósito: um snapshot não pode ser apagado por
+  // onDelete quando a filial for removida.
+  filialId               String?    // filial do profissional na criação
+  especialidade_snapshot String?    // especialidade do profissional na criação
+  // Valor efetivado, gravado quando o atendimento vira ATENDIDO. Null quando
+  // não há preço (procedimento fora da tabela do convênio e sem valor particular).
+  valor_cobrado          Decimal?   @db.Decimal(10, 2)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @default(now()) @updatedAt
   paciente        paciente          @relation(fields: [pacienteId], references: [id], onDelete: Cascade)
@@ -46,6 +60,8 @@ model agendamento {
 
   @@index([senha_autorizacao])
   @@index([serieId])
+  @@index([filialId])
+  @@index([status, data_hora])
   @@map("agendamentos")
 }
 

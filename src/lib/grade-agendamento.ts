@@ -24,6 +24,37 @@ export function blocosDoDia(grade: BlocoGrade[], diaSemana: number): BlocoGrade[
 /** true se o profissional tem grade cadastrada (em qualquer dia) */
 export const temGrade = (grade: BlocoGrade[]): boolean => grade.length > 0;
 
+export interface GradeNaFilial {
+  /** blocos que valem na unidade escolhida */
+  blocos: BlocoGrade[];
+  /**
+   * O profissional TEM grade, mas não nesta unidade.
+   *
+   * Este caso precisa de um sinal próprio porque a lista vazia já tem outro
+   * significado: `temGrade([]) === false` quer dizer "grade não configurada" e
+   * libera qualquer horário. Se a filtragem por filial devolvesse `[]` e fosse
+   * tratada do mesmo jeito, escolher a unidade em que o profissional NÃO atende
+   * liberaria a agenda inteira — o oposto do que a grade existe para fazer.
+   */
+  semGradeNestaFilial: boolean;
+}
+
+/**
+ * Recorta a grade para a unidade escolhida (Módulo 26).
+ *
+ * Bloco com `filialId` nulo vale em qualquer unidade — é a configuração
+ * "atende em qualquer filial".
+ */
+export function gradeDaFilial(grade: BlocoGrade[], filialId: string | null): GradeNaFilial {
+  if (!filialId) return { blocos: grade, semGradeNestaFilial: false };
+
+  const blocos = grade.filter((b) => !b.filialId || b.filialId === filialId);
+  return {
+    blocos,
+    semGradeNestaFilial: temGrade(grade) && blocos.length === 0,
+  };
+}
+
 /**
  * true se o intervalo NÃO cabe inteiro em nenhum bloco do dia.
  * Sem grade cadastrada, nunca está fora.

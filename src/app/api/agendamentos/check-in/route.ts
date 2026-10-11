@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission, isAdminUser } from '@/lib/auth/server'
 import { StatusAgendamento } from '@/types/agendamento'
-import { resolverProfissionalIdsDaFilial } from '@/lib/filial-profissionais'
+import { escopoFilialDoUsuario, intersecaoFilial } from '@/lib/filial-pessoa'
 import { parseInicioPeriodo, parseFimPeriodo, inicioDoDia, fimDoDia } from '@/lib/datas-fuso'
 import { registrarErroApi } from "@/lib/erro-prisma";
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const statusParam = searchParams.get('status') // ex: "AGENDADO,CONFIRMADO"
     const isAdmin = isAdminUser(user)
-    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
+    const filialIdParam = searchParams.get('filialId')
 
     // Intervalo do dia no fuso da clínica — o construtor local do Date usaria
     // o fuso do servidor, que em produção é UTC
@@ -34,11 +34,32 @@ export async function GET(request: NextRequest) {
         ) as StatusAgendamento[])
       : undefined
 
-    // A filial "dona" de um agendamento é a do profissional (cadastro), não a
-    // da sala onde ele acontece — mesma fonte usada em /api/agendamentos.
-    const profissionalIdsDaFilial = filialFiltro
-      ? await resolverProfissionalIdsDaFilial(user.tenant.id, filialFiltro)
-      : null
+    // Módulo 26, Fase 3: a filial é campo do agendamento, não do perfil do
+    // profissional. Mesma regra de /api/agendamentos.
+    const escopoFilial = await escopoFilialDoUsuario(user.tenant.id, user.id, isAdmin)
+    const filiaisVisiveis = intersecaoFilial(
+      escopoFilial,
+      filialIdParam ? [filialIdParam] : null
+    )
+
+    // Mesma regra da agenda: quem não tem `VIEW_ALL` vê só os próprios
+    // atendimentos. Esta tela não tinha restrição nenhuma, então um terapeuta
+    // enxergava o check-in de todos os pacientes da clínica — as duas telas da
+    // recepção discordavam entre si.
+    const podeVerTodas = await hasPermission(user, 'view_all_schedules')
+    let profissionalProprio: string | null = null
+    if (!podeVerTodas) {
+      const prof = await prisma.profissional.findFirst({
+        where: { usuarioId: user.id, tenantId: user.tenant.id, ativo: true },
+        select: { id: true },
+      })
+      if (!prof) {
+        // Sem agenda própria e sem permissão de ver as outras
+        // Mesma forma da resposta normal: { success, data, total }
+        return NextResponse.json({ success: true, data: [], total: 0 })
+      }
+      profissionalProprio = prof.id
+    }
 
     const agendamentos = await prisma.agendamento.findMany({
       where: {
@@ -48,11 +69,16 @@ export async function GET(request: NextRequest) {
         },
         profissional: { tenantId: user.tenant.id },
         data_hora: { gte: inicioDia, lte: fimDia },
-        ...(profissionalId
-          ? { profissionalId }
-          : profissionalIdsDaFilial
-            ? { profissionalId: { in: profissionalIdsDaFilial } }
+        // Filial e profissional são filtros independentes agora. Antes, filtrar
+        // por profissional descartava silenciosamente o filtro de filial.
+        // O próprio profissional vence o parâmetro: quem não vê as outras
+        // agendas não passa a ver pedindo outro profissional na query.
+        ...(profissionalProprio
+          ? { profissionalId: profissionalProprio }
+          : profissionalId
+            ? { profissionalId }
             : {}),
+        ...(filiaisVisiveis ? { filialId: { in: filiaisVisiveis } } : {}),
         ...(salaId ? { salaId } : {}),
         ...(statusList?.length ? { status: { in: statusList } } : {}),
       },

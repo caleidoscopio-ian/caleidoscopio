@@ -6,6 +6,7 @@ import { parseInicioPeriodo, parseFimPeriodo } from "@/lib/datas-fuso";
 import type { AtendimentoHistorico, HistoricoResumo } from "@/types/historico-atendimento";
 import { Prisma } from "@prisma/client";
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { escopoFilialDoUsuario, intersecaoFilial } from "@/lib/filial-pessoa";
 
 const STATUS_HISTORICO = ["ATENDIDO", "FALTOU", "CANCELADO"] as const;
 
@@ -50,7 +51,12 @@ export async function GET(request: NextRequest) {
 
     const isAdmin = isAdminUser(user);
     const filialIdParam = searchParams.get("filialId");
-    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam ?? null);
+    // Módulo 26: o escopo do usuário é uma LISTA de filiais
+    const escopoFilial = await escopoFilialDoUsuario(user.tenant.id, user.id, isAdmin);
+    const filiaisVisiveis = intersecaoFilial(
+      escopoFilial,
+      filialIdParam ? [filialIdParam] : null
+    );
 
     // Filtros opcionais
     const statusParam = searchParams.get("status");
@@ -76,7 +82,16 @@ export async function GET(request: NextRequest) {
       status: { in: statusFiltro as Prisma.EnumStatusAgendamentoFilter["in"] },
       ...(profissionalId ? { profissionalId } : {}),
       ...(procedimentoId ? { procedimentoId } : {}),
-      ...(filialFiltro ? { salaRelacao: { filialId: filialFiltro } } : {}),
+      // Filtra pela filial GRAVADA no agendamento, com a sala como rede para
+      // registro cuja sala não tem unidade definida (ver Módulo 26).
+      ...(filiaisVisiveis
+        ? {
+            OR: [
+              { filialId: { in: filiaisVisiveis } },
+              { filialId: null, salaRelacao: { filialId: { in: filiaisVisiveis } } },
+            ],
+          }
+        : {}),
     };
 
     const [total, agendamentos] = await Promise.all([

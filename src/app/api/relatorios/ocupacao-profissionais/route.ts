@@ -6,6 +6,7 @@ import { calcularMinutosDisponiveis, minutosAgendamento } from '@/lib/ocupacao'
 import type { OcupacaoProfissional, OcupacaoResumo } from '@/types/ocupacao-profissional'
 import { parseInicioPeriodo, parseFimPeriodo } from '@/lib/datas-fuso'
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { escopoFilialDoUsuario, intersecaoFilial } from '@/lib/filial-pessoa'
 
 const STATUS_OCUPADOS = ['AGENDADO', 'CONFIRMADO', 'EM_ATENDIMENTO', 'ATENDIDO'] as const
 const STATUS_FALTA = ['FALTOU'] as const
@@ -41,7 +42,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Período máximo de 60 dias' }, { status: 400 })
 
     const isAdmin = isAdminUser(user)
-    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (filialIdParam ?? null)
+    // Módulo 26: escopo do usuário é uma lista de filiais
+    const escopoFilial = await escopoFilialDoUsuario(user.tenant.id, user.id, isAdmin)
+    const filiaisVisiveis = intersecaoFilial(
+      escopoFilial,
+      filialIdParam ? [filialIdParam] : null
+    )
 
     // Buscar profissionais com suas grades
     const profissionaisDb = await prisma.profissional.findMany({
@@ -52,9 +58,12 @@ export async function GET(request: NextRequest) {
         ...(apenasAtendentes
           ? { tipo_vinculo: TipoVinculoProfissional.PROFISSIONAL_CLINICO }
           : {}),
-        ...(filialFiltro ? {
+        // Aqui a pergunta É "quais profissionais desta unidade". Profissional
+        // sem vínculo nenhum entra, para não desaparecer do relatório só por
+        // falta de cadastro.
+        ...(filiaisVisiveis ? {
           OR: [
-            { filiais: { some: { filialId: filialFiltro } } },
+            { filiais: { some: { filialId: { in: filiaisVisiveis } } } },
             { filiais: { none: {} } },
           ],
         } : {}),
@@ -112,7 +121,7 @@ export async function GET(request: NextRequest) {
       const tem_grade = prof.grades.length > 0
 
       const minDisp = tem_grade
-        ? calcularMinutosDisponiveis(prof.grades, dataInicio, dataFim, filialFiltro)
+        ? calcularMinutosDisponiveis(prof.grades, dataInicio, dataFim, filiaisVisiveis)
         : 0
 
       let minAgendados = 0

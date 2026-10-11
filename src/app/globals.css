@@ -212,3 +212,37 @@
     background-color: #1847d1 !important;
   }
 }
+
+/* ───── Paleta de gráficos dos relatórios (Módulo 25) ─────
+   Ordem fixa de 6 slots: a ordem É o mecanismo de segurança para daltonismo,
+   não é estética. Validada com scripts/validate_palette.js da skill dataviz
+   contra as superfícies reais deste projeto (card branco e #171717):
+   claro  — pior par adjacente ΔE 9.1 (protan) / 19.6 (visão normal)
+   escuro — pior par adjacente ΔE 8.4 (protan) / 19.3 (visão normal)
+   O modo claro tem 3 slots abaixo de 3:1 de contraste; a regra de alívio é
+   atendida pela tabela agrupada, que fica sempre abaixo do gráfico.
+   Nunca gerar cor nova: do 7º grupo em diante, agrupar em "Outros". */
+.viz-relatorio {
+  --viz-superficie: hsl(0 0% 100%);
+  --viz-grade: hsl(0 0% 90%);
+  --viz-eixo: hsl(0 0% 45%);
+  --viz-serie-1: #2a78d6;
+  --viz-serie-2: #eb6834;
+  --viz-serie-3: #1baf7a;
+  --viz-serie-4: #eda100;
+  --viz-serie-5: #e87ba4;
+  --viz-serie-6: #008300;
+}
+
+/* Passos próprios para a superfície escura — não é inversão automática */
+.dark .viz-relatorio {
+  --viz-superficie: oklch(0.205 0 0);
+  --viz-grade: hsl(0 0% 27%);
+  --viz-eixo: hsl(0 0% 65%);
+  --viz-serie-1: #3987e5;
+  --viz-serie-2: #d95926;
+  --viz-serie-3: #199e70;
+  --viz-serie-4: #c98500;
+  --viz-serie-5: #d55181;
+  --viz-serie-6: #008300;
+}

@@ -5,6 +5,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
+import { SeletorFiliaisUsuario } from "@/components/usuarios/seletor-filiais-usuario";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,6 @@ import {
   Plus,
   CheckCircle,
   XCircle,
-  Landmark,
   KeyRound,
   Trash2,
   AlertTriangle,
@@ -75,8 +75,12 @@ interface UsuarioRoleInfo {
   usuarioRoleId: string | null;
   roleId: string | null;
   roleNome: string | null;
+  /** Compatibilidade: a filial principal. A verdade é `filialIds` (Módulo 26) */
   filialId: string | null;
   filial: { id: string; nome: string; cor: string | null } | null;
+  /** Filiais em que a pessoa opera. Vazio = sem restrição */
+  filialIds: string[];
+  filialPrincipalId: string | null;
 }
 
 interface RoleOption {
@@ -99,11 +103,6 @@ export default function UsuariosPage() {
   const [availableRoles, setAvailableRoles] = useState<RoleOption[]>([]);
   const [managingUser, setManagingUser] = useState<Usuario | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<string>("");
-  const [pendingFilial, setPendingFilial] = useState<{
-    usuarioId: string;
-    filialId: string | null;
-    filialNome: string;
-  } | null>(null);
   const [resettingPassword, setResettingPassword] = useState(false);
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(
     null,
@@ -151,6 +150,8 @@ export default function UsuariosPage() {
             roleNome: ur.roleAtual?.nome ?? null,
             filialId: ur.filialId,
             filial: ur.filial,
+            filialIds: ur.filialIds ?? [],
+            filialPrincipalId: ur.filialPrincipalId ?? ur.filialId ?? null,
           });
         }
         setRoleInfoMap(map);
@@ -177,11 +178,15 @@ export default function UsuariosPage() {
     }
   };
 
-  const confirmFilialChange = async () => {
-    if (!user || !pendingFilial) return;
-    const { usuarioId, filialId } = pendingFilial;
+  // Módulo 26: a pessoa pode operar em várias filiais. Lista vazia significa
+  // sem restrição — o mesmo que `filialId = null` sempre significou.
+  const salvarFiliais = async (
+    usuarioId: string,
+    filialIds: string[],
+    filialPrincipalId: string | null,
+  ) => {
+    if (!user) return;
     setUpdatingFilial(usuarioId);
-    setPendingFilial(null);
     try {
       const res = await fetch("/api/usuario-roles", {
         method: "PATCH",
@@ -190,11 +195,11 @@ export default function UsuariosPage() {
           "X-User-Data": btoa(JSON.stringify(user)),
           "X-Auth-Token": user.token,
         },
-        body: JSON.stringify({ usuarioId, filialId }),
+        body: JSON.stringify({ usuarioId, filialIds, filialPrincipalId }),
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Erro ao atualizar filial");
+        throw new Error(err.error || "Erro ao atualizar filiais");
       }
       const updated = await res.json();
       setRoleInfoMap((prev) => {
@@ -206,14 +211,35 @@ export default function UsuariosPage() {
           roleNome: existing?.roleNome ?? null,
           filialId: updated.filialId,
           filial: updated.filial,
+          filialIds: updated.filialIds ?? [],
+          filialPrincipalId: updated.filialPrincipalId ?? null,
         });
         return next;
       });
-      toast({ title: "Filial atualizada com sucesso!" });
-    } catch (error: any) {
+
+      if (updated.multiFilialSalva === false) {
+        // Sem registro em `profissional` não há onde guardar a lista; só a
+        // filial principal foi gravada. Melhor dizer do que deixar a tela
+        // mostrar algo que o banco não tem.
+        toast({
+          title: "Apenas a filial principal foi salva",
+          description:
+            "Este usuário não tem cadastro de profissional, então não é possível vinculá-lo a várias filiais.",
+        });
+      } else {
+        toast({
+          title:
+            filialIds.length === 0
+              ? "Usuário liberado para todas as filiais"
+              : filialIds.length === 1
+                ? "Filial atualizada com sucesso!"
+                : `${filialIds.length} filiais vinculadas`,
+        });
+      }
+    } catch (error: unknown) {
       toast({
         title: "Erro",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Erro ao atualizar filiais",
         variant: "destructive",
       });
     } finally {
@@ -262,6 +288,8 @@ export default function UsuariosPage() {
           roleNome: roleName,
           filialId: existing?.filialId ?? null,
           filial: existing?.filial ?? null,
+          filialIds: existing?.filialIds ?? [],
+          filialPrincipalId: existing?.filialPrincipalId ?? null,
         });
         return next;
       });
@@ -559,74 +587,18 @@ export default function UsuariosPage() {
                         {filiais.length > 0 &&
                           (() => {
                             const ri = roleInfoMap.get(usuario.id);
-                            const currentFilialId = ri?.filialId ?? null;
-                            const isUpdating = updatingFilial === usuario.id;
                             return (
                               <TableCell>
-                                <Select
-                                  value={currentFilialId ?? "_todas"}
-                                  onValueChange={(v) => {
-                                    const newFilialId =
-                                      v === "_todas" ? null : v;
-                                    const filialNome = newFilialId
-                                      ? (filiais.find(
-                                          (f) => f.id === newFilialId,
-                                        )?.nome ?? newFilialId)
-                                      : "Todas as filiais";
-                                    setPendingFilial({
-                                      usuarioId: usuario.id,
-                                      filialId: newFilialId,
-                                      filialNome,
-                                    });
-                                  }}
-                                  disabled={
-                                    isUpdating || !can("usuarios", "EDIT")
+                                <SeletorFiliaisUsuario
+                                  filiais={filiais}
+                                  selecionadas={ri?.filialIds ?? []}
+                                  principalId={ri?.filialPrincipalId ?? null}
+                                  salvando={updatingFilial === usuario.id}
+                                  desabilitado={!can("usuarios", "EDIT")}
+                                  onSalvar={(ids, principal) =>
+                                    salvarFiliais(usuario.id, ids, principal)
                                   }
-                                >
-                                  <SelectTrigger className="w-36 h-8 text-xs">
-                                    <SelectValue>
-                                      {ri?.filial ? (
-                                        <span className="flex items-center gap-1.5">
-                                          <span
-                                            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
-                                            style={{
-                                              backgroundColor:
-                                                ri.filial.cor ?? "#6b7280",
-                                            }}
-                                          />
-                                          {ri.filial.nome}
-                                        </span>
-                                      ) : (
-                                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                                          <Landmark className="h-3 w-3" />
-                                          Todas
-                                        </span>
-                                      )}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="_todas">
-                                      <span className="flex items-center gap-1.5">
-                                        <Landmark className="h-3 w-3" />
-                                        Todas as filiais
-                                      </span>
-                                    </SelectItem>
-                                    {filiais.map((f) => (
-                                      <SelectItem key={f.id} value={f.id}>
-                                        <span className="flex items-center gap-1.5">
-                                          <span
-                                            className="inline-block w-2 h-2 rounded-full"
-                                            style={{
-                                              backgroundColor:
-                                                f.cor ?? "#6b7280",
-                                            }}
-                                          />
-                                          {f.nome}
-                                        </span>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                />
                               </TableCell>
                             );
                           })()}
@@ -651,30 +623,6 @@ export default function UsuariosPage() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Dialog Confirmação Filial */}
-        <Dialog
-          open={!!pendingFilial}
-          onOpenChange={(o) => !o && setPendingFilial(null)}
-        >
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Confirmar alteração de filial</DialogTitle>
-              <DialogDescription>
-                Alterar a filial deste usuário para{" "}
-                <strong>{pendingFilial?.filialNome}</strong>?
-                <br />
-                Isso define quais dados ele poderá acessar no sistema.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setPendingFilial(null)}>
-                Cancelar
-              </Button>
-              <Button onClick={confirmFilialChange}>Confirmar</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Dialog Gerenciar Usuário */}
         <Dialog

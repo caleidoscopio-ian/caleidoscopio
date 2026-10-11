@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission, isAdminUser } from "@/lib/auth/server";
+import { escopoFilialDoUsuario, intersecaoFilial } from "@/lib/filial-pessoa";
 import { registrarErroApi } from "@/lib/erro-prisma";
 
 // API para buscar salas da clínica do usuário logado
@@ -40,14 +41,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     // Fonte de verdade = perfil RBAC (página de permissões)
     const isAdmin = isAdminUser(user)
-    // Não-admin fica restrito à própria filial; admin pode filtrar via query param
-    const filialFiltro = !isAdmin ? (user.filialId ?? null) : (searchParams.get('filialId') || null)
+    // Não-admin fica restrito às PRÓPRIAS filiais (Módulo 26: a pessoa pode
+    // operar em mais de uma); admin filtra via query param.
+    const escopoFilial = await escopoFilialDoUsuario(user.tenant.id, user.id, isAdmin)
+    const filialIdParam = searchParams.get('filialId')
+    const filiaisVisiveis = intersecaoFilial(
+      escopoFilial,
+      filialIdParam ? [filialIdParam] : null
+    )
 
     // Buscar salas da clínica
     const salas = await prisma.sala.findMany({
       where: {
         tenantId: user.tenant.id,
-        ...(filialFiltro ? { filialId: filialFiltro } : {}),
+        // Sala com filial nula serve a qualquer unidade, então entra sempre
+        ...(filiaisVisiveis
+          ? { OR: [{ filialId: { in: filiaisVisiveis } }, { filialId: null }] }
+          : {}),
       },
       include: { filial: { select: { id: true, nome: true, cor: true } } },
       orderBy: {

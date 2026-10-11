@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "@/components/main-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -92,6 +92,32 @@ function AgendaPageContent() {
     }
   };
 
+  // Filiais em que o profissional pode ser agendado (grade ∩ escopo do usuário).
+  // O formulário usa isto para o segundo campo: profissional → filial → sala.
+  const fetchFiliaisDoProfissional = useCallback(
+    async (profissionalId: string) => {
+      if (!user) return { filiais: [], temGrade: false, foraDoEscopoDoUsuario: [] };
+      try {
+        const res = await fetch(`/api/terapeutas/${profissionalId}/filiais`, {
+          headers: {
+            "X-User-Data": btoa(JSON.stringify(user)),
+            "X-Auth-Token": user.token,
+          },
+        });
+        const json = await res.json();
+        if (!json?.success) return { filiais: [], temGrade: false, foraDoEscopoDoUsuario: [] };
+        return {
+          filiais: json.data,
+          temGrade: json.diagnostico?.temGrade ?? false,
+          foraDoEscopoDoUsuario: json.diagnostico?.foraDoEscopoDoUsuario ?? [],
+        };
+      } catch {
+        return { filiais: [], temGrade: false, foraDoEscopoDoUsuario: [] };
+      }
+    },
+    [user]
+  );
+
   // Filtro local de filial — independente do seletor global do sidebar
   // Admin: pode trocar pelo dropdown local; não-admin: usa filialId do token (server-side)
   const [selectedFilialId, setSelectedFilialId] = useState<string | null>(null);
@@ -102,14 +128,24 @@ function AgendaPageContent() {
   const [grades, setGrades] = useState<GradeBloco[]>([]);
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [pacientes, setPacientes] = useState<
-    Array<{ id: string; nome: string; convenioId?: string | null }>
+    Array<{
+      id: string;
+      nome: string;
+      /** convênio principal (campo legado) */
+      convenioId?: string | null;
+      /** Convênios do paciente. O formulário só oferece estes + Particular,
+       *  para a recepção não poder marcar num convênio que o paciente não tem. */
+      convenios?: Array<{ id: string; nome: string }>;
+    }>
   >([]);
   const [convenios, setConvenios] = useState<Array<{ id: string; nome: string }>>([]);
   const [profissionais, setProfissionais] = useState<
     Array<{ id: string; nome: string; especialidade: string }>
   >([]);
   const [salas, setSalas] = useState<
-    Array<{ id: string; nome: string; cor?: string }>
+    // Módulo 26: o formulário filtra as salas pela filial escolhida, então
+    // precisa saber a qual unidade cada sala pertence.
+    Array<{ id: string; nome: string; cor?: string; filialId?: string | null }>
   >([]);
   const [procedimentos, setProcedimentos] = useState<
     Array<{ id: string; nome: string; codigo?: string }>
@@ -289,7 +325,42 @@ function AgendaPageContent() {
       const data = result.success ? result.data : result;
 
       setPacientes(
-        data.map((p: any) => ({ id: p.id, nome: p.name || p.nome, convenioId: p.convenioId ?? null }))
+        data.map((p: any) => {
+          // A lista vem de PacienteConvenio (N:M). Quatro pacientes só têm o
+          // campo legado `convenioId` preenchido — sem este fallback, eles
+          // passariam a só poder ser agendados como Particular.
+          const daTabela = Array.isArray(p.convenios)
+            ? p.convenios
+                .map((c: any) => ({
+                  id: c.convenioId ?? c.convenio?.id,
+                  nome:
+                    c.convenio?.nome_fantasia ||
+                    c.convenio?.razao_social ||
+                    "Convênio",
+                }))
+                .filter((c: any) => !!c.id)
+            : [];
+
+          const legado =
+            p.convenioId && !daTabela.some((c: { id: string }) => c.id === p.convenioId)
+              ? [
+                  {
+                    id: p.convenioId,
+                    nome:
+                      p.convenio?.nome_fantasia ||
+                      p.convenio?.razao_social ||
+                      "Convênio",
+                  },
+                ]
+              : [];
+
+          return {
+            id: p.id,
+            nome: p.name || p.nome,
+            convenioId: p.convenioId ?? null,
+            convenios: [...daTabela, ...legado],
+          };
+        })
       );
     } catch (error) {
       console.error("Erro ao carregar pacientes:", error);
@@ -374,6 +445,7 @@ function AgendaPageContent() {
           id: s.id,
           nome: s.nome,
           cor: s.cor,
+          filialId: s.filialId ?? s.filial?.id ?? null,
         }))
       );
     } catch (error) {
@@ -504,6 +576,7 @@ function AgendaPageContent() {
             horario: data.horario,
             horario_fim: data.horario_fim,
             salaId: data.sala,
+            filialId: data.filialId,
             procedimento: data.procedimento,
             status: data.status,
             observacoes: data.observacoes,
@@ -554,6 +627,7 @@ function AgendaPageContent() {
             data_hora: dataHora.toISOString(),
             horario_fim: dataHoraFim.toISOString(),
             sala: data.sala,
+            filialId: data.filialId,
             procedimento: data.procedimento,
             status: data.status,
             observacoes: data.observacoes,
@@ -794,6 +868,13 @@ function AgendaPageContent() {
       horario: horarioInicio,
       horario_fim: horarioFim,
       sala: agendamento.salaId,
+      // Agendamento anterior ao Módulo 26 não tem filial gravada. Derivar da
+      // sala evita obrigar quem só quer mudar o horário a reescolher a unidade.
+      // A Fase 2 (backfill) torna este fallback desnecessário.
+      filialId:
+        agendamento.filialId ??
+        salas.find((sl) => sl.id === agendamento.salaId)?.filialId ??
+        "",
       procedimento: agendamento.procedimentoId || undefined,
       status: agendamento.status,
       observacoes: agendamento.observacoes || "",
@@ -839,6 +920,7 @@ function AgendaPageContent() {
           data_hora: dataHora.toISOString(),
           horario_fim: dataHoraFim.toISOString(),
           sala: data.sala,
+          filialId: data.filialId,
           procedimento: data.procedimento,
           status: data.status,
           observacoes: data.observacoes,
@@ -881,6 +963,7 @@ function AgendaPageContent() {
             horario: data.horario,
             horario_fim: data.horario_fim,
             salaId: data.sala,
+            filialId: data.filialId,
             procedimento: data.procedimento,
             status: data.status,
             observacoes: data.observacoes,
@@ -1309,6 +1392,7 @@ function AgendaPageContent() {
             defaultValues={novoAgendamentoDefaults}
             onFetchGrade={fetchGrade}
             onFetchTabelaConvenio={fetchTabelaConvenio}
+            onFetchFiliais={fetchFiliaisDoProfissional}
           />
         </DialogContent>
       </Dialog>
@@ -1379,6 +1463,7 @@ function AgendaPageContent() {
             defaultValues={editarAgendamentoDefaults}
             onFetchGrade={fetchGrade}
             onFetchTabelaConvenio={fetchTabelaConvenio}
+            onFetchFiliais={fetchFiliaisDoProfissional}
           />
         </DialogContent>
       </Dialog>

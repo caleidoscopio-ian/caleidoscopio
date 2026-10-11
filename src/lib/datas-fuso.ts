@@ -41,7 +41,14 @@ function offsetMinutos(instante: Date, timeZone: string): number {
   return (comoUTC - semMs) / 60000;
 }
 
-/** Instante UTC correspondente a uma hora de parede no fuso informado */
+/**
+ * Instante UTC correspondente a uma hora de parede no fuso informado.
+ *
+ * É o inverso de `relogioNoFuso`. Exportado como `instanteNoFuso` logo abaixo:
+ * qualquer código que precise montar "dia X às 14:00 na clínica" deve usar isto
+ * em vez de `new Date(ano, mes, dia, hora)`, que depende do fuso do processo —
+ * UTC em produção.
+ */
 function instanteDe(
   ano: number,
   mes: number,
@@ -57,6 +64,18 @@ function instanteDe(
   return new Date(palpite - offset * 60000);
 }
 
+/** Monta o instante de uma hora de parede no fuso da clínica */
+export function instanteNoFuso(
+  ano: number,
+  mes: number,
+  dia: number,
+  hora = 0,
+  minuto = 0,
+  timeZone: string = TZ_CLINICA
+): Date {
+  return instanteDe(ano, mes, dia, hora, minuto, 0, 0, timeZone);
+}
+
 /** Ano/mês/dia de calendário de um instante, no fuso da clínica */
 export function partesNoFuso(
   instante: Date = new Date(),
@@ -70,6 +89,45 @@ export function partesNoFuso(
   });
   const [ano, mes, dia] = dtf.format(instante).split("-").map(Number);
   return { ano, mes, dia };
+}
+
+/**
+ * Dia da semana e hora de parede de um instante, no fuso da clínica.
+ *
+ * Existe porque `instante.getDay()` e `getHours()` usam o fuso do PROCESSO — em
+ * produção (Vercel) isso é UTC, e um atendimento de segunda às 08:00 em Brasília
+ * seria lido como domingo às 11:00. É o mesmo bug que já deslocou a recorrência
+ * em -3h.
+ *
+ * O dia da semana é derivado da data de calendário já convertida, com
+ * `Date.UTC`, para não depender de fuso em nenhum passo.
+ */
+export function relogioNoFuso(
+  instante: Date,
+  timeZone: string = TZ_CLINICA
+): { diaSemana: number; hhmm: string } {
+  const dtf = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23", // sem isso, meia-noite pode virar "24" em alguns runtimes
+  });
+  const partes = dtf.formatToParts(instante);
+  const parte = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? "00";
+
+  const ano = Number(parte("year"));
+  const mes = Number(parte("month"));
+  const dia = Number(parte("day"));
+  const hora = parte("hour").padStart(2, "0");
+  const minuto = parte("minute").padStart(2, "0");
+
+  return {
+    diaSemana: new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay(),
+    hhmm: `${hora}:${minuto}`,
+  };
 }
 
 /** 00:00:00.000 do dia, no fuso da clínica */

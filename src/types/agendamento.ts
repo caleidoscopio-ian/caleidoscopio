@@ -49,6 +49,8 @@ export interface Agendamento {
   motivo_falta?: string | null
   senha_autorizacao?: string | null
   numero_guia?: string | null
+  /** Unidade do atendimento (Módulo 26). Null em registros anteriores ao backfill. */
+  filialId?: string | null
   serieId?: string | null
   // Valor combinado no agendamento quando o paciente é particular
   valor_particular?: number | string | null

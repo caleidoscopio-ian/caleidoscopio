@@ -32,7 +32,12 @@ const PERMISSOES_ADMIN: PermissaoMap = Object.fromEntries(
   ALL_RESOURCES.map(r => [r, ['MANAGE']])
 )
 
-// USER (Terapeuta): acesso clínico e educacional, sem admin
+// USER (Terapeuta): acesso clínico e educacional, sem admin.
+//
+// Repare que `agenda` NÃO inclui VIEW_ALL: o terapeuta vê a própria agenda.
+// Quem precisa ver a agenda da clínica — recepção, coordenação — recebe
+// VIEW_ALL num perfil próprio, criado em Gestão de Permissões. ADMIN e
+// SUPER_ADMIN já ficam cobertos porque MANAGE implica todas as ações.
 const PERMISSOES_USER: PermissaoMap = {
   dashboard:      ['VIEW'],
   pacientes:      ['VIEW', 'CREATE', 'UPDATE'],
@@ -92,6 +97,7 @@ const ACOES_GLOBAIS = [
   { slug: 'EXPORT',  nome: 'Exportar',   ordem: 5 },
   { slug: 'APPROVE', nome: 'Aprovar',    ordem: 6 },
   { slug: 'MANAGE',  nome: 'Gerenciar',  ordem: 7 },
+  { slug: 'VIEW_ALL', nome: 'Ver de todos', ordem: 8 }, // ver além do próprio (ex: agenda da clínica)
 ]
 
 // ─── Bootstrap de roles de sistema ───────────────────────────────────────────
