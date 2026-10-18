@@ -39,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Loader2,
   AlertCircle,
+  CheckCircle2,
   TrendingUp,
   ChevronUp,
   ChevronDown,
@@ -145,6 +146,14 @@ interface PacienteCurriculumData {
   id: string;
   curriculum: { id: string; nome: string };
   atividadesClone: AtividadeClone[];
+  /**
+   * Atividades que estão no currículo e não neste plano.
+   *
+   * O plano é um snapshot da atribuição: atividade incluída no currículo depois
+   * não entra sozinha, porque o clone é editado por paciente e propagar por
+   * cima apagaria o trabalho do terapeuta.
+   */
+  faltando?: { id: string; nome: string }[];
 }
 
 interface Paciente {
@@ -290,6 +299,39 @@ function EvolucaoPageContent() {
       setLoading(false);
     }
   }, [isAuthenticated, user, pacienteSelecionado]);
+
+  // ============ Sincronizar plano com o currículo ============
+
+  const [sincronizando, setSincronizando] = useState(false);
+  const [avisoSincronia, setAvisoSincronia] = useState<string | null>(null);
+
+  const sincronizarPlano = async () => {
+    if (!user || !curriculumSelecionado) return;
+    try {
+      setSincronizando(true);
+      const response = await fetch("/api/evolucao/sincronizar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-User-Data": btoa(JSON.stringify(user)),
+          "X-Auth-Token": user.token,
+        },
+        body: JSON.stringify({ pacienteCurriculumId: curriculumSelecionado }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Não foi possível atualizar o plano");
+      }
+      setAvisoSincronia(result.mensagem as string);
+      await fetchEvolucao();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao atualizar o plano"
+      );
+    } finally {
+      setSincronizando(false);
+    }
+  };
 
   // ============ Salvar critérios ============
 
@@ -809,6 +851,49 @@ function EvolucaoPageContent() {
                 Este paciente não possui planos terapêuticos atribuídos com
                 atividades clonadas.
               </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {avisoSincronia && (
+          <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            {avisoSincronia}
+          </div>
+        )}
+
+        {/* Plano desalinhado do currículo: diz o que falta e oferece a ação.
+            Aditivo — o botão clona só o que não existe, nunca mexe no resto. */}
+        {atribuicaoAtual && !loading && (atribuicaoAtual.faltando?.length ?? 0) > 0 && (
+          <Card className="border-amber-300 bg-amber-50">
+            <CardContent className="py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                  <div className="text-sm text-amber-900">
+                    <p className="font-medium">
+                      {atribuicaoAtual.faltando!.length === 1
+                        ? "O currículo tem 1 atividade que não está neste plano"
+                        : `O currículo tem ${atribuicaoAtual.faltando!.length} atividades que não estão neste plano`}
+                    </p>
+                    <p className="text-xs mt-0.5">
+                      {atribuicaoAtual.faltando!.map((a) => a.nome).join(", ")} — foram
+                      incluídas no currículo depois que este plano foi atribuído.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={sincronizarPlano}
+                  disabled={sincronizando}
+                  className="gap-2"
+                >
+                  {sincronizando && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {atribuicaoAtual.faltando!.length === 1
+                    ? "Adicionar ao plano"
+                    : "Adicionar ao plano"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

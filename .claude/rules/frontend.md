@@ -314,6 +314,38 @@ Duas coisas que o editor resolve e que não são óbvias:
 > front que espelham a resposta ainda o declaram. Quem for mexer em acesso a
 > sala começa do zero com as salas reais — não reaproveitar este campo.
 
+## Falha em lote precisa dizer o motivo
+
+Toast com contagem (“0 criados, 11 falhas”) não é feedback: a pessoa não sabe o
+que fazer com isso. `ResultadoLoteDialog`
+(`@/components/agenda/resultado-lote-dialog`) recebe o `resultados[]` da rota de
+lote e mostra os motivos **agrupados**, com as datas de cada um — numa
+recorrência o mesmo motivo se repete, e 11 linhas iguais escondem a informação
+em vez de mostrá-la.
+
+Caso real que originou isso: 11 sessões recusadas por "Profissional já possui
+agendamento neste horário", porque o paciente já tinha a série idêntica em outra
+unidade. O motivo vinha na resposta e morria num `console.warn`.
+
+Lote em que tudo deu certo continua em toast — aí a contagem basta.
+
+## Evolução: o plano pode estar atrás do currículo
+
+`/evolucao` mostra os **clones** do plano do paciente, não as atividades do
+currículo — o plano é um snapshot da atribuição (ver `api-patterns.md`). Quando
+o currículo recebe atividade nova, o plano de quem já estava atribuído continua
+sem ela.
+
+A tela diz isso em vez de deixar a pessoa procurando: `GET /api/evolucao`
+devolve `faltando` por atribuição, e um aviso âmbar nomeia as atividades com um
+botão **"Adicionar ao plano"**. O botão é aditivo — nunca mexe no que já existe
+—, é idempotente (clicar duas vezes não duplica) e some sozinho quando não há
+diferença.
+
+Não propagar automático ao salvar o currículo foi decisão de 18/10/2026: um
+currículo serve vários pacientes, e alterar o plano de quem está em atendimento
+sem ninguém pedir é pior que exigir um clique.
+
 ## Convênio do atendimento — só os do paciente
 
 O dropdown de Convênio no agendamento oferece **"Particular" + os convênios do

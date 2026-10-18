@@ -216,6 +216,61 @@ export async function POST(request: NextRequest) {
           ? Number(valor_particular)
           : null;
 
+    // Agenda do profissional e da sala na JANELA das datas pedidas, carregada
+    // uma vez só.
+    //
+    // Antes isso era um findMany por data, sem filtro de período: cada
+    // ocorrência da recorrência trazia a agenda inteira do profissional, de
+    // todos os tempos. Com 11 datas eram 11 varreduras completas, e o custo
+    // cresce para sempre junto com o histórico da clínica.
+    //
+    // O filtro usa `horario_fim >= início da janela` e `data_hora <= fim da
+    // janela`: agendamento que COMEÇA antes da janela mas termina dentro dela
+    // ainda conflita, e cortar por `data_hora` sozinho o perderia.
+    const instantes = (datas as string[])
+      .map((d) => new Date(d))
+      .filter((d) => !Number.isNaN(d.getTime()));
+
+    const janela =
+      instantes.length > 0
+        ? {
+            inicio: new Date(Math.min(...instantes.map((d) => d.getTime()))),
+            fim: new Date(
+              Math.max(...instantes.map((d) => d.getTime())) + duracaoMinutos * 60000
+            ),
+          }
+        : null;
+
+    const naJanela = janela
+      ? { horario_fim: { gte: janela.inicio }, data_hora: { lte: janela.fim } }
+      : {};
+
+    const ativos = {
+      notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.FALTOU],
+    };
+
+    const [agendaProfissional, agendaSala] = await Promise.all([
+      prisma.agendamento.findMany({
+        where: { profissionalId, status: ativos, ...naJanela },
+        select: { id: true, data_hora: true, horario_fim: true },
+      }),
+      prisma.agendamento.findMany({
+        where: { salaId, status: ativos, ...naJanela },
+        select: { id: true, data_hora: true, horario_fim: true },
+      }),
+    ]);
+
+    /** Choca com algum agendamento já existente? */
+    const conflita = (
+      agenda: { data_hora: Date; horario_fim: Date }[],
+      inicio: Date,
+      fim: Date
+    ) => agenda.some((ag) => inicio < ag.horario_fim && fim > ag.data_hora);
+
+    // Ocorrências criadas neste mesmo lote também ocupam a sala e o
+    // profissional — duas datas iguais no mesmo envio se anulavam antes
+    const criadosAgora: { data_hora: Date; horario_fim: Date }[] = [];
+
     for (const dataStr of datas) {
       try {
         // Instante recebido do cliente, usado como está
@@ -232,28 +287,10 @@ export async function POST(request: NextRequest) {
 
         const dataFim = new Date(dataHora.getTime() + duracaoMinutos * 60000);
 
-        // Verificar conflito de profissional
-        const agendamentosProf = await prisma.agendamento.findMany({
-          where: {
-            profissionalId,
-            status: {
-              notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.FALTOU],
-            },
-          },
-          select: {
-            id: true,
-            data_hora: true,
-            horario_fim: true,
-          },
-        });
-
-        const conflitoProf = agendamentosProf.find((ag) => {
-          const agInicio = new Date(ag.data_hora);
-          const agFim = new Date(ag.horario_fim);
-          return dataHora < agFim && dataFim > agInicio;
-        });
-
-        if (conflitoProf) {
+        if (
+          conflita(agendaProfissional, dataHora, dataFim) ||
+          conflita(criadosAgora, dataHora, dataFim)
+        ) {
           resultados.push({
             data: dataStr,
             success: false,
@@ -262,36 +299,13 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Verificar conflito de sala (se sala foi informada)
-        if (salaId) {
-          const agendamentosSala = await prisma.agendamento.findMany({
-            where: {
-              salaId,
-              status: {
-                notIn: [StatusAgendamento.CANCELADO, StatusAgendamento.FALTOU],
-              },
-            },
-            select: {
-              id: true,
-              data_hora: true,
-              horario_fim: true,
-            },
+        if (conflita(agendaSala, dataHora, dataFim)) {
+          resultados.push({
+            data: dataStr,
+            success: false,
+            error: "Sala já está ocupada neste horário",
           });
-
-          const conflitoSala = agendamentosSala.find((ag) => {
-            const agInicio = new Date(ag.data_hora);
-            const agFim = new Date(ag.horario_fim);
-            return dataHora < agFim && dataFim > agInicio;
-          });
-
-          if (conflitoSala) {
-            resultados.push({
-              data: dataStr,
-              success: false,
-              error: "Sala já está ocupada neste horário",
-            });
-            continue;
-          }
+          continue;
         }
 
         // Criar agendamento
@@ -344,6 +358,8 @@ export async function POST(request: NextRequest) {
             },
           },
         });
+
+        criadosAgora.push({ data_hora: dataHora, horario_fim: dataFim });
 
         resultados.push({
           data: dataStr,

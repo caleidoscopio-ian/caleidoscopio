@@ -65,6 +65,10 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import {
+  ResultadoLoteDialog,
+  type ResultadoLote,
+} from "@/components/agenda/resultado-lote-dialog";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 type ViewMode = "day" | "week" | "month";
@@ -74,6 +78,9 @@ function AgendaPageContent() {
   const { user, isAdmin, tenant } = useAuth();
   const { filiais } = useFilial();
   const { toast } = useToast();
+  // Resultado por data da recorrência: a API diz o motivo de cada falha, e sem
+  // isso a recepção só via "0 criados, 11 falhas" sem saber por quê
+  const [resultadoLote, setResultadoLote] = useState<ResultadoLote[] | null>(null);
 
   // Busca grade de um profissional (usado pelo form para aviso soft constraint)
   const fetchGrade = async (profissionalId: string) => {
@@ -589,19 +596,20 @@ function AgendaPageContent() {
           throw new Error(error.error || "Erro ao criar agendamentos");
         }
 
-        const result = await response.json();
+        const result = (await response.json()) as {
+          resumo: { sucessos: number; falhas: number };
+          resultados: ResultadoLote[];
+        };
 
-        // Mostrar resumo
-        toast({
-          title: "Agendamento em Massa Concluído",
-          description: `${result.resumo.sucessos} agendamento(s) criado(s), ${result.resumo.falhas} falha(s)`,
-          variant: result.resumo.falhas > 0 ? "destructive" : "default",
-        });
-
-        // Mostrar detalhes das falhas
         if (result.resumo.falhas > 0) {
-          const falhas = result.resultados.filter((r: any) => !r.success);
-          console.warn("Falhas no agendamento em massa:", falhas);
+          // O motivo por data vem na resposta; mostrar num diálogo em vez de
+          // console.warn, que era onde essa informação morria
+          setResultadoLote(result.resultados);
+        } else {
+          toast({
+            title: "Agendamento em Massa Concluído",
+            description: `${result.resumo.sucessos} agendamento(s) criado(s)`,
+          });
         }
       } else {
         // Agendamento único (comportamento original)
@@ -977,9 +985,13 @@ function AgendaPageContent() {
           throw new Error(erro.error || "Erro ao criar as ocorrências da recorrência");
         }
 
-        const resumo = await respRecorrencia.json();
+        const resumo = (await respRecorrencia.json()) as {
+          resumo?: { sucessos: number; falhas: number };
+          resultados?: ResultadoLote[];
+        };
         criadas = resumo.resumo?.sucessos ?? 0;
         falhas = resumo.resumo?.falhas ?? 0;
+        if (falhas > 0 && resumo.resultados) setResultadoLote(resumo.resultados);
       }
 
       toast({
@@ -1467,6 +1479,14 @@ function AgendaPageContent() {
           />
         </DialogContent>
       </Dialog>
+
+      <ResultadoLoteDialog
+        resultados={resultadoLote}
+        open={resultadoLote !== null}
+        onOpenChange={(aberto) => {
+          if (!aberto) setResultadoLote(null);
+        }}
+      />
     </MainLayout>
   );
 }

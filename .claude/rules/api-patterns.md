@@ -289,6 +289,65 @@ Dois cuidados ao escrever conferência de horário no servidor:
   produção é UTC: `2026-06-15T02:00Z` é **domingo 23:00** em Brasília, mas
   `getUTCDay()` responde segunda.
 
+## Operação em lote: resultado POR ITEM, e quem chama tem de mostrar
+
+`POST /api/agendamentos/batch` devolve `resultados[]` com `success` e `error`
+por data, além do `resumo`. **O motivo por item existe para ser exibido.** A
+agenda mostrava só a contagem e mandava os motivos para `console.warn`: numa
+recorrência de 11 sessões recusadas, a recepção via "0 criados, 11 falhas" e não
+tinha como descobrir que o paciente já tinha aquela série em outra unidade.
+Quem consome rota de lote abre `ResultadoLoteDialog` (motivos agrupados, datas
+juntas), não um toast com número.
+
+### Conflito de horário se consulta por JANELA, não por data
+
+Carregar a agenda do profissional dentro do laço, sem filtro de período, lia o
+histórico inteiro dele uma vez por ocorrência — 11 varreduras completas numa
+recorrência, e o custo cresce para sempre junto com a clínica. A consulta certa
+é uma só, na janela das datas pedidas:
+
+```typescript
+// agendamento que COMEÇA antes da janela e termina dentro dela ainda conflita,
+// então o corte não pode ser só por data_hora
+where: { profissionalId, status: ativos,
+         horario_fim: { gte: janela.inicio }, data_hora: { lte: janela.fim } }
+```
+
+E o lote tem de conferir contra **as ocorrências criadas nele mesmo**: duas
+datas iguais no mesmo envio passavam as duas, porque nenhuma estava no banco
+quando a outra foi validada.
+
+## Plano do paciente é snapshot — sincronizar é aditivo
+
+`clonarAtividadesParaPaciente` roda **só** em `POST /api/curriculum/atribuir`.
+O plano atribuído é uma cópia do currículo naquele instante, e isso é
+proposital: o clone (`PacienteAtividadeClone`) é editado por paciente — fase
+atual, critérios por instrução, pontuações —, então propagar edição do currículo
+por cima apagaria o trabalho do terapeuta.
+
+A consequência é real e foi medida: **4 dos 9 planos do banco** tinham atividade
+no currículo sem clone no plano, porque a atividade entrou depois da atribuição
+(num caso, 4 meses depois). Dois deles abriam a evolução vazia.
+
+`POST /api/evolucao/sincronizar` resolve isso com uma garantia estreita:
+
+- **Aditivo por contrato.** `clonarAtividadesFaltantes` cria só o que não
+  existe e **nunca** atualiza nem remove clone existente. É o que permite
+  oferecer o botão sem risco.
+- **Clone inativo conta como presente.** Foi desativado de propósito; recriar
+  passaria por cima da decisão. Cuidado: `GET /api/evolucao` filtra
+  `atividadesClone` por `ativo: true` para a tela, então a comparação do que
+  falta é feita numa consulta à parte, sem esse filtro — usar a lista da tela
+  marcaria o clone desativado como faltando e a tela pediria uma ação que o
+  botão (corretamente) não faz.
+- **`atividadeOriginalId` é nulo** quando a atividade de origem foi apagada;
+  esse clone não corresponde a nada no currículo e fica fora da comparação.
+- **Atividade removida do currículo não apaga clone.** O clone guarda dados
+  coletados em sessão; quem quer parar de usar desativa na tela.
+
+Escopo: `pacienteCurriculum` não tem `tenantId` — valide pelo paciente
+(`paciente: { tenantId }`) **antes** de clonar, e responda 404, não 403.
+
 ## Tratamento de erro — `@/lib/erro-prisma`
 
 `console.error` solto num catch produz duas falhas: o usuário vê "Erro interno do
