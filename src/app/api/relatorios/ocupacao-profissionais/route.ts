@@ -85,7 +85,15 @@ export async function GET(request: NextRequest) {
         success: true,
         periodo: { inicio: dataInicio.toISOString(), fim: dataFim.toISOString() },
         profissionais: [],
-        resumo: { taxa_media: 0, total_agendamentos: 0, horas_disponiveis: 0, horas_agendadas: 0, atendendo_agora: 0, profissionais_sem_grade: 0 },
+        resumo: {
+          taxa_media: 0,
+          total_agendamentos: 0,
+          horas_disponiveis: 0,
+          horas_agendadas: 0,
+          atendendo_agora: 0,
+          profissionais_sem_grade: 0,
+          agendamentos_fora: 0,
+        },
       })
     }
 
@@ -116,7 +124,7 @@ export async function GET(request: NextRequest) {
       agsPorProf.set(ag.profissionalId, lista)
     }
 
-    const profissionais: OcupacaoProfissional[] = profissionaisDb.map((prof) => {
+    const todos: OcupacaoProfissional[] = profissionaisDb.map((prof) => {
       const ags = agsPorProf.get(prof.id) ?? []
       const tem_grade = prof.grades.length > 0
 
@@ -165,20 +173,32 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Resumo — taxa média e horas apenas de quem tem grade (denominador válido)
-    const comGrade = profissionais.filter((p) => p.tem_grade)
-    const taxa_media = comGrade.length > 0
-      ? comGrade.reduce((s, p) => s + p.taxa_ocupacao, 0) / comGrade.length
+    // Só entra na tabela quem tem horário disponível NO PERÍODO.
+    //
+    // O corte é `minutos_disponiveis > 0`, não `tem_grade`: além de quem nunca
+    // configurou a grade, isso tira de fora quem configurou mas não atende nos
+    // dias selecionados (grade só de sábado num período de seg a sex) e quem
+    // atende só em outra unidade quando há filtro de filial. Sem denominador
+    // não existe taxa de ocupação, e a linha só diria "—" em toda coluna.
+    const profissionais = todos.filter((p) => p.minutos_disponiveis > 0)
+    const foraDoPeriodo = todos.filter((p) => p.minutos_disponiveis === 0)
+
+    // Resumo sobre o que está NA TABELA: KPI e linhas contando universos
+    // diferentes foi justamente a inconsistência que esta tela tinha.
+    const taxa_media = profissionais.length > 0
+      ? profissionais.reduce((s, p) => s + p.taxa_ocupacao, 0) / profissionais.length
       : 0
 
     const resumo: OcupacaoResumo = {
       taxa_media,
       total_agendamentos: profissionais.reduce((s, p) => s + p.total_agendamentos, 0),
-      // Horas disponíveis e agendadas: só para quem tem grade (comparação válida)
-      horas_disponiveis: Math.round(comGrade.reduce((s, p) => s + p.minutos_disponiveis, 0) / 60),
-      horas_agendadas: Math.round(comGrade.reduce((s, p) => s + p.minutos_agendados, 0) / 60),
+      horas_disponiveis: Math.round(profissionais.reduce((s, p) => s + p.minutos_disponiveis, 0) / 60),
+      horas_agendadas: Math.round(profissionais.reduce((s, p) => s + p.minutos_agendados, 0) / 60),
       atendendo_agora: profissionais.filter((p) => p.atendendo_agora).length,
-      profissionais_sem_grade: profissionais.filter((p) => !p.tem_grade).length,
+      // Quantos ficaram fora, para a tela explicar o vazio em vez de o número
+      // simplesmente não fechar com o que a clínica espera
+      profissionais_sem_grade: foraDoPeriodo.length,
+      agendamentos_fora: foraDoPeriodo.reduce((s, p) => s + p.total_agendamentos, 0),
     }
 
     return NextResponse.json({

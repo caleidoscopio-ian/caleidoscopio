@@ -11,7 +11,6 @@ import {
   Mail,
   Stethoscope,
   GraduationCap,
-  MapPin,
   Clock,
 } from "lucide-react";
 
@@ -35,7 +34,6 @@ interface Professional {
   email?: string;
   specialty: string;
   professionalRegistration?: string;
-  roomAccess: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -64,22 +62,6 @@ export function TerapeutaDetailsDialog({
   const formatCPF = (cpf: string) => {
     if (!cpf) return "-";
     return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-  };
-
-  // Mapeamento das salas (simulado - em produção viria do backend)
-  const salasMap: Record<string, string> = {
-    "sala-1": "Sala 1 - Atendimento Individual",
-    "sala-2": "Sala 2 - Terapia em Grupo",
-    "sala-3": "Sala 3 - Atividades Motoras",
-    "sala-4": "Sala 4 - Musicoterapia",
-    "sala-5": "Sala 5 - Avaliação",
-    "consultorio-1": "Consultório 1",
-    "consultorio-2": "Consultório 2",
-    "consultorio-3": "Consultório 3",
-  };
-
-  const getSalasNomes = (salaIds: string[]) => {
-    return salaIds.map((id) => salasMap[id] || id).filter(Boolean);
   };
 
   return (
@@ -215,36 +197,6 @@ export function TerapeutaDetailsDialog({
                     {professional.professionalRegistration}
                   </span>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Seção: Acesso às Salas */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              Salas de Atendimento
-            </h3>
-
-            <div className="space-y-3">
-              {professional.roomAccess && professional.roomAccess.length > 0 ? (
-                <div className="grid gap-2">
-                  {getSalasNomes(professional.roomAccess).map((sala, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 p-2 bg-gray-50 rounded-md"
-                    >
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{sala}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  Nenhuma sala de acesso configurada
-                </p>
               )}
             </div>
           </div>

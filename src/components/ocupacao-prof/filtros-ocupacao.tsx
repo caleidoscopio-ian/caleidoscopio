@@ -37,16 +37,28 @@ export function FiltrosOcupacao({ profissionais, isAdmin, onFiltrar, loading }: 
   const [profissionalId, setProfissionalId] = useState<string | null>(null)
   const [filialId, setFilialId] = useState<string | null>(null)
 
+  /** Consulta com o estado atual, trocando só o que o controle mexeu. */
+  const aplicar = (mudanca: Partial<FiltrosOcupacaoValues> = {}) => {
+    onFiltrar({ dataInicio, dataFim, profissionalId, filialId, ...mudanca })
+  }
+
+  // Botão de período rápido consulta na hora: escolher "7 dias" e a tabela
+  // continuar mostrando 30 era a reclamação — o valor só ia para a tela depois
+  // de um clique em Filtrar, que ninguém adivinha que é obrigatório.
+  // Datas customizadas continuam esperando o Filtrar: são dois campos, e
+  // consultar no meio da escolha mostraria um intervalo que ninguém pediu.
   const handlePeriodo = (p: Periodo) => {
     setPeriodo(p)
     const now = new Date()
-    if (p === "7d") { setDataInicio(subDays(now, 6)); setDataFim(now) }
-    else if (p === "30d") { setDataInicio(subDays(now, 29)); setDataFim(now) }
-    else if (p === "mes") { setDataInicio(startOfMonth(now)); setDataFim(endOfMonth(now)) }
-  }
-
-  const handleFiltrar = () => {
-    onFiltrar({ dataInicio, dataFim, profissionalId, filialId })
+    const faixa =
+      p === "7d" ? { dataInicio: subDays(now, 6), dataFim: now }
+      : p === "30d" ? { dataInicio: subDays(now, 29), dataFim: now }
+      : p === "mes" ? { dataInicio: startOfMonth(now), dataFim: endOfMonth(now) }
+      : null
+    if (!faixa) return
+    setDataInicio(faixa.dataInicio)
+    setDataFim(faixa.dataFim)
+    aplicar(faixa)
   }
 
   return (
@@ -95,7 +107,14 @@ export function FiltrosOcupacao({ profissionais, isAdmin, onFiltrar, loading }: 
       </Popover>
 
       {/* Profissional */}
-      <Select value={profissionalId ?? "_todos"} onValueChange={(v) => setProfissionalId(v === "_todos" ? null : v)}>
+      <Select
+        value={profissionalId ?? "_todos"}
+        onValueChange={(v) => {
+          const id = v === "_todos" ? null : v
+          setProfissionalId(id)
+          aplicar({ profissionalId: id })
+        }}
+      >
         <SelectTrigger className="w-52 h-9">
           <SelectValue placeholder="Todos os profissionais" />
         </SelectTrigger>
@@ -109,7 +128,14 @@ export function FiltrosOcupacao({ profissionais, isAdmin, onFiltrar, loading }: 
 
       {/* Filial (admin) */}
       {isAdmin && filiais.length > 0 && (
-        <Select value={filialId ?? "_todas"} onValueChange={(v) => setFilialId(v === "_todas" ? null : v)}>
+        <Select
+          value={filialId ?? "_todas"}
+          onValueChange={(v) => {
+            const id = v === "_todas" ? null : v
+            setFilialId(id)
+            aplicar({ filialId: id })
+          }}
+        >
           <SelectTrigger className="w-44 h-9">
             <SelectValue placeholder="Todas as filiais" />
           </SelectTrigger>
@@ -122,7 +148,7 @@ export function FiltrosOcupacao({ profissionais, isAdmin, onFiltrar, loading }: 
         </Select>
       )}
 
-      <Button size="sm" onClick={handleFiltrar} disabled={loading} className="gap-2">
+      <Button size="sm" onClick={() => aplicar()} disabled={loading} className="gap-2">
         <Search className="h-4 w-4" />
         {loading ? "Carregando..." : "Filtrar"}
       </Button>

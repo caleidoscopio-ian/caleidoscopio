@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Loader2, TrendingUp, Building2, Clock, CalendarCheck } from 'lucide-react'
+import { TrendingUp, Building2, Clock, CalendarCheck } from 'lucide-react'
 import {
   BarChart,
   Bar,
@@ -17,30 +16,22 @@ import {
   Line,
   Cell,
 } from 'recharts'
-import {
-  subDays,
-  startOfMonth,
-  endOfMonth,
-  format,
-  eachDayOfInterval,
-  isSameDay,
-  parseISO,
-} from 'date-fns'
+import { subDays, format, eachDayOfInterval, isSameDay, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { SalaOcupacao } from '@/types/ocupacao-sala'
-
-type Periodo = '7d' | '30d' | 'mes'
-
-const HORAS_UTEIS = (21 - 7) * 60  // 840 min por dia
+import type { CapacidadeResposta, SalaOcupacao } from '@/types/ocupacao-sala'
+import { CapacidadeSalas } from '@/components/salas/capacidade-salas'
+import {
+  FiltrosDashboardSalas,
+  type FiltrosDashboardValues,
+} from '@/components/salas/filtros-dashboard-salas'
 
 interface KPI {
   totalAtendimentos: number
   salaMaisUsada: string | null
-  taxaOcupacaoMedia: number
   horarioPico: string | null
 }
 
-function calcKPIs(salas: SalaOcupacao[], dias: number): KPI {
+function calcKPIs(salas: SalaOcupacao[]): KPI {
   const ags = salas.flatMap((s) => s.agendamentos)
   const totalAtendimentos = ags.length
 
@@ -48,16 +39,11 @@ function calcKPIs(salas: SalaOcupacao[], dias: number): KPI {
   const contPorSala = salas.map((s) => ({ nome: s.nome, count: s.agendamentos.length }))
   const salaMaisUsada = contPorSala.sort((a, b) => b.count - a.count)[0]?.nome ?? null
 
-  // Taxa de ocupação: (minutos ocupados / minutos úteis totais) × 100
-  const minOcupados = salas.reduce((acc, sala) => {
-    const min = sala.agendamentos.reduce((a, ag) => {
-      const dur = (new Date(ag.horario_fim).getTime() - new Date(ag.data_hora).getTime()) / 60000
-      return a + Math.min(dur, HORAS_UTEIS)
-    }, 0)
-    return acc + min
-  }, 0)
-  const minUteisTotais = salas.length * dias * HORAS_UTEIS
-  const taxaOcupacaoMedia = minUteisTotais > 0 ? (minOcupados / minUteisTotais) * 100 : 0
+  // A taxa de ocupação NÃO é calculada aqui. Ela vinha de um denominador
+  // chutado — (21h − 7h) × todos os dias do período × nº de salas, ou seja
+  // toda sala aberta 14h por dia, inclusive sábado e domingo — e por isso
+  // subestimava qualquer clínica real. Agora vem de `/api/salas/capacidade`,
+  // contra o horário de funcionamento cadastrado de cada sala.
 
   // Horário de pico (hora com mais agendamentos)
   const contPorHora: Record<number, number> = {}
@@ -68,7 +54,7 @@ function calcKPIs(salas: SalaOcupacao[], dias: number): KPI {
   const horaPickEntry = Object.entries(contPorHora).sort((a, b) => Number(b[1]) - Number(a[1]))[0]
   const horarioPico = horaPickEntry ? `${horaPickEntry[0]}:00` : null
 
-  return { totalAtendimentos, salaMaisUsada, taxaOcupacaoMedia, horarioPico }
+  return { totalAtendimentos, salaMaisUsada, horarioPico }
 }
 
 interface DashboardOcupacaoProps {
@@ -77,58 +63,65 @@ interface DashboardOcupacaoProps {
 
 export function DashboardOcupacao({ filialId }: DashboardOcupacaoProps) {
   const { user } = useAuth()
-  const [periodo, setPeriodo] = useState<Periodo>('30d')
   const [salas, setSalas] = useState<SalaOcupacao[]>([])
+  const [capacidade, setCapacidade] = useState<CapacidadeResposta | null>(null)
   const [loading, setLoading] = useState(false)
-
-  const getRange = useCallback((): { inicio: Date; fim: Date; dias: number } => {
-    const hoje = new Date()
-    hoje.setHours(23, 59, 59, 999)
-    if (periodo === '7d') {
-      const ini = subDays(new Date(), 6); ini.setHours(0, 0, 0, 0)
-      return { inicio: ini, fim: hoje, dias: 7 }
-    }
-    if (periodo === '30d') {
-      const ini = subDays(new Date(), 29); ini.setHours(0, 0, 0, 0)
-      return { inicio: ini, fim: hoje, dias: 30 }
-    }
-    // mes
-    const ini = startOfMonth(new Date()); ini.setHours(0, 0, 0, 0)
-    const fi = endOfMonth(new Date()); fi.setHours(23, 59, 59, 999)
-    const dias = Math.ceil((fi.getTime() - ini.getTime()) / 86400000)
-    return { inicio: ini, fim: fi, dias }
-  }, [periodo])
+  // Começa nos últimos 30 dias, herdando a filial do seletor global da página.
+  // Daí em diante os filtros daqui mandam — inclusive para trocar de filial.
+  const [filtros, setFiltros] = useState<FiltrosDashboardValues>(() => ({
+    inicio: subDays(new Date(), 29),
+    fim: new Date(),
+    filialId: filialId ?? null,
+    salaId: null,
+  }))
 
   const fetchOcupacao = useCallback(async () => {
     if (!user) return
     setLoading(true)
     try {
-      const { inicio, fim } = getRange()
+      // O dia inteiro, nos limites locais: a API resolve o fuso da clínica
+      const inicio = new Date(filtros.inicio); inicio.setHours(0, 0, 0, 0)
+      const fim = new Date(filtros.fim); fim.setHours(23, 59, 59, 999)
       const params = new URLSearchParams({
         dataInicio: inicio.toISOString(),
         dataFim: fim.toISOString(),
-        ...(filialId ? { filialId } : {}),
+        ...(filtros.filialId ? { filialId: filtros.filialId } : {}),
+        ...(filtros.salaId ? { salaId: filtros.salaId } : {}),
       })
-      const r = await fetch(`/api/salas/ocupacao?${params}`, {
-        headers: {
-          'X-User-Data': btoa(JSON.stringify(user)),
-          'X-Auth-Token': user.token,
-        },
-      })
+      const headers = {
+        'X-User-Data': btoa(JSON.stringify(user)),
+        'X-Auth-Token': user.token,
+      }
+      // Duas rotas: a de ocupação devolve os agendamentos (os gráficos de
+      // volume precisam de cada um), a de capacidade devolve só os agregados.
+      const [r, rc] = await Promise.all([
+        fetch(`/api/salas/ocupacao?${params}`, { headers }),
+        fetch(`/api/salas/capacidade?${params}`, { headers }),
+      ])
       const d = await r.json()
       if (d.success) setSalas(d.data)
+      const dc = (await rc.json()) as CapacidadeResposta
+      setCapacidade(dc.success ? dc : null)
     } catch {
       /* silencioso */
     } finally {
       setLoading(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, filialId, getRange])
+  }, [user, filtros])
 
   useEffect(() => { fetchOcupacao() }, [fetchOcupacao])
 
-  const { inicio, fim, dias } = getRange()
-  const kpis = calcKPIs(salas, dias)
+  // A filial do seletor global da página passa a valer quando muda lá
+  useEffect(() => {
+    setFiltros((atual) =>
+      (filialId ?? null) === atual.filialId ? atual : { ...atual, filialId: filialId ?? null, salaId: null }
+    )
+  }, [filialId])
+
+  const inicio = filtros.inicio
+  const fim = filtros.fim
+  const kpis = calcKPIs(salas)
+  const taxaCapacidade = capacidade ? capacidade.total.taxa_ocupacao * 100 : null
 
   // Dados para gráfico de barras: atendimentos por sala
   const dadosPorSala = salas
@@ -156,30 +149,16 @@ export function DashboardOcupacao({ filialId }: DashboardOcupacaoProps) {
     return { hora: `${String(hora).padStart(2, '0')}:00`, total }
   })
 
-  const PERIODOS = [
-    { key: '7d' as Periodo, label: 'Últimos 7 dias' },
-    { key: '30d' as Periodo, label: 'Últimos 30 dias' },
-    { key: 'mes' as Periodo, label: 'Mês atual' },
-  ]
+  const diasNoPeriodo = eachDayOfInterval({ start: inicio, end: fim }).length
 
   return (
     <div className="space-y-6">
-      {/* Seletor de período */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {PERIODOS.map((p) => (
-          <Button
-            key={p.key}
-            variant={periodo === p.key ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setPeriodo(p.key)}
-          >
-            {p.label}
-          </Button>
-        ))}
-        {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-      </div>
+      <FiltrosDashboardSalas valores={filtros} onFiltrar={setFiltros} loading={loading} />
 
-      {/* KPI Cards */}
+      {/* Capacidade — o comparativo de gestão (Módulo 27) */}
+      <CapacidadeSalas dados={capacidade} />
+
+      {/* Volume — quantos atendimentos, onde e quando */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-5">
@@ -200,8 +179,11 @@ export function DashboardOcupacao({ filialId }: DashboardOcupacaoProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Taxa de ocupação</p>
                 <p className="text-2xl font-bold">
-                  {kpis.taxaOcupacaoMedia.toFixed(1)}
+                  {taxaCapacidade === null ? '—' : taxaCapacidade.toFixed(1)}
                   <span className="text-sm font-normal text-muted-foreground">%</span>
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  sobre o horário das salas
                 </p>
               </div>
             </div>
@@ -281,7 +263,7 @@ export function DashboardOcupacao({ filialId }: DashboardOcupacaoProps) {
                   <XAxis
                     dataKey="dia"
                     tick={{ fontSize: 10 }}
-                    interval={periodo === '30d' ? 4 : 0}
+                    interval={diasNoPeriodo > 10 ? Math.ceil(diasNoPeriodo / 8) : 0}
                     angle={-30}
                     textAnchor="end"
                     height={40}

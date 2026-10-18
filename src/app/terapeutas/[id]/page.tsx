@@ -32,10 +32,10 @@ import {
   Mail,
   CreditCard,
   Award,
-  DoorOpen,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RegraRepasseForm } from "@/components/terapeutas/regra-repasse-form";
+import { GradeEditor } from "@/components/ocupacao-prof/grade-editor";
 import { PageLoader } from "@/components/page-loader";
 import type { ProfissionalDetalhe, RegraRepasse } from "@/types/profissional";
 import { TIPO_REPASSE_LABELS } from "@/types/profissional";
@@ -312,6 +312,7 @@ export default function TerapeutaDetalhePage() {
           <TabsList className="mb-4">
             <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
             <TabsTrigger value="agenda">Agenda</TabsTrigger>
+            <TabsTrigger value="grade">Grade de Horário</TabsTrigger>
             <TabsTrigger value="pacientes">Pacientes</TabsTrigger>
             <TabsTrigger value="repasse">Regras de Repasse</TabsTrigger>
           </TabsList>
@@ -370,21 +371,6 @@ export default function TerapeutaDetalhePage() {
                     <div>
                       <p className="text-xs text-muted-foreground">E-mail</p>
                       <p className="font-medium">{profissional.email}</p>
-                    </div>
-                  </div>
-                )}
-                {profissional.salas_acesso.length > 0 && (
-                  <div className="flex items-start gap-2 col-span-2">
-                    <DoorOpen className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Salas com acesso</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {profissional.salas_acesso.map((sala) => (
-                          <Badge key={sala} variant="outline" className="text-xs">
-                            {sala}
-                          </Badge>
-                        ))}
-                      </div>
                     </div>
                   </div>
                 )}
@@ -605,6 +591,28 @@ export default function TerapeutaDetalhePage() {
                     </TableBody>
                   </Table>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ── Tab: Grade de Horário ───────────────────────────────────── */}
+          {/* Mesmo editor do modal da taxa de ocupação, não uma segunda tela:
+              a filial escolhida aqui é a que alimenta o agendamento. */}
+          <TabsContent value="grade">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Grade de Atendimento</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Dias, horários e filial em que o profissional atende. É o que a
+                  agenda usa para liberar o agendamento e o que a taxa de ocupação
+                  usa como horário disponível.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <GradeEditor
+                  endpoint={`/api/terapeutas/${id}/grade`}
+                  onSaved={fetchProfissional}
+                />
               </CardContent>
             </Card>
           </TabsContent>

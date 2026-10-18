@@ -16,6 +16,7 @@
 //     cadastrado em vez de travar o atendimento.
 
 import type {
+  Dimensao,
   GrupoRelatorio,
   LinhaRelatorio,
   Metrica,
@@ -97,15 +98,25 @@ export function calcularMetricas(
 
 const arredondar = (n: number): number => Math.round(n * 100) / 100;
 
-/** Ordena rótulos em pt-BR deixando os grupos sem valor no fim da lista */
-function compararGrupos(a: GrupoRelatorio, b: GrupoRelatorio): number {
-  if ((a.id === null) !== (b.id === null)) return a.id === null ? 1 : -1;
-  return a.rotulo.localeCompare(b.rotulo, "pt-BR", { numeric: true });
+/**
+ * Ordena rótulos em pt-BR deixando os grupos sem valor no fim da lista.
+ *
+ * `cronologica` ordena pelo `id` (ex.: "2026-09") em vez do rótulo ("set/2026").
+ * Sem isso, "out/2026" viria antes de "set/2026" — alfabético, não cronológico.
+ */
+function compararGrupos(cronologica: boolean) {
+  return (a: GrupoRelatorio, b: GrupoRelatorio): number => {
+    if ((a.id === null) !== (b.id === null)) return a.id === null ? 1 : -1;
+    if (cronologica && a.id && b.id) return a.id.localeCompare(b.id);
+    return a.rotulo.localeCompare(b.rotulo, "pt-BR", { numeric: true });
+  };
 }
 
 interface OpcoesAgregacao {
   /** inclui as linhas-fonte no nível mais profundo (drill-down da tela) */
   incluirDetalhe?: boolean;
+  /** catálogo das dimensões, para saber quais ordenam cronologicamente */
+  dimensoes?: Dimensao[];
 }
 
 /**
@@ -122,6 +133,9 @@ export function agregar(
   metricas: Metrica[],
   opcoes: OpcoesAgregacao = {}
 ): { grupos: GrupoRelatorio[]; total: TotalRelatorio; agrupamento: string[] } {
+  const cronologicas = new Set(
+    (opcoes.dimensoes ?? []).filter((d) => d.cronologica).map((d) => d.chave)
+  );
   const niveis: string[] = [];
   for (const chave of agrupamento) {
     if (niveis.length >= MAX_NIVEIS) break;
@@ -136,7 +150,7 @@ export function agregar(
   };
 
   return {
-    grupos: construir(linhas, niveis, 0, metricas, opcoes),
+    grupos: construir(linhas, niveis, 0, metricas, opcoes, cronologicas),
     total,
     agrupamento: niveis,
   };
@@ -147,7 +161,8 @@ function construir(
   niveis: string[],
   profundidade: number,
   metricas: Metrica[],
-  opcoes: OpcoesAgregacao
+  opcoes: OpcoesAgregacao,
+  cronologicas: Set<string>
 ): GrupoRelatorio[] {
   if (profundidade >= niveis.length) return [];
 
@@ -185,13 +200,13 @@ function construir(
       semValor,
       subgrupos: ehFolha
         ? []
-        : construir(balde.linhas, niveis, profundidade + 1, metricas, opcoes),
+        : construir(balde.linhas, niveis, profundidade + 1, metricas, opcoes, cronologicas),
       detalhe,
       detalheTruncado: ehFolha && balde.linhas.length > LIMITE_DETALHE_POR_GRUPO,
     });
   }
 
-  return grupos.sort(compararGrupos);
+  return grupos.sort(compararGrupos(cronologicas.has(dimensao)));
 }
 
 /** Achata a árvore em linhas planas — usado pela exportação (Fase 4) */

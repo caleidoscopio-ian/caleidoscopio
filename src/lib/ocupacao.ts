@@ -1,5 +1,7 @@
 // Helpers de cálculo de ocupação de profissionais
 
+import { diasDoPeriodo } from '@/lib/datas-fuso'
+
 export interface BlocoGradeSimples {
   diaSemana: number
   hora_inicio: string
@@ -21,7 +23,13 @@ export function minutosBlocoGrade(bloco: BlocoGradeSimples): number {
 
 /**
  * Soma os minutos disponíveis de uma grade num intervalo de datas.
- * Itera cada dia do intervalo, calcula o dia da semana e soma os blocos ativos.
+ *
+ * Itera cada dia do intervalo **no fuso da clínica** (`diasDoPeriodo`) e soma
+ * os blocos daquele dia da semana. Usar `getDay()` sobre o instante usaria o
+ * fuso do processo: em produção (UTC) o fim do período — 23:59:59.999 em
+ * Brasília — já é o dia seguinte, e o laço contava um dia a mais. Numa semana
+ * de grade seg–sex isso virava 6 dias úteis em vez de 5: 20% de erro no
+ * denominador da taxa.
  */
 export function calcularMinutosDisponiveis(
   grade: BlocoGradeSimples[],
@@ -46,20 +54,13 @@ export function calcularMinutosDisponiveis(
   if (blocosAtivos.length === 0) return 0
 
   let total = 0
-  const cur = new Date(dataInicio)
-  cur.setHours(0, 0, 0, 0)
-  const fim = new Date(dataFim)
-  fim.setHours(23, 59, 59, 999)
-
-  while (cur <= fim) {
-    const dow = cur.getDay()
+  for (const { diaSemana } of diasDoPeriodo(dataInicio, dataFim)) {
     for (const bloco of blocosAtivos) {
-      if (bloco.diaSemana === dow) {
+      if (bloco.diaSemana === diaSemana) {
         const mins = minutosBlocoGrade(bloco)
         if (mins > 0) total += mins
       }
     }
-    cur.setDate(cur.getDate() + 1)
   }
   return total
 }

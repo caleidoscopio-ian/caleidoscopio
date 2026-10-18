@@ -7,6 +7,26 @@ export interface BlocoGrade {
   ativo?: boolean
 }
 
+/**
+ * Filial que pode ser escolhida num bloco da grade: o vínculo do profissional
+ * interseccionado com o escopo de quem está configurando.
+ * Servida por `GET /api/terapeutas/[id]/grade`.
+ */
+export interface FilialDaGrade {
+  id: string
+  nome: string
+  /** fora do vínculo do profissional, mas já usada por um bloco existente */
+  foraDoVinculo: boolean
+}
+
+export interface RespostaGrade {
+  success: boolean
+  data: BlocoGrade[]
+  filiais: FilialDaGrade[]
+  /** false = profissional sem filial vinculada; a lista veio inteira */
+  profissionalRestrito: boolean
+}
+
 export interface OcupacaoProfissional {
   id: string
   nome: string
@@ -22,12 +42,16 @@ export interface OcupacaoProfissional {
 }
 
 export interface OcupacaoResumo {
+  /** médias e somas SOBRE AS LINHAS DA TABELA, não sobre todo o cadastro */
   taxa_media: number
   total_agendamentos: number
   horas_disponiveis: number
   horas_agendadas: number
   atendendo_agora: number
+  /** quantos profissionais ficaram fora por não ter grade no período */
   profissionais_sem_grade: number
+  /** agendamentos desses profissionais, que portanto não entram nos KPIs */
+  agendamentos_fora: number
 }
 
 export interface OcupacaoResponse {

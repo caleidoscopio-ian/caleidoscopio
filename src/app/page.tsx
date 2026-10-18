@@ -1,18 +1,18 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
-  const router = useRouter()
-  const { isAuthenticated, loading } = useAuth()
+  const router = useRouter();
+  const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
     if (!loading) {
-      router.push(isAuthenticated ? '/dashboard' : '/login')
+      router.push(isAuthenticated ? "/dashboard" : "/login");
     }
-  }, [isAuthenticated, loading, router])
+  }, [isAuthenticated, loading, router]);
 
   // Página de loading enquanto redireciona
   return (
@@ -30,5 +30,5 @@ export default function Home() {
         </div>
       </div>
     </div>
-  )
+  );
 }

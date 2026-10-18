@@ -103,6 +103,15 @@ const inicio = parseInicioPeriodo(param);  // "2026-09-28" → 00:00 BRT; ISO co
 const fim = parseFimPeriodo(param);        // "2026-09-28" → 23:59:59.999 BRT
 ```
 
+**Varrer dia a dia também é fuso.** `diasDoPeriodo(inicio, fim)` devolve a chave
+`yyyy-MM-dd` e o dia da semana de cada dia do intervalo, no fuso da clínica.
+Iterar com `setDate`/`getDay` erra o extremo: o fim do período é 23:59:59.999 em
+Brasília, que em UTC **já é o dia seguinte**, e o laço roda um dia a mais.
+Medido na taxa de ocupação: um período de 7 dias (seg a dom) contava **8 dias e
+6 dias úteis** em produção contra 7 e 5 no dev local — 1440 min de grade em vez
+de 1200, 20% de inflação no denominador da taxa. O teste roda o mesmo cenário
+com `TZ=UTC` e `TZ=America/Sao_Paulo` e exige número idêntico.
+
 Atenção: `new Date("2026-09-28")` é interpretado como **meia-noite UTC**, então usar
 esse valor como `lte` corta o dia inteiro do filtro.
 
@@ -166,6 +175,32 @@ agendamentos a Bragança, enquanto a sala dizia 605/286/54. `resolverProfissiona
 continua válido para o que ele realmente responde: **quais profissionais
 pertencem a uma unidade** (dropdown de profissional, taxa de ocupação).
 
+### Filial de um bloco da grade — o vínculo do profissional
+
+`GET /api/terapeutas/[id]/grade` devolve, junto dos blocos, as **filiais que
+podem ser escolhidas**: vínculo do profissional (`escopoFilialDoProfissional`)
+∩ escopo de quem está configurando (`escopoFilialDoUsuario`). Não é a lista de
+filiais da clínica — oferecer todas permitia montar a grade de alguém numa
+unidade onde ele não trabalha, e a filial da grade é o que depois alimenta o
+campo de filial do agendamento.
+
+Dois casos reais que a regra tem de atravessar sem travar a clínica:
+
+- **48 dos 57 profissionais não têm vínculo nenhum** (nem `ProfissionalFilial`
+  nem `UsuarioRole.filialId`). Esses caem em `SEM_RESTRICAO` e recebem a lista
+  inteira, com `profissionalRestrito: false` — a tela avisa que o vínculo está
+  em branco. Devolver lista vazia deixaria o campo inútil para a maioria.
+- **2 blocos já apontam para filial fora do vínculo.** Essas filiais continuam
+  na lista, marcadas com `foraDoVinculo: true`, e o `PUT` as aceita. Sem essa
+  ressalva, salvar a grade dessas pessoas passaria a falhar — ou, pior, perderia
+  a configuração calada.
+
+O `PUT` confere a mesma coisa (regra de cliente sem par no servidor não é
+regra): bloco com filial de **outro tenant** responde 400, e esse caminho não
+tinha validação nenhuma antes — era `create` com `filialId` cru, exatamente o
+vínculo cross-tenant que `multi-tenant.md` proíbe. `filialId` nulo continua
+válido e significa "qualquer filial".
+
 ### "Ver de todos" é permissão, não cargo
 
 `agenda` + `VIEW_ALL` (action-key `view_all_schedules`) decide quem vê a agenda
@@ -188,6 +223,50 @@ atende precisa ver os outros, e cargo não expressa isso.
 > Atenção ao criar um perfil de recepção: `GET /api/agendamentos` exige
 > `view_patients` e o `POST` exige `create_patients` — o recurso é `pacientes`,
 > não `agenda`. Sem eles, marcar "Agenda: ver de todos" não resolve.
+
+### Capacidade de sala = grade da sala ∩ grade do profissional − agendado
+
+`GET /api/salas/capacidade` responde "cabe mais um profissional?" decompondo o
+horário de cada sala em três parcelas que **somam exatamente** a capacidade:
+
+```
+capacidade = agendado + livre COM profissional + livre SEM profissional
+```
+
+A última é o número de gestão: sala aberta, ninguém escalado. As duas sobras
+pedem ações opostas (agendar x contratar), então somá-las numa só perderia a
+informação.
+
+Três decisões que não são óbvias:
+
+- **Álgebra de intervalos, não slots** (`@/lib/capacidade-sala`). A grade é de
+  meia em meia hora, mas sessão de 50 minutos é comum: marcar slots de 30min
+  arredondaria cada uma para 60 e inflaria a ocupação em 20%. Tudo é
+  `unir`/`intersectar`/`subtrair` em minutos do dia, exato.
+- **Sala sem grade fica FORA de todos os números**, listada em
+  `salas_sem_grade`. Sem horário de funcionamento não existe denominador:
+  contar como zero daria taxa infinita, e assumir um horário inventaria
+  capacidade que a clínica não confirmou.
+- **Atendimento em horário de sala fechada** vai para `minutos_agendados_fora`,
+  não para o uso. É sinal de grade incompleta ou marcação errada, e some se for
+  somado ao resto.
+
+**Sobra por sala superestima o que dá para vender.** Grade de profissional não
+aponta para sala, então a hora livre de uma pessoa aparece em todas as salas
+abertas naquele horário. Por isso a resposta traz também o **teto vendável**
+(`minutos_efetivos`), contado minuto a minuto **por filial** como
+`mín(salas abertas, profissionais escalados)` — e a grade entra separada **por
+pessoa**, porque unir antes perderia quantas pessoas existem no mesmo horário.
+O `mín` é da unidade: não existe versão por sala dele, e somar os tetos das
+unidades é correto porque pessoal não se transfere entre elas.
+
+Endpoint separado de `/api/salas/ocupacao` de propósito: aquele devolve a lista
+de agendamentos (a timeline precisa de cada um), este devolve agregados. Juntar
+faria o dashboard baixar centenas de agendamentos para mostrar seis cartões.
+
+`GET/PUT /api/salas/[id]/grade` espelha a grade do profissional, com duas
+diferenças: **sem filial** (a sala já pertence a uma) e permissão de sala
+(`view_rooms`/`manage_rooms`), não de agenda.
 
 ### Regra validada no cliente precisa ter par no servidor
 
@@ -284,6 +363,12 @@ Regras que a rota aplica, e que valem para qualquer rota desse tipo:
   `definicao.dimensoes` e responde 400 nomeando a dimensão recusada — nunca
   interpolar chave de agrupamento recebida do cliente numa query.
 - **Permissão vem da definição**, via `hasPermission(user, definicao.acaoVisualizar)`.
+- **Parâmetro de apresentação pode cair no padrão em vez de 400.** `granularidade`
+  (passo da série do gráfico) aceita `dia|semana|mes`; qualquer outra coisa é
+  ignorada e o servidor resolve pelo tamanho do período. A diferença em relação ao
+  agrupamento é que aqui nenhuma chave vai para query nenhuma, e a resposta vem
+  rotulada com o passo que foi realmente usado — a tela não tem como mentir.
+  Recusar quebraria o relatório por uma preferência velha no `localStorage`.
 - **Slug fora da central responde 404** (relatório externo ou ainda não pronto),
   para a URL montada à mão não cair em caminho meio implementado.
 - **Filial de não-admin é imposta pelo servidor**: `isAdmin ? param : user.filialId`.

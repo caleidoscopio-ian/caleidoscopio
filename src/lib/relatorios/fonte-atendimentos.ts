@@ -25,8 +25,12 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calcularPrecoProcedimento } from "@/lib/preco-procedimento";
-import { chaveMes } from "@/lib/datas-fuso";
-import { formatarChaveMes } from "@/lib/relatorios/formatacao";
+import { chaveDia, chaveMes, chaveSemana } from "@/lib/datas-fuso";
+import {
+  formatarChaveDia,
+  formatarChaveMes,
+  formatarChaveSemana,
+} from "@/lib/relatorios/formatacao";
 import type { LinhaRelatorio } from "@/types/relatorio";
 
 /** Teto de linhas trazidas para a memória de uma vez. Acima disso, pedimos
@@ -263,7 +267,14 @@ export async function carregarAtendimentos(f: FiltrosAtendimento): Promise<Resul
         paciente: { id: r.paciente?.id ?? null, rotulo: r.paciente?.nome ?? "Sem paciente" },
         sala: { id: r.salaRelacao?.id ?? null, rotulo: r.salaRelacao?.nome ?? "Sem sala" },
         mes: { id: mes, rotulo: formatarChaveMes(mes) },
+        // usadas só pela série temporal do gráfico
+        dia: { id: chaveDia(r.data_hora), rotulo: formatarChaveDia(chaveDia(r.data_hora)) },
+        semana: {
+          id: chaveSemana(r.data_hora),
+          rotulo: formatarChaveSemana(chaveSemana(r.data_hora)),
+        },
       },
+      quando: r.data_hora.toISOString(),
       valores: {
         valor_total: valor,
         duracao_total: duracao,

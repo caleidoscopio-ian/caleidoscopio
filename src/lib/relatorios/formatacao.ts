@@ -51,6 +51,18 @@ export function valorParaExportacao(valor: number | null, tipo: TipoMetrica): st
   return valor.toFixed(2).replace(".", ",");
 }
 
+/** "2026-10-14" → "14/10" */
+export function formatarChaveDia(chave: string): string {
+  const [, mes, dia] = chave.split("-");
+  return mes && dia ? `${dia}/${mes}` : chave;
+}
+
+/** "2026-10-12" (segunda) → "sem. 12/10" */
+export function formatarChaveSemana(chave: string): string {
+  const [, mes, dia] = chave.split("-");
+  return mes && dia ? `sem. ${dia}/${mes}` : chave;
+}
+
 /** "2026-10" → "out/2026" */
 export function formatarChaveMes(chave: string): string {
   const [ano, mes] = chave.split("-");

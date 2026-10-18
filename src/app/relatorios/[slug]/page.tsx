@@ -38,7 +38,12 @@ const GraficoRelatorio = dynamic(
 import { usePreferenciasRelatorio } from "@/hooks/usePreferenciasRelatorio";
 import type { ContextoExportacao } from "@/lib/relatorios/exportacao";
 import { format } from "date-fns";
-import type { FiltrosRelatorio, OpcoesRelatorio, ResultadoRelatorio } from "@/types/relatorio";
+import type {
+  FiltrosRelatorio,
+  GranularidadePreferida,
+  OpcoesRelatorio,
+  ResultadoRelatorio,
+} from "@/types/relatorio";
 
 /** Data para a query string: só o dia. A API resolve o fuso da clínica
  *  (parseInicioPeriodo / parseFimPeriodo), que é o certo — montar hora aqui
@@ -63,6 +68,7 @@ function Conteudo() {
   const { preferencias, carregado: prefsCarregadas, salvar, restaurarPadrao, ehPadrao } =
     usePreferenciasRelatorio(definicao);
   const agrupamento = preferencias.agrupamento;
+  const passo = preferencias.granularidade;
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -88,7 +94,7 @@ function Conteudo() {
   }, [user, definicao]);
 
   const consultar = useCallback(
-    async (f: FiltrosRelatorio, niveis: string[]) => {
+    async (f: FiltrosRelatorio, niveis: string[], passo: GranularidadePreferida) => {
       if (!definicao || definicao.hrefExterno) return;
       setLoading(true);
       setErro(null);
@@ -98,6 +104,9 @@ function Conteudo() {
           dataFim: soData(f.dataFim),
           agrupar: niveis.join(","),
         });
+        // "auto" é a ausência de escolha: não vai na query, e o servidor
+        // resolve pelo tamanho do período.
+        if (passo !== "auto") qs.set("granularidade", passo);
         if (f.filialId) qs.set("filialId", f.filialId);
         if (f.profissionalId) qs.set("profissionalId", f.profissionalId);
         if (f.convenioId) qs.set("convenioId", f.convenioId);
@@ -132,11 +141,17 @@ function Conteudo() {
   // para não consultar duas vezes (uma com o padrão, outra com o salvo).
   useEffect(() => {
     if (!user || !definicao || definicao.hrefExterno || !prefsCarregadas) return;
-    consultar(filtros, agrupamento);
+    consultar(filtros, agrupamento, passo);
     // `filtros` fora das dependências de propósito: digitar no filtro não
     // dispara consulta — só o botão Aplicar dispara.
+    //
+    // `passo` entra nas dependências porque a série é calculada no servidor:
+    // trocar o passo em Preferências precisa de uma consulta nova. Devolver as
+    // três séries de uma vez evitaria isso, mas um ano em passo diário são 365
+    // grupos com subgrupos — payload grande para uma escolha que quase ninguém
+    // troca.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, definicao, agrupamento, consultar, prefsCarregadas]);
+  }, [user, definicao, agrupamento, passo, consultar, prefsCarregadas]);
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
@@ -267,7 +282,7 @@ function Conteudo() {
           loading={loading}
           onFiltrar={(f) => {
             setFiltros(f);
-            consultar(f, agrupamento);
+            consultar(f, agrupamento, passo);
           }}
         />
 
@@ -338,6 +353,9 @@ function Conteudo() {
                 metricas={definicao.metricas}
                 colunas={preferencias.colunas}
                 tipo={preferencias.grafico}
+                serie={resultado.serie}
+                granularidade={resultado.granularidade}
+                eixo={preferencias.eixo}
               />
             )}
 

@@ -16,6 +16,7 @@ import { registrarErroApi } from "@/lib/erro-prisma";
 import { escopoFilialDoUsuario, intersecaoFilial } from "@/lib/filial-pessoa";
 import { definicaoNaCentral } from "@/lib/relatorios/definicoes";
 import { agregar, MAX_NIVEIS } from "@/lib/relatorios/agregacao";
+import { preencherLacunas } from "@/lib/relatorios/serie";
 import {
   carregarAtendimentos,
   CONVENIO_PARTICULAR,
@@ -23,7 +24,32 @@ import {
 } from "@/lib/relatorios/fonte-atendimentos";
 import { carregarRepasse } from "@/lib/relatorios/fonte-repasse";
 import { carregarFaltas } from "@/lib/relatorios/fonte-faltas";
-import type { ResultadoRelatorio } from "@/types/relatorio";
+import { ehGranularidade } from "@/types/relatorio";
+import type { Granularidade, ResultadoRelatorio } from "@/types/relatorio";
+import { DIM_DIA, DIM_MES, DIM_SEMANA } from "@/lib/relatorios/definicoes";
+
+/**
+ * Passo da série quando o usuário não escolheu ("auto"):
+ *
+ *   até 30 dias corridos → uma barra por dia  (um mês cabe na tela)
+ *   acima                → uma barra por mês
+ *
+ * Só dois degraus de propósito: o padrão existe para a primeira abertura ficar
+ * legível, não para adivinhar a intenção. Quem quer semana — ou quer dia num
+ * trimestre — escolhe nas preferências, e a escolha manda.
+ *
+ * `span` chega fracionário (o fim do período é 23:59:59.999), então 30 dias
+ * corridos valem 29,99 — daí o `ceil` antes de comparar.
+ */
+function granularidadeDoPeriodo(span: number): Granularidade {
+  return Math.ceil(span) <= 30 ? "dia" : "mes";
+}
+
+const DIM_TEMPO: Record<Granularidade, typeof DIM_DIA> = {
+  dia: DIM_DIA,
+  semana: DIM_SEMANA,
+  mes: DIM_MES,
+};
 
 const MAX_DIAS = 366;
 
@@ -74,6 +100,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         { success: false, error: "Período máximo de 12 meses" },
         { status: 400 }
       );
+
+    // ── Passo da série do gráfico: escolha do usuário, "auto" se ele não
+    // escolheu. Valor desconhecido cai no automático em vez de responder 400:
+    // diferente do agrupamento, aqui não há chave indo para query nenhuma, e a
+    // série que volta é correta e vem rotulada com o passo real — a tela não
+    // tem como mentir. Recusar quebraria o relatório por causa de uma
+    // preferência velha no localStorage.
+    const granPedida = sp.get("granularidade");
+    const granularidadePedida: Granularidade | null = ehGranularidade(granPedida)
+      ? granPedida
+      : null;
 
     // ── Agrupamento: só dimensões declaradas no catálogo, no máximo 3 níveis
     const chavesValidas = new Set(definicao.dimensoes.map((d) => d.chave));
@@ -165,8 +202,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         linhas,
         agrupamento,
         definicao.metricas,
-        { incluirDetalhe }
+        { incluirDetalhe, dimensoes: definicao.dimensoes }
       );
+
+      // Série temporal: mesma agregação, com o tempo no primeiro nível e o
+      // primeiro nível do agrupamento no segundo, para o gráfico poder empilhar.
+      // Reusar `agregar` em vez de somar à parte garante que o gráfico e a
+      // tabela nunca divirjam.
+      const granularidade = granularidadePedida ?? granularidadeDoPeriodo(dias);
+      const dimTempo = DIM_TEMPO[granularidade];
+      const { grupos: serieCrua } = agregar(
+        linhas,
+        [dimTempo.chave, ...usado.slice(0, 1)],
+        definicao.metricas,
+        { dimensoes: [...definicao.dimensoes, dimTempo] }
+      );
+      // O eixo do tempo precisa do período inteiro, não só dos intervalos com
+      // movimento: sem isso um fim de semana vira buraco e a distância entre
+      // as barras deixa de significar tempo.
+      const serie = preencherLacunas(serieCrua, inicio, fim, granularidade, definicao.metricas);
 
       const resultado: ResultadoRelatorio = {
         slug,
@@ -175,6 +229,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         total,
         periodo: { inicio: inicio.toISOString(), fim: fim.toISOString() },
         avisos: fonte.avisos,
+        serie,
+        granularidade,
       };
 
       return NextResponse.json({ success: true, data: resultado });

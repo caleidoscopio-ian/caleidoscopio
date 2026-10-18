@@ -236,3 +236,39 @@ Reescrever os dois para caber custaria mais do que ganham, e o ganho real
 **Ficam indexados no catálogo como `fonte: "externo"`**, que é o que o usuário
 precisa: encontrar tudo em um lugar. Revisitar se e quando a grade virar linha
 de dado por outro motivo.
+
+## Fase 8 — Evolução no tempo no gráfico ✅ concluída (17/10/2026)
+
+**Pedido**: "supondo que seleciono os últimos 3 meses, preciso mostrar em 3
+barras representando uma cada mês selecionado" — o gráfico só mostrava o
+consolidado do período inteiro.
+
+**O que mudou**
+
+- `GET /api/relatorios/[slug]` devolve `serie` + `granularidade`. A série sai do
+  **mesmo** `agregar`, com `[tempo, agrupamento[0]]`, para gráfico e tabela não
+  poderem divergir.
+- O passo da série é **escolha do usuário** (Automático · Dia · Semana · Mês, em
+  Preferências), enviada como `?granularidade=`. "Automático" é resolvido no
+  servidor: **até 30 dias corridos → dia, acima → mês**. (`span` chega
+  fracionário, porque o fim do período é 23:59:59.999; 30 dias corridos valem
+  29,99 — daí o `ceil`.) Valor desconhecido cai no automático, não em 400.
+- `preencherLacunas` (`@/lib/relatorios/serie`) completa o período: intervalo sem
+  atendimento entra **zerado**, não desaparece do eixo. Somas de intervalo vazio
+  são `0` ("não houve nada para cobrar"), diferente de atendimento sem preço
+  cadastrado, que continua `null`; razão de intervalo vazio é `null`.
+- `datas-fuso` ganhou `chaveDia` e `chaveSemana` (semana começa na segunda);
+  `definicoes` ganhou `DIM_DIA` e `DIM_SEMANA`, e `DIM_MES` virou pública.
+- `Dimensao.cronologica` ordena pela **chave crua** (`2026-09`), não pelo rótulo.
+  Isso também corrigiu um bug antigo: a tabela agrupada por Mês trazia "out"
+  antes de "set".
+- Preferências ganharam `eixo` ("tempo" é o padrão | "grupo" = o antigo).
+  `GraficoRelatorio` só troca a fonte; pizza no eixo de tempo vira barras.
+
+**Medido no banco real da Clinica A** (35/35 asserções): automático acerta os 6
+períodos de corte · a escolha do usuário manda em qualquer período · ago/set/out
+2026 = 34/66/48, três barras, soma 148 = total · 7 dias em passo diário dão 7
+barras (05/10=6 … 10/10=0 11/10=0 — o fim de semana aparece zerado) · 12 meses
+dão 365 barras no diário, 53 no semanal, 13 no mensal, todas somando 154 ·
+7 meses sem movimento com ticket médio `null` e valor `0` · toda chave semanal é
+uma segunda-feira · `granularidade=hora` cai no automático.

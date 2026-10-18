@@ -42,8 +42,8 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { formatarMetrica } from "@/lib/relatorios/formatacao";
-import type { Dimensao, GrupoRelatorio, Metrica } from "@/types/relatorio";
-import type { TipoGrafico } from "@/hooks/usePreferenciasRelatorio";
+import type { Dimensao, Granularidade, GrupoRelatorio, Metrica } from "@/types/relatorio";
+import type { EixoGrafico, TipoGrafico } from "@/hooks/usePreferenciasRelatorio";
 
 /** Seis slots: é o tamanho da paleta validada. Nunca gerar cor nova. */
 const MAX_SERIES = 6;
@@ -62,22 +62,45 @@ type ItemNivel = { rotulo: string; valor: number };
 
 interface Props {
   grupos: GrupoRelatorio[];
+  /**
+   * Evolução no tempo, vinda da API já agregada por dia/semana/mês, com os
+   * subgrupos quebrando pelo primeiro nível do agrupamento.
+   *
+   * Tem a MESMA forma de `grupos`, então o desenho não muda — só a fonte.
+   */
+  serie: GrupoRelatorio[];
+  granularidade: Granularidade;
   agrupamento: string[];
   dimensoes: Dimensao[];
   metricas: Metrica[];
   /** chaves das métricas que o usuário deixou visíveis */
   colunas: string[];
   tipo: TipoGrafico;
+  /** "tempo" = evolução no período · "grupo" = consolidado por dimensão */
+  eixo: EixoGrafico;
 }
+
+const ROTULO_GRANULARIDADE: Record<Granularidade, string> = {
+  dia: "dia",
+  semana: "semana",
+  mes: "mês",
+};
 
 export function GraficoRelatorio({
   grupos,
+  serie,
+  granularidade,
   agrupamento,
   dimensoes,
   metricas,
   colunas,
   tipo,
+  eixo,
 }: Props) {
+  // No eixo de tempo a fonte é a série; no de grupo, o agrupamento escolhido.
+  // Como as duas têm a mesma forma, nada abaixo precisa saber qual é qual.
+  const noTempo = eixo === "tempo";
+  const fonte = noTempo ? serie : grupos;
   const disponiveis = useMemo(
     () => metricas.filter((m) => colunas.includes(m.chave)),
     [metricas, colunas]
@@ -104,20 +127,24 @@ export function GraficoRelatorio({
   // Recharts infere um tipo por ramo e as duas não casam.
   const { dados, semValor } = useMemo(() => {
     if (!metrica) return { dados: [] as ItemNivel[], semValor: 0 };
-    const comValor = grupos.filter((g) => typeof g.metricas[metrica.chave] === "number");
+    const comValor = fonte.filter((g) => typeof g.metricas[metrica.chave] === "number");
     return {
       dados: comValor.map(
         (g): ItemNivel => ({ rotulo: g.rotulo, valor: g.metricas[metrica.chave] as number })
       ),
-      semValor: grupos.length - comValor.length,
+      semValor: fonte.length - comValor.length,
     };
-  }, [grupos, metrica]);
+  }, [fonte, metrica]);
 
   // ── séries do empilhamento (segundo nível), top 6 + Outros
   const empilhado = useMemo(() => {
-    if (!metrica || agrupamento.length < 2) return null;
+    // No eixo de tempo o 2º nível é o 1º do agrupamento (vem pronto da API);
+    // no eixo de grupo é o 2º nível escolhido pelo usuário.
+    if (!metrica) return null;
+    if (!noTempo && agrupamento.length < 2) return null;
+    if (noTempo && agrupamento.length < 1) return null;
     const totalPorSerie = new Map<string, number>();
-    for (const g of grupos) {
+    for (const g of fonte) {
       for (const s of g.subgrupos) {
         const v = s.metricas[metrica.chave];
         if (typeof v === "number") totalPorSerie.set(s.rotulo, (totalPorSerie.get(s.rotulo) ?? 0) + v);
@@ -127,7 +154,7 @@ export function GraficoRelatorio({
     const principais = ordenadas.slice(0, MAX_SERIES - (ordenadas.length > MAX_SERIES ? 1 : 0));
     const series = ordenadas.length > MAX_SERIES ? [...principais, ROTULO_OUTROS] : principais;
 
-    const linhas: LinhaGrafico[] = grupos.map((g) => {
+    const linhas: LinhaGrafico[] = fonte.map((g) => {
       const linha: LinhaGrafico = { rotulo: g.rotulo };
       for (const s of series) linha[s] = 0;
       for (const s of g.subgrupos) {
@@ -140,7 +167,7 @@ export function GraficoRelatorio({
     });
 
     return { series, linhas };
-  }, [grupos, agrupamento, metrica]);
+  }, [fonte, noTempo, agrupamento, metrica]);
 
   // ── fatias da pizza, top 6 + Outros
   const pizza = useMemo(() => {
@@ -155,18 +182,29 @@ export function GraficoRelatorio({
     ];
   }, [dados]);
 
-  if (tipo === "nenhum" || !metrica || grupos.length === 0) return null;
+  if (tipo === "nenhum" || !metrica || fonte.length === 0) return null;
 
-  // Um grupo só não é gráfico, é um número: a tabela já mostra melhor
-  if (dados.length < 2 && tipo !== "barras-empilhadas") return null;
+  // Nenhum ponto com valor: desenhar zeros afirmaria o que o dado não diz
+  if (dados.length === 0 && tipo !== "barras-empilhadas") return null;
+
+  // No eixo de grupo, um grupo só não é gráfico, é um número — a tabela mostra
+  // melhor. No eixo de tempo, um intervalo só ainda é informação (o total do
+  // período), e sumir com o cartão porque a pessoa escolheu passo "mês" num
+  // período de sete dias pareceria defeito.
+  if (dados.length < 2 && !noTempo && tipo !== "barras-empilhadas") return null;
 
   // Empilhado exige segundo nível; pizza e razão não combinam
+  // Pizza é composição de um todo; no eixo de tempo ela responderia "qual fatia
+  // do período foi setembro", que não é a pergunta. Vira barras.
   const tipoEfetivo: TipoGrafico =
-    tipo === "barras-empilhadas" && (!empilhado || !somavel(metrica))
+    tipo === "pizza" && noTempo
       ? "barras"
-      : tipo === "pizza" && (!somavel(metrica) || pizza.length < 2 || dados.some((d) => d.valor < 0))
+      : tipo === "barras-empilhadas" && (!empilhado || !somavel(metrica))
         ? "barras"
-        : tipo;
+        : tipo === "pizza" &&
+            (!somavel(metrica) || pizza.length < 2 || dados.some((d) => d.valor < 0))
+          ? "barras"
+          : tipo;
 
   const fmt = (v: number | null) => formatarMetrica(v, metrica.tipo);
   const totalPizza = pizza.reduce((s, p) => s + p.valor, 0);
@@ -174,20 +212,26 @@ export function GraficoRelatorio({
   // as duas formas de barra deixam de ser compatíveis.
   const dadosBarra: LinhaGrafico[] =
     tipoEfetivo === "barras-empilhadas" && empilhado ? empilhado.linhas : dados;
+  // Um ano em passo diário são ~365 barras de um pixel. O passo é escolha do
+  // usuário, então não trocamos por ele — avisamos onde se troca.
+  const muitosPontos = noTempo && dadosBarra.length > 90;
 
   return (
     <div className="viz-relatorio rounded-lg border bg-card p-4">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium">
-            {metrica.rotulo} por {rotuloNivel(0).toLowerCase()}
+            {metrica.rotulo} por{" "}
+            {noTempo ? ROTULO_GRANULARIDADE[granularidade] : rotuloNivel(0).toLowerCase()}
           </h2>
           <p className="text-xs text-muted-foreground">
             {tipoEfetivo === "barras-empilhadas"
-              ? `Empilhado por ${rotuloNivel(1).toLowerCase()}`
+              ? `Empilhado por ${(noTempo ? rotuloNivel(0) : rotuloNivel(1)).toLowerCase()}`
               : tipoEfetivo === "pizza"
                 ? "Participação no total"
-                : "Primeiro nível do agrupamento"}
+                : noTempo
+                  ? "Evolução no período"
+                  : "Primeiro nível do agrupamento"}
           </p>
         </div>
         {disponiveis.length > 1 && (
@@ -271,10 +315,12 @@ export function GraficoRelatorio({
                 tick={{ fontSize: 11, fill: "var(--viz-eixo)" }}
                 tickLine={false}
                 axisLine={{ stroke: "var(--viz-grade)" }}
-                interval={0}
                 height={48}
-                angle={dados.length > 5 ? -20 : 0}
-                textAnchor={dados.length > 5 ? "end" : "middle"}
+                angle={dadosBarra.length > 6 ? -35 : 0}
+                textAnchor={dadosBarra.length > 6 ? "end" : "middle"}
+                // numa série diária de 31 dias, mostrar todo rótulo embola;
+                // o recharts escolhe quantos cabem
+                interval={dadosBarra.length > 16 ? "preserveStartEnd" : 0}
               />
               <YAxis
                 tick={{ fontSize: 11, fill: "var(--viz-eixo)" }}
@@ -336,16 +382,22 @@ export function GraficoRelatorio({
         </ResponsiveContainer>
       </div>
 
-      {(semValor > 0 || tipoEfetivo !== tipo) && (
+      {(semValor > 0 || tipoEfetivo !== tipo || muitosPontos) && (
         <p className="mt-2 text-xs text-muted-foreground">
+          {muitosPontos &&
+            `${dadosBarra.length} intervalos no gráfico — em Preferências, um passo maior (semana, mês) deixa as barras legíveis. `}
           {semValor > 0 &&
-            `${semValor} ${semValor === 1 ? "grupo" : "grupos"} sem valor ${
+            `${semValor} ${noTempo ? (semValor === 1 ? "intervalo" : "intervalos") : semValor === 1 ? "grupo" : "grupos"} sem valor ${
               semValor === 1 ? "não aparece" : "não aparecem"
             } no gráfico — "—" não é zero. `}
           {tipoEfetivo !== tipo &&
             (tipo === "pizza"
-              ? "Pizza não se aplica a esta métrica; mostrando em barras."
-              : "Empilhamento precisa de um segundo nível de agrupamento; mostrando em barras.")}
+              ? noTempo
+                ? "Pizza não se aplica à evolução no tempo; mostrando em barras."
+                : "Pizza não se aplica a esta métrica; mostrando em barras."
+              : noTempo
+                ? "Escolha um agrupamento para empilhar; mostrando em barras."
+                : "Empilhamento precisa de um segundo nível de agrupamento; mostrando em barras.")}
         </p>
       )}
     </div>

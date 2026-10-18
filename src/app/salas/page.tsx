@@ -17,12 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Search, Loader2, Users, Wrench, LayoutGrid } from "lucide-react";
+import { Building2, Search, Loader2, Users, Wrench, LayoutGrid, Clock } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { NovaSalaDialog } from "@/components/salas/nova-sala-dialog";
 import { EditarSalaDialog } from "@/components/salas/editar-sala-dialog";
 import { ExcluirSalaDialog } from "@/components/salas/excluir-sala-dialog";
+import { GradeSalaDialog } from "@/components/salas/grade-sala-dialog";
 import { useFilial } from "@/hooks/useFilial";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { agruparPorFilial } from "@/lib/agrupar-filial";
@@ -45,10 +46,12 @@ function SalasTable({
   salas,
   mostrarFilial,
   onSuccess,
+  onConfigurarGrade,
 }: {
   salas: Sala[];
   mostrarFilial: boolean;
   onSuccess: () => void;
+  onConfigurarGrade: (sala: Sala) => void;
 }) {
   return (
     <Table>
@@ -131,6 +134,15 @@ function SalasTable({
             </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end space-x-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Horário de funcionamento"
+                  aria-label={`Horário de funcionamento da ${sala.nome}`}
+                  onClick={() => onConfigurarGrade(sala)}
+                >
+                  <Clock className="h-4 w-4" />
+                </Button>
                 <EditarSalaDialog
                   sala={sala}
                   onSuccess={onSuccess}
@@ -156,6 +168,7 @@ export default function SalasPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [gradeDialog, setGradeDialog] = useState<Sala | null>(null);
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
@@ -366,7 +379,12 @@ export default function SalasPage() {
 
               {!loading && !error && filteredSalas.length > 0 && (
                 filialAtiva ? (
-                  <SalasTable salas={filteredSalas} mostrarFilial onSuccess={fetchSalas} />
+                  <SalasTable
+                    salas={filteredSalas}
+                    mostrarFilial
+                    onSuccess={fetchSalas}
+                    onConfigurarGrade={setGradeDialog}
+                  />
                 ) : (
                   <Accordion
                     type="multiple"
@@ -387,7 +405,12 @@ export default function SalasPage() {
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
-                          <SalasTable salas={grupo.items} mostrarFilial={false} onSuccess={fetchSalas} />
+                          <SalasTable
+                            salas={grupo.items}
+                            mostrarFilial={false}
+                            onSuccess={fetchSalas}
+                            onConfigurarGrade={setGradeDialog}
+                          />
                         </AccordionContent>
                       </AccordionItem>
                     ))}
@@ -412,6 +435,16 @@ export default function SalasPage() {
             </CardContent>
           </Card>
         </div>
+
+        <GradeSalaDialog
+          salaId={gradeDialog?.id ?? null}
+          salaNome={gradeDialog?.nome ?? ""}
+          filialNome={gradeDialog?.filial?.nome ?? null}
+          open={gradeDialog !== null}
+          onOpenChange={(aberto) => {
+            if (!aberto) setGradeDialog(null);
+          }}
+        />
       </MainLayout>
     </ProtectedRoute>
   );

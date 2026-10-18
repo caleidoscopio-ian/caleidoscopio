@@ -17,14 +17,30 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { MAX_NIVEIS } from "@/lib/relatorios/agregacao";
 import type { DefinicaoRelatorio } from "@/lib/relatorios/definicoes";
+import { ehGranularidade } from "@/types/relatorio";
+import type { GranularidadePreferida } from "@/types/relatorio";
 
 export type TipoGrafico = "nenhum" | "barras" | "barras-empilhadas" | "pizza";
+
+/**
+ * O que vai no eixo x do gráfico.
+ *
+ * "tempo": a evolução dentro do período (dia/semana/mês, escolhido pelo
+ * servidor conforme a largura do intervalo). "grupo": o consolidado por
+ * dimensão — o período inteiro em uma barra por grupo.
+ *
+ * A tabela sempre mostra o consolidado; o eixo só muda o gráfico.
+ */
+export type EixoGrafico = "tempo" | "grupo";
 
 export interface PreferenciasRelatorio {
   /** chaves das métricas visíveis, na ordem do catálogo */
   colunas: string[];
   agrupamento: string[];
   grafico: TipoGrafico;
+  eixo: EixoGrafico;
+  /** passo da série no eixo de tempo; "auto" deixa o servidor decidir */
+  granularidade: GranularidadePreferida;
 }
 
 const VERSAO = "v1";
@@ -36,6 +52,8 @@ function padrao(definicao: DefinicaoRelatorio): PreferenciasRelatorio {
     colunas: definicao.metricas.filter((m) => m.padrao !== false).map((m) => m.chave),
     agrupamento: definicao.agrupamentoPadrao.slice(0, MAX_NIVEIS),
     grafico: "barras",
+    eixo: "tempo",
+    granularidade: "auto",
   };
 }
 
@@ -72,12 +90,21 @@ function sanear(
     ? (p.grafico as TipoGrafico)
     : base.grafico;
 
+  const eixo: EixoGrafico = p.eixo === "grupo" || p.eixo === "tempo" ? p.eixo : base.eixo;
+
+  const granularidade: GranularidadePreferida =
+    p.granularidade === "auto" || ehGranularidade(p.granularidade)
+      ? p.granularidade
+      : base.granularidade;
+
   return {
     // Sem nenhuma coluna a tabela não diz nada: volta ao padrão
     colunas: colunas.length > 0 ? colunas : base.colunas,
     // Sem agrupamento não há árvore: volta ao padrão
     agrupamento: agrupamento.length > 0 ? agrupamento : base.agrupamento,
     grafico,
+    eixo,
+    granularidade,
   };
 }
 
@@ -86,7 +113,16 @@ export function usePreferenciasRelatorio(definicao: DefinicaoRelatorio | null) {
   const usuarioId = user?.id ?? "anonimo";
 
   const inicial = useMemo(
-    () => (definicao ? padrao(definicao) : { colunas: [], agrupamento: [], grafico: "nenhum" as TipoGrafico }),
+    () =>
+      definicao
+        ? padrao(definicao)
+        : {
+            colunas: [],
+            agrupamento: [],
+            grafico: "nenhum" as TipoGrafico,
+            eixo: "tempo" as EixoGrafico,
+            granularidade: "auto" as GranularidadePreferida,
+          },
     [definicao]
   );
 
@@ -139,6 +175,8 @@ export function usePreferenciasRelatorio(definicao: DefinicaoRelatorio | null) {
     const p = padrao(definicao);
     return (
       p.grafico === preferencias.grafico &&
+      p.eixo === preferencias.eixo &&
+      p.granularidade === preferencias.granularidade &&
       p.colunas.join(",") === preferencias.colunas.join(",") &&
       p.agrupamento.join(",") === preferencias.agrupamento.join(",")
     );

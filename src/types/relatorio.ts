@@ -19,6 +19,14 @@ export interface Dimensao {
   rotulo: string;
   /** rótulo usado quando a linha não tem valor para esta dimensão */
   rotuloVazio?: string;
+  /**
+   * Ordenar pelo `id` em vez do rótulo.
+   *
+   * Dimensão de tempo guarda um id ordenável ("2026-09") e um rótulo legível
+   * ("set/2026"). Ordenar pelo rótulo colocaria "out/2026" antes de "set/2026",
+   * que é alfabético e errado.
+   */
+  cronologica?: boolean;
 }
 
 export interface Metrica {
@@ -53,6 +61,14 @@ export interface LinhaRelatorio {
   distintos?: Record<string, string>;
   /** colunas do detalhamento linha a linha */
   detalhe?: Record<string, string | number | null>;
+  /**
+   * Instante do evento (ISO), para a série temporal do gráfico.
+   *
+   * Campo próprio em vez de ler `detalhe.data`: o detalhe existe para exibição
+   * e pode mudar de forma por relatório; a série temporal não pode depender
+   * disso.
+   */
+  quando?: string;
 }
 
 export type MetricasAgregadas = Record<string, number | null>;
@@ -80,6 +96,23 @@ export interface TotalRelatorio {
   semValor: Record<string, number>;
 }
 
+export type Granularidade = "dia" | "semana" | "mes";
+
+/**
+ * O que o usuário escolhe: um passo fixo ou "automático".
+ *
+ * "auto" não é uma granularidade — é a ausência de escolha, resolvida pelo
+ * servidor conforme o período (até 30 dias corridos → dia, acima → mês). Fica
+ * separada de `Granularidade` justamente para o resto do código nunca precisar
+ * tratar "auto" como se fosse um passo real.
+ */
+export type GranularidadePreferida = Granularidade | "auto";
+
+export const GRANULARIDADES: Granularidade[] = ["dia", "semana", "mes"];
+
+export const ehGranularidade = (v: unknown): v is Granularidade =>
+  typeof v === "string" && (GRANULARIDADES as string[]).includes(v);
+
 export interface ResultadoRelatorio {
   slug: string;
   agrupamento: string[];
@@ -88,6 +121,16 @@ export interface ResultadoRelatorio {
   periodo: { inicio: string; fim: string };
   /** avisos para o usuário: carimbo ausente, limite de linhas, etc. */
   avisos: string[];
+  /**
+   * Evolução no tempo, independente do agrupamento escolhido.
+   *
+   * Mesma forma de `grupos` — cada entrada é um intervalo (dia, semana ou mês)
+   * e os `subgrupos` quebram pelo primeiro nível do agrupamento, para o gráfico
+   * poder empilhar.
+   */
+  serie: GrupoRelatorio[];
+  /** passo efetivo da série: o que o usuário pediu, ou o automático */
+  granularidade: Granularidade;
 }
 
 /** Opções que alimentam os dropdowns da barra de filtros */

@@ -18,13 +18,38 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { RotateCcw, Settings2 } from "lucide-react";
 import type { DefinicaoRelatorio } from "@/lib/relatorios/definicoes";
-import type { PreferenciasRelatorio, TipoGrafico } from "@/hooks/usePreferenciasRelatorio";
+import type {
+  EixoGrafico,
+  PreferenciasRelatorio,
+  TipoGrafico,
+} from "@/hooks/usePreferenciasRelatorio";
+import type { GranularidadePreferida } from "@/types/relatorio";
 
 const GRAFICOS: { valor: TipoGrafico; rotulo: string }[] = [
   { valor: "barras", rotulo: "Barras" },
   { valor: "barras-empilhadas", rotulo: "Barras empilhadas" },
   { valor: "pizza", rotulo: "Pizza" },
   { valor: "nenhum", rotulo: "Sem gráfico" },
+];
+
+const EIXOS: { valor: EixoGrafico; rotulo: string; ajuda: string }[] = [
+  {
+    valor: "tempo",
+    rotulo: "Evolução no período",
+    ajuda: "Uma barra por dia, semana ou mês, conforme o intervalo.",
+  },
+  {
+    valor: "grupo",
+    rotulo: "Consolidado por dimensão",
+    ajuda: "O período inteiro somado, uma barra por grupo.",
+  },
+];
+
+const PASSOS: { valor: GranularidadePreferida; rotulo: string }[] = [
+  { valor: "auto", rotulo: "Automático" },
+  { valor: "dia", rotulo: "Dia" },
+  { valor: "semana", rotulo: "Semana" },
+  { valor: "mes", rotulo: "Mês" },
 ];
 
 interface Props {
@@ -56,6 +81,7 @@ export function PreferenciasRelatorioPainel({
 
   const total = definicao.metricas.length;
   const marcadas = preferencias.colunas.length;
+  const eixoAtual = EIXOS.find((e) => e.valor === preferencias.eixo) ?? EIXOS[0];
 
   return (
     <Popover>
@@ -123,6 +149,59 @@ export function PreferenciasRelatorioPainel({
               </SelectContent>
             </Select>
           </div>
+
+          {preferencias.grafico !== "nenhum" && (
+            <div>
+              <Label className="text-sm font-medium">Eixo do gráfico</Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">{eixoAtual.ajuda}</p>
+              <Select
+                value={preferencias.eixo}
+                onValueChange={(v) => onAlterar({ eixo: v as EixoGrafico })}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EIXOS.map((e) => (
+                    <SelectItem key={e.valor} value={e.valor}>
+                      {e.rotulo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {preferencias.eixo === "tempo" && preferencias.grafico === "pizza" && (
+                <p className="mt-1.5 text-xs text-amber-600">
+                  Pizza não mostra evolução: no eixo de tempo o gráfico sai em barras.
+                </p>
+              )}
+            </div>
+          )}
+
+          {preferencias.grafico !== "nenhum" && preferencias.eixo === "tempo" && (
+            <div>
+              <Label className="text-sm font-medium">Passo da série</Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                No automático: dia até 30 dias de período, mês acima disso.
+              </p>
+              <Select
+                value={preferencias.granularidade}
+                onValueChange={(v) =>
+                  onAlterar({ granularidade: v as GranularidadePreferida })
+                }
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PASSOS.map((g) => (
+                    <SelectItem key={g.valor} value={g.valor}>
+                      {g.rotulo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <Separator />
 

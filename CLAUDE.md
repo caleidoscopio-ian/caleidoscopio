@@ -147,5 +147,6 @@ NUNCA: `any` type · query sem `tenantId` · import de `src/` · `dangerouslySet
 | 22 | Relatório de Atendimentos Glosados | `/glosas` | Implementado |
 | 23 | Conciliação de Glosas (Demonstrativo TISS) | `/glosas` (aba Conciliação) | Implementado |
 | 24 | Grade de Horários (disponibilidade por profissional) | `/agenda` (aba Grade de Horários) | Implementado |
-| 25 | Central de Relatórios | `/relatorios`, `/relatorios/[slug]` | Implementado (Fases 0-6; Fase 7 avaliada e descartada) |
+| 25 | Central de Relatórios | `/relatorios`, `/relatorios/[slug]` | Implementado (Fases 0-6 e 8; Fase 7 avaliada e descartada) |
 | 26 | Filial no Agendamento (campo autoritativo + escopo multi-filial) | `/agenda`, `/usuarios` | Implementado (Fases 0-4) |
+| 27 | Grade de Horário da Sala + Capacidade | `/salas` (modal), `/salas/mapa-ocupacao` (aba Dashboard) | Implementado |

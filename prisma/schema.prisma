@@ -111,10 +111,38 @@ model Sala {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @default(now()) @updatedAt
   agendamentos agendamento[]
+  grades       GradeSala[]
   filial       Filial?       @relation(fields: [filialId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, filialId])
   @@map("salas")
+}
+
+/// Horário de funcionamento da SALA (Módulo 27).
+///
+/// Espelha GradeAtendimento, que diz quando o PROFISSIONAL atende. A diferença
+/// é a pergunta: a grade do profissional é oferta de mão de obra, a da sala é
+/// capacidade física. O cruzamento das duas com os agendamentos é o que diz se
+/// a clínica cabe mais um profissional.
+///
+/// Não tem `filialId`: a sala já pertence a uma filial.
+model GradeSala {
+  id          String   @id @default(uuid())
+  tenantId    String
+  salaId      String
+  diaSemana   Int      // 0=Dom, 1=Seg ... 6=Sáb
+  hora_inicio String   // "08:00"
+  hora_fim    String   // "18:00"
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  sala        Sala     @relation(fields: [salaId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([salaId])
+  @@index([tenantId, salaId, diaSemana])
+  @@map("grades_sala")
 }
 
 model atividade {

@@ -73,7 +73,13 @@ const DIM_PROCEDIMENTO: Dimensao = {
 };
 const DIM_PACIENTE: Dimensao = { chave: "paciente", rotulo: "Paciente" };
 const DIM_SALA: Dimensao = { chave: "sala", rotulo: "Sala" };
-const DIM_MES: Dimensao = { chave: "mes", rotulo: "Mês" };
+// `cronologica` faz a agregação ordenar por "2026-09" em vez de "set/2026" —
+// sem isso outubro vinha antes de setembro, por ordem alfabética.
+export const DIM_MES: Dimensao = { chave: "mes", rotulo: "Mês", cronologica: true };
+
+/** Dimensões de tempo usadas só pela série do gráfico, não pelo agrupamento */
+export const DIM_DIA: Dimensao = { chave: "dia", rotulo: "Dia", cronologica: true };
+export const DIM_SEMANA: Dimensao = { chave: "semana", rotulo: "Semana", cronologica: true };
 const DIM_REGRA: Dimensao = {
   chave: "regra",
   rotulo: "Regra de repasse",

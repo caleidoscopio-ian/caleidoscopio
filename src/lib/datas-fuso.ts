@@ -187,6 +187,72 @@ export function mesesAtras(
   return { ano: Math.floor(total / 12), mes: (total % 12) + 1 };
 }
 
+/** Rótulo "yyyy-MM-dd" do dia de um instante, no fuso da clínica */
+export function chaveDia(
+  instante: Date = new Date(),
+  timeZone: string = TZ_CLINICA
+): string {
+  const { ano, mes, dia } = partesNoFuso(instante, timeZone);
+  return `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
+/**
+ * Rótulo "yyyy-MM-dd" da SEGUNDA-FEIRA da semana de um instante.
+ *
+ * Semana começando na segunda, não número ISO: "semana de 14/09" é legível para
+ * quem lê o relatório; "semana 38" não é.
+ */
+export function chaveSemana(
+  instante: Date = new Date(),
+  timeZone: string = TZ_CLINICA
+): string {
+  const { ano, mes, dia } = partesNoFuso(instante, timeZone);
+  // Date.UTC não depende de fuso: a data já foi convertida acima
+  const d = new Date(Date.UTC(ano, mes - 1, dia));
+  const diaSemana = d.getUTCDay(); // 0=Dom
+  const recuo = diaSemana === 0 ? 6 : diaSemana - 1; // segunda = início
+  d.setUTCDate(d.getUTCDate() - recuo);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Dias corridos de um período, no fuso da clínica.
+ *
+ * Devolve a chave "yyyy-MM-dd" e o dia da semana (0=Dom) de cada dia entre
+ * `inicio` e `fim`, inclusive.
+ *
+ * Existe porque iterar com `setDate`/`getDay` usa o fuso do PROCESSO, e em
+ * produção (UTC) isso erra os dois extremos: o fim de período vem como
+ * 23:59:59.999 no fuso da clínica, que em UTC já é o dia seguinte — o laço
+ * rodava um dia a mais e inflava as horas disponíveis da taxa de ocupação.
+ * Localmente, em BRT, o mesmo código acertava, então o erro só aparecia no ar.
+ *
+ * O passo é de 12h e a repetição é descartada pela chave: assim nenhum dia é
+ * pulado nem contado duas vezes se o fuso tiver horário de verão.
+ */
+export function diasDoPeriodo(
+  inicio: Date,
+  fim: Date,
+  timeZone: string = TZ_CLINICA
+): { chave: string; diaSemana: number }[] {
+  const dias: { chave: string; diaSemana: number }[] = [];
+  const vistos = new Set<string>();
+
+  const anotar = (instante: Date) => {
+    const chave = chaveDia(instante, timeZone);
+    if (vistos.has(chave)) return;
+    vistos.add(chave);
+    const [ano, mes, dia] = chave.split("-").map(Number);
+    // Date.UTC não depende de fuso: a data já está resolvida na chave
+    dias.push({ chave, diaSemana: new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay() });
+  };
+
+  for (let t = inicio.getTime(); t <= fim.getTime(); t += 43_200_000) anotar(new Date(t));
+  anotar(fim);
+
+  return dias;
+}
+
 /** Rótulo "yyyy-MM" do mês de um instante, no fuso da clínica */
 export function chaveMes(
   instante: Date = new Date(),

@@ -18,7 +18,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -32,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { useAuth } from '@/hooks/useAuth'
 import { formatCPF, formatPhone, UF_OPTIONS } from '@/lib/masks'
 import {
@@ -64,7 +62,6 @@ const terapeutaSchema = z.object({
   ),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   telefone: z.string().optional(),
-  salas_acesso: z.array(z.string()).optional(),
 }).refine(
   (data) => data.tipoVinculo !== 'PROFISSIONAL_CLINICO' || !!data.especialidadeClinica,
   { message: 'Especialidade é obrigatória', path: ['especialidadeClinica'] }
@@ -94,7 +91,6 @@ interface Professional {
   conselho?: string | null
   numeroRegistro?: string | null
   ufRegistro?: string | null
-  roomAccess: string[]
   createdAt: string
   updatedAt: string
 }
@@ -126,23 +122,10 @@ export function EditarTerapeutaForm({ professional, onSuccess }: EditarTerapeuta
       conselho: professional.conselho || '',
       numeroRegistro: professional.numeroRegistro || '',
       ufRegistro: professional.ufRegistro || '',
-      salas_acesso: professional.roomAccess || [],
     },
   })
 
   const tipoVinculo = form.watch('tipoVinculo')
-
-  // Salas disponíveis (simulado - em produção viria do backend)
-  const salasDisponiveis = [
-    { id: 'sala-1', nome: 'Sala 1 - Atendimento Individual' },
-    { id: 'sala-2', nome: 'Sala 2 - Terapia em Grupo' },
-    { id: 'sala-3', nome: 'Sala 3 - Atividades Motoras' },
-    { id: 'sala-4', nome: 'Sala 4 - Musicoterapia' },
-    { id: 'sala-5', nome: 'Sala 5 - Avaliação' },
-    { id: 'consultorio-1', nome: 'Consultório 1' },
-    { id: 'consultorio-2', nome: 'Consultório 2' },
-    { id: 'consultorio-3', nome: 'Consultório 3' },
-  ]
 
   const onSubmit = async (data: TerapeutaFormData) => {
     try {
@@ -169,7 +152,6 @@ export function EditarTerapeutaForm({ professional, onSuccess }: EditarTerapeuta
         conselho: data.tipoVinculo === 'PROFISSIONAL_CLINICO' ? (data.conselho || null) : null,
         numeroRegistro: data.tipoVinculo === 'PROFISSIONAL_CLINICO' ? (data.numeroRegistro || null) : null,
         ufRegistro: data.tipoVinculo === 'PROFISSIONAL_CLINICO' ? (data.ufRegistro || null) : null,
-        roomAccess: data.salas_acesso || [],
       }
 
       // Preparar headers com dados do usuário
@@ -471,48 +453,6 @@ export function EditarTerapeutaForm({ professional, onSuccess }: EditarTerapeuta
                   )}
                 />
               </div>
-            </div>
-
-            {/* Seção: Acesso às Salas */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold border-b pb-2">Salas de Acesso</h3>
-              <FormField
-                control={form.control}
-                name="salas_acesso"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Salas que o profissional pode acessar</FormLabel>
-                    <FormDescription>
-                      Selecione as salas onde o terapeuta pode realizar atendimentos
-                    </FormDescription>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                      {salasDisponiveis.map((sala) => (
-                        <div key={sala.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={sala.id}
-                            checked={field.value?.includes(sala.id)}
-                            onCheckedChange={(checked) => {
-                              const current = field.value || []
-                              if (checked) {
-                                field.onChange([...current, sala.id])
-                              } else {
-                                field.onChange(current.filter(id => id !== sala.id))
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor={sala.id}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            {sala.nome}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             {/* Botões */}

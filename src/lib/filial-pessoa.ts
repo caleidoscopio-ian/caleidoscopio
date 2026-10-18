@@ -75,6 +75,51 @@ export async function escopoFilialDoUsuario(
   return SEM_RESTRICAO;
 }
 
+/**
+ * Filiais em que o PROFISSIONAL opera — o vínculo administrativo dele, não o do
+ * usuário logado.
+ *
+ * Mesma ordem de resolução de `escopoFilialDoUsuario`, mas entrando pelo
+ * profissional: ele pode não ter usuário nenhum (cadastro feito pela clínica
+ * antes do acesso existir), e aí só `ProfissionalFilial` responde.
+ *
+ * Serve para restringir o que se oferece SOBRE essa pessoa (a filial de um
+ * bloco da grade dela), que é pergunta diferente de "onde quem está mexendo
+ * pode operar".
+ *
+ * Sem vínculo nenhum devolve `SEM_RESTRICAO`, como o escopo do usuário: hoje 48
+ * dos 57 profissionais estão nessa situação, e devolver lista vazia deixaria o
+ * campo de filial da grade inútil justamente para a maioria. Quem chama mostra
+ * que o vínculo está em branco em vez de esconder as opções.
+ */
+export async function escopoFilialDoProfissional(
+  tenantId: string,
+  profissionalId: string
+): Promise<EscopoFilial> {
+  const profissional = await prisma.profissional.findFirst({
+    where: { id: profissionalId, tenantId },
+    select: { usuarioId: true, filiais: { select: { filialId: true } } },
+  });
+  if (!profissional) return SEM_RESTRICAO;
+
+  const vinculos = profissional.filiais.map((f) => f.filialId);
+  if (vinculos.length > 0) {
+    return { restrito: true, filialIds: vinculos, origem: "profissional-filial" };
+  }
+
+  if (profissional.usuarioId) {
+    const role = await prisma.usuarioRole.findUnique({
+      where: { usuarioId_tenantId: { usuarioId: profissional.usuarioId, tenantId } },
+      select: { filialId: true, ativo: true },
+    });
+    if (role?.ativo && role.filialId) {
+      return { restrito: true, filialIds: [role.filialId], origem: "usuario-role" };
+    }
+  }
+
+  return SEM_RESTRICAO;
+}
+
 /** A filial está dentro do escopo? Filial nula = "qualquer", então passa. */
 export function filialPermitida(escopo: EscopoFilial, filialId: string | null): boolean {
   if (!escopo.restrito) return true;

@@ -21,6 +21,7 @@ const RESUMO_VAZIO: OcupacaoResumo = {
   horas_agendadas: 0,
   atendendo_agora: 0,
   profissionais_sem_grade: 0,
+  agendamentos_fora: 0,
 }
 
 function TaxaOcupacaoContent() {
@@ -54,14 +55,14 @@ function TaxaOcupacaoContent() {
       },
     })
       .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d)) {
-          setListaProfissionais(d.map((p: { id: string; name: string; specialty: string }) => ({
-            id: p.id,
-            nome: p.name,
-            especialidade: p.specialty,
-          })))
-        }
+      .then((d: { success?: boolean; data?: { id: string; name: string; specialty: string }[] }) => {
+        // A rota responde { success, data }, não um array solto. Testar
+        // `Array.isArray(d)` dava sempre false e o dropdown de profissional
+        // ficava só com "Todos os profissionais".
+        if (!d?.success || !Array.isArray(d.data)) return
+        setListaProfissionais(
+          d.data.map((p) => ({ id: p.id, nome: p.name, especialidade: p.specialty }))
+        )
       })
       .catch(() => {})
   }, [user])
@@ -155,10 +156,24 @@ function TaxaOcupacaoContent() {
               ))}
             </div>
           ) : (
-            <TabelaOcupacao
-              profissionais={profissionais}
-              onConfigurarGrade={(id, nome) => setGradeDialog({ id, nome })}
-            />
+            <>
+              <TabelaOcupacao
+                profissionais={profissionais}
+                onConfigurarGrade={(id, nome) => setGradeDialog({ id, nome })}
+              />
+              {/* Quem não tem grade no período sai da tabela — e então os KPIs
+                  não fecham com o que a clínica espera. A nota diz por quê. */}
+              {resumo.profissionais_sem_grade > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {resumo.profissionais_sem_grade}{" "}
+                  {resumo.profissionais_sem_grade === 1 ? "profissional" : "profissionais"} sem
+                  grade nos dias selecionados {resumo.profissionais_sem_grade === 1 ? "não aparece" : "não aparecem"}
+                  {resumo.agendamentos_fora > 0 &&
+                    ` (${resumo.agendamentos_fora} ${resumo.agendamentos_fora === 1 ? "agendamento" : "agendamentos"} fora dos números acima)`}
+                  . Configure a grade em Profissionais para incluí-{resumo.profissionais_sem_grade === 1 ? "lo" : "los"}.
+                </p>
+              )}
+            </>
           )}
         </div>
 

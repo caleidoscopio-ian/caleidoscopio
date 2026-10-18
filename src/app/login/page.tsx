@@ -14,7 +14,9 @@ export default function LoginPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState<
+    string | null
+  >(null);
 
   // Mostrar aviso de sessão expirada (definido pelo logout automático) e limpar a flag
   useEffect(() => {
@@ -29,7 +31,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (!loading && isAuthenticated) {
       console.log(
-        "✅ LOGIN - Usuário autenticado, redirecionando para dashboard"
+        "✅ LOGIN - Usuário autenticado, redirecionando para dashboard",
       );
       router.push("/dashboard");
     }
@@ -65,11 +67,11 @@ export default function LoginPage() {
           id: ssoResult.tenant.id,
           name: ssoResult.tenant.name,
           slug: ssoResult.tenant.slug,
-          cnpj: 'cnpj' in ssoResult.tenant ? ssoResult.tenant.cnpj : undefined,
+          cnpj: "cnpj" in ssoResult.tenant ? ssoResult.tenant.cnpj : undefined,
           plan: {
-            id: 'plan' in ssoResult.tenant ? ssoResult.tenant.plan.id : '',
-            name: 'plan' in ssoResult.tenant ? ssoResult.tenant.plan.name : '',
-          }
+            id: "plan" in ssoResult.tenant ? ssoResult.tenant.plan.id : "",
+            name: "plan" in ssoResult.tenant ? ssoResult.tenant.plan.name : "",
+          },
         },
         config: ssoResult.config,
         token: ssoResult.token,
@@ -212,7 +214,9 @@ export default function LoginPage() {
                 {/* Session Expired Message */}
                 {sessionExpiredMessage && !error && (
                   <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-center">
-                    <p className="text-sm text-amber-700">{sessionExpiredMessage}</p>
+                    <p className="text-sm text-amber-700">
+                      {sessionExpiredMessage}
+                    </p>
                   </div>
                 )}
 

@@ -37,7 +37,9 @@ export function KpiCards({ resumo, profissionais }: KpiCardsProps) {
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {resumo.profissionais_sem_grade > 0 && (
-              <span className="text-amber-600">{resumo.profissionais_sem_grade} sem grade</span>
+              <span className="text-amber-600">
+                {resumo.profissionais_sem_grade} sem grade no período
+              </span>
             )}
           </p>
         </CardContent>

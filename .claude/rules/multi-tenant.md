@@ -15,7 +15,8 @@ TODA query a model tenant-specific DEVE incluir `tenantId` no filtro.
 
 Paciente, Profissional, Agendamento, Prontuario, Atividade, Curriculum, Avaliacao,
 Anamnese, Sala, Procedimento, Trilha, RelatorioClinico, Encaminhamento, PrescricaoMedica,
-Diagnostico, AnexoPaciente, e todos os models de sessão/avaliação.
+Diagnostico, AnexoPaciente, GradeAtendimento, GradeSala, e todos os models de
+sessão/avaliação.
 
 ## Models públicos (sem tenantId)
 

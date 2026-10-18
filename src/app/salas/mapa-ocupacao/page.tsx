@@ -47,8 +47,14 @@ export default function MapaOcupacaoPage() {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="diario" className="space-y-4">
+          {/* Dashboard primeiro: a tela abre nos indicadores de capacidade, que
+              é a pergunta de gestão. Diário e semanal são a operação do dia. */}
+          <Tabs defaultValue="dashboard" className="space-y-4">
             <TabsList className="grid grid-cols-4 w-full max-w-lg">
+              <TabsTrigger value="dashboard" className="gap-2 text-xs">
+                <BarChart2 className="h-3.5 w-3.5" />
+                Dashboard
+              </TabsTrigger>
               <TabsTrigger value="diario" className="gap-2 text-xs">
                 <CalendarDays className="h-3.5 w-3.5" />
                 Diário
@@ -57,15 +63,15 @@ export default function MapaOcupacaoPage() {
                 <LayoutGrid className="h-3.5 w-3.5" />
                 Semanal
               </TabsTrigger>
-              <TabsTrigger value="dashboard" className="gap-2 text-xs">
-                <BarChart2 className="h-3.5 w-3.5" />
-                Dashboard
-              </TabsTrigger>
               <TabsTrigger value="mapa" className="gap-2 text-xs">
                 <Map className="h-3.5 w-3.5" />
                 Unidades
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="dashboard" className="mt-0">
+              <DashboardOcupacao filialId={filialFiltro} />
+            </TabsContent>
 
             <TabsContent value="diario" className="mt-0">
               <MapaDiario filialId={filialFiltro} />
@@ -73,10 +79,6 @@ export default function MapaOcupacaoPage() {
 
             <TabsContent value="semanal" className="mt-0">
               <MapaSemanal filialId={filialFiltro} />
-            </TabsContent>
-
-            <TabsContent value="dashboard" className="mt-0">
-              <DashboardOcupacao filialId={filialFiltro} />
             </TabsContent>
 
             <TabsContent value="mapa" className="mt-0">
