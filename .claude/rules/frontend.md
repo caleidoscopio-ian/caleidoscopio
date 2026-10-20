@@ -346,6 +346,14 @@ Não propagar automático ao salvar o currículo foi decisão de 18/10/2026: um
 currículo serve vários pacientes, e alterar o plano de quem está em atendimento
 sem ninguém pedir é pior que exigir um clique.
 
+Ao lado do seletor de plano há o botão de **desassociar** (ícone de elo
+partido), com confirmação que diz o que acontece: o plano sai da lista do
+paciente, **nada é apagado**, e reatribuir devolve tudo como estava. A promessa
+no texto é exatamente o que o backend faz (`ativa = false`, e o `POST` reativa
+em vez de recriar) — mensagem de confirmação que promete diferente do código é
+pior que não ter mensagem. Só aparece para quem tem `atividades: UPDATE`, que é
+o que o `DELETE` exige.
+
 ## Convênio do atendimento — só os do paciente
 
 O dropdown de Convênio no agendamento oferece **"Particular" + os convênios do

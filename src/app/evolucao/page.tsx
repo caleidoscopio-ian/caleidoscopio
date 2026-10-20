@@ -41,6 +41,7 @@ import {
   AlertCircle,
   CheckCircle2,
   TrendingUp,
+  Unlink,
   ChevronUp,
   ChevronDown,
   Settings2,
@@ -55,6 +56,17 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { FaseBadge, FASE_LABELS } from "@/components/evolucao/fase-badge";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ============ Interfaces ============
 
@@ -299,6 +311,49 @@ function EvolucaoPageContent() {
       setLoading(false);
     }
   }, [isAuthenticated, user, pacienteSelecionado]);
+
+  // ============ Desassociar plano do paciente ============
+
+  // Quem só pode VER atividade não desassocia; o DELETE exige `edit_activities`
+  const { can, loading: permsLoading } = usePermissions();
+  const podeDesassociar = permsLoading || can("atividades", "UPDATE");
+
+  const [confirmandoRemocao, setConfirmandoRemocao] = useState(false);
+  const [removendo, setRemovendo] = useState(false);
+
+  const desassociarPlano = async () => {
+    if (!user || !curriculumSelecionado) return;
+    try {
+      setRemovendo(true);
+      const response = await fetch(
+        `/api/curriculum/atribuir?id=${curriculumSelecionado}`,
+        {
+          method: "DELETE",
+          headers: {
+            "X-User-Data": btoa(JSON.stringify(user)),
+            "X-Auth-Token": user.token,
+          },
+        }
+      );
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Não foi possível remover o plano");
+      }
+      setConfirmandoRemocao(false);
+      setAvisoSincronia(
+        "Plano removido deste paciente. O histórico foi preservado e ele pode ser atribuído de novo quando precisar."
+      );
+      setCurriculumSelecionado("");
+      await fetchEvolucao(true);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao remover o plano do paciente"
+      );
+      setConfirmandoRemocao(false);
+    } finally {
+      setRemovendo(false);
+    }
+  };
 
   // ============ Sincronizar plano com o currículo ============
 
@@ -767,22 +822,37 @@ function EvolucaoPageContent() {
 
               <div className="space-y-2">
                 <Label>Plano Terapêutico</Label>
-                <Select
-                  value={curriculumSelecionado}
-                  onValueChange={setCurriculumSelecionado}
-                  disabled={!pacienteSelecionado || atribuicoes.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um plano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {atribuicoes.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.curriculum.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={curriculumSelecionado}
+                    onValueChange={setCurriculumSelecionado}
+                    disabled={!pacienteSelecionado || atribuicoes.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um plano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {atribuicoes.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.curriculum.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {atribuicaoAtual && podeDesassociar && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      title="Remover este plano do paciente"
+                      aria-label="Remover este plano do paciente"
+                      onClick={() => setConfirmandoRemocao(true)}
+                      className="shrink-0 text-destructive hover:text-destructive"
+                    >
+                      <Unlink className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -854,6 +924,44 @@ function EvolucaoPageContent() {
             </CardContent>
           </Card>
         )}
+
+        <AlertDialog open={confirmandoRemocao} onOpenChange={setConfirmandoRemocao}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Remover &quot;{atribuicaoAtual?.curriculum.nome}&quot; deste paciente?
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2 text-sm">
+                  <p>
+                    O plano sai da lista deste paciente e deixa de aparecer na
+                    evolução e nas sessões.
+                  </p>
+                  <p>
+                    <span className="font-medium">Nada é apagado.</span> As
+                    atividades do paciente, as fases em que elas estão, os
+                    critérios e todo o histórico ficam guardados — se o plano for
+                    atribuído de novo, ele volta do jeito que estava.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={removendo}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  desassociarPlano();
+                }}
+                disabled={removendo}
+                className="gap-2"
+              >
+                {removendo && <Loader2 className="h-4 w-4 animate-spin" />}
+                Remover plano
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {avisoSincronia && (
           <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">

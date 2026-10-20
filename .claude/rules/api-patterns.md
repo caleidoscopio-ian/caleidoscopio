@@ -348,6 +348,28 @@ no currículo sem clone no plano, porque a atividade entrou depois da atribuiç�
 Escopo: `pacienteCurriculum` não tem `tenantId` — valide pelo paciente
 (`paciente: { tenantId }`) **antes** de clonar, e responda 404, não 403.
 
+### Desassociar é soft; reatribuir é reativar
+
+`DELETE /api/curriculum/atribuir?id=` marca `ativa = false` e **não apaga nada**.
+Tem de ser assim: `PacienteAtividadeClone` cascateia a partir do plano, então um
+delete de verdade levaria junto clones, instruções, critérios, fases e todo o
+histórico coletado em sessão.
+
+E o par é único (`@@unique([pacienteId, curriculumId])`), **ativo ou não**. Por
+isso o `POST` não pode simplesmente criar quando existe uma atribuição inativa:
+ia estourar P2002 e a clínica veria "já existe um registro com este..." sem
+entender. O `POST` resolve nos três casos:
+
+| Situação | Resposta |
+|---|---|
+| já atribuído e ativo | 409, mensagem clara |
+| existe mas inativo | **reativa**, devolve `reativada: true` |
+| não existe | cria e clona tudo |
+
+Reativar também roda `clonarAtividadesFaltantes`: o currículo pode ter mudado
+enquanto o plano estava fora, e o paciente volta com o histórico antigo **mais**
+o que entrou no currículo nesse meio tempo.
+
 ## Tratamento de erro — `@/lib/erro-prisma`
 
 `console.error` solto num catch produz duas falhas: o usuário vê "Erro interno do

@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { randomUUID } from "crypto";
-import { clonarAtividadesParaPaciente } from "@/lib/clone-atividade";
+import {
+  clonarAtividadesFaltantes,
+  clonarAtividadesParaPaciente,
+} from "@/lib/clone-atividade";
 import { registrarErroApi } from "@/lib/erro-prisma";
 
 // API para atribuir curriculum a um paciente
@@ -77,20 +80,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar se já existe atribuição ativa
-    const atribuicaoExistente = await prisma.pacienteCurriculum.findFirst({
-      where: {
-        pacienteId,
-        curriculumId,
-        ativa: true,
-      },
+    // `@@unique([pacienteId, curriculumId])`: o par é único, ativo ou não.
+    // Então "desassociar e atribuir de novo" não pode passar por `create` — ia
+    // estourar P2002 e a clínica veria um erro de constraint sem sentido.
+    const atribuicaoExistente = await prisma.pacienteCurriculum.findUnique({
+      where: { pacienteId_curriculumId: { pacienteId, curriculumId } },
+      select: { id: true, ativa: true },
     });
 
-    if (atribuicaoExistente) {
+    if (atribuicaoExistente?.ativa) {
       return NextResponse.json(
         { error: "Este curriculum já está atribuído a este paciente" },
         { status: 409 }
       );
+    }
+
+    // Reatribuir = reativar o que existe, não recomeçar do zero. Os clones,
+    // critérios, fases e histórico da atribuição anterior continuam lá — era
+    // justamente por isso que desassociar é soft delete.
+    if (atribuicaoExistente) {
+      const reativada = await prisma.pacienteCurriculum.update({
+        where: { id: atribuicaoExistente.id },
+        data: { ativa: true, atribuida_por: user.id, atribuida_em: new Date() },
+        include: {
+          curriculum: {
+            include: {
+              atividades: { orderBy: { ordem: "asc" }, include: { atividade: true } },
+            },
+          },
+          paciente: true,
+        },
+      });
+
+      // O currículo pode ter mudado enquanto o plano estava fora; traz só o que
+      // falta, sem tocar no que já existe
+      const { criadas } = await clonarAtividadesFaltantes(atribuicaoExistente.id);
+
+      return NextResponse.json({
+        success: true,
+        data: reativada,
+        reativada: true,
+        atividadesAdicionadas: criadas,
+        message:
+          criadas > 0
+            ? `Plano reativado com o histórico anterior. ${criadas} atividade(s) nova(s) do currículo foram incluídas.`
+            : "Plano reativado com o histórico anterior.",
+      });
     }
 
     console.log(`📝 Atribuindo curriculum "${curriculum.nome}" ao paciente "${paciente.nome}"`);
@@ -307,11 +342,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Verificar se o paciente pertence à clínica do usuário
+    // Paciente de outra clínica responde 404, não 403: um 403 confirmaria que o
+    // id existe em outro tenant (regra de `multi-tenant.md`)
     if (atribuicao.paciente.tenantId !== user.tenant.id) {
       return NextResponse.json(
-        { error: "Atribuição não pertence a esta clínica" },
-        { status: 403 }
+        { error: "Atribuição não encontrada" },
+        { status: 404 }
       );
     }
 
