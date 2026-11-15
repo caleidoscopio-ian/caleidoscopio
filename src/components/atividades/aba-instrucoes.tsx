@@ -4,11 +4,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +35,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import {
+  ListChecks, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Panel, EstadoVazio } from "@/components/kit";
 
 interface Instrucao {
   id?: string;
@@ -200,34 +197,23 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
 
   if (!atividadeId) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">
-            Salve as informações gerais primeiro para gerenciar instruções
-          </p>
-        </CardContent>
-      </Card>
+      <EstadoVazio titulo="Salve as informações gerais primeiro para gerenciar instruções" />
     );
   }
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Instruções</CardTitle>
-              <CardDescription>
-                Defina as instruções e como aplicá-las
-              </CardDescription>
-            </div>
-            <Button onClick={handleNovo} size="sm">
+      <Panel
+        icone={<ListChecks />}
+        titulo="Instruções"
+        subtitulo="Defina as instruções e como aplicá-las"
+        acoes={
+          <Button onClick={handleNovo} size="sm">
               <Plus className="mr-2 h-4 w-4" />
               Adicionar
             </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
+        }
+      >
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -298,8 +284,7 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </Panel>
 
       {/* Dialog Adicionar/Editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

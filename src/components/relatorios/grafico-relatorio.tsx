@@ -217,7 +217,7 @@ export function GraficoRelatorio({
   const muitosPontos = noTempo && dadosBarra.length > 90;
 
   return (
-    <div className="viz-relatorio rounded-lg border bg-card p-4">
+    <div className="viz-relatorio rounded-3xl border border-rim bg-surface/90 p-5 shadow-card md:p-6">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium">

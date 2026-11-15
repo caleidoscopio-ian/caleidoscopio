@@ -116,7 +116,7 @@ export function UploadDemonstrativo({ convenios, onImportado }: UploadDemonstrat
         {resultado && (
           <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <CheckCircle2 className="h-5 w-5 text-success-ink" />
               <span className="font-medium">
                 {resultado.operadora_nome ?? "Demonstrativo"} importado
               </span>
@@ -124,13 +124,13 @@ export function UploadDemonstrativo({ convenios, onImportado }: UploadDemonstrat
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
               <div><div className="text-xs text-muted-foreground">Total de guias</div><div className="font-semibold">{resultado.total_guias}</div></div>
-              <div><div className="text-xs text-muted-foreground">Conciliadas</div><div className="font-semibold text-green-600">{resultado.guias_conciliadas}</div></div>
-              <div><div className="text-xs text-muted-foreground">Com glosa</div><div className="font-semibold text-amber-600">{resultado.guias_com_glosa}</div></div>
-              <div className="flex flex-col"><div className="text-xs text-muted-foreground">Não encontradas</div><div className="font-semibold text-red-600 flex items-center gap-1">{resultado.guias_nao_encontradas > 0 && <AlertTriangle className="h-3.5 w-3.5" />}{resultado.guias_nao_encontradas}</div></div>
+              <div><div className="text-xs text-muted-foreground">Conciliadas</div><div className="font-semibold text-success-ink">{resultado.guias_conciliadas}</div></div>
+              <div><div className="text-xs text-muted-foreground">Com glosa</div><div className="font-semibold text-warning-ink">{resultado.guias_com_glosa}</div></div>
+              <div className="flex flex-col"><div className="text-xs text-muted-foreground">Não encontradas</div><div className="font-semibold text-danger-ink flex items-center gap-1">{resultado.guias_nao_encontradas > 0 && <AlertTriangle className="h-3.5 w-3.5" />}{resultado.guias_nao_encontradas}</div></div>
               <div><div className="text-xs text-muted-foreground">Glosas geradas</div><div className="font-semibold">{resultado.glosas_geradas} · {formatBRL(resultado.valor_glosa_total)}</div></div>
             </div>
             {resultado.guias_nao_encontradas > 0 && (
-              <p className="text-xs text-amber-700 flex items-start gap-1.5">
+              <p className="text-xs text-warning-ink flex items-start gap-1.5">
                 <FileX2 className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                 {resultado.guias_nao_encontradas} guia(s) sem atendimento correspondente — verifique se a senha foi preenchida no check-in.
               </p>

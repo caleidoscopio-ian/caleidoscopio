@@ -10,7 +10,6 @@ import { MainLayout } from "@/components/main-layout";
 import { EditarTerapeutaForm } from "@/components/forms/editar-terapeuta-form";
 import { TerapeutaDetailsDialog } from "@/components/terapeuta-details-dialog";
 import { DeleteTerapeutaDialog } from "@/components/delete-terapeuta-dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +36,7 @@ import {
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { agruparPorFilial } from "@/lib/agrupar-filial";
+import { PageHeader, Panel, StatCard, PersonAvatar } from "@/components/kit";
 
 interface Professional {
   id: string;
@@ -93,14 +93,17 @@ function TerapeutasTable({
       <TableBody>
         {professionals.map((professional) => (
           <TableRow key={professional.id}>
-            <TableCell className="font-medium">
-              {professional.name}
+            <TableCell>
+              <div className="flex min-w-0 items-center gap-3">
+                <PersonAvatar nome={professional.name} tamanho={36} />
+                <span className="truncate font-semibold text-ink">{professional.name}</span>
+              </div>
             </TableCell>
             <TableCell>
               {professional.specialty ? (
                 <Badge
                   variant="outline"
-                  className="bg-blue-50 text-blue-700"
+                  className="bg-brand-soft text-brand"
                 >
                   {professional.specialty}
                 </Badge>
@@ -277,112 +280,61 @@ function TerapeutasPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Gestão de Profissionais
-            </h1>
-            <p className="text-muted-foreground">
-              Gerencie os profissionais da clínica e suas especialidades
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          titulo="Gestão de Profissionais"
+          subtitulo="Gerencie os profissionais da clínica e suas especialidades"
+        />
 
         {/* Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Profissionais
-              </CardTitle>
-              <UserCheck className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? "..." : professionals.length}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard
+            tom="blue"
+            size="hero"
+            icone={<UserCheck />}
+            rotulo="Total Profissionais"
+            valor={loading ? "..." : professionals.length}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ativos</CardTitle>
-              <Users className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? "..." : professionals.length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Todos os profissionais estão ativos
-              </p>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="lavender"
+            icone={<Users />}
+            rotulo="Ativos"
+            valor={loading ? "..." : professionals.length}
+            hint="Todos os profissionais estão ativos"
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Especialidades
-              </CardTitle>
-              <Stethoscope className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? "..." : especialidadeStats.length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Diferentes áreas de atuação
-              </p>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="mint"
+            icone={<Stethoscope />}
+            rotulo="Especialidades"
+            valor={loading ? "..." : especialidadeStats.length}
+            hint="Diferentes áreas de atuação"
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Cadastrados Este Mês
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading
-                  ? "..."
-                  : professionals.filter((p) => {
-                      const created = new Date(p.createdAt);
-                      const now = new Date();
-                      return (
-                        created.getMonth() === now.getMonth() &&
-                        created.getFullYear() === now.getFullYear()
-                      );
-                    }).length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="peach"
+            icone={<Calendar />}
+            rotulo="Cadastrados Este Mês"
+            valor={loading ? "..." : professionals.filter((p) => { const created = new Date(p.createdAt); const now = new Date(); return ( created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear() ); }).length}
+          />
         </div>
 
         {/* Estatísticas por Especialidade */}
         {!loading && especialidadeStats.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="h-5 w-5" />
-                Distribuição por Especialidade
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-                {especialidadeStats.map((stat) => (
-                  <div
-                    key={stat.name}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <span className="text-sm font-medium">{stat.name}</span>
-                    <Badge variant="secondary">{stat.count}</Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <Panel icone={<GraduationCap />} titulo="Distribuição por Especialidade">
+
+            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+              {especialidadeStats.map((stat) => (
+                <div
+                  key={stat.name}
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-surface-muted p-3.5"
+                >
+                  <span className="text-sm font-medium">{stat.name}</span>
+                  <Badge variant="secondary">{stat.count}</Badge>
+                </div>
+              ))}
+            </div>
+          </Panel>
         )}
 
         {/* Filtros e Busca */}
@@ -405,109 +357,100 @@ function TerapeutasPageContent() {
         </div>
 
         {/* Tabela de Terapeutas */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Lista de Profissionais
-              {!loading && (
-                <Badge variant="secondary" className="ml-2">
-                  {filteredProfessionals.length} de {professionals.length}
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="text-center py-8">
-                <div className="text-red-600 mb-4">{error}</div>
-                <Button onClick={fetchProfessionals} variant="outline">
-                  Tentar Novamente
-                </Button>
-              </div>
-            )}
+        <Panel
+          titulo={<>Lista de Profissionais {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredProfessionals.length} de {professionals.length} </Badge> )}</>}
+        >
 
-            {loading && !error && (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Carregando profissionais...
-                </p>
-              </div>
-            )}
+          {error && (
+            <div className="text-center py-8">
+              <div className="text-danger-ink mb-4">{error}</div>
+              <Button onClick={fetchProfessionals} variant="outline">
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
 
-            {!loading && !error && professionals.length === 0 && (
+          {loading && !error && (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                Carregando profissionais...
+              </p>
+            </div>
+          )}
+
+          {!loading && !error && professionals.length === 0 && (
+            <div className="text-center py-8">
+              <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                Nenhum profissional encontrado
+              </h3>
+              <p className="text-muted-foreground">
+                Os profissionais devem ser criados através da página de Usuários.
+              </p>
+            </div>
+          )}
+
+          {!loading && !error && filteredProfessionals.length > 0 && (
+            filialAtiva ? (
+              <TerapeutasTable
+                professionals={filteredProfessionals}
+                onSuccess={fetchProfessionals}
+                formatCPF={formatCPF}
+                formatDate={formatDate}
+              />
+            ) : (
+              <Accordion
+                type="multiple"
+                defaultValue={agruparPorFilial(
+                  filteredProfessionals,
+                  (p) => filiais.find((f) => f.id === p.filialId) ?? null
+                ).map((g) => g.filial?.id ?? "_sem_filial")}
+              >
+                {agruparPorFilial(
+                  filteredProfessionals,
+                  (p) => filiais.find((f) => f.id === p.filialId) ?? null
+                ).map((grupo) => (
+                  <AccordionItem key={grupo.filial?.id ?? "_sem_filial"} value={grupo.filial?.id ?? "_sem_filial"}>
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: grupo.filial?.cor ?? "#94a3b8" }}
+                        />
+                        <span className="font-medium">{grupo.filial?.nome ?? "Sem filial"}</span>
+                        <Badge variant="secondary" className="text-xs">{grupo.items.length}</Badge>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <TerapeutasTable
+                        professionals={grupo.items}
+                        onSuccess={fetchProfessionals}
+                        formatCPF={formatCPF}
+                        formatDate={formatDate}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )
+          )}
+
+          {!loading &&
+            !error &&
+            professionals.length > 0 &&
+            filteredProfessionals.length === 0 && (
               <div className="text-center py-8">
-                <UserCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">
-                  Nenhum profissional encontrado
+                  Nenhum resultado encontrado
                 </h3>
                 <p className="text-muted-foreground">
-                  Os profissionais devem ser criados através da página de Usuários.
+                  Tente ajustar os termos da sua busca.
                 </p>
               </div>
             )}
-
-            {!loading && !error && filteredProfessionals.length > 0 && (
-              filialAtiva ? (
-                <TerapeutasTable
-                  professionals={filteredProfessionals}
-                  onSuccess={fetchProfessionals}
-                  formatCPF={formatCPF}
-                  formatDate={formatDate}
-                />
-              ) : (
-                <Accordion
-                  type="multiple"
-                  defaultValue={agruparPorFilial(
-                    filteredProfessionals,
-                    (p) => filiais.find((f) => f.id === p.filialId) ?? null
-                  ).map((g) => g.filial?.id ?? "_sem_filial")}
-                >
-                  {agruparPorFilial(
-                    filteredProfessionals,
-                    (p) => filiais.find((f) => f.id === p.filialId) ?? null
-                  ).map((grupo) => (
-                    <AccordionItem key={grupo.filial?.id ?? "_sem_filial"} value={grupo.filial?.id ?? "_sem_filial"}>
-                      <AccordionTrigger>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: grupo.filial?.cor ?? "#94a3b8" }}
-                          />
-                          <span className="font-medium">{grupo.filial?.nome ?? "Sem filial"}</span>
-                          <Badge variant="secondary" className="text-xs">{grupo.items.length}</Badge>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <TerapeutasTable
-                          professionals={grupo.items}
-                          onSuccess={fetchProfessionals}
-                          formatCPF={formatCPF}
-                          formatDate={formatDate}
-                        />
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              )
-            )}
-
-            {!loading &&
-              !error &&
-              professionals.length > 0 &&
-              filteredProfessionals.length === 0 && (
-                <div className="text-center py-8">
-                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Nenhum resultado encontrado
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Tente ajustar os termos da sua busca.
-                  </p>
-                </div>
-              )}
-          </CardContent>
-        </Card>
+        </Panel>
       </div>
     </MainLayout>
   );

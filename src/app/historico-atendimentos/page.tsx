@@ -18,6 +18,7 @@ import type {
   HistoricoResponse, HistoricoResumo, AtendimentoHistorico, HistoricoFiltros,
 } from "@/types/historico-atendimento";
 import { StatusAgendamento } from "@/types/agendamento";
+import { PageHeader } from "@/components/kit";
 
 const RESUMO_VAZIO: HistoricoResumo = {
   total_atendimentos: 0,
@@ -210,32 +211,30 @@ function HistoricoContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Cabeçalho */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Histórico de Atendimentos</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Registro completo de atendimentos realizados, faltas e cancelamentos com dados financeiros.
-            </p>
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <Button
-              variant="outline" size="sm" className="gap-2"
-              onClick={handleExportCSV}
-              disabled={exportandoCSV || total === 0}
-            >
-              <FileDown className="h-4 w-4" />
-              {exportandoCSV ? "Exportando..." : "CSV"}
-            </Button>
-            <Button
-              variant="outline" size="sm" className="gap-2"
-              onClick={handleExportPDF}
-              disabled={exportandoPDF || total === 0}
-            >
-              <FileText className="h-4 w-4" />
-              {exportandoPDF ? "Gerando PDF..." : "PDF"}
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          titulo="Histórico de Atendimentos"
+          subtitulo="Registro completo de atendimentos realizados, faltas e cancelamentos com dados financeiros."
+          acoes={
+            <div className="flex gap-2 flex-shrink-0">
+              <Button
+                variant="outline" size="sm" className="gap-2"
+                onClick={handleExportCSV}
+                disabled={exportandoCSV || total === 0}
+              >
+                <FileDown className="h-4 w-4" />
+                {exportandoCSV ? "Exportando..." : "CSV"}
+              </Button>
+              <Button
+                variant="outline" size="sm" className="gap-2"
+                onClick={handleExportPDF}
+                disabled={exportandoPDF || total === 0}
+              >
+                <FileText className="h-4 w-4" />
+                {exportandoPDF ? "Gerando PDF..." : "PDF"}
+              </Button>
+            </div>
+          }
+        />
 
         {/* Filtros */}
         <FiltrosHistorico

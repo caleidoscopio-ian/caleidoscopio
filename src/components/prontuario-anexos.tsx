@@ -43,6 +43,8 @@ import {
 import {
   Paperclip,
   FileText,
+  FlaskConical,
+  HardDrive,
   Image as ImageIcon,
   Video,
   Music,
@@ -54,6 +56,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { Carregando, EstadoVazio, StatCard } from "@/components/kit";
 
 interface Anexo {
   id: string;
@@ -419,12 +422,12 @@ export function ProntuarioAnexos({
       string,
       { variant: "default" | "outline" | "secondary" | "destructive"; className?: string }
     > = {
-      DOCUMENTO: { variant: "default", className: "bg-blue-600" },
-      EXAME: { variant: "default", className: "bg-purple-600" },
-      LAUDO: { variant: "default", className: "bg-indigo-600" },
-      FOTO: { variant: "default", className: "bg-green-600" },
-      VIDEO: { variant: "default", className: "bg-red-600" },
-      AUDIO: { variant: "default", className: "bg-yellow-600" },
+      DOCUMENTO: { variant: "default", className: "bg-brand" },
+      EXAME: { variant: "default", className: "bg-violet" },
+      LAUDO: { variant: "default", className: "bg-brand" },
+      FOTO: { variant: "default", className: "bg-success" },
+      VIDEO: { variant: "default", className: "bg-danger" },
+      AUDIO: { variant: "default", className: "bg-warning" },
       OUTROS: { variant: "outline" },
     };
 
@@ -464,13 +467,7 @@ export function ProntuarioAnexos({
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">
-            Carregando anexos...
-          </p>
-        </CardContent>
-      </Card>
+      <Carregando texto="Carregando anexos..." />
     );
   }
 
@@ -495,7 +492,7 @@ export function ProntuarioAnexos({
             {!editingId && (
               <div className="grid gap-2">
                 <Label htmlFor="file">
-                  Arquivo <span className="text-red-500">*</span>
+                  Arquivo <span className="text-danger-ink">*</span>
                 </Label>
                 <div className="border-2 border-dashed rounded-lg p-4 hover:border-primary/50 transition-colors">
                   {!selectedFile ? (
@@ -537,13 +534,13 @@ export function ProntuarioAnexos({
                       <div className="flex items-center justify-between bg-muted p-3 rounded-lg">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           {selectedFile.type.startsWith("image/") ? (
-                            <ImageIcon className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                            <ImageIcon className="h-5 w-5 text-brand flex-shrink-0" />
                           ) : selectedFile.type.startsWith("video/") ? (
-                            <Video className="h-5 w-5 text-red-600 flex-shrink-0" />
+                            <Video className="h-5 w-5 text-danger-ink flex-shrink-0" />
                           ) : selectedFile.type.startsWith("audio/") ? (
-                            <Music className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                            <Music className="h-5 w-5 text-warning-ink flex-shrink-0" />
                           ) : (
-                            <FileText className="h-5 w-5 text-gray-600 flex-shrink-0" />
+                            <FileText className="h-5 w-5 text-ink flex-shrink-0" />
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">
@@ -589,7 +586,7 @@ export function ProntuarioAnexos({
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="tipo">
-                  Tipo <span className="text-red-500">*</span>
+                  Tipo <span className="text-danger-ink">*</span>
                 </Label>
                 <Select
                   value={formData.tipo}
@@ -626,7 +623,7 @@ export function ProntuarioAnexos({
 
             <div className="grid gap-2">
               <Label htmlFor="titulo">
-                Título <span className="text-red-500">*</span>
+                Título <span className="text-danger-ink">*</span>
               </Label>
               <Input
                 id="titulo"
@@ -690,49 +687,40 @@ export function ProntuarioAnexos({
       </Dialog>
 
       {/* Cards de Resumo */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total de Arquivos</CardDescription>
-            <CardTitle className="text-3xl">{totalAnexos}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Documentos</CardDescription>
-            <CardTitle className="text-3xl text-blue-600">
-              {porTipo.DOCUMENTO || 0}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Exames</CardDescription>
-            <CardTitle className="text-3xl text-purple-600">
-              {porTipo.EXAME || 0}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Tamanho Total</CardDescription>
-            <CardTitle className="text-2xl">
-              {formatFileSize(totalSize)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          size="sm"
+          tom="blue"
+          icone={<Paperclip />}
+          rotulo="Total de Arquivos"
+          valor={totalAnexos}
+        />
+        <StatCard
+          size="sm"
+          tom="lavender"
+          icone={<FileText />}
+          rotulo="Documentos"
+          valor={porTipo.DOCUMENTO || 0}
+        />
+        <StatCard
+          size="sm"
+          tom="mint"
+          icone={<FlaskConical />}
+          rotulo="Exames"
+          valor={porTipo.EXAME || 0}
+        />
+        <StatCard
+          size="sm"
+          tom="peach"
+          icone={<HardDrive />}
+          rotulo="Tamanho Total"
+          valor={formatFileSize(totalSize)}
+        />
       </div>
 
       {/* Lista de Anexos */}
       {anexos.length === 0 ? (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">
-              <Paperclip className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nenhum anexo registrado</p>
-            </div>
-          </CardContent>
-        </Card>
+        <EstadoVazio icone={<Paperclip />} titulo="Nenhum anexo registrado" />
       ) : (
         <div className="space-y-3">
           {anexos.map((anexo) => (

@@ -8,7 +8,9 @@ import { MainLayout } from "@/components/main-layout";
 import { ProntuarioTabs } from "@/components/prontuario-tabs";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, FileText, Plus } from "lucide-react";
+import { idadeEmAnos } from "@/lib/datas-fuso";
 import Link from "next/link";
+import { PageHeader, PersonAvatar } from "@/components/kit";
 
 interface Patient {
   id: string;
@@ -35,7 +37,7 @@ export default function ProntuarioPage({
 }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: carregandoSessao } = useAuth();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +57,7 @@ export default function ProntuarioPage({
   ];
 
   useEffect(() => {
+    if (carregandoSessao) return;
     if (!isAuthenticated) {
       router.push("/login");
       return;
@@ -107,9 +110,9 @@ export default function ProntuarioPage({
     };
 
     fetchPatient();
-  }, [resolvedParams.id, user, isAuthenticated, router]);
+  }, [resolvedParams.id, user, isAuthenticated, carregandoSessao, router]);
 
-  if (loading) {
+  if (loading || carregandoSessao) {
     return (
       <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
         <MainLayout breadcrumbs={breadcrumbs}>
@@ -154,28 +157,15 @@ export default function ProntuarioPage({
     <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Link href="/pacientes">
-                  <Button variant="ghost" size="sm">
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Voltar
-                  </Button>
-                </Link>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Prontuário: {patient.name}
-              </h1>
-              <p className="text-muted-foreground">
-                Visualização completa do prontuário do paciente
-              </p>
-            </div>
-
-            {/* Botão de ação dinâmico baseado na aba ativa */}
-            <div>
-              {activeTab === "encaminhamento" && (
+          <PageHeader
+            voltar={{ href: "/pacientes" }}
+            avatar={<PersonAvatar nome={patient.name} tamanho={48} />}
+            titulo={`Prontuário: ${patient.name}`}
+            subtitulo={`Visualização completa do prontuário do paciente · ${idadeEmAnos(patient.birthDate) ?? "—"} anos`}
+            // Ação que muda com a aba: o rótulo acompanha o que está à vista
+            acoes={
+              <>
+                {activeTab === "encaminhamento" && (
                 <Button onClick={() => setDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Encaminhamento
@@ -200,13 +190,14 @@ export default function ProntuarioPage({
                 </Button>
               )}
               {activeTab === "anexos" && (
-                <Button onClick={() => setDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo Anexo
-                </Button>
-              )}
-            </div>
-          </div>
+                  <Button onClick={() => setDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Anexo
+                  </Button>
+                )}
+              </>
+            }
+          />
 
           {/* Tabs do Prontuário */}
           <ProntuarioTabs

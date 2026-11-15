@@ -82,13 +82,13 @@ export function ExcluirAtividadeDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="ghost">
-          <Trash2 className="h-4 w-4 text-red-600" />
+          <Trash2 className="h-4 w-4 text-danger-ink" />
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <AlertTriangle className="h-5 w-5 text-danger-ink" />
             Excluir Atividade
           </DialogTitle>
           <DialogDescription>
@@ -99,7 +99,7 @@ export function ExcluirAtividadeDialog({
 
         <div className="space-y-4 py-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-danger-soft border border-danger-soft text-danger-ink px-4 py-3 rounded">
               {error}
             </div>
           )}
@@ -110,10 +110,10 @@ export function ExcluirAtividadeDialog({
             </div>
 
             {(temAtribuicoes || temSessoes) && (
-              <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
+              <div className="p-4 border border-warning-soft rounded-lg bg-warning-soft">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
-                  <div className="text-sm text-yellow-800">
+                  <AlertTriangle className="h-5 w-5 text-warning-ink shrink-0 mt-0.5" />
+                  <div className="text-sm text-warning-ink">
                     <p className="font-medium mb-2">Atenção:</p>
                     <ul className="list-disc list-inside space-y-1">
                       {temAtribuicoes && (

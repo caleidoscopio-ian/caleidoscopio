@@ -26,6 +26,7 @@ import {
   ExternalLink, AlertCircle,
 } from "lucide-react";
 import { LucideProps } from "lucide-react";
+import { PageHeader, StatCard } from "@/components/kit";
 
 function DynIcon({ name, ...props }: { name: string } & LucideProps) {
   const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<LucideProps>>)[name];
@@ -121,39 +122,17 @@ export default function ProcedimentosPage() {
     <ProtectedRoute requiredPermission={{ resource: "procedimentos", action: "VIEW" }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Procedimentos e Pacotes</h1>
-            <p className="text-sm text-muted-foreground">Gerencie os procedimentos oferecidos e crie pacotes de atendimento.</p>
-          </div>
-        </div>
+        <PageHeader
+          titulo="Procedimentos e Pacotes"
+          subtitulo="Gerencie os procedimentos oferecidos e crie pacotes de atendimento."
+        />
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Total Procedimentos</p>
-              <p className="text-2xl font-bold">{procedimentos.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Especialidades</p>
-              <p className="text-2xl font-bold">{especialidades.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Total Pacotes</p>
-              <p className="text-2xl font-bold">{pacotes.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Pacotes Ativos</p>
-              <p className="text-2xl font-bold">{pacotesAtivos}</p>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard tom="blue" size="hero" rotulo="Total Procedimentos" valor={procedimentos.length} />
+          <StatCard tom="lavender" rotulo="Especialidades" valor={especialidades.length} />
+          <StatCard tom="mint" rotulo="Total Pacotes" valor={pacotes.length} />
+          <StatCard tom="peach" rotulo="Pacotes Ativos" valor={pacotesAtivos} />
         </div>
 
         {/* Busca */}
@@ -169,7 +148,7 @@ export default function ProcedimentosPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="procedimentos">
-          <TabsList className="mb-4">
+          <TabsList>
             <TabsTrigger value="procedimentos">
               Procedimentos
               <Badge variant="secondary" className="ml-2">{filteredProc.length}</Badge>

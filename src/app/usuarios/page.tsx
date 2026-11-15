@@ -9,13 +9,6 @@ import { SeletorFiliaisUsuario } from "@/components/usuarios/seletor-filiais-usu
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -56,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PageHeader, Panel, StatCard, StatusPill, PersonAvatar } from "@/components/kit";
 
 interface Usuario {
   id: string;
@@ -410,13 +404,13 @@ export default function UsuariosPage() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "SUPER_ADMIN":
-        return <Badge variant="destructive">Super Admin</Badge>;
+        return <StatusPill tom="violet">Super Admin</StatusPill>;
       case "ADMIN":
-        return <Badge variant="default">Admin</Badge>;
+        return <StatusPill tom="info">Admin</StatusPill>;
       case "USER":
-        return <Badge variant="secondary">Usuário</Badge>;
+        return <StatusPill tom="neutral">Usuário</StatusPill>;
       default:
-        return <Badge variant="outline">{role}</Badge>;
+        return <StatusPill tom="neutral">{role}</StatusPill>;
     }
   };
 
@@ -427,201 +421,178 @@ export default function UsuariosPage() {
       <MainLayout>
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Gestão de Usuários
-              </h1>
-              <p className="text-muted-foreground">
-                Gerencie usuários e vincule profissionais ao sistema
-              </p>
-            </div>
-            <Button onClick={() => setShowNovoUsuarioDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Usuário
-            </Button>
-          </div>
+          <PageHeader
+            titulo="Gestão de Usuários"
+            subtitulo="Gerencie usuários e vincule profissionais ao sistema"
+            acoes={
+              <Button onClick={() => setShowNovoUsuarioDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Usuário
+              </Button>
+            }
+          />
 
           {/* Estatísticas */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total de Usuários
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{usuarios.length}</div>
-              </CardContent>
-            </Card>
+          <div className="anim-escalonada grid gap-4 sm:grid-cols-3">
+            <StatCard
+              tom="blue"
+              icone={<Users />}
+              rotulo="Total de Usuários"
+              valor={usuarios.length}
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Vinculados
-                </CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {usuarios.filter((u) => u.vinculado).length}
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              tom="mint"
+              icone={<CheckCircle />}
+              rotulo="Vinculados"
+              valor={usuarios.filter((u) => u.vinculado).length}
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-                <XCircle className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {
-                    usuarios.filter((u) => !u.vinculado && u.role !== "ADMIN")
-                      .length
-                  }
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              tom="peach"
+              icone={<XCircle />}
+              rotulo="Pendentes"
+              valor={ usuarios.filter((u) => !u.vinculado && u.role !== "ADMIN") .length }
+            />
           </div>
 
           {/* Tabela de Usuários */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Usuários da Clínica</CardTitle>
-              <CardDescription>
-                Lista de todos os usuários cadastrados no Sistema 1
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Carregando usuários...
-                </div>
-              ) : usuarios.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum usuário encontrado
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Perfil</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Vínculo</TableHead>
-                      <TableHead>Profissional</TableHead>
-                      {filiais.length > 0 && <TableHead>Filial</TableHead>}
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {usuarios.map((usuario) => (
-                      <TableRow key={usuario.id}>
-                        <TableCell className="font-medium">
-                          {usuario.name}
-                        </TableCell>
-                        <TableCell>{usuario.email}</TableCell>
-                        <TableCell>{getRoleBadge(usuario.role)}</TableCell>
-                        <TableCell>
-                          {usuario.isActive ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-green-50 text-green-700 border-green-200"
-                            >
-                              Ativo
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="bg-red-50 text-red-700 border-red-200"
-                            >
-                              Inativo
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {usuario.vinculado ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-blue-50 text-blue-700 border-blue-200"
-                            >
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Vinculado
-                            </Badge>
-                          ) : usuario.role === "ADMIN" ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-gray-50 text-gray-700 border-gray-200"
-                            >
-                              Admin (não requer)
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="bg-orange-50 text-orange-700 border-orange-200"
-                            >
-                              <XCircle className="h-3 w-3 mr-1" />
-                              Pendente
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {usuario.profissional ? (
-                            <div className="text-sm">
-                              <div className="font-medium">
-                                {usuario.profissional.nome}
-                              </div>
-                              <div className="text-muted-foreground">
-                                {usuario.profissional.especialidade}
-                              </div>
+          <Panel
+            titulo="Usuários da Clínica"
+            subtitulo="Lista de todos os usuários cadastrados no Sistema 1"
+          >
+
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Carregando usuários...
+              </div>
+            ) : usuarios.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhum usuário encontrado
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Perfil</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Vínculo</TableHead>
+                    <TableHead>Profissional</TableHead>
+                    {filiais.length > 0 && <TableHead>Filial</TableHead>}
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usuarios.map((usuario) => (
+                    <TableRow key={usuario.id}>
+                      <TableCell>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <PersonAvatar nome={usuario.name} tamanho={36} />
+                          <span className="truncate font-semibold text-ink">
+                            {usuario.name}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{usuario.email}</TableCell>
+                      <TableCell>{getRoleBadge(usuario.role)}</TableCell>
+                      <TableCell>
+                        {usuario.isActive ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-success-soft text-success-ink border-success-soft"
+                          >
+                            Ativo
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-danger-soft text-danger-ink border-danger-soft"
+                          >
+                            Inativo
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {usuario.vinculado ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-brand-soft text-brand border-brand-soft"
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Vinculado
+                          </Badge>
+                        ) : usuario.role === "ADMIN" ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-surface-sunken text-ink border-hairline"
+                          >
+                            Admin (não requer)
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-warning-soft text-warning-ink border-warning-soft"
+                          >
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Pendente
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {usuario.profissional ? (
+                          <div className="text-sm">
+                            <div className="font-medium">
+                              {usuario.profissional.nome}
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">
-                              -
-                            </span>
-                          )}
-                        </TableCell>
-                        {filiais.length > 0 &&
-                          (() => {
-                            const ri = roleInfoMap.get(usuario.id);
-                            return (
-                              <TableCell>
-                                <SeletorFiliaisUsuario
-                                  filiais={filiais}
-                                  selecionadas={ri?.filialIds ?? []}
-                                  principalId={ri?.filialPrincipalId ?? null}
-                                  salvando={updatingFilial === usuario.id}
-                                  desabilitado={!can("usuarios", "EDIT")}
-                                  onSalvar={(ids, principal) =>
-                                    salvarFiliais(usuario.id, ids, principal)
-                                  }
-                                />
-                              </TableCell>
-                            );
-                          })()}
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {can("usuarios", "EDIT") && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleOpenManage(usuario)}
-                              >
-                                Gerenciar Usuário
-                              </Button>
-                            )}
+                            <div className="text-muted-foreground">
+                              {usuario.profissional.especialidade}
+                            </div>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">
+                            -
+                          </span>
+                        )}
+                      </TableCell>
+                      {filiais.length > 0 &&
+                        (() => {
+                          const ri = roleInfoMap.get(usuario.id);
+                          return (
+                            <TableCell>
+                              <SeletorFiliaisUsuario
+                                filiais={filiais}
+                                selecionadas={ri?.filialIds ?? []}
+                                principalId={ri?.filialPrincipalId ?? null}
+                                salvando={updatingFilial === usuario.id}
+                                desabilitado={!can("usuarios", "EDIT")}
+                                onSalvar={(ids, principal) =>
+                                  salvarFiliais(usuario.id, ids, principal)
+                                }
+                              />
+                            </TableCell>
+                          );
+                        })()}
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {can("usuarios", "EDIT") && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenManage(usuario)}
+                            >
+                              Gerenciar Usuário
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Panel>
         </div>
 
         {/* Dialog Gerenciar Usuário */}

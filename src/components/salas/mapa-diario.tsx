@@ -210,10 +210,10 @@ export function MapaDiario({ filialId }: MapaDiarioProps) {
                   {/* Linha "agora" */}
                   {minutosAgora !== null && minutosAgora >= 0 && minutosAgora <= TOTAL_MIN && (
                     <div
-                      className="absolute left-0 right-0 z-20 border-t-2 border-red-500"
+                      className="absolute left-0 right-0 z-20 border-t-2 border-danger"
                       style={{ top: minutosAgora * PX_POR_MIN }}
                     >
-                      <span className="absolute -top-2 left-1 text-[10px] text-red-500 font-bold bg-background px-0.5">
+                      <span className="absolute -top-2 left-1 text-[10px] text-danger-ink font-bold bg-background px-0.5">
                         {format(agora, 'HH:mm')}
                       </span>
                     </div>

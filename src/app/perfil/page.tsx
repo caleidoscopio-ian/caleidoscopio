@@ -3,7 +3,6 @@
 import { useAuth } from '@/hooks/useAuth'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { MainLayout } from '@/components/main-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +14,7 @@ import {
   Shield,
   CheckCircle,
 } from 'lucide-react'
+import { PageHeader, Panel } from '@/components/kit'
 
 export default function PerfilPage() {
   const { user, tenant } = useAuth()
@@ -29,24 +29,20 @@ export default function PerfilPage() {
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
           {/* Header */}
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Meu Perfil</h1>
-            <p className="text-muted-foreground">
-              Visualize suas informações e gerencie sua conta
-            </p>
-          </div>
+          <PageHeader
+            titulo="Meu Perfil"
+            subtitulo="Visualize suas informações e gerencie sua conta"
+          />
 
           <div className="grid gap-6 md:grid-cols-2">
             {/* Informações Pessoais */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Informações Pessoais
-                </CardTitle>
-                <CardDescription>Seus dados cadastrados no sistema</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel
+              icone={<User />}
+              titulo="Informações Pessoais"
+              subtitulo="Seus dados cadastrados no sistema"
+            >
+              <div className="space-y-4">
+
                 <div>
                   <Label className="text-muted-foreground text-sm">Nome Completo</Label>
                   <p className="text-base font-medium mt-1">{user?.name || '-'}</p>
@@ -77,19 +73,17 @@ export default function PerfilPage() {
                 <div>
                   <AlterarSenhaDialog />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
 
             {/* Informações da Clínica */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5" />
-                  Clínica
-                </CardTitle>
-                <CardDescription>Informações da sua clínica</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel
+              icone={<Building />}
+              titulo="Clínica"
+              subtitulo="Informações da sua clínica"
+            >
+              <div className="space-y-4">
+
                 <div>
                   <Label className="text-muted-foreground text-sm">Nome da Clínica</Label>
                   <p className="text-base font-medium mt-1">{tenant?.name || '-'}</p>
@@ -100,14 +94,14 @@ export default function PerfilPage() {
                 <div>
                   <Label className="text-muted-foreground text-sm">Status</Label>
                   <div className="mt-1">
-                    <Badge variant="default" className="bg-green-600">
+                    <Badge variant="outline" className="bg-success-soft text-success-ink">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Ativa
                     </Badge>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           </div>
 
         </div>

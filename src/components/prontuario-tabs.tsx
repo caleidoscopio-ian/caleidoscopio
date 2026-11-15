@@ -1,13 +1,7 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Panel, SecaoInfo, GradeCampos, CampoInfo } from "@/components/kit";
 import {
   User,
   FileText,
@@ -18,7 +12,11 @@ import {
   FileBarChart,
   Paperclip,
   FolderOpen,
+  Contact,
+  ShieldCheck,
+  Landmark,
 } from "lucide-react";
+import { formatarDataCivil, idadeEmAnos } from "@/lib/datas-fuso";
 import { ProntuarioAnamnese } from "./prontuario-anamnese";
 import { ProntuarioEvolucao } from "./prontuario-evolucao";
 import { ProntuarioEncaminhamento } from "./prontuario-encaminhamento";
@@ -82,205 +80,105 @@ export function ProntuarioTabs({
   onDialogChange,
 }: ProntuarioTabsProps) {
   // Calcular idade
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birth.getDate())
-    ) {
-      age--;
-    }
-    return age;
-  };
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9">
+      <TabsList className="lg:grid-cols-9">
         <TabsTrigger value="dados" className="flex items-center gap-1">
           <User className="h-4 w-4" />
-          <span className="hidden sm:inline">Dados</span>
+          <span>Dados</span>
         </TabsTrigger>
         <TabsTrigger value="anamnese" className="flex items-center gap-1">
           <FileText className="h-4 w-4" />
-          <span className="hidden sm:inline">Anamnese</span>
+          <span>Anamnese</span>
         </TabsTrigger>
         <TabsTrigger value="evolucao" className="flex items-center gap-1">
           <Activity className="h-4 w-4" />
-          <span className="hidden sm:inline">Evolução</span>
+          <span>Evolução</span>
         </TabsTrigger>
         <TabsTrigger value="encaminhamento" className="flex items-center gap-1">
           <Send className="h-4 w-4" />
-          <span className="hidden sm:inline">Encam.</span>
+          <span>Encaminhamento</span>
         </TabsTrigger>
         <TabsTrigger value="prescricao" className="flex items-center gap-1">
           <Pill className="h-4 w-4" />
-          <span className="hidden sm:inline">Prescrição</span>
+          <span>Prescrição</span>
         </TabsTrigger>
         <TabsTrigger value="diagnostico" className="flex items-center gap-1">
           <Stethoscope className="h-4 w-4" />
-          <span className="hidden sm:inline">Diagnóstico</span>
+          <span>Diagnóstico</span>
         </TabsTrigger>
         <TabsTrigger value="relatorios" className="flex items-center gap-1">
           <FileBarChart className="h-4 w-4" />
-          <span className="hidden sm:inline">Relatórios</span>
+          <span>Relatórios</span>
         </TabsTrigger>
         <TabsTrigger value="prontuarios" className="flex items-center gap-1">
           <FolderOpen className="h-4 w-4" />
-          <span className="hidden sm:inline">Registros</span>
+          <span>Registros</span>
         </TabsTrigger>
         <TabsTrigger value="anexos" className="flex items-center gap-1">
           <Paperclip className="h-4 w-4" />
-          <span className="hidden sm:inline">Anexos</span>
+          <span>Anexos</span>
         </TabsTrigger>
       </TabsList>
 
       {/* ABA: Dados Principais */}
       <TabsContent value="dados">
-        <Card>
-          <CardHeader>
-            <CardTitle>Dados Principais</CardTitle>
-            <CardDescription>
-              Informações cadastrais e pessoais do paciente
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Dados Pessoais */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 border-b pb-2">
-                Informações Pessoais
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Nome Completo
-                  </label>
-                  <p className="text-base">{patient.name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    CPF
-                  </label>
-                  <p className="text-base">{patient.cpf || "Não informado"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Data de Nascimento
-                  </label>
-                  <p className="text-base">
-                    {new Date(patient.birthDate).toLocaleDateString("pt-BR")} (
-                    {calculateAge(patient.birthDate)} anos)
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Escolaridade
-                  </label>
-                  <p className="text-base">
-                    {patient.escolaridade
-                      ? escolaridadeLabels[patient.escolaridade]
-                      : "Não informado"}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Estado Civil
-                  </label>
-                  <p className="text-base">
-                    {patient.estado_civil
-                      ? estadoCivilLabels[patient.estado_civil]
-                      : "Não informado"}
-                  </p>
-                </div>
-              </div>
-            </div>
+        <Panel
+          icone={<User />}
+          titulo="Dados Principais"
+          subtitulo="Informações cadastrais e pessoais do paciente"
+        >
+          <div className="space-y-7">
+            <SecaoInfo icone={<User />} titulo="Informações Pessoais">
+              <GradeCampos>
+                <CampoInfo rotulo="Nome completo" valor={patient.name} />
+                <CampoInfo rotulo="CPF" valor={patient.cpf} />
+                <CampoInfo
+                  rotulo="Data de nascimento"
+                  valor={`${formatarDataCivil(patient.birthDate)} (${idadeEmAnos(patient.birthDate) ?? "—"} anos)`}
+                />
+                <CampoInfo
+                  rotulo="Escolaridade"
+                  valor={patient.escolaridade ? escolaridadeLabels[patient.escolaridade] : null}
+                />
+                <CampoInfo
+                  rotulo="Estado civil"
+                  valor={patient.estado_civil ? estadoCivilLabels[patient.estado_civil] : null}
+                />
+              </GradeCampos>
+            </SecaoInfo>
 
-            {/* Contato */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 border-b pb-2">
-                Informações de Contato
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    E-mail
-                  </label>
-                  <p className="text-base">
-                    {patient.email || "Não informado"}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Telefone
-                  </label>
-                  <p className="text-base">
-                    {patient.phone || "Não informado"}
-                  </p>
-                </div>
-                <div className="md:col-span-2 lg:col-span-3">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Endereço
-                  </label>
-                  <p className="text-base">
-                    {patient.address || "Não informado"}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <SecaoInfo icone={<Contact />} titulo="Informações de Contato">
+              <GradeCampos>
+                <CampoInfo rotulo="E-mail" valor={patient.email} />
+                <CampoInfo rotulo="Telefone" valor={patient.phone} />
+                <CampoInfo rotulo="Endereço" valor={patient.address} larguraTotal />
+              </GradeCampos>
+            </SecaoInfo>
 
-            {/* Responsáveis */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 border-b pb-2">
-                Responsáveis
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Responsável Financeiro
-                  </label>
-                  <p className="text-base">
-                    {patient.guardianName || "Não informado"}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Contato de Emergência
-                  </label>
-                  <p className="text-base">
-                    {patient.guardianPhone || "Não informado"}
-                  </p>
-                </div>
-              </div>
-            </div>
+            <SecaoInfo icone={<ShieldCheck />} titulo="Responsáveis">
+              <GradeCampos colunas={2}>
+                <CampoInfo rotulo="Responsável financeiro" valor={patient.guardianName} />
+                <CampoInfo rotulo="Contato de emergência" valor={patient.guardianPhone} />
+              </GradeCampos>
+            </SecaoInfo>
 
-            {/* Plano de Saúde */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 border-b pb-2">
-                Plano de Saúde
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Convênio
-                  </label>
-                  <p className="text-base">
-                    {patient.healthInsurance || "Particular"}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Número da Matrícula
-                  </label>
-                  <p className="text-base">
-                    {patient.healthInsuranceNumber || "Não informado"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <SecaoInfo icone={<Landmark />} titulo="Plano de Saúde">
+              <GradeCampos colunas={2}>
+                <CampoInfo
+                  rotulo="Convênio"
+                  valor={patient.healthInsurance}
+                  vazio="Particular"
+                />
+                <CampoInfo
+                  rotulo="Número da matrícula"
+                  valor={patient.healthInsuranceNumber}
+                />
+              </GradeCampos>
+            </SecaoInfo>
+          </div>
+        </Panel>
       </TabsContent>
 
       {/* ABA: Anamnese */}

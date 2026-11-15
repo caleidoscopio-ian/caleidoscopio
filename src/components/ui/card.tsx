@@ -1,3 +1,7 @@
+// AJUSTADO para o design v2 (Módulo 28) — ver .claude/rules/frontend.md.
+// Re-adicionar este componente com `npx shadcn add` apaga o ajuste; comparar
+// com git antes de aceitar a versão nova.
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -7,7 +11,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        "bg-surface/90 text-ink border-rim shadow-card flex flex-col gap-6 rounded-3xl border py-6",
         className
       )}
       {...props}

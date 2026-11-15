@@ -4,6 +4,7 @@ import { MainLayout } from '@/components/main-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Trophy, Star, Award, Target, Zap, Gift } from 'lucide-react'
+import { PageHeader, StatCard } from '@/components/kit'
 
 export default function ConquistasPage() {
   const breadcrumbs = [
@@ -92,11 +93,11 @@ export default function ConquistasPage() {
 
   const getRaridadeColor = (raridade: string) => {
     switch (raridade) {
-      case 'comum': return 'bg-gray-100 text-gray-800'
-      case 'raro': return 'bg-blue-100 text-blue-800'
-      case 'epico': return 'bg-purple-100 text-purple-800'
-      case 'lendario': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'comum': return 'bg-surface-sunken text-ink'
+      case 'raro': return 'bg-brand-soft text-brand'
+      case 'epico': return 'bg-violet-soft text-violet-ink'
+      case 'lendario': return 'bg-warning-soft text-warning-ink'
+      default: return 'bg-surface-sunken text-ink'
     }
   }
 
@@ -116,66 +117,49 @@ export default function ConquistasPage() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Conquistas</h1>
-            <p className="text-muted-foreground">
-              Suas medalhas, troféus e recompensas conquistadas
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
-              <Trophy className="w-3 h-3 mr-1" />
-              {totalPontos} pontos
-            </Badge>
-          </div>
-        </div>
+        <PageHeader
+          titulo="Conquistas"
+          subtitulo="Suas medalhas, troféus e recompensas conquistadas"
+          acoes={
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="bg-warning-soft text-warning-ink">
+                <Trophy className="w-3 h-3 mr-1" />
+                {totalPontos} pontos
+              </Badge>
+            </div>
+          }
+        />
 
         {/* Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Conquistas</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{conquistas.length}</div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard
+            tom="blue"
+            size="hero"
+            icone={<Trophy />}
+            rotulo="Total Conquistas"
+            valor={conquistas.length}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Conquistadas</CardTitle>
-              <Target className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {conquistasObtidas.length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="lavender"
+            icone={<Target />}
+            rotulo="Conquistadas"
+            valor={<span className="text-success-ink">{conquistasObtidas.length}</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Em Progresso</CardTitle>
-              <Zap className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {conquistas.filter(c => !c.conquistada && c.progresso).length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="mint"
+            icone={<Zap className="text-brand" />}
+            rotulo="Em Progresso"
+            valor={<span className="text-brand">{conquistas.filter(c => !c.conquistada && c.progresso).length}</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pontos Ganhos</CardTitle>
-              <Star className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{totalPontos}</div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="peach"
+            icone={<Star />}
+            rotulo="Pontos Ganhos"
+            valor={<span className="text-warning-ink">{totalPontos}</span>}
+          />
         </div>
 
         {/* Grid de Conquistas */}
@@ -185,8 +169,8 @@ export default function ConquistasPage() {
               key={conquista.id}
               className={`hover:shadow-lg transition-all ${
                 conquista.conquistada
-                  ? 'border-green-200 bg-green-50/30'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-success-soft bg-success-soft/30'
+                  : 'border-hairline hover:border-border'
               }`}
             >
               <CardHeader>
@@ -201,8 +185,8 @@ export default function ConquistasPage() {
                     </Badge>
                   </div>
                   {conquista.conquistada && (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                      <Trophy className="h-4 w-4 text-green-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success-soft">
+                      <Trophy className="h-4 w-4 text-success-ink" />
                     </div>
                   )}
                 </div>
@@ -248,7 +232,7 @@ export default function ConquistasPage() {
                     {conquista.pontos} pontos
                   </div>
                   {conquista.conquistada && conquista.dataConquista && (
-                    <div className="text-green-600 font-medium">
+                    <div className="text-success-ink font-medium">
                       {new Date(conquista.dataConquista).toLocaleDateString('pt-BR')}
                     </div>
                   )}
@@ -256,12 +240,12 @@ export default function ConquistasPage() {
 
                 {/* Status */}
                 {conquista.conquistada ? (
-                  <div className="flex items-center justify-center py-2 px-4 bg-green-100 text-green-800 rounded-md font-medium">
+                  <div className="flex items-center justify-center py-2 px-4 bg-success-soft text-success-ink rounded-md font-medium">
                     <Trophy className="mr-2 h-4 w-4" />
                     Conquistado!
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center py-2 px-4 bg-gray-100 text-gray-600 rounded-md">
+                  <div className="flex items-center justify-center py-2 px-4 bg-surface-sunken text-ink rounded-md">
                     <Target className="mr-2 h-4 w-4" />
                     Em progresso
                   </div>

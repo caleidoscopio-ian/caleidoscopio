@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +19,7 @@ import { ExcluirFilialDialog } from "@/components/filiais/excluir-filial-dialog"
 import { useFilial } from "@/hooks/useFilial";
 import { formatCNPJ } from "@/lib/masks";
 import type { Filial } from "@/types/filial";
+import { PageHeader, Panel, StatCard } from "@/components/kit";
 
 export default function FiliaisPage() {
   const { user, isAuthenticated } = useAuth();
@@ -90,43 +90,34 @@ export default function FiliaisPage() {
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Filiais</h1>
-              <p className="text-muted-foreground">Gerencie as unidades da clínica</p>
-            </div>
-            <NovaFilialDialog onSuccess={handleSuccess} />
-          </div>
+          <PageHeader
+            titulo="Filiais"
+            subtitulo="Gerencie as unidades da clínica"
+            acoes={
+              <NovaFilialDialog onSuccess={handleSuccess} />
+            }
+          />
 
           {/* Estatísticas */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Filiais</CardTitle>
-                <Landmark className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{loading ? "..." : total}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Filiais Ativas</CardTitle>
-                <Landmark className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{loading ? "..." : ativas}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Filiais Inativas</CardTitle>
-                <Landmark className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{loading ? "..." : inativas}</div>
-              </CardContent>
-            </Card>
+          <div className="anim-escalonada grid gap-4 sm:grid-cols-3">
+            <StatCard
+              tom="blue"
+              icone={<Landmark />}
+              rotulo="Total de Filiais"
+              valor={loading ? "..." : total}
+            />
+            <StatCard
+              tom="mint"
+              icone={<Landmark />}
+              rotulo="Filiais Ativas"
+              valor={<span className="text-success-ink">{loading ? "..." : ativas}</span>}
+            />
+            <StatCard
+              tom="peach"
+              icone={<Landmark />}
+              rotulo="Filiais Inativas"
+              valor={<span className="text-danger-ink">{loading ? "..." : inativas}</span>}
+            />
           </div>
 
           {/* Busca */}
@@ -141,119 +132,110 @@ export default function FiliaisPage() {
           </div>
 
           {/* Tabela */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Landmark className="h-5 w-5" />
-                Filiais Cadastradas
-                {!loading && (
-                  <Badge variant="secondary" className="ml-2">
-                    {filtered.length} de {total}
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {error && (
-                <div className="text-center py-8">
-                  <p className="text-red-600 mb-4">{error}</p>
-                  <Button variant="outline" onClick={fetchFiliais}>Tentar Novamente</Button>
-                </div>
-              )}
+          <Panel
+            icone={<Landmark />}
+            titulo={<>Filiais Cadastradas {!loading && ( <Badge variant="secondary" className="ml-2"> {filtered.length} de {total} </Badge> )}</>}
+          >
 
-              {loading && !error && (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">Carregando filiais...</p>
-                </div>
-              )}
+            {error && (
+              <div className="text-center py-8">
+                <p className="text-danger-ink mb-4">{error}</p>
+                <Button variant="outline" onClick={fetchFiliais}>Tentar Novamente</Button>
+              </div>
+            )}
 
-              {!loading && !error && filiais.length === 0 && (
-                <div className="text-center py-8">
-                  <Landmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhuma filial cadastrada</h3>
-                  <p className="text-muted-foreground mb-4">Comece criando a primeira unidade da clínica.</p>
-                  <NovaFilialDialog onSuccess={handleSuccess} />
-                </div>
-              )}
+            {loading && !error && (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Carregando filiais...</p>
+              </div>
+            )}
 
-              {!loading && !error && filiais.length > 0 && filtered.length === 0 && (
-                <div className="text-center py-8">
-                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhum resultado encontrado</h3>
-                  <p className="text-muted-foreground">Tente ajustar os termos da sua busca.</p>
-                </div>
-              )}
+            {!loading && !error && filiais.length === 0 && (
+              <div className="text-center py-8">
+                <Landmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhuma filial cadastrada</h3>
+                <p className="text-muted-foreground mb-4">Comece criando a primeira unidade da clínica.</p>
+                <NovaFilialDialog onSuccess={handleSuccess} />
+              </div>
+            )}
 
-              {!loading && !error && filtered.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>CNPJ</TableHead>
-                      <TableHead>Cidade</TableHead>
-                      <TableHead>Endereço</TableHead>
-                      <TableHead>Salas</TableHead>
-                      <TableHead>Pacientes</TableHead>
-                      <TableHead>Profissionais</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+            {!loading && !error && filiais.length > 0 && filtered.length === 0 && (
+              <div className="text-center py-8">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhum resultado encontrado</h3>
+                <p className="text-muted-foreground">Tente ajustar os termos da sua busca.</p>
+              </div>
+            )}
+
+            {!loading && !error && filtered.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>CNPJ</TableHead>
+                    <TableHead>Cidade</TableHead>
+                    <TableHead>Endereço</TableHead>
+                    <TableHead>Salas</TableHead>
+                    <TableHead>Pacientes</TableHead>
+                    <TableHead>Profissionais</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((filial) => {
+                    const enderecoEstruturado = [
+                      filial.logradouro && filial.numero ? `${filial.logradouro}, ${filial.numero}` : filial.logradouro,
+                      filial.bairro,
+                      filial.cep,
+                    ].filter(Boolean).join(" - ");
+                    const enderecoExibicao = enderecoEstruturado || filial.endereco;
+                    return (
+                    <TableRow key={filial.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full shrink-0"
+                            style={{ backgroundColor: filial.cor ?? "#3b82f6" }}
+                          />
+                          {filial.nome}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        {filial.cnpj ? formatCNPJ(filial.cnpj) : "-"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {filial.cidade ? (filial.estado ? `${filial.cidade}/${filial.estado}` : filial.cidade) : "-"}
+                      </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        <div className="truncate text-sm text-muted-foreground">
+                          {enderecoExibicao || "-"}
+                        </div>
+                      </TableCell>
+                      <TableCell>{filial._count?.salas ?? 0}</TableCell>
+                      <TableCell>{filial._count?.pacientes ?? 0}</TableCell>
+                      <TableCell>{filial._count?.profissionais ?? 0}</TableCell>
+                      <TableCell>
+                        {filial.ativo ? (
+                          <Badge variant="outline" className="bg-success-soft text-success-ink">Ativa</Badge>
+                        ) : (
+                          <Badge variant="secondary">Inativa</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <EditarFilialDialog filial={filial} onSuccess={handleSuccess} />
+                          <ExcluirFilialDialog filial={filial} onSuccess={handleSuccess} />
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((filial) => {
-                      const enderecoEstruturado = [
-                        filial.logradouro && filial.numero ? `${filial.logradouro}, ${filial.numero}` : filial.logradouro,
-                        filial.bairro,
-                        filial.cep,
-                      ].filter(Boolean).join(" - ");
-                      const enderecoExibicao = enderecoEstruturado || filial.endereco;
-                      return (
-                      <TableRow key={filial.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full shrink-0"
-                              style={{ backgroundColor: filial.cor ?? "#3b82f6" }}
-                            />
-                            {filial.nome}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm text-muted-foreground">
-                          {filial.cnpj ? formatCNPJ(filial.cnpj) : "-"}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {filial.cidade ? (filial.estado ? `${filial.cidade}/${filial.estado}` : filial.cidade) : "-"}
-                        </TableCell>
-                        <TableCell className="max-w-[200px]">
-                          <div className="truncate text-sm text-muted-foreground">
-                            {enderecoExibicao || "-"}
-                          </div>
-                        </TableCell>
-                        <TableCell>{filial._count?.salas ?? 0}</TableCell>
-                        <TableCell>{filial._count?.pacientes ?? 0}</TableCell>
-                        <TableCell>{filial._count?.profissionais ?? 0}</TableCell>
-                        <TableCell>
-                          {filial.ativo ? (
-                            <Badge variant="default" className="bg-green-600">Ativa</Badge>
-                          ) : (
-                            <Badge variant="secondary">Inativa</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <EditarFilialDialog filial={filial} onSuccess={handleSuccess} />
-                            <ExcluirFilialDialog filial={filial} onSuccess={handleSuccess} />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </Panel>
         </div>
       </MainLayout>
     </ProtectedRoute>

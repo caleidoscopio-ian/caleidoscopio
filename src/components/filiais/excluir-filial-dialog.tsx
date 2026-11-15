@@ -47,14 +47,14 @@ export function ExcluirFilialDialog({ filial, onSuccess }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+        <Button variant="outline" size="sm" className="text-danger-ink hover:text-danger-ink">
           <Trash2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <AlertTriangle className="h-5 w-5 text-warning-ink" />
             {temDados ? "Desativar Filial" : "Excluir Filial"}
           </DialogTitle>
           <DialogDescription>

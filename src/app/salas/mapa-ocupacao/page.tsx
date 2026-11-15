@@ -1,21 +1,18 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { MainLayout } from '@/components/main-layout'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, CalendarDays, LayoutGrid, BarChart2, Map } from 'lucide-react'
+import { CalendarDays, LayoutGrid, BarChart2, Map } from 'lucide-react'
 import { MapaDiario } from '@/components/salas/mapa-diario'
 import { MapaSemanal } from '@/components/salas/mapa-semanal'
 import { DashboardOcupacao } from '@/components/salas/dashboard-ocupacao'
 import { MapaFiliais } from '@/components/salas/mapa-filiais'
 import { useFilialContext } from '@/contexts/filial-context'
+import { PageHeader } from '@/components/kit'
 
 export default function MapaOcupacaoPage() {
-  const router = useRouter()
   const { filialAtiva } = useFilialContext()
   const [filialFiltro, setFilialFiltro] = useState<string | null>(filialAtiva?.id ?? null)
 
@@ -33,24 +30,17 @@ export default function MapaOcupacaoPage() {
     <ProtectedRoute requiredPermission={{ resource: 'salas', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/salas')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Mapa de Ocupação</h1>
-              <p className="text-sm text-muted-foreground">
-                Visibilidade em tempo real da utilização das salas
-              </p>
-            </div>
-          </div>
+          <PageHeader
+            voltar={{ href: "/salas" }}
+            titulo="Mapa de Ocupação"
+            subtitulo="Visibilidade em tempo real da utilização das salas"
+          />
 
           {/* Tabs */}
           {/* Dashboard primeiro: a tela abre nos indicadores de capacidade, que
               é a pergunta de gestão. Diário e semanal são a operação do dia. */}
           <Tabs defaultValue="dashboard" className="space-y-4">
-            <TabsList className="grid grid-cols-4 w-full max-w-lg">
+            <TabsList>
               <TabsTrigger value="dashboard" className="gap-2 text-xs">
                 <BarChart2 className="h-3.5 w-3.5" />
                 Dashboard

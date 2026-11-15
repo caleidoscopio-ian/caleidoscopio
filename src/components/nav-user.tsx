@@ -37,7 +37,7 @@ interface User {
   };
 }
 
-export function NavUser({ user }: { user: User }) {
+export function NavUser({ user, compacta }: { user: User; compacta?: boolean }) {
   const { logout } = useAuth();
   const { isMobile } = useSidebar();
 
@@ -52,7 +52,10 @@ export function NavUser({ user }: { user: User }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className={
+                "data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" +
+                (compacta ? " justify-center" : "")
+              }
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarFallback className="rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
@@ -63,13 +66,18 @@ export function NavUser({ user }: { user: User }) {
                     .slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">
-                  {user.tenant?.name || user.email}
-                </span>
-              </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              {/* Sidebar recolhida: só o avatar, como no v2 */}
+              {!compacta && (
+                <>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">{user.name}</span>
+                    <span className="truncate text-xs">
+                      {user.tenant?.name || user.email}
+                    </span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto size-4" />
+                </>
+              )}
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent

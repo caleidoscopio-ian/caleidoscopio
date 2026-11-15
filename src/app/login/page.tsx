@@ -167,7 +167,7 @@ export default function LoginPage() {
   // Mostrar loading enquanto verifica autenticação
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 md:p-10">
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-canvas p-6 md:p-10">
         <div className="w-full max-w-sm md:max-w-4xl">
           <div className="text-center">
             <Image
@@ -177,8 +177,8 @@ export default function LoginPage() {
               height={60}
               className="object-contain mb-6 mx-auto"
             />
-            <div className="animate-spin h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <span className="text-gray-600 text-sm">
+            <div className="animate-spin h-6 w-6 border-2 border-brand border-t-transparent rounded-full mx-auto mb-4"></div>
+            <span className="text-ink text-sm">
               Verificando autenticação...
             </span>
           </div>
@@ -193,9 +193,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 md:p-10">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-canvas p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-4xl">
-        <div className="overflow-hidden rounded-lg bg-white shadow-xl">
+        <div className="overflow-hidden rounded-[2rem] border border-rim bg-surface shadow-float">
           <div className="grid p-0 md:grid-cols-2">
             {/* Left Side - Login Form */}
             <form className="p-4 sm:p-6 md:p-8" onSubmit={handleSubmit}>
@@ -213,8 +213,8 @@ export default function LoginPage() {
 
                 {/* Session Expired Message */}
                 {sessionExpiredMessage && !error && (
-                  <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-center">
-                    <p className="text-sm text-amber-700">
+                  <div className="rounded-md bg-warning-soft border border-warning-soft p-3 text-center">
+                    <p className="text-sm text-warning-ink">
                       {sessionExpiredMessage}
                     </p>
                   </div>
@@ -222,8 +222,8 @@ export default function LoginPage() {
 
                 {/* Error Message */}
                 {error && (
-                  <div className="rounded-md bg-red-50 border border-red-200 p-3 text-center">
-                    <p className="text-sm text-red-700">{error}</p>
+                  <div className="rounded-md bg-danger-soft border border-danger-soft p-3 text-center">
+                    <p className="text-sm text-danger-ink">{error}</p>
                   </div>
                 )}
 
@@ -231,7 +231,7 @@ export default function LoginPage() {
                 <div className="grid gap-2">
                   <label
                     htmlFor="email"
-                    className="text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-ink"
                   >
                     Email
                   </label>
@@ -240,7 +240,7 @@ export default function LoginPage() {
                     name="email"
                     type="email"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-brand focus:border-brand transition-colors"
                     placeholder="seu@email.com"
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
@@ -252,7 +252,7 @@ export default function LoginPage() {
                 <div className="grid gap-2">
                   <label
                     htmlFor="password"
-                    className="text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-ink"
                   >
                     Senha
                   </label>
@@ -261,7 +261,7 @@ export default function LoginPage() {
                     name="password"
                     type="password"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-brand focus:border-brand transition-colors"
                     placeholder="Digite sua senha"
                     value={formData.password}
                     onChange={(e) => handleChange("password", e.target.value)}
@@ -273,7 +273,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-brand hover:bg-brand focus:outline-none focus:ring-2 focus:ring-offset-2 focus:border-brand disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isLoading ? (
                     <>
@@ -287,7 +287,7 @@ export default function LoginPage() {
 
                 {/* Footer */}
                 <div className="text-center text-sm">
-                  <p className="text-gray-500">
+                  <p className="text-ink-3">
                     Powered by{" "}
                     <span className="font-medium">Caleidoscópio</span>
                   </p>
@@ -313,18 +313,18 @@ export default function LoginPage() {
         </div>
 
         {/* Terms */}
-        <div className="mt-4 text-balance text-center text-xs text-gray-500">
+        <div className="mt-4 text-balance text-center text-xs text-ink-3">
           Ao continuar, você concorda com nossos{" "}
           <a
             href="#"
-            className="underline underline-offset-4 hover:text-blue-600"
+            className="underline underline-offset-4 hover:text-brand"
           >
             Termos de Serviço
           </a>{" "}
           e{" "}
           <a
             href="#"
-            className="underline underline-offset-4 hover:text-blue-600"
+            className="underline underline-offset-4 hover:text-brand"
           >
             Política de Privacidade
           </a>

@@ -67,6 +67,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PageHeader, Panel, EstadoVazio } from "@/components/kit";
 
 // ============ Interfaces ============
 
@@ -781,19 +782,15 @@ function EvolucaoPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <TrendingUp className="h-8 w-8" />
-            Painel de Evolução
-          </h1>
-          <p className="text-muted-foreground">
-            Acompanhe a evolução das atividades por fase de cada paciente
-          </p>
-        </div>
+        <PageHeader
+          icone={<TrendingUp />}
+          titulo="Painel de Evolução"
+          subtitulo="Acompanhe a evolução das atividades por fase de cada paciente"
+        />
 
         {/* Seleção de Paciente e Curriculum */}
-        <Card>
-          <CardContent className="pt-6">
+        <Panel>
+          <div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Paciente</Label>
@@ -855,8 +852,8 @@ function EvolucaoPageContent() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
         {/* Filtros */}
         {atribuicaoAtual && (
@@ -903,7 +900,7 @@ function EvolucaoPageContent() {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-center gap-2">
+          <div className="bg-danger-soft border border-danger-soft text-danger-ink px-4 py-3 rounded flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
             {error}
           </div>
@@ -911,18 +908,12 @@ function EvolucaoPageContent() {
 
         {/* Empty state */}
         {!loading && pacienteSelecionado && atribuicoes.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">
-                Nenhum plano atribuído
-              </h3>
-              <p className="text-muted-foreground">
-                Este paciente não possui planos terapêuticos atribuídos com
-                atividades clonadas.
-              </p>
-            </CardContent>
-          </Card>
+          <EstadoVazio
+            icone={<AlertCircle />}
+            titulo="Nenhum plano atribuído"
+            texto="Este paciente não possui planos terapêuticos atribuídos com
+                atividades clonadas."
+          />
         )}
 
         <AlertDialog open={confirmandoRemocao} onOpenChange={setConfirmandoRemocao}>
@@ -964,7 +955,7 @@ function EvolucaoPageContent() {
         </AlertDialog>
 
         {avisoSincronia && (
-          <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          <div className="flex items-center gap-2 rounded-md border border-success bg-success-soft px-3 py-2 text-sm text-success-ink">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             {avisoSincronia}
           </div>
@@ -973,12 +964,12 @@ function EvolucaoPageContent() {
         {/* Plano desalinhado do currículo: diz o que falta e oferece a ação.
             Aditivo — o botão clona só o que não existe, nunca mexe no resto. */}
         {atribuicaoAtual && !loading && (atribuicaoAtual.faltando?.length ?? 0) > 0 && (
-          <Card className="border-amber-300 bg-amber-50">
-            <CardContent className="py-4">
+          <div className="rounded-3xl border border-warning/40 bg-warning-soft px-5 py-4">
+            <div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-                  <div className="text-sm text-amber-900">
+                  <AlertCircle className="h-5 w-5 text-warning-ink mt-0.5 shrink-0" />
+                  <div className="text-sm text-warning-ink">
                     <p className="font-medium">
                       {atribuicaoAtual.faltando!.length === 1
                         ? "O currículo tem 1 atividade que não está neste plano"
@@ -1002,8 +993,8 @@ function EvolucaoPageContent() {
                     : "Adicionar ao plano"}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Lista de Atividades */}
@@ -1095,13 +1086,7 @@ function EvolucaoPageContent() {
             })}
 
             {atividadesFiltradas.length === 0 && (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    Nenhuma atividade encontrada com os filtros selecionados.
-                  </p>
-                </CardContent>
-              </Card>
+              <EstadoVazio titulo="Nenhuma atividade encontrada com os filtros selecionados." />
             )}
           </div>
         )}
@@ -1120,7 +1105,7 @@ function EvolucaoPageContent() {
               </DialogHeader>
 
               <Tabs value={detalhesTab} onValueChange={setDetalhesTab}>
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList>
                   <TabsTrigger value="geral">Geral</TabsTrigger>
                   <TabsTrigger value="instrucoes">Instruções</TabsTrigger>
                 </TabsList>
@@ -1155,7 +1140,7 @@ function EvolucaoPageContent() {
                     </div>
 
                     <div className="grid gap-2">
-                      <Label>Nome da Atividade <span className="text-red-500">*</span></Label>
+                      <Label>Nome da Atividade <span className="text-danger-ink">*</span></Label>
                       <Input
                         value={geralForm.nome}
                         onChange={(e) =>
@@ -1391,7 +1376,7 @@ function EvolucaoPageContent() {
               </DialogHeader>
 
               <Tabs value={instrucaoDetalheTab} onValueChange={setInstrucaoDetalheTab}>
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList>
                   <TabsTrigger value="evolucao">Evolução</TabsTrigger>
                   <TabsTrigger value="pontuacao">Pontuação</TabsTrigger>
                 </TabsList>
@@ -1655,7 +1640,7 @@ function EvolucaoPageContent() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Texto da Instrução <span className="text-red-500">*</span></Label>
+              <Label>Texto da Instrução <span className="text-danger-ink">*</span></Label>
               <Textarea
                 value={instrucaoForm.texto}
                 onChange={(e) =>

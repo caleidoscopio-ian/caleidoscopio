@@ -109,13 +109,13 @@ export function CheckInCard({ agendamento, canEdit, onAction }: CheckInCardProps
                 {semCheckIn && atrasoMin > 0 && (
                   <Badge
                     variant="outline"
-                    className={`text-xs px-1.5 ${atrasoMin >= 15 ? "bg-red-50 text-red-600 border-red-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}
+                    className={`text-xs px-1.5 ${atrasoMin >= 15 ? "bg-danger-soft text-danger-ink border-danger-soft" : "bg-warning-soft text-warning-ink border-warning-soft"}`}
                   >
                     {atrasoMin}min {atrasoMin >= 15 ? "— provável falta" : "atrasado"}
                   </Badge>
                 )}
                 {agendamento.hora_chegada && agendamento.status === StatusAgendamento.CONFIRMADO && (
-                  <Badge variant="outline" className="text-xs px-1.5 bg-green-50 text-green-700 border-green-200">
+                  <Badge variant="outline" className="text-xs px-1.5 bg-success-soft text-success-ink border-success-soft">
                     <LogIn className="h-2.5 w-2.5 mr-1" />
                     Chegou {format(new Date(agendamento.hora_chegada), "HH:mm")}
                   </Badge>
@@ -146,7 +146,7 @@ export function CheckInCard({ agendamento, canEdit, onAction }: CheckInCardProps
               </div>
 
               {agendamento.motivo_falta && (
-                <p className="text-xs text-red-500 mt-1">Motivo: {agendamento.motivo_falta}</p>
+                <p className="text-xs text-danger-ink mt-1">Motivo: {agendamento.motivo_falta}</p>
               )}
             </div>
 

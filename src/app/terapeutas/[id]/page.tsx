@@ -8,7 +8,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ArrowLeft,
   Pencil,
   Plus,
   Trash2,
@@ -28,11 +27,8 @@ import {
   Calendar,
   Users,
   Banknote,
-  Phone,
-  Mail,
-  CreditCard,
-  Award,
 } from "lucide-react";
+import { formatarDataCivil } from "@/lib/datas-fuso";
 import { useToast } from "@/hooks/use-toast";
 import { RegraRepasseForm } from "@/components/terapeutas/regra-repasse-form";
 import { GradeEditor } from "@/components/ocupacao-prof/grade-editor";
@@ -42,6 +38,14 @@ import { TIPO_REPASSE_LABELS } from "@/types/profissional";
 import { TIPO_VINCULO_LABELS } from "@/lib/profissional-constants";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  PageHeader,
+  PersonAvatar,
+  Panel,
+  StatCard,
+  GradeCampos,
+  CampoInfo,
+} from "@/components/kit";
 
 // ─── Types locais ────────────────────────────────────────────────────────────
 
@@ -235,15 +239,13 @@ export default function TerapeutaDetalhePage() {
   return (
     <ProtectedRoute requiredPermission={{ resource: "terapeutas", action: "VIEW" }}>
       <MainLayout breadcrumbs={breadcrumbs}>
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="sm" onClick={() => router.push("/terapeutas")}>
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Voltar
-          </Button>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{profissional.nome}</h1>
+        <PageHeader
+          className="mb-6"
+          voltar={{ onClick: () => router.push("/terapeutas") }}
+          avatar={<PersonAvatar nome={profissional.nome} tamanho={48} />}
+          titulo={profissional.nome}
+          meta={
+            <>
               {profissional.especialidade ? (
                 <Badge variant="secondary">{profissional.especialidade}</Badge>
               ) : (
@@ -255,61 +257,42 @@ export default function TerapeutaDetalhePage() {
                 </Badge>
               )}
               {!profissional.ativo && <Badge variant="destructive">Inativo</Badge>}
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Agendamentos</p>
-                  <p className="text-xl font-bold">{profissional._count.agendamentos}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Pacientes</p>
-                  <p className="text-xl font-bold">{profissional._count.pacientes}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Prontuários</p>
-                  <p className="text-xl font-bold">{profissional._count.prontuarios}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <Banknote className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Regras de Repasse</p>
-                  <p className="text-xl font-bold">{profissional._count.regrasRepasse}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard
+            tom="blue"
+            size="hero"
+            icone={<Calendar />}
+            rotulo="Agendamentos"
+            valor={profissional._count.agendamentos}
+          />
+          <StatCard
+            tom="lavender"
+            icone={<Users />}
+            rotulo="Pacientes"
+            valor={profissional._count.pacientes}
+          />
+          <StatCard
+            tom="mint"
+            icone={<User />}
+            rotulo="Prontuários"
+            valor={profissional._count.prontuarios}
+          />
+          <StatCard
+            tom="peach"
+            icone={<Banknote />}
+            rotulo="Regras de Repasse"
+            valor={profissional._count.regrasRepasse}
+          />
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="dados">
-          <TabsList className="mb-4">
+          <TabsList>
             <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
             <TabsTrigger value="agenda">Agenda</TabsTrigger>
             <TabsTrigger value="grade">Grade de Horário</TabsTrigger>
@@ -319,161 +302,111 @@ export default function TerapeutaDetalhePage() {
 
           {/* ── Tab: Dados Gerais ────────────────────────────────────────── */}
           <TabsContent value="dados">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Informações do Profissional</CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Nome</p>
-                    <p className="font-medium">{profissional.nome}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Especialidade</p>
-                    <p className="font-medium">{profissional.especialidade || "Não classificado"}</p>
-                  </div>
-                </div>
-                {profissional.cpf && (
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">CPF</p>
-                      <p className="font-medium">{profissional.cpf}</p>
-                    </div>
-                  </div>
-                )}
-                {profissional.registro_profissional && (
-                  <div className="flex items-center gap-2">
-                    <Award className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Registro Profissional</p>
-                      <p className="font-medium">{profissional.registro_profissional}</p>
-                    </div>
-                  </div>
-                )}
-                {profissional.telefone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Telefone</p>
-                      <p className="font-medium">{profissional.telefone}</p>
-                    </div>
-                  </div>
-                )}
-                {profissional.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">E-mail</p>
-                      <p className="font-medium">{profissional.email}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="col-span-2 text-xs text-muted-foreground pt-2 border-t">
-                  Cadastrado em{" "}
-                  {format(new Date(profissional.createdAt), "dd/MM/yyyy", { locale: ptBR })}
-                </div>
-              </CardContent>
-            </Card>
+            <Panel icone={<User />} titulo="Informações do Profissional">
+              <GradeCampos colunas={2}>
+                <CampoInfo rotulo="Nome" valor={profissional.nome} />
+                <CampoInfo
+                  rotulo="Especialidade"
+                  valor={profissional.especialidade}
+                  vazio="Não classificado"
+                />
+                <CampoInfo rotulo="CPF" valor={profissional.cpf} />
+                <CampoInfo
+                  rotulo="Registro profissional"
+                  valor={profissional.registro_profissional}
+                />
+                <CampoInfo rotulo="Telefone" valor={profissional.telefone} />
+                <CampoInfo rotulo="E-mail" valor={profissional.email} />
+              </GradeCampos>
+              <p className="mt-6 border-t border-hairline pt-4 text-xs text-ink-3">
+                Cadastrado em{" "}
+                {format(new Date(profissional.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+              </p>
+            </Panel>
           </TabsContent>
 
           {/* ── Tab: Agenda ──────────────────────────────────────────────── */}
           <TabsContent value="agenda">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Últimos Agendamentos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {agendaLoading ? (
-                  <div className="space-y-2">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <Skeleton key={i} className="h-10 w-full" />
-                    ))}
-                  </div>
-                ) : agendamentos.length === 0 ? (
-                  <p className="text-center py-8 text-muted-foreground text-sm">
-                    Nenhum agendamento encontrado.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data/Hora</TableHead>
-                        <TableHead>Paciente</TableHead>
-                        <TableHead>Procedimento</TableHead>
-                        <TableHead>Sala</TableHead>
-                        <TableHead>Status</TableHead>
+            <Panel titulo="Últimos Agendamentos">
+              {agendaLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : agendamentos.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground text-sm">
+                  Nenhum agendamento encontrado.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data/Hora</TableHead>
+                      <TableHead>Paciente</TableHead>
+                      <TableHead>Procedimento</TableHead>
+                      <TableHead>Sala</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {agendamentos.map((a) => (
+                      <TableRow key={a.id}>
+                        <TableCell className="whitespace-nowrap">
+                          {format(new Date(a.data_hora), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell>{a.paciente?.nome ?? "—"}</TableCell>
+                        <TableCell>{a.procedimento?.nome ?? "—"}</TableCell>
+                        <TableCell>{a.sala?.nome ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={(STATUS_COLORS[a.status] ?? "secondary") as "default" | "secondary" | "destructive" | "outline"}>
+                            {STATUS_LABELS[a.status] ?? a.status}
+                          </Badge>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {agendamentos.map((a) => (
-                        <TableRow key={a.id}>
-                          <TableCell className="whitespace-nowrap">
-                            {format(new Date(a.data_hora), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                          </TableCell>
-                          <TableCell>{a.paciente?.nome ?? "—"}</TableCell>
-                          <TableCell>{a.procedimento?.nome ?? "—"}</TableCell>
-                          <TableCell>{a.sala?.nome ?? "—"}</TableCell>
-                          <TableCell>
-                            <Badge variant={(STATUS_COLORS[a.status] ?? "secondary") as "default" | "secondary" | "destructive" | "outline"}>
-                              {STATUS_LABELS[a.status] ?? a.status}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Panel>
           </TabsContent>
 
           {/* ── Tab: Pacientes ───────────────────────────────────────────── */}
           <TabsContent value="pacientes">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Pacientes Atendidos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {pacientesLoading ? (
-                  <div className="space-y-2">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <Skeleton key={i} className="h-10 w-full" />
-                    ))}
-                  </div>
-                ) : pacientes.length === 0 ? (
-                  <p className="text-center py-8 text-muted-foreground text-sm">
-                    Nenhum paciente vinculado.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Data de Nascimento</TableHead>
+            <Panel titulo="Pacientes Atendidos">
+              {pacientesLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-10 w-full" />
+                  ))}
+                </div>
+              ) : pacientes.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground text-sm">
+                  Nenhum paciente vinculado.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Data de Nascimento</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pacientes.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-medium">{p.nome}</TableCell>
+                        <TableCell>
+                          {p.data_nascimento
+                            ? formatarDataCivil(p.data_nascimento)
+                            : "—"}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pacientes.map((p) => (
-                        <TableRow key={p.id}>
-                          <TableCell className="font-medium">{p.nome}</TableCell>
-                          <TableCell>
-                            {p.data_nascimento
-                              ? format(new Date(p.data_nascimento), "dd/MM/yyyy", { locale: ptBR })
-                              : "—"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Panel>
           </TabsContent>
 
           {/* ── Tab: Regras de Repasse ───────────────────────────────────── */}

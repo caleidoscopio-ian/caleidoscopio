@@ -16,17 +16,17 @@ export default function Home() {
 
   // Página de loading enquanto redireciona
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-brand-soft to-brand-soft flex items-center justify-center">
       <div className="text-center">
-        <div className="mx-auto h-12 w-12 rounded-lg bg-blue-600 flex items-center justify-center mb-4">
+        <div className="mx-auto h-12 w-12 rounded-lg bg-brand flex items-center justify-center mb-4">
           <span className="text-white font-bold text-xl">C</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="text-ink mb-2">
           Caleidoscópio Educacional
         </h1>
         <div className="flex items-center justify-center space-x-2">
-          <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-          <span className="text-gray-600">Carregando...</span>
+          <div className="animate-spin h-4 w-4 border-2 border-brand border-t-transparent rounded-full"></div>
+          <span className="text-ink">Carregando...</span>
         </div>
       </div>
     </div>

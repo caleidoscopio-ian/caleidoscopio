@@ -26,6 +26,7 @@ import { ArrowRight, BarChart3, ExternalLink } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { RELATORIOS_ORDENADOS, type DefinicaoRelatorio } from "@/lib/relatorios/definicoes";
 import { corDoRelatorio, iconeDoRelatorio } from "@/components/relatorios/icones";
+import { PageHeader } from "@/components/kit";
 
 function CentralContent() {
   const { can, loading } = usePermissions();
@@ -39,16 +40,11 @@ function CentralContent() {
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-            <BarChart3 className="h-8 w-8 text-primary" />
-            Central de Relatórios
-          </h1>
-          <p className="text-muted-foreground">
-            Escolha um relatório. Dentro dele, o período, os filtros e o agrupamento em até três
-            níveis ficam na mesma barra.
-          </p>
-        </div>
+        <PageHeader
+          icone={<BarChart3 />}
+          titulo="Central de Relatórios"
+          subtitulo="Escolha um relatório. Dentro dele, o período, os filtros e o agrupamento em até três níveis ficam na mesma barra."
+        />
 
         {loading ? (
           <div className="grid gap-5 md:grid-cols-2">
@@ -76,7 +72,7 @@ function CentralContent() {
             )}
 
             {visiveis.length === 0 && (
-              <div className="rounded-lg border bg-card p-10 text-center">
+              <div className="rounded-3xl border border-rim bg-surface/90 p-10 text-center shadow-card">
                 <p className="text-sm font-medium">Nenhum relatório disponível para o seu perfil</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   O acesso aos relatórios é configurado em Gestão de Permissões.
@@ -111,7 +107,7 @@ function CartaoRelatorio({ definicao }: { definicao: DefinicaoRelatorio }) {
           </div>
           <div className="flex flex-col items-end gap-1.5">
             {!definicao.disponivel && (
-              <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
+              <Badge variant="outline" className="border-warning bg-warning-soft text-warning-ink">
                 Em breve
               </Badge>
             )}

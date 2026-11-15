@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { MainLayout } from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { AbaGeral } from "@/components/curriculum/aba-geral";
 import { AbaAtividades } from "@/components/curriculum/aba-atividades";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader } from "@/components/kit";
 
 function NovoCurriculumPageContent() {
   const router = useRouter();
@@ -36,33 +37,21 @@ function NovoCurriculumPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleVoltar}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Voltar
+        <PageHeader
+          voltar={{ onClick: handleVoltar }}
+          titulo="Novo Plano Terapêutico"
+          subtitulo="Crie um novo plano e adicione atividades"
+          acoes={curriculumId && (
+              <Button onClick={() => router.push("/curriculum")}>
+                <Save className="mr-2 h-4 w-4" />
+                Concluir
               </Button>
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Novo Plano Terapêutico
-            </h1>
-            <p className="text-muted-foreground">
-              Crie um novo plano e adicione atividades
-            </p>
-          </div>
-
-          {curriculumId && (
-            <Button onClick={() => router.push("/curriculum")}>
-              <Save className="mr-2 h-4 w-4" />
-              Concluir
-            </Button>
-          )}
-        </div>
+            )}
+        />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList>
             <TabsTrigger value="geral">Geral</TabsTrigger>
             <TabsTrigger value="atividades" disabled={!curriculumId}>
               Atividades

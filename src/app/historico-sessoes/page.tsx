@@ -7,13 +7,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +48,7 @@ import {
 import { ScrollArea } from "@/components/ui/scrollarea";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { isTentativaCorreta } from "@/lib/pontuacao";
+import { PageHeader, Panel, StatCard } from "@/components/kit";
 
 interface Paciente {
   id: string;
@@ -140,14 +134,14 @@ interface Sessao {
 
 // ============ Constantes de fase ============
 const FASE_CONFIG: Record<string, { label: string; color: string }> = {
-  LINHA_BASE:    { label: "Linha de Base", color: "bg-gray-500" },
-  INTERVENCAO:   { label: "Intervenção",   color: "bg-blue-500" },
-  MANUTENCAO:    { label: "Manutenção",    color: "bg-green-500" },
-  GENERALIZACAO: { label: "Generalização", color: "bg-amber-500" },
+  LINHA_BASE:    { label: "Linha de Base", color: "bg-surface-muted" },
+  INTERVENCAO:   { label: "Intervenção",   color: "bg-brand" },
+  MANUTENCAO:    { label: "Manutenção",    color: "bg-success" },
+  GENERALIZACAO: { label: "Generalização", color: "bg-warning" },
 };
 
 function FaseBadge({ fase, size = "sm" }: { fase: string; size?: "sm" | "xs" }) {
-  const cfg = FASE_CONFIG[fase] || { label: fase, color: "bg-gray-400" };
+  const cfg = FASE_CONFIG[fase] || { label: fase, color: "bg-surface-muted" };
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-white font-medium ${cfg.color} ${size === "xs" ? "text-[10px]" : "text-xs"}`}>
       {cfg.label}
@@ -461,14 +455,10 @@ function HistoricoSessoesPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Histórico de Sessões
-          </h1>
-          <p className="text-muted-foreground">
-            Visualize e acompanhe todas as sessões realizadas
-          </p>
-        </div>
+        <PageHeader
+          titulo="Histórico de Sessões"
+          subtitulo="Visualize e acompanhe todas as sessões realizadas"
+        />
 
         {/* Filtros */}
         <div className="flex flex-col sm:flex-row gap-4">
@@ -510,665 +500,623 @@ function HistoricoSessoesPageContent() {
         </div>
 
         {/* Estatísticas Gerais */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total de Sessões
-              </CardTitle>
-              <History className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? "..." : sessoes.length}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard
+            tom="blue"
+            size="hero"
+            icone={<History />}
+            rotulo="Total de Sessões"
+            valor={loading ? "..." : sessoes.length}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Finalizadas</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {loading
-                  ? "..."
-                  : sessoes.filter((s) => s.status === "FINALIZADA").length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="lavender"
+            icone={<CheckCircle2 />}
+            rotulo="Finalizadas"
+            valor={<span className="text-success-ink">{loading ? "..." : sessoes.filter((s) => s.status === "FINALIZADA").length}</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Em Andamento
-              </CardTitle>
-              <Clock className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {loading
-                  ? "..."
-                  : sessoes.filter((s) => s.status === "EM_ANDAMENTO").length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="mint"
+            icone={<Clock className="text-brand" />}
+            rotulo="Em Andamento"
+            valor={<span className="text-brand">{loading ? "..." : sessoes.filter((s) => s.status === "EM_ANDAMENTO").length}</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Pacientes Atendidos
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {loading
-                  ? "..."
-                  : new Set(sessoes.map((s) => s.paciente.id)).size}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="peach"
+            icone={<TrendingUp />}
+            rotulo="Pacientes Atendidos"
+            valor={loading ? "..." : new Set(sessoes.map((s) => s.paciente.id)).size}
+          />
         </div>
 
         {/* Tabela de Sessões */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Sessões Registradas
-              {!loading && (
-                <Badge variant="secondary" className="ml-2">
-                  {filteredSessoes.length}
-                </Badge>
-              )}
-            </CardTitle>
-            <CardDescription>
-              Lista completa de sessões realizadas
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="text-center py-8">
-                <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
-                <div className="text-red-600 mb-4">{error}</div>
-                <Button onClick={fetchSessoes} variant="outline">
-                  Tentar Novamente
+        <Panel
+          titulo={<>Sessões Registradas {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredSessoes.length} </Badge> )}</>}
+          subtitulo="Lista completa de sessões realizadas"
+        >
+
+          {error && (
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 text-danger-ink mx-auto mb-4" />
+              <div className="text-danger-ink mb-4">{error}</div>
+              <Button onClick={fetchSessoes} variant="outline">
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
+
+          {loading && !error && (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Carregando sessões...</p>
+            </div>
+          )}
+
+          {!loading && !error && filteredSessoes.length === 0 && (
+            <div className="text-center py-8">
+              <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                Nenhuma sessão encontrada
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {sessoes.length === 0
+                  ? "Ainda não há sessões registradas."
+                  : "Nenhuma sessão corresponde aos filtros selecionados."}
+              </p>
+              {sessoes.length === 0 && (
+                <Button onClick={() => router.push("/iniciar-sessao")}>
+                  Iniciar Nova Sessão
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {loading && !error && (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Carregando sessões...</p>
-              </div>
-            )}
-
-            {!loading && !error && filteredSessoes.length === 0 && (
-              <div className="text-center py-8">
-                <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">
-                  Nenhuma sessão encontrada
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  {sessoes.length === 0
-                    ? "Ainda não há sessões registradas."
-                    : "Nenhuma sessão corresponde aos filtros selecionados."}
-                </p>
-                {sessoes.length === 0 && (
-                  <Button onClick={() => router.push("/iniciar-sessao")}>
-                    Iniciar Nova Sessão
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {!loading && !error && filteredSessoes.length > 0 && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Curriculum/Avaliação</TableHead>
-                    <TableHead>Terapeuta</TableHead>
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead>Duração</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSessoes.map((sessao) => {
-                    const status = traduzirStatus(sessao.status);
-                    const tipoSessao = getTipoSessaoLabel(sessao);
-                    return (
-                      <TableRow key={sessao.id}>
-                        <TableCell className="font-medium">
-                          {sessao.paciente.nome}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              sessao.tipo === "AVALIACAO" ? "default" : "secondary"
-                            }
-                            className="text-xs"
-                          >
-                            {tipoSessao}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            {sessao.tipo === "CURRICULUM"
-                              ? sessao.curriculum?.nome
-                              : (sessao.avaliacao?.nome || sessao.atividade?.nome)}
-                          </div>
-                        </TableCell>
-                        <TableCell>{sessao.profissional.nome}</TableCell>
-                        <TableCell className="text-sm">
-                          {formatDateTime(sessao.iniciada_em)}
-                        </TableCell>
-                        <TableCell>
-                          {calcularDuracao(
-                            sessao.iniciada_em,
-                            sessao.finalizada_em
+          {!loading && !error && filteredSessoes.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Curriculum/Avaliação</TableHead>
+                  <TableHead>Terapeuta</TableHead>
+                  <TableHead>Data/Hora</TableHead>
+                  <TableHead>Duração</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSessoes.map((sessao) => {
+                  const status = traduzirStatus(sessao.status);
+                  const tipoSessao = getTipoSessaoLabel(sessao);
+                  return (
+                    <TableRow key={sessao.id}>
+                      <TableCell className="font-medium">
+                        {sessao.paciente.nome}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            sessao.tipo === "AVALIACAO" ? "default" : "secondary"
+                          }
+                          className="text-xs"
+                        >
+                          {tipoSessao}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">
+                          {sessao.tipo === "CURRICULUM"
+                            ? sessao.curriculum?.nome
+                            : (sessao.avaliacao?.nome || sessao.atividade?.nome)}
+                        </div>
+                      </TableCell>
+                      <TableCell>{sessao.profissional.nome}</TableCell>
+                      <TableCell className="text-sm">
+                        {formatDateTime(sessao.iniciada_em)}
+                      </TableCell>
+                      <TableCell>
+                        {calcularDuracao(
+                          sessao.iniciada_em,
+                          sessao.finalizada_em
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={status.variant as any}>
+                          {status.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {sessao.status === "EM_ANDAMENTO" && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => {
+                                if (sessao.tipo === "CURRICULUM") {
+                                  router.push(`/aplicar-curriculum/${sessao.id}`);
+                                } else if (sessao.tipo === "AVALIACAO") {
+                                  router.push(`/aplicar-avaliacao/${sessao.id}`);
+                                }
+                              }}
+                            >
+                              <Play className="h-4 w-4 mr-1" />
+                              Continuar
+                            </Button>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={status.variant as any}>
-                            {status.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {sessao.status === "EM_ANDAMENTO" && (
+                          <Dialog>
+                            <DialogTrigger asChild>
                               <Button
                                 size="sm"
-                                variant="default"
-                                onClick={() => {
-                                  if (sessao.tipo === "CURRICULUM") {
-                                    router.push(`/aplicar-curriculum/${sessao.id}`);
-                                  } else if (sessao.tipo === "AVALIACAO") {
-                                    router.push(`/aplicar-avaliacao/${sessao.id}`);
-                                  }
-                                }}
+                                variant="ghost"
+                                onClick={() => fetchSessaoDetalhes(sessao.id, sessao.tipo)}
                               >
-                                <Play className="h-4 w-4 mr-1" />
-                                Continuar
+                                <Eye className="h-4 w-4" />
                               </Button>
-                            )}
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => fetchSessaoDetalhes(sessao.id, sessao.tipo)}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-3xl max-h-[90vh]">
-                                <DialogHeader>
-                                  <DialogTitle>Detalhes da Sessão</DialogTitle>
-                                  <DialogDescription>
-                                    Informações completas e avaliações
-                                  </DialogDescription>
-                                </DialogHeader>
-                                {sessaoDetalhes &&
-                                  sessaoDetalhes.id === sessao.id && (
-                                    <ScrollArea className="max-h-[calc(90vh-150px)] pr-4">
-                                      <div className="space-y-4">
-                                        {/* Informações da Sessão */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div>
-                                            <label className="text-sm font-medium text-muted-foreground">
-                                              Paciente
-                                            </label>
-                                            <p className="font-medium">
-                                              {sessaoDetalhes.paciente.nome}
-                                            </p>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-3xl max-h-[90vh]">
+                              <DialogHeader>
+                                <DialogTitle>Detalhes da Sessão</DialogTitle>
+                                <DialogDescription>
+                                  Informações completas e avaliações
+                                </DialogDescription>
+                              </DialogHeader>
+                              {sessaoDetalhes &&
+                                sessaoDetalhes.id === sessao.id && (
+                                  <ScrollArea className="max-h-[calc(90vh-150px)] pr-4">
+                                    <div className="space-y-4">
+                                      {/* Informações da Sessão */}
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                          <label className="text-sm font-medium text-muted-foreground">
+                                            Paciente
+                                          </label>
+                                          <p className="font-medium">
+                                            {sessaoDetalhes.paciente.nome}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <label className="text-sm font-medium text-muted-foreground">
+                                            Terapeuta
+                                          </label>
+                                          <p className="font-medium">
+                                            {sessaoDetalhes.profissional.nome}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <label className="text-sm font-medium text-muted-foreground">
+                                            {sessaoDetalhes.tipo === "CURRICULUM"
+                                              ? "Plano Terapêutico"
+                                              : "Avaliação"}
+                                          </label>
+                                          <p className="font-medium">
+                                            {sessaoDetalhes.tipo === "CURRICULUM"
+                                              ? sessaoDetalhes.curriculum?.nome
+                                              : (sessaoDetalhes.avaliacao?.nome || sessaoDetalhes.atividade?.nome)}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <label className="text-sm font-medium text-muted-foreground">
+                                            Tipo
+                                          </label>
+                                          <div className="mt-1">
+                                            <Badge
+                                              variant={
+                                                sessaoDetalhes.tipo === "CURRICULUM"
+                                                  ? "default"
+                                                  : "secondary"
+                                              }
+                                            >
+                                              {getTipoSessaoLabel(sessaoDetalhes)}
+                                            </Badge>
                                           </div>
-                                          <div>
-                                            <label className="text-sm font-medium text-muted-foreground">
-                                              Terapeuta
-                                            </label>
-                                            <p className="font-medium">
-                                              {sessaoDetalhes.profissional.nome}
-                                            </p>
+                                        </div>
+                                        <div className="col-span-2">
+                                          <label className="text-sm font-medium text-muted-foreground">
+                                            Status
+                                          </label>
+                                          <div className="mt-1">
+                                            <Badge
+                                              variant={
+                                                traduzirStatus(
+                                                  sessaoDetalhes.status
+                                                ).variant as any
+                                              }
+                                            >
+                                              {
+                                                traduzirStatus(
+                                                  sessaoDetalhes.status
+                                                ).label
+                                              }
+                                            </Badge>
                                           </div>
-                                          <div>
-                                            <label className="text-sm font-medium text-muted-foreground">
-                                              {sessaoDetalhes.tipo === "CURRICULUM"
-                                                ? "Plano Terapêutico"
-                                                : "Avaliação"}
-                                            </label>
-                                            <p className="font-medium">
-                                              {sessaoDetalhes.tipo === "CURRICULUM"
-                                                ? sessaoDetalhes.curriculum?.nome
-                                                : (sessaoDetalhes.avaliacao?.nome || sessaoDetalhes.atividade?.nome)}
-                                            </p>
-                                          </div>
-                                          <div>
-                                            <label className="text-sm font-medium text-muted-foreground">
-                                              Tipo
-                                            </label>
-                                            <div className="mt-1">
-                                              <Badge
-                                                variant={
-                                                  sessaoDetalhes.tipo === "CURRICULUM"
-                                                    ? "default"
-                                                    : "secondary"
-                                                }
-                                              >
-                                                {getTipoSessaoLabel(sessaoDetalhes)}
-                                              </Badge>
-                                            </div>
-                                          </div>
-                                          <div className="col-span-2">
-                                            <label className="text-sm font-medium text-muted-foreground">
-                                              Status
-                                            </label>
-                                            <div className="mt-1">
-                                              <Badge
-                                                variant={
-                                                  traduzirStatus(
-                                                    sessaoDetalhes.status
-                                                  ).variant as any
-                                                }
-                                              >
-                                                {
-                                                  traduzirStatus(
-                                                    sessaoDetalhes.status
-                                                  ).label
-                                                }
-                                              </Badge>
+                                        </div>
+                                      </div>
+
+                                      {/* Resumo do Desempenho - CURRICULUM */}
+                                      {sessaoDetalhes.tipo === "CURRICULUM" && (
+                                        <div className="space-y-3">
+                                          <label className="text-sm font-medium text-muted-foreground">
+                                            Resumo do Desempenho
+                                          </label>
+                                          <div className="p-4 bg-gradient-to-r from-brand-soft to-violet-soft rounded-lg border">
+                                            <div className="grid grid-cols-4 gap-4 text-center">
+                                              <div>
+                                                <p className="text-3xl font-bold text-brand">
+                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).totalInstrucoes}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1">Instruções</p>
+                                                <p className="text-xs text-muted-foreground">na sessão</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-3xl font-bold text-success-ink">
+                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).avancaram}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1">Avançaram</p>
+                                                <p className="text-xs text-muted-foreground">de fase</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-3xl font-bold text-danger-ink">
+                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).regrediram}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1">Regrediram</p>
+                                                <p className="text-xs text-muted-foreground">de fase</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-3xl font-bold text-violet-ink">
+                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).percentAcerto}%
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1">Acerto</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                  ({calcularEstatisticasCurriculum(sessaoDetalhes).tentativasCorretas}/
+                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).totalTentativas})
+                                                </p>
+                                              </div>
                                             </div>
                                           </div>
                                         </div>
+                                      )}
 
-                                        {/* Resumo do Desempenho - CURRICULUM */}
-                                        {sessaoDetalhes.tipo === "CURRICULUM" && (
+                                      {/* Estatísticas - AVALIAÇÕES */}
+                                      {sessaoDetalhes.tipo === "AVALIACAO" &&
+                                        sessaoDetalhes.respostas &&
+                                        sessaoDetalhes.respostas.length > 0 && (
                                           <div className="space-y-3">
                                             <label className="text-sm font-medium text-muted-foreground">
                                               Resumo do Desempenho
                                             </label>
-                                            <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
+                                            <div className="p-4 bg-gradient-to-r from-success-soft to-brand-soft rounded-lg border">
                                               <div className="grid grid-cols-4 gap-4 text-center">
                                                 <div>
-                                                  <p className="text-3xl font-bold text-blue-600">
-                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).totalInstrucoes}
+                                                  <p className="text-3xl font-bold text-brand">
+                                                    {
+                                                      calcularEstatisticasAvaliacao(
+                                                        sessaoDetalhes
+                                                      ).media
+                                                    }%
                                                   </p>
-                                                  <p className="text-xs text-muted-foreground mt-1">Instruções</p>
-                                                  <p className="text-xs text-muted-foreground">na sessão</p>
-                                                </div>
-                                                <div>
-                                                  <p className="text-3xl font-bold text-green-600">
-                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).avancaram}
+                                                  <p className="text-xs text-muted-foreground mt-1">
+                                                    Média Geral
                                                   </p>
-                                                  <p className="text-xs text-muted-foreground mt-1">Avançaram</p>
-                                                  <p className="text-xs text-muted-foreground">de fase</p>
-                                                </div>
-                                                <div>
-                                                  <p className="text-3xl font-bold text-red-500">
-                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).regrediram}
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground mt-1">Regrediram</p>
-                                                  <p className="text-xs text-muted-foreground">de fase</p>
-                                                </div>
-                                                <div>
-                                                  <p className="text-3xl font-bold text-purple-600">
-                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).percentAcerto}%
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground mt-1">Acerto</p>
                                                   <p className="text-xs text-muted-foreground">
-                                                    ({calcularEstatisticasCurriculum(sessaoDetalhes).tentativasCorretas}/
-                                                    {calcularEstatisticasCurriculum(sessaoDetalhes).totalTentativas})
+                                                    (pontuação)
+                                                  </p>
+                                                </div>
+                                                <div>
+                                                  <p className="text-3xl font-bold text-success-ink">
+                                                    {
+                                                      calcularEstatisticasAvaliacao(
+                                                        sessaoDetalhes
+                                                      ).respondidas
+                                                    }
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground mt-1">
+                                                    Respondidas
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground">
+                                                    (de{" "}
+                                                    {
+                                                      calcularEstatisticasAvaliacao(
+                                                        sessaoDetalhes
+                                                      ).total
+                                                    })
+                                                  </p>
+                                                </div>
+                                                <div>
+                                                  <p className="text-3xl font-bold text-warning-ink">
+                                                    {
+                                                      calcularEstatisticasAvaliacao(
+                                                        sessaoDetalhes
+                                                      ).naoAplicavel
+                                                    }
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground mt-1">
+                                                    N/A
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground">
+                                                    (não aplicável)
+                                                  </p>
+                                                </div>
+                                                <div>
+                                                  <p className="text-3xl font-bold text-violet-ink">
+                                                    {
+                                                      calcularEstatisticasAvaliacao(
+                                                        sessaoDetalhes
+                                                      ).total
+                                                    }
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground mt-1">
+                                                    Total
+                                                  </p>
+                                                  <p className="text-xs text-muted-foreground">
+                                                    tarefas
                                                   </p>
                                                 </div>
                                               </div>
                                             </div>
-                                          </div>
-                                        )}
 
-                                        {/* Estatísticas - AVALIAÇÕES */}
-                                        {sessaoDetalhes.tipo === "AVALIACAO" &&
-                                          sessaoDetalhes.respostas &&
-                                          sessaoDetalhes.respostas.length > 0 && (
-                                            <div className="space-y-3">
-                                              <label className="text-sm font-medium text-muted-foreground">
-                                                Resumo do Desempenho
-                                              </label>
-                                              <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border">
-                                                <div className="grid grid-cols-4 gap-4 text-center">
-                                                  <div>
-                                                    <p className="text-3xl font-bold text-blue-600">
-                                                      {
-                                                        calcularEstatisticasAvaliacao(
-                                                          sessaoDetalhes
-                                                        ).media
-                                                      }%
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                      Média Geral
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      (pontuação)
-                                                    </p>
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-3xl font-bold text-green-600">
-                                                      {
-                                                        calcularEstatisticasAvaliacao(
-                                                          sessaoDetalhes
-                                                        ).respondidas
-                                                      }
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                      Respondidas
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      (de{" "}
-                                                      {
-                                                        calcularEstatisticasAvaliacao(
-                                                          sessaoDetalhes
-                                                        ).total
-                                                      })
-                                                    </p>
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-3xl font-bold text-orange-600">
-                                                      {
-                                                        calcularEstatisticasAvaliacao(
-                                                          sessaoDetalhes
-                                                        ).naoAplicavel
-                                                      }
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                      N/A
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      (não aplicável)
-                                                    </p>
-                                                  </div>
-                                                  <div>
-                                                    <p className="text-3xl font-bold text-purple-600">
-                                                      {
-                                                        calcularEstatisticasAvaliacao(
-                                                          sessaoDetalhes
-                                                        ).total
-                                                      }
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                      Total
-                                                    </p>
-                                                    <p className="text-xs text-muted-foreground">
-                                                      tarefas
-                                                    </p>
-                                                  </div>
-                                                </div>
-                                              </div>
-
-                                              {/* Distribuição de Pontuações */}
-                                              <div className="p-4 bg-muted/30 rounded-lg">
-                                                <p className="text-sm font-medium mb-3">
-                                                  Distribuição de Pontuações
-                                                </p>
-                                                <div className="space-y-2">
-                                                  {[100, 75, 50, 25, 0, -1].map(
-                                                    (pontuacao) => {
-                                                      const count =
-                                                        sessaoDetalhes.respostas!.filter(
-                                                          (r: any) => r.pontuacao === pontuacao
-                                                        ).length;
-                                                      const percentage =
-                                                        (count /
-                                                          sessaoDetalhes
-                                                            .respostas!
-                                                            .length) *
-                                                        100;
-                                                      return (
-                                                        <div
-                                                          key={pontuacao}
-                                                          className="flex items-center gap-3"
-                                                        >
-                                                          <span className="text-xs font-medium w-16">
-                                                            {pontuacao === -1 ? "N/A" : `${pontuacao}%`}:
-                                                          </span>
-                                                          <div className="flex-1 h-6 bg-gray-200 rounded-full overflow-hidden">
-                                                            <div
-                                                              className={`h-full ${
-                                                                pontuacao === 100
-                                                                  ? "bg-green-500"
-                                                                  : pontuacao === 75
-                                                                    ? "bg-blue-500"
-                                                                    : pontuacao === 50
-                                                                      ? "bg-yellow-500"
-                                                                      : pontuacao ===
-                                                                          25
-                                                                        ? "bg-orange-500"
-                                                                        : pontuacao === 0
-                                                                          ? "bg-red-500"
-                                                                          : "bg-gray-400"
-                                                              }`}
-                                                              style={{
-                                                                width: `${percentage}%`,
-                                                              }}
-                                                            />
-                                                          </div>
-                                                          <span className="text-xs font-medium w-16 text-right">
-                                                            {count} (
-                                                            {percentage.toFixed(
-                                                              0
-                                                            )}
-                                                            %)
-                                                          </span>
-                                                        </div>
-                                                      );
-                                                    }
-                                                  )}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )}
-
-                                        {/* Respostas de Avaliações (para sessões tipo AVALIACAO) */}
-                                        {sessaoDetalhes.tipo === "AVALIACAO" &&
-                                          sessaoDetalhes.respostas &&
-                                          sessaoDetalhes.respostas.length > 0 && (
-                                            <div>
-                                              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                                Respostas das Tarefas
-                                              </label>
+                                            {/* Distribuição de Pontuações */}
+                                            <div className="p-4 bg-muted/30 rounded-lg">
+                                              <p className="text-sm font-medium mb-3">
+                                                Distribuição de Pontuações
+                                              </p>
                                               <div className="space-y-2">
-                                                {sessaoDetalhes.respostas.map(
-                                                  (resposta: any) => (
-                                                    <div
-                                                      key={resposta.id}
-                                                      className="p-3 border rounded-lg"
-                                                    >
-                                                      <div className="flex items-start gap-3">
-                                                        <Badge variant="secondary">
-                                                          {resposta.tarefa.ordem}
-                                                        </Badge>
-                                                        <div className="flex-1">
-                                                          <p className="text-sm font-medium mb-1">
-                                                            {resposta.tarefa.pergunta}
-                                                          </p>
-                                                          <div className="flex items-center gap-2 text-xs flex-wrap">
-                                                            <Badge
-                                                              variant={
-                                                                resposta.pontuacao !== null &&
-                                                                resposta.pontuacao !== -1
-                                                                  ? "default"
-                                                                  : "outline"
-                                                              }
-                                                            >
-                                                              {resposta.pontuacao === -1
-                                                                ? "N/A"
-                                                                : resposta.pontuacao !== null
-                                                                  ? `${resposta.pontuacao}%`
-                                                                  : "Não respondida"}
-                                                            </Badge>
-                                                          </div>
-                                                          {resposta.observacao && (
-                                                            <p className="text-xs text-muted-foreground mt-2">
-                                                              Obs: {resposta.observacao}
-                                                            </p>
-                                                          )}
+                                                {[100, 75, 50, 25, 0, -1].map(
+                                                  (pontuacao) => {
+                                                    const count =
+                                                      sessaoDetalhes.respostas!.filter(
+                                                        (r: any) => r.pontuacao === pontuacao
+                                                      ).length;
+                                                    const percentage =
+                                                      (count /
+                                                        sessaoDetalhes
+                                                          .respostas!
+                                                          .length) *
+                                                      100;
+                                                    return (
+                                                      <div
+                                                        key={pontuacao}
+                                                        className="flex items-center gap-3"
+                                                      >
+                                                        <span className="text-xs font-medium w-16">
+                                                          {pontuacao === -1 ? "N/A" : `${pontuacao}%`}:
+                                                        </span>
+                                                        <div className="flex-1 h-6 bg-surface-sunken rounded-full overflow-hidden">
+                                                          <div
+                                                            className={`h-full ${
+                                                              pontuacao === 100
+                                                                ? "bg-success"
+                                                                : pontuacao === 75
+                                                                  ? "bg-brand"
+                                                                  : pontuacao === 50
+                                                                    ? "bg-warning"
+                                                                    : pontuacao ===
+                                                                        25
+                                                                      ? "bg-warning"
+                                                                      : pontuacao === 0
+                                                                        ? "bg-danger"
+                                                                        : "bg-surface-muted"
+                                                            }`}
+                                                            style={{
+                                                              width: `${percentage}%`,
+                                                            }}
+                                                          />
                                                         </div>
+                                                        <span className="text-xs font-medium w-16 text-right">
+                                                          {count} (
+                                                          {percentage.toFixed(
+                                                            0
+                                                          )}
+                                                          %)
+                                                        </span>
                                                       </div>
-                                                    </div>
-                                                  )
+                                                    );
+                                                  }
                                                 )}
                                               </div>
                                             </div>
-                                          )}
-
-                                        {/* Instruções da Sessão (para sessões tipo CURRICULUM) */}
-                                        {sessaoDetalhes.tipo === "CURRICULUM" &&
-                                          sessaoDetalhes.instrucoesSelecionadas &&
-                                          sessaoDetalhes.instrucoesSelecionadas.length > 0 && (
-                                            <div className="space-y-3">
-                                              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                                Instruções da Sessão
-                                              </label>
-                                              {sessaoDetalhes.atividadesClone?.map((clone) => {
-                                                const instrucaoIdsDessaAtv = new Set(
-                                                  (sessaoDetalhes.instrucoesSelecionadas || [])
-                                                    .filter((s) => s.atividadeCloneId === clone.id)
-                                                    .map((s) => s.instrucaoId)
-                                                );
-                                                const instrucoes = clone.instrucoes.filter((i) =>
-                                                  instrucaoIdsDessaAtv.has(i.id)
-                                                );
-                                                if (instrucoes.length === 0) return null;
-                                                const FASE_ORDER = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
-                                                return (
-                                                  <div key={clone.id} className="border rounded-lg overflow-hidden">
-                                                    <div className="px-4 py-2 bg-muted/50 font-medium text-sm">
-                                                      {clone.nome}
-                                                    </div>
-                                                    <div className="divide-y">
-                                                      {instrucoes.map((instrucao) => {
-                                                        const hist = sessaoDetalhes.historicoFasesSessao?.find(
-                                                          (h) => h.instrucaoId === instrucao.id
-                                                        );
-                                                        const avsInstrucao = (
-                                                          (sessaoDetalhes.avaliacoes || []) as AvaliacaoCurriculum[]
-                                                        )
-                                                          .filter((av) => av.instrucaoId === instrucao.id)
-                                                          .sort((a, b) => a.tentativa - b.tentativa);
-                                                        const ponts = (instrucao.pontuacoes || [])
-                                                          .filter((p) => p.fase === instrucao.faseAtual)
-                                                          .sort((a, b) => a.ordem - b.ordem);
-                                                        const corretas = avsInstrucao.filter((av) =>
-                                                          isTentativaCorreta(av.nota, ponts)
-                                                        ).length;
-                                                        const percentInstrucao =
-                                                          avsInstrucao.length > 0
-                                                            ? Math.round((corretas / avsInstrucao.length) * 100)
-                                                            : null;
-                                                        const avancou =
-                                                          hist &&
-                                                          FASE_ORDER.indexOf(hist.faseNova) >
-                                                            FASE_ORDER.indexOf(hist.faseAnterior);
-                                                        const regrediu =
-                                                          hist &&
-                                                          FASE_ORDER.indexOf(hist.faseNova) <
-                                                            FASE_ORDER.indexOf(hist.faseAnterior);
-                                                        return (
-                                                          <div key={instrucao.id} className="p-3 space-y-2">
-                                                            <div className="flex items-start justify-between gap-2">
-                                                              <p className="text-sm font-medium flex-1">
-                                                                {instrucao.texto}
-                                                              </p>
-                                                              <div className="flex items-center gap-1 flex-shrink-0">
-                                                                {hist ? (
-                                                                  <>
-                                                                    <FaseBadge fase={hist.faseAnterior} size="xs" />
-                                                                    <span className="text-xs text-muted-foreground">→</span>
-                                                                    <FaseBadge fase={hist.faseNova} size="xs" />
-                                                                    {avancou && (
-                                                                      <span className="text-green-600 text-xs font-bold">↑</span>
-                                                                    )}
-                                                                    {regrediu && (
-                                                                      <span className="text-red-500 text-xs font-bold">↓</span>
-                                                                    )}
-                                                                  </>
-                                                                ) : (
-                                                                  <FaseBadge fase={instrucao.faseAtual} size="xs" />
-                                                                )}
-                                                              </div>
-                                                            </div>
-                                                            {avsInstrucao.length > 0 && (
-                                                              <div className="flex items-center gap-1 flex-wrap">
-                                                                <span className="text-xs text-muted-foreground mr-1">
-                                                                  Tentativas:
-                                                                </span>
-                                                                {avsInstrucao.map((av) => {
-                                                                  const sigla = ponts[av.nota]?.sigla ?? String(av.nota);
-                                                                  const isCorreto = isTentativaCorreta(av.nota, ponts);
-                                                                  return (
-                                                                    <Badge
-                                                                      key={av.id}
-                                                                      variant={isCorreto ? "default" : "outline"}
-                                                                      className={`text-xs font-bold ${isCorreto ? "bg-green-600 hover:bg-green-700" : ""}`}
-                                                                    >
-                                                                      {sigla}
-                                                                    </Badge>
-                                                                  );
-                                                                })}
-                                                                {percentInstrucao !== null && (
-                                                                  <span className="text-xs text-muted-foreground ml-2">
-                                                                    {percentInstrucao}% acerto
-                                                                  </span>
-                                                                )}
-                                                              </div>
-                                                            )}
-                                                            {avsInstrucao.some((av) => av.observacao) && (
-                                                              <p className="text-xs text-muted-foreground">
-                                                                Obs:{" "}
-                                                                {avsInstrucao.find((av) => av.observacao)?.observacao}
-                                                              </p>
-                                                            )}
-                                                          </div>
-                                                        );
-                                                      })}
-                                                    </div>
-                                                  </div>
-                                                );
-                                              })}
-                                            </div>
-                                          )}
-
-                                        {/* Observações Gerais */}
-                                        {sessaoDetalhes.observacoes_gerais && (
-                                          <div>
-                                            <label className="text-sm font-medium text-muted-foreground">
-                                              Observações Gerais
-                                            </label>
-                                            <p className="text-sm mt-1 p-3 bg-muted/30 rounded">
-                                              {
-                                                sessaoDetalhes.observacoes_gerais
-                                              }
-                                            </p>
                                           </div>
                                         )}
-                                      </div>
-                                    </ScrollArea>
-                                  )}
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+
+                                      {/* Respostas de Avaliações (para sessões tipo AVALIACAO) */}
+                                      {sessaoDetalhes.tipo === "AVALIACAO" &&
+                                        sessaoDetalhes.respostas &&
+                                        sessaoDetalhes.respostas.length > 0 && (
+                                          <div>
+                                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                                              Respostas das Tarefas
+                                            </label>
+                                            <div className="space-y-2">
+                                              {sessaoDetalhes.respostas.map(
+                                                (resposta: any) => (
+                                                  <div
+                                                    key={resposta.id}
+                                                    className="rounded-2xl bg-surface-muted p-3.5"
+                                                  >
+                                                    <div className="flex items-start gap-3">
+                                                      <Badge variant="secondary">
+                                                        {resposta.tarefa.ordem}
+                                                      </Badge>
+                                                      <div className="flex-1">
+                                                        <p className="text-sm font-medium mb-1">
+                                                          {resposta.tarefa.pergunta}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 text-xs flex-wrap">
+                                                          <Badge
+                                                            variant={
+                                                              resposta.pontuacao !== null &&
+                                                              resposta.pontuacao !== -1
+                                                                ? "default"
+                                                                : "outline"
+                                                            }
+                                                          >
+                                                            {resposta.pontuacao === -1
+                                                              ? "N/A"
+                                                              : resposta.pontuacao !== null
+                                                                ? `${resposta.pontuacao}%`
+                                                                : "Não respondida"}
+                                                          </Badge>
+                                                        </div>
+                                                        {resposta.observacao && (
+                                                          <p className="text-xs text-muted-foreground mt-2">
+                                                            Obs: {resposta.observacao}
+                                                          </p>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                )
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                      {/* Instruções da Sessão (para sessões tipo CURRICULUM) */}
+                                      {sessaoDetalhes.tipo === "CURRICULUM" &&
+                                        sessaoDetalhes.instrucoesSelecionadas &&
+                                        sessaoDetalhes.instrucoesSelecionadas.length > 0 && (
+                                          <div className="space-y-3">
+                                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                                              Instruções da Sessão
+                                            </label>
+                                            {sessaoDetalhes.atividadesClone?.map((clone) => {
+                                              const instrucaoIdsDessaAtv = new Set(
+                                                (sessaoDetalhes.instrucoesSelecionadas || [])
+                                                  .filter((s) => s.atividadeCloneId === clone.id)
+                                                  .map((s) => s.instrucaoId)
+                                              );
+                                              const instrucoes = clone.instrucoes.filter((i) =>
+                                                instrucaoIdsDessaAtv.has(i.id)
+                                              );
+                                              if (instrucoes.length === 0) return null;
+                                              const FASE_ORDER = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
+                                              return (
+                                                <div key={clone.id} className="border rounded-lg overflow-hidden">
+                                                  <div className="px-4 py-2 bg-muted/50 font-medium text-sm">
+                                                    {clone.nome}
+                                                  </div>
+                                                  <div className="divide-y">
+                                                    {instrucoes.map((instrucao) => {
+                                                      const hist = sessaoDetalhes.historicoFasesSessao?.find(
+                                                        (h) => h.instrucaoId === instrucao.id
+                                                      );
+                                                      const avsInstrucao = (
+                                                        (sessaoDetalhes.avaliacoes || []) as AvaliacaoCurriculum[]
+                                                      )
+                                                        .filter((av) => av.instrucaoId === instrucao.id)
+                                                        .sort((a, b) => a.tentativa - b.tentativa);
+                                                      const ponts = (instrucao.pontuacoes || [])
+                                                        .filter((p) => p.fase === instrucao.faseAtual)
+                                                        .sort((a, b) => a.ordem - b.ordem);
+                                                      const corretas = avsInstrucao.filter((av) =>
+                                                        isTentativaCorreta(av.nota, ponts)
+                                                      ).length;
+                                                      const percentInstrucao =
+                                                        avsInstrucao.length > 0
+                                                          ? Math.round((corretas / avsInstrucao.length) * 100)
+                                                          : null;
+                                                      const avancou =
+                                                        hist &&
+                                                        FASE_ORDER.indexOf(hist.faseNova) >
+                                                          FASE_ORDER.indexOf(hist.faseAnterior);
+                                                      const regrediu =
+                                                        hist &&
+                                                        FASE_ORDER.indexOf(hist.faseNova) <
+                                                          FASE_ORDER.indexOf(hist.faseAnterior);
+                                                      return (
+                                                        <div key={instrucao.id} className="p-3 space-y-2">
+                                                          <div className="flex items-start justify-between gap-2">
+                                                            <p className="text-sm font-medium flex-1">
+                                                              {instrucao.texto}
+                                                            </p>
+                                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                                              {hist ? (
+                                                                <>
+                                                                  <FaseBadge fase={hist.faseAnterior} size="xs" />
+                                                                  <span className="text-xs text-muted-foreground">→</span>
+                                                                  <FaseBadge fase={hist.faseNova} size="xs" />
+                                                                  {avancou && (
+                                                                    <span className="text-success-ink text-xs font-bold">↑</span>
+                                                                  )}
+                                                                  {regrediu && (
+                                                                    <span className="text-danger-ink text-xs font-bold">↓</span>
+                                                                  )}
+                                                                </>
+                                                              ) : (
+                                                                <FaseBadge fase={instrucao.faseAtual} size="xs" />
+                                                              )}
+                                                            </div>
+                                                          </div>
+                                                          {avsInstrucao.length > 0 && (
+                                                            <div className="flex items-center gap-1 flex-wrap">
+                                                              <span className="text-xs text-muted-foreground mr-1">
+                                                                Tentativas:
+                                                              </span>
+                                                              {avsInstrucao.map((av) => {
+                                                                const sigla = ponts[av.nota]?.sigla ?? String(av.nota);
+                                                                const isCorreto = isTentativaCorreta(av.nota, ponts);
+                                                                return (
+                                                                  <Badge
+                                                                    key={av.id}
+                                                                    variant={isCorreto ? "default" : "outline"}
+                                                                    className={`text-xs font-bold ${isCorreto ? "bg-success hover:bg-success" : ""}`}
+                                                                  >
+                                                                    {sigla}
+                                                                  </Badge>
+                                                                );
+                                                              })}
+                                                              {percentInstrucao !== null && (
+                                                                <span className="text-xs text-muted-foreground ml-2">
+                                                                  {percentInstrucao}% acerto
+                                                                </span>
+                                                              )}
+                                                            </div>
+                                                          )}
+                                                          {avsInstrucao.some((av) => av.observacao) && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                              Obs:{" "}
+                                                              {avsInstrucao.find((av) => av.observacao)?.observacao}
+                                                            </p>
+                                                          )}
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+
+                                      {/* Observações Gerais */}
+                                      {sessaoDetalhes.observacoes_gerais && (
+                                        <div>
+                                          <label className="text-sm font-medium text-muted-foreground">
+                                            Observações Gerais
+                                          </label>
+                                          <p className="text-sm mt-1 p-3 bg-muted/30 rounded">
+                                            {
+                                              sessaoDetalhes.observacoes_gerais
+                                            }
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </ScrollArea>
+                                )}
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </Panel>
       </div>
     </MainLayout>
   );

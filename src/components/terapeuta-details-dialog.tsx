@@ -87,10 +87,10 @@ export function TerapeutaDetailsDialog({
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold">{professional.name}</h2>
             <div className="flex justify-center gap-2">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+              <Badge variant="outline" className="bg-brand-soft text-brand">
                 {professional.specialty}
               </Badge>
-              <Badge variant="outline" className="bg-green-50 text-green-700">
+              <Badge variant="outline" className="bg-success-soft text-success-ink">
                 Ativo
               </Badge>
             </div>
@@ -175,14 +175,14 @@ export function TerapeutaDetailsDialog({
             </h3>
 
             <div className="space-y-3">
-              <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="p-4 bg-brand-soft rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
-                  <GraduationCap className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-blue-800">
+                  <GraduationCap className="h-5 w-5 text-brand" />
+                  <span className="font-medium text-brand">
                     Área de Especialização
                   </span>
                 </div>
-                <p className="text-blue-700 text-lg font-semibold">
+                <p className="text-brand text-lg font-semibold">
                   {professional.specialty}
                 </p>
               </div>

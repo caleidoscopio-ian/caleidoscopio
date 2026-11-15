@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { MainLayout } from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { AbaGeral } from "@/components/atividades/aba-geral";
 import { AbaPontuacao } from "@/components/atividades/aba-pontuacao";
 import { AbaInstrucoes } from "@/components/atividades/aba-instrucoes";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader } from "@/components/kit";
 
 function NovaAtividadePageContent() {
   const router = useRouter();
@@ -37,33 +38,21 @@ function NovaAtividadePageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleVoltar}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Voltar
+        <PageHeader
+          voltar={{ onClick: handleVoltar }}
+          titulo="Nova Atividade"
+          subtitulo="Preencha as informações da atividade"
+          acoes={atividadeId && (
+              <Button onClick={() => router.push("/atividades-clinicas")}>
+                <Save className="mr-2 h-4 w-4" />
+                Concluir
               </Button>
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Nova Atividade
-            </h1>
-            <p className="text-muted-foreground">
-              Preencha as informações da atividade
-            </p>
-          </div>
-
-          {atividadeId && (
-            <Button onClick={() => router.push("/atividades-clinicas")}>
-              <Save className="mr-2 h-4 w-4" />
-              Concluir
-            </Button>
-          )}
-        </div>
+            )}
+        />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList>
             <TabsTrigger value="geral">Geral</TabsTrigger>
             <TabsTrigger value="pontuacao" disabled={!atividadeId}>
               Pontuação/Dicas

@@ -119,7 +119,7 @@ export function RoleList({ onSelectRole, selectedRoleId }: RoleListProps) {
       </div>
 
       {/* Tabela */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

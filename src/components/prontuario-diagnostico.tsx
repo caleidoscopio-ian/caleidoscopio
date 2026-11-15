@@ -40,6 +40,7 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
+import { EstadoVazio, Carregando } from "@/components/kit";
 
 interface Diagnostico {
   id: string;
@@ -263,13 +264,7 @@ export function ProntuarioDiagnostico({
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">
-            Carregando diagnósticos...
-          </p>
-        </CardContent>
-      </Card>
+      <Carregando texto="Carregando diagnósticos..." />
     );
   }
 
@@ -317,7 +312,7 @@ export function ProntuarioDiagnostico({
             {/* Descrição do Diagnóstico */}
             <div className="grid gap-2">
               <Label htmlFor="diagnostico_desc">
-                Descrição do Diagnóstico <span className="text-red-500">*</span>
+                Descrição do Diagnóstico <span className="text-danger-ink">*</span>
               </Label>
               <Textarea
                 id="diagnostico_desc"
@@ -389,14 +384,7 @@ export function ProntuarioDiagnostico({
 
       {/* Lista de Diagnósticos */}
       {diagnosticos.length === 0 ? (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">
-              <Stethoscope className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nenhum diagnóstico registrado</p>
-            </div>
-          </CardContent>
-        </Card>
+        <EstadoVazio icone={<Stethoscope />} titulo="Nenhum diagnóstico registrado" />
       ) : (
         <div className="space-y-3">
           {diagnosticos.map((diagnostico) => (
@@ -497,7 +485,7 @@ export function ProntuarioDiagnostico({
                           href={anexo}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline block"
+                          className="text-sm text-brand hover:underline block"
                         >
                           Anexo {index + 1}
                         </a>

@@ -8,13 +8,12 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageLoader } from "@/components/page-loader";
 import { ProcedimentoFormDialog } from "@/components/procedimentos/procedimento-form-dialog";
 import {
-  ArrowLeft, Pencil, Activity, AlertCircle, Clock,
+  Pencil, Activity, AlertCircle, Clock, Stethoscope,
   DollarSign, Award, Link2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +23,13 @@ import { TIPO_REPASSE_LABELS } from "@/types/profissional";
 import Link from "next/link";
 import * as LucideIcons from "lucide-react";
 import { LucideProps } from "lucide-react";
+import {
+  PageHeader,
+  Panel,
+  StatCard,
+  GradeCampos,
+  CampoInfo,
+} from "@/components/kit";
 
 function DynIcon({ name, ...props }: { name: string } & LucideProps) {
   const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<LucideProps>>)[name];
@@ -115,38 +121,49 @@ export default function ProcedimentoDetalhePage() {
     <ProtectedRoute requiredPermission={{ resource: "procedimentos", action: "VIEW" }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="sm" onClick={() => router.push("/procedimentos")}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-          </Button>
-          <div className="flex items-center gap-3 flex-1">
-            {procedimento.cor && (
+        <PageHeader
+          className="mb-6"
+          voltar={{ onClick: () => router.push("/procedimentos") }}
+          // A cor do chip e dado do procedimento, nao decoracao: vai em
+          // `avatar` (sem moldura) e nao em `icone` (que impoe o tom da marca).
+          avatar={
+            procedimento.cor ? (
               <span
-                className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0"
+                className="grid size-11 place-items-center rounded-[0.95rem]"
                 style={{ backgroundColor: procedimento.cor }}
               >
-                {procedimento.icone
-                  ? <DynIcon name={procedimento.icone} className="h-5 w-5 text-white" />
-                  : <Activity className="h-5 w-5 text-white" />}
-              </span>
-            )}
-            <div>
-              <h1 className="text-2xl font-bold">{procedimento.nome}</h1>
-              <div className="flex gap-2 mt-0.5">
-                {procedimento.especialidade && <Badge variant="secondary">{procedimento.especialidade}</Badge>}
-                {procedimento.codigo && <Badge variant="outline" className="font-mono text-xs">{procedimento.codigo}</Badge>}
-                {procedimento.requer_autorizacao && (
-                  <Badge variant="secondary" className="gap-1 text-xs">
-                    <AlertCircle className="h-3 w-3" /> Requer autorização
-                  </Badge>
+                {procedimento.icone ? (
+                  <DynIcon name={procedimento.icone} className="h-5 w-5 text-white" />
+                ) : (
+                  <Activity className="h-5 w-5 text-white" />
                 )}
-              </div>
-            </div>
-          </div>
-          <Button size="sm" onClick={() => setEditando(true)}>
-            <Pencil className="h-4 w-4 mr-1" /> Editar
-          </Button>
-        </div>
+              </span>
+            ) : undefined
+          }
+          titulo={procedimento.nome}
+          meta={
+            <>
+              {procedimento.especialidade && (
+                <Badge variant="secondary">{procedimento.especialidade}</Badge>
+              )}
+              {procedimento.codigo && (
+                <Badge variant="outline" className="font-mono text-xs">
+                  {procedimento.codigo}
+                </Badge>
+              )}
+              {procedimento.requer_autorizacao && (
+                <Badge variant="secondary" className="gap-1 text-xs">
+                  <AlertCircle className="h-3 w-3" /> Requer autorização
+                </Badge>
+              )}
+            </>
+          }
+          acoes={
+            <Button size="sm" onClick={() => setEditando(true)}>
+              <Pencil className="h-4 w-4 mr-1" /> Editar
+            </Button>
+          }
+        />
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -156,23 +173,13 @@ export default function ProcedimentoDetalhePage() {
             { label: "Regras Repasse", value: procedimento._count?.regrasRepasse ?? 0, icon: DollarSign },
             { label: "Pacotes", value: procedimento._count?.pacoteProcedimentos ?? 0, icon: Award },
           ].map(({ label, value, icon: Icon }) => (
-            <Card key={label}>
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="text-xl font-bold">{value}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard key={label} size="sm" icone={<Icon />} rotulo={label} valor={value} />
           ))}
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="dados">
-          <TabsList className="mb-4">
+          <TabsList>
             <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
             <TabsTrigger value="convenios">Convênios</TabsTrigger>
             <TabsTrigger value="repasse">Regras de Repasse</TabsTrigger>
@@ -180,126 +187,117 @@ export default function ProcedimentoDetalhePage() {
 
           {/* Dados Gerais */}
           <TabsContent value="dados">
-            <Card>
-              <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                <InfoItem label="Nome" value={procedimento.nome} />
-                <InfoItem label="Especialidade" value={procedimento.especialidade} />
-                <InfoItem label="Código TUSS" value={procedimento.codigo} mono />
-                {procedimento.descricao && (
-                  <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground mb-1">Descrição</p>
-                    <p className="text-sm">{procedimento.descricao}</p>
-                  </div>
-                )}
-                {procedimento.observacoes && (
-                  <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground mb-1">Observações</p>
-                    <p className="text-sm text-muted-foreground">{procedimento.observacoes}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <Panel icone={<Stethoscope />} titulo="Dados Gerais">
+              <GradeCampos colunas={2}>
+                <CampoInfo rotulo="Nome" valor={procedimento.nome} />
+                <CampoInfo rotulo="Especialidade" valor={procedimento.especialidade} />
+                <CampoInfo
+                  rotulo="Código TUSS"
+                  valor={
+                    procedimento.codigo ? (
+                      <span className="font-mono text-sm">{procedimento.codigo}</span>
+                    ) : null
+                  }
+                />
+                <CampoInfo rotulo="Descrição" valor={procedimento.descricao} larguraTotal />
+                <CampoInfo rotulo="Observações" valor={procedimento.observacoes} larguraTotal />
+              </GradeCampos>
+            </Panel>
           </TabsContent>
 
           {/* Convênios */}
           <TabsContent value="convenios">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Tabelas de Convênio</CardTitle></CardHeader>
-              <CardContent>
-                {!procedimento.tabelasConvenio?.length ? (
-                  <p className="text-center py-8 text-sm text-muted-foreground">
-                    Este procedimento ainda não está em nenhuma tabela de convênio.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Convênio</TableHead>
-                        <TableHead>Valor Convênio</TableHead>
-                        <TableHead>Vigência</TableHead>
-                        <TableHead></TableHead>
+            <Panel titulo="Tabelas de Convênio">
+              {!procedimento.tabelasConvenio?.length ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">
+                  Este procedimento ainda não está em nenhuma tabela de convênio.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Convênio</TableHead>
+                      <TableHead>Valor Convênio</TableHead>
+                      <TableHead>Vigência</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {procedimento.tabelasConvenio.map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell className="font-medium">
+                          {t.convenio?.nome_fantasia || t.convenio?.razao_social || "—"}
+                        </TableCell>
+                        <TableCell>{formatBRL(t.valor_convenio)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {t.vigencia_inicio ? new Date(t.vigencia_inicio).toLocaleDateString("pt-BR") : "—"}
+                          {" — "}
+                          {t.vigencia_fim ? new Date(t.vigencia_fim).toLocaleDateString("pt-BR") : "Sem fim"}
+                        </TableCell>
+                        <TableCell>
+                          {t.convenio && (
+                            <Button size="sm" variant="ghost" asChild>
+                              <Link href={`/convenios/${t.convenio.id}`}>Ver convênio</Link>
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {procedimento.tabelasConvenio.map((t) => (
-                        <TableRow key={t.id}>
-                          <TableCell className="font-medium">
-                            {t.convenio?.nome_fantasia || t.convenio?.razao_social || "—"}
-                          </TableCell>
-                          <TableCell>{formatBRL(t.valor_convenio)}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {t.vigencia_inicio ? new Date(t.vigencia_inicio).toLocaleDateString("pt-BR") : "—"}
-                            {" — "}
-                            {t.vigencia_fim ? new Date(t.vigencia_fim).toLocaleDateString("pt-BR") : "Sem fim"}
-                          </TableCell>
-                          <TableCell>
-                            {t.convenio && (
-                              <Button size="sm" variant="ghost" asChild>
-                                <Link href={`/convenios/${t.convenio.id}`}>Ver convênio</Link>
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Panel>
           </TabsContent>
 
           {/* Regras de Repasse */}
           <TabsContent value="repasse">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Regras de Repasse Aplicadas</CardTitle></CardHeader>
-              <CardContent>
-                {!procedimento.regrasRepasse?.length ? (
-                  <p className="text-center py-8 text-sm text-muted-foreground">
-                    Nenhuma regra de repasse específica para este procedimento.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Profissional</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead>Convênio</TableHead>
-                        <TableHead>Vigência</TableHead>
+            <Panel titulo="Regras de Repasse Aplicadas">
+              {!procedimento.regrasRepasse?.length ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">
+                  Nenhuma regra de repasse específica para este procedimento.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Profissional</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Convênio</TableHead>
+                      <TableHead>Vigência</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {procedimento.regrasRepasse.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">
+                          {r.profissional ? (
+                            <Link href={`/terapeutas/${r.profissional.id}`} className="hover:underline">
+                              {r.profissional.nome}
+                            </Link>
+                          ) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {TIPO_REPASSE_LABELS[r.tipo] ?? r.tipo}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {r.tipo === "PERCENTUAL" ? `${r.valor}%` : formatBRL(r.valor)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {r.convenio?.nome_fantasia || r.convenio?.razao_social || <span className="text-muted-foreground text-xs">Todos</span>}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {new Date(r.vigencia_inicio).toLocaleDateString("pt-BR")}
+                          {r.vigencia_fim ? ` — ${new Date(r.vigencia_fim).toLocaleDateString("pt-BR")}` : " — Sem fim"}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {procedimento.regrasRepasse.map((r) => (
-                        <TableRow key={r.id}>
-                          <TableCell className="font-medium">
-                            {r.profissional ? (
-                              <Link href={`/terapeutas/${r.profissional.id}`} className="hover:underline">
-                                {r.profissional.nome}
-                              </Link>
-                            ) : "—"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {TIPO_REPASSE_LABELS[r.tipo] ?? r.tipo}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {r.tipo === "PERCENTUAL" ? `${r.valor}%` : formatBRL(r.valor)}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {r.convenio?.nome_fantasia || r.convenio?.razao_social || <span className="text-muted-foreground text-xs">Todos</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {new Date(r.vigencia_inicio).toLocaleDateString("pt-BR")}
-                            {r.vigencia_fim ? ` — ${new Date(r.vigencia_fim).toLocaleDateString("pt-BR")}` : " — Sem fim"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Panel>
           </TabsContent>
         </Tabs>
 
@@ -314,11 +312,3 @@ export default function ProcedimentoDetalhePage() {
   );
 }
 
-function InfoItem({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
-  return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`font-medium mt-0.5 ${mono ? "font-mono text-xs" : ""}`}>{value || "—"}</p>
-    </div>
-  );
-}

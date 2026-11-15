@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ import { EditarConvenioDialog } from "@/components/convenios/editar-convenio-dia
 import { ExcluirConvenioDialog } from "@/components/convenios/excluir-convenio-dialog";
 import type { Convenio, StatusConvenio } from "@/types/convenio";
 import { TIPO_CONVENIO_LABELS } from "@/types/convenio";
+import { PageHeader, Panel } from "@/components/kit";
 
 const STATUS_BADGE: Record<StatusConvenio, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
   ATIVO: { label: "Ativo", variant: "default", icon: <CheckCircle2 className="h-3 w-3" /> },
@@ -119,62 +120,44 @@ export default function ConveniosPage() {
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Convênios</h1>
-              <p className="text-muted-foreground">
-                Gestão de convênios e planos de saúde da clínica
-              </p>
-            </div>
-            <NovoConvenioDialog onSuccess={fetchConvenios} />
-          </div>
+          <PageHeader
+            titulo="Convênios"
+            subtitulo="Gestão de convênios e planos de saúde da clínica"
+            acoes={
+              <NovoConvenioDialog onSuccess={fetchConvenios} />
+            }
+          />
 
           {/* Cards de estatísticas */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Handshake className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-2xl font-bold">{stats.total}</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Ativos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  <span className="text-2xl font-bold text-green-600">{stats.ativos}</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Em Negociação</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-yellow-500" />
-                  <span className="text-2xl font-bold text-yellow-600">{stats.negociacao}</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Inativos/Suspensos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <XCircle className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-2xl font-bold">{stats.inativos}</span>
-                </div>
-              </CardContent>
-            </Card>
+            <Panel titulo="Total">
+
+              <div className="flex items-center gap-2">
+                <Handshake className="h-5 w-5 text-muted-foreground" />
+                <span className="text-2xl font-bold">{stats.total}</span>
+              </div>
+            </Panel>
+            <Panel titulo="Ativos">
+
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-success-ink" />
+                <span className="text-2xl font-bold text-success-ink">{stats.ativos}</span>
+              </div>
+            </Panel>
+            <Panel titulo="Em Negociação">
+
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-warning-ink" />
+                <span className="text-2xl font-bold text-warning-ink">{stats.negociacao}</span>
+              </div>
+            </Panel>
+            <Panel titulo="Inativos/Suspensos">
+
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-muted-foreground" />
+                <span className="text-2xl font-bold">{stats.inativos}</span>
+              </div>
+            </Panel>
           </div>
 
           {/* Busca */}

@@ -215,7 +215,7 @@ export function NovaSalaDialog({ onSuccess }: NovaSalaDialogProps) {
                   {recursos.map((recurso) => (
                     <Badge key={recurso} variant="secondary">
                       {recurso}
-                      <button type="button" onClick={() => removerRecurso(recurso)} className="ml-2 hover:text-red-600">
+                      <button type="button" onClick={() => removerRecurso(recurso)} className="ml-2 hover:text-danger-ink">
                         <X className="h-3 w-3" />
                       </button>
                     </Badge>

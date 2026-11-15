@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader } from "@/components/kit";
 
 interface Instrucao {
   id: string;
@@ -303,7 +304,7 @@ function AplicarAtividadePageContent() {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="text-center py-12">
-          <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <AlertCircle className="h-12 w-12 text-danger-ink mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">Erro ao carregar sessão</h3>
           <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={() => router.push("/iniciar-sessao")}>
@@ -339,15 +340,10 @@ function AplicarAtividadePageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header com informações da sessão */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Aplicar Atividade
-          </h1>
-          <p className="text-muted-foreground">
-            Paciente: <strong>{sessao.paciente.name}</strong> • Atividade:{" "}
-            <strong>{sessao.atividade.nome}</strong>
-          </p>
-        </div>
+        <PageHeader
+          titulo="Aplicar Atividade"
+          subtitulo={<>Paciente: <strong>{sessao.paciente.name}</strong> • Atividade:{" "} <strong>{sessao.atividade.nome}</strong></>}
+        />
 
         {/* Progresso */}
         <Card>
@@ -368,7 +364,7 @@ function AplicarAtividadePageContent() {
         </Card>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-center gap-2">
+          <div className="bg-danger-soft border border-danger-soft text-danger-ink px-4 py-3 rounded flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
             {error}
           </div>
@@ -382,7 +378,7 @@ function AplicarAtividadePageContent() {
                 <CardTitle className="flex items-center gap-2">
                   <Badge variant="secondary">Instrução {instrucao.ordem}</Badge>
                   {avaliacoes.has(instrucao.id) && (
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-5 w-5 text-success-ink" />
                   )}
                 </CardTitle>
                 <CardDescription>
@@ -527,7 +523,7 @@ function AplicarAtividadePageContent() {
                     }
                   }}
                   disabled={salvando || finalizando || nota === null}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-success hover:bg-success"
                 >
                   {salvando || finalizando ? (
                     <>

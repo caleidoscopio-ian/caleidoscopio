@@ -9,14 +9,13 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ActionButton, PersonAvatar, StatusPill } from "@/components/kit";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { CalendarX2, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Agendamento } from "@/types/agendamento";
 import { GradeHorariosDia } from "./grade-horarios-dia";
@@ -73,7 +72,7 @@ export function GradeHorarios({
   if (profissionais.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <CalendarX2 className="h-10 w-10 text-muted-foreground mb-3" />
+        <CalendarX2 className="mb-3 size-10 text-ink-3" />
         <p className="font-medium">Nenhum profissional encontrado</p>
         <p className="text-sm text-muted-foreground max-w-md">
           Só aparecem aqui profissionais classificados como clínicos. Quem está
@@ -91,74 +90,72 @@ export function GradeHorarios({
   const todosAbertos = abertos.length === profissionais.length;
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4">
       {/* Legenda + expandir/recolher */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-3">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded-sm border border-green-300 bg-green-50" />
+            <span className="inline-block size-3 rounded-[0.3rem] bg-success-soft ring-1 ring-success/40" />
             Livre
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded-sm border border-blue-300 bg-blue-50" />
+            <span className="inline-block size-3 rounded-[0.3rem] bg-info-soft ring-1 ring-info/40" />
             Agendado
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded-sm border border-dashed border-amber-400 bg-amber-50" />
+            <span className="inline-block size-3 rounded-[0.3rem] border border-dashed border-warning/70 bg-warning-soft" />
             Fora da grade
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded-sm bg-muted" />
+            <span className="inline-block size-3 rounded-[0.3rem] bg-surface-sunken" />
             Não atende
           </span>
         </div>
 
         {profissionais.length > 1 && (
-          <Button
-            variant="outline"
+          <ActionButton
+            variant="secondary"
             size="sm"
             onClick={() => setAbertos(todosAbertos ? [] : profissionais.map((p) => p.id))}
           >
-            {todosAbertos ? (
-              <ChevronsDownUp className="mr-2 h-4 w-4" />
-            ) : (
-              <ChevronsUpDown className="mr-2 h-4 w-4" />
-            )}
+            {todosAbertos ? <ChevronsDownUp /> : <ChevronsUpDown />}
             {todosAbertos ? "Recolher todos" : "Expandir todos"}
-          </Button>
+          </ActionButton>
         )}
       </div>
 
-      <Accordion type="multiple" value={abertos} onValueChange={setAbertos} className="space-y-2">
+      <Accordion type="multiple" value={abertos} onValueChange={setAbertos} className="space-y-2.5">
         {profissionais.map((prof) => {
           const vagas = contarVagas(grades, agendamentos, prof.id, dias);
           const temGrade = grades.some((g) => g.profissionalId === prof.id);
 
           return (
-            <AccordionItem key={prof.id} value={prof.id} className="rounded-lg border px-4">
+            <AccordionItem
+              key={prof.id}
+              value={prof.id}
+              className="rounded-2xl border-none bg-surface-muted px-4"
+            >
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex flex-1 items-center justify-between gap-3 pr-2">
-                  <div className="text-left">
-                    <div className="font-medium">{prof.nome}</div>
-                    {prof.especialidade && (
-                      <div className="text-xs text-muted-foreground">{prof.especialidade}</div>
-                    )}
+                  <div className="flex min-w-0 items-center gap-3 text-left">
+                    <PersonAvatar nome={prof.nome} />
+                    <div className="min-w-0">
+                      <p className="truncate text-[0.95rem] font-semibold text-ink">
+                        {prof.nome}
+                      </p>
+                      {prof.especialidade && (
+                        <p className="truncate text-xs text-ink-3">{prof.especialidade}</p>
+                      )}
+                    </div>
                   </div>
                   {temGrade ? (
-                    <Badge
-                      variant="outline"
-                      className={
-                        vagas > 0
-                          ? "border-green-300 bg-green-50 text-green-800"
-                          : "border-muted text-muted-foreground"
-                      }
-                    >
-                      {vagas > 0 ? `${vagas} horário${vagas > 1 ? "s" : ""} livre${vagas > 1 ? "s" : ""}` : "Sem vaga"}
-                    </Badge>
+                    <StatusPill tom={vagas > 0 ? "success" : "neutral"}>
+                      {vagas > 0
+                        ? `${vagas} horário${vagas > 1 ? "s" : ""} livre${vagas > 1 ? "s" : ""}`
+                        : "Sem vaga"}
+                    </StatusPill>
                   ) : (
-                    <Badge variant="outline" className="text-muted-foreground">
-                      Grade não configurada
-                    </Badge>
+                    <StatusPill tom="neutral">Grade não configurada</StatusPill>
                   )}
                 </div>
               </AccordionTrigger>

@@ -34,14 +34,14 @@ export function iconeDoRelatorio(nome: string): LucideIcon {
 /** Classes de cor por relatório — mantidas como literais para o Tailwind
  *  conseguir vê-las na varredura das classes. */
 export const CORES: Record<string, { texto: string; fundo: string }> = {
-  blue: { texto: "text-blue-600", fundo: "bg-blue-50" },
-  emerald: { texto: "text-emerald-600", fundo: "bg-emerald-50" },
-  violet: { texto: "text-violet-600", fundo: "bg-violet-50" },
-  amber: { texto: "text-amber-600", fundo: "bg-amber-50" },
-  orange: { texto: "text-orange-600", fundo: "bg-orange-50" },
+  blue: { texto: "text-brand", fundo: "bg-brand-soft" },
+  emerald: { texto: "text-success-ink", fundo: "bg-success-soft" },
+  violet: { texto: "text-violet-ink", fundo: "bg-violet-soft" },
+  amber: { texto: "text-warning-ink", fundo: "bg-warning-soft" },
+  orange: { texto: "text-warning-ink", fundo: "bg-warning-soft" },
   cyan: { texto: "text-cyan-600", fundo: "bg-cyan-50" },
-  slate: { texto: "text-slate-600", fundo: "bg-slate-100" },
-  rose: { texto: "text-rose-600", fundo: "bg-rose-50" },
+  slate: { texto: "text-ink", fundo: "bg-surface-sunken" },
+  rose: { texto: "text-danger-ink", fundo: "bg-danger-soft" },
 };
 
 export const corDoRelatorio = (cor: string) => CORES[cor] ?? CORES.slate;

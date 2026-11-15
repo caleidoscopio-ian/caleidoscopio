@@ -170,7 +170,7 @@ export function PreferenciasRelatorioPainel({
                 </SelectContent>
               </Select>
               {preferencias.eixo === "tempo" && preferencias.grafico === "pizza" && (
-                <p className="mt-1.5 text-xs text-amber-600">
+                <p className="mt-1.5 text-xs text-warning-ink">
                   Pizza não mostra evolução: no eixo de tempo o gráfico sai em barras.
                 </p>
               )}

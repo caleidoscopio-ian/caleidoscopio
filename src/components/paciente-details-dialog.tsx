@@ -223,7 +223,7 @@ export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDia
             <h2 className="text-2xl font-bold">{patient.name}</h2>
             <div className="flex justify-center gap-2">
               <Badge variant="secondary">{age} anos</Badge>
-              <Badge variant="outline" className="bg-green-50 text-green-700">
+              <Badge variant="outline" className="bg-success-soft text-success-ink">
                 Ativo
               </Badge>
             </div>

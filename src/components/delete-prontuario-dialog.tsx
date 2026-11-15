@@ -99,28 +99,28 @@ export function DeleteProntuarioDialog({ record, onSuccess }: DeleteProntuarioDi
 
   const getServiceTypeColor = (serviceType: string) => {
     const colors: Record<string, string> = {
-      'Consulta Inicial': 'bg-blue-100 text-blue-800',
-      'Sessão de Terapia': 'bg-green-100 text-green-800',
-      'Avaliação': 'bg-purple-100 text-purple-800',
-      'Reavaliação': 'bg-orange-100 text-orange-800',
-      'Orientação Familiar': 'bg-yellow-100 text-yellow-800',
-      'Atendimento Conjunto': 'bg-pink-100 text-pink-800',
-      'Sessão de Grupo': 'bg-indigo-100 text-indigo-800',
-      'Acompanhamento': 'bg-gray-100 text-gray-800',
+      'Consulta Inicial': 'bg-brand-soft text-brand',
+      'Sessão de Terapia': 'bg-success-soft text-success-ink',
+      'Avaliação': 'bg-violet-soft text-violet-ink',
+      'Reavaliação': 'bg-warning-soft text-warning-ink',
+      'Orientação Familiar': 'bg-warning-soft text-warning-ink',
+      'Atendimento Conjunto': 'bg-violet-soft text-violet-ink',
+      'Sessão de Grupo': 'bg-brand-soft text-brand',
+      'Acompanhamento': 'bg-surface-sunken text-ink',
     }
-    return colors[serviceType] || 'bg-gray-100 text-gray-800'
+    return colors[serviceType] || 'bg-surface-sunken text-ink'
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+        <Button variant="outline" size="sm" className="text-danger-ink hover:text-danger-ink hover:bg-danger-soft">
           <Trash2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600">
+          <DialogTitle className="flex items-center gap-2 text-danger-ink">
             <AlertTriangle className="h-5 w-5" />
             Confirmar Remoção
           </DialogTitle>
@@ -131,7 +131,7 @@ export function DeleteProntuarioDialog({ record, onSuccess }: DeleteProntuarioDi
 
         <div className="space-y-4">
           {/* Informações do prontuário */}
-          <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+          <div className="p-4 bg-surface-sunken rounded-lg space-y-3">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium">Prontuário de {record.patient.name}</span>
@@ -163,18 +163,18 @@ export function DeleteProntuarioDialog({ record, onSuccess }: DeleteProntuarioDi
               </div>
             </div>
 
-            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+            <Badge variant="outline" className="bg-danger-soft text-danger-ink border-danger-soft">
               Será removido permanentemente
             </Badge>
           </div>
 
           {/* Aviso importante sobre dados clínicos */}
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className="p-3 bg-danger-soft border border-danger-soft rounded-lg">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+              <AlertTriangle className="h-4 w-4 text-danger-ink mt-0.5" />
               <div className="text-sm">
-                <div className="font-medium text-red-800">Atenção!</div>
-                <div className="text-red-700">
+                <div className="font-medium text-danger-ink">Atenção!</div>
+                <div className="text-danger-ink">
                   Este prontuário contém dados clínicos importantes. Uma vez removido,
                   todas as informações de evolução e observações serão perdidas permanentemente.
                 </div>
@@ -184,12 +184,12 @@ export function DeleteProntuarioDialog({ record, onSuccess }: DeleteProntuarioDi
 
           {/* Aviso sobre anexos */}
           {record.attachments && record.attachments.length > 0 && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="p-3 bg-warning-soft border border-warning-soft rounded-lg">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                <AlertTriangle className="h-4 w-4 text-warning-ink mt-0.5" />
                 <div className="text-sm">
-                  <div className="font-medium text-yellow-800">Anexos incluídos!</div>
-                  <div className="text-yellow-700">
+                  <div className="font-medium text-warning-ink">Anexos incluídos!</div>
+                  <div className="text-warning-ink">
                     Este prontuário possui {record.attachments.length} anexo(s) que também serão removidos.
                   </div>
                 </div>
@@ -198,12 +198,12 @@ export function DeleteProntuarioDialog({ record, onSuccess }: DeleteProntuarioDi
           )}
 
           {/* Aviso sobre compliance */}
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="p-3 bg-brand-soft border border-brand-soft rounded-lg">
             <div className="flex items-start gap-2">
-              <FileText className="h-4 w-4 text-blue-600 mt-0.5" />
+              <FileText className="h-4 w-4 text-brand mt-0.5" />
               <div className="text-sm">
-                <div className="font-medium text-blue-800">Importante!</div>
-                <div className="text-blue-700">
+                <div className="font-medium text-brand">Importante!</div>
+                <div className="text-brand">
                   Certifique-se de que a remoção deste prontuário está em conformidade
                   com as políticas de retenção de dados da sua clínica.
                 </div>

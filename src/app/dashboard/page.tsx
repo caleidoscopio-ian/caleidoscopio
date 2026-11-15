@@ -2,19 +2,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
+import { cn } from "@/lib/utils";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+  PageHeader,
+  StatCard,
+  Panel,
+  StatusPill,
+  PersonAvatar,
+  ActionButton,
+} from "@/components/kit";
 import {
   Users,
   ClipboardList,
@@ -27,6 +28,10 @@ import {
   AlertCircle,
   UserCheck,
   Calendar,
+  ArrowRight,
+  MapPin,
+  User,
+  CalendarOff,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -71,6 +76,132 @@ interface Agendamento {
     id: string;
     nome: string;
   };
+}
+
+/** Os seis valores de `StatusAgendamento`. O mapa antigo tinha cinco:
+ *  `EM_ATENDIMENTO` caía no padrão e aparecia rotulado como "Agendado". */
+const ROTULO_STATUS: Record<string, string> = {
+  AGENDADO: "Agendado",
+  CONFIRMADO: "Confirmado",
+  EM_ATENDIMENTO: "Em atendimento",
+  ATENDIDO: "Atendido",
+  FALTOU: "Faltou",
+  CANCELADO: "Cancelado",
+};
+
+/* ── Peças de layout do dashboard ─────────────────────────────────────────
+   As três janelas da tela usavam marcação própria: caixa com `border
+   rounded-lg` numa, `flex` com botão noutra, `Card` do shadcn na terceira.
+   Aqui existe **uma** anatomia de linha, igual à do v2:
+
+     li  grid [3.75rem auto 1fr] · divisória `hairline` · sem caixa
+       hora/duração · avatar · bloco `bg-surface-muted rounded-2xl`
+
+   A caixa com borda em volta de cada item era o que fazia as janelas
+   parecerem de sistemas diferentes — no v2 a separação é uma hairline, e o
+   único retângulo é o painel. */
+
+function ItemLista({
+  hora,
+  nome,
+  pill,
+  meta,
+  nota,
+  acao,
+}: {
+  hora?: React.ReactNode;
+  nome: string;
+  pill?: React.ReactNode;
+  meta?: React.ReactNode;
+  nota?: React.ReactNode;
+  acao?: React.ReactNode;
+}) {
+  return (
+    <li
+      className={cn(
+        "grid items-center gap-3 border-b border-hairline py-3 last:border-none md:gap-4",
+        hora ? "grid-cols-[3.75rem_auto_1fr]" : "grid-cols-[auto_1fr]"
+      )}
+    >
+      {hora}
+      <PersonAvatar nome={nome} />
+      <div className="min-w-0 rounded-2xl bg-surface-muted px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <p className="truncate text-[0.95rem] font-semibold text-ink">{nome}</p>
+          {pill}
+        </div>
+        {meta && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.75rem] text-ink-3">
+            {meta}
+          </div>
+        )}
+        {nota && (
+          <p className="mt-2 border-t border-hairline pt-2 text-[0.75rem] text-ink-3">
+            {nota}
+          </p>
+        )}
+        {acao && <div className="mt-3 flex justify-end">{acao}</div>}
+      </div>
+    </li>
+  );
+}
+
+function MetaItem({
+  icone,
+  children,
+}: {
+  icone: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      {icone}
+      <span className="truncate">{children}</span>
+    </span>
+  );
+}
+
+/** Estado vazio: o mesmo bloco nas três janelas, em vez de um `Card` solto. */
+function Vazio({
+  icone,
+  titulo,
+  texto,
+  acao,
+  noturno,
+}: {
+  icone: React.ReactNode;
+  titulo: string;
+  texto?: string;
+  acao?: React.ReactNode;
+  noturno?: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+      <span
+        className={cn(
+          "grid size-12 place-items-center rounded-2xl [&_svg]:size-5",
+          noturno ? "bg-white/10 text-white/70" : "bg-surface-sunken text-ink-3"
+        )}
+        aria-hidden
+      >
+        {icone}
+      </span>
+      <p
+        className={cn(
+          "mt-3 text-[0.95rem] font-semibold",
+          noturno ? "text-white" : "text-ink"
+        )}
+      >
+        {titulo}
+      </p>
+      {texto && (
+        <p className={cn("mt-1 text-sm", noturno ? "text-white/60" : "text-ink-3")}>
+          {texto}
+        </p>
+      )}
+      {acao && <div className="mt-4">{acao}</div>}
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -217,19 +348,10 @@ export default function DashboardPage() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      AGENDADO: { label: "Agendado", variant: "secondary" as const },
-      CONFIRMADO: { label: "Confirmado", variant: "default" as const },
-      CANCELADO: { label: "Cancelado", variant: "destructive" as const },
-      ATENDIDO: { label: "Atendido", variant: "outline" as const },
-      FALTOU: { label: "Faltou", variant: "destructive" as const },
-    };
-    return (
-      statusConfig[status as keyof typeof statusConfig] ||
-      statusConfig["AGENDADO"]
-    );
-  };
+  // O tom sai do mapa do `StatusPill` (`tomDoStatus`), o mesmo das outras
+  // telas; aqui só mora o rótulo.
+  const rotuloStatus = (status: string) =>
+    ROTULO_STATUS[status] ?? ROTULO_STATUS.AGENDADO;
 
   const calcularMediaNotas = (sessao: Sessao) => {
     if (!sessao.avaliacoes || sessao.avaliacoes.length === 0) return 0;
@@ -241,10 +363,10 @@ export default function DashboardPage() {
     return (
       <ProtectedRoute requiredPermission={{ resource: 'dashboard', action: 'VIEW' }}>
         <MainLayout breadcrumbs={breadcrumbs}>
-          <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex min-h-[400px] items-center justify-center">
             <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Carregando dashboard...</p>
+              <Loader2 className="mx-auto mb-4 size-8 animate-spin text-brand" aria-hidden />
+              <p className="text-sm text-ink-3">Carregando dashboard...</p>
             </div>
           </div>
         </MainLayout>
@@ -255,305 +377,298 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute requiredPermission={{ resource: 'dashboard', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="space-y-6">
-          {/* Header */}
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">Bem-vindo, {user?.name}!</p>
-          </div>
+        <div className="space-y-7">
+          {/* `semTrilha`: o dashboard é a raiz, não tem de onde vir. */}
+          <PageHeader
+            semTrilha
+            titulo="Dashboard"
+            subtitulo={`Bem-vindo, ${user?.name ?? ""}!`}
+          />
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
+            <div className="flex items-center gap-2 rounded-2xl border border-danger-soft bg-danger-soft px-4 py-3 text-sm text-danger-ink">
+              <AlertCircle className="size-4 shrink-0" aria-hidden />
               {error}
             </div>
           )}
 
           {/* Cards de Estatísticas */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total de Pacientes
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {stats?.totalPacientes || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {isAdmin ? "Na clínica" : "Sob seus cuidados"}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Sessões em Andamento
-                </CardTitle>
-                <Clock className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {stats?.sessoesEmAndamento || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Pendentes de finalização
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Sessões este Mês
-                </CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {stats?.sessoesRealizadasMes || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Sessões finalizadas
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Anamneses Pendentes
-                </CardTitle>
-                <FileHeart className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">
-                  {stats?.anamnesesPendentes || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">Em rascunho</p>
-              </CardContent>
-            </Card>
+          {/* KPIs no padrão v2: um `hero` e três `md`, tons na ordem do original */}
+          <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+            <StatCard
+              tom="blue"
+              size="hero"
+              rotulo="Total de Pacientes"
+              valor={stats?.totalPacientes ?? 0}
+              hint={isAdmin ? "Na clínica" : "Sob seus cuidados"}
+              icone={<Users />}
+            />
+            <StatCard
+              tom="lavender"
+              rotulo="Sessões em Andamento"
+              valor={stats?.sessoesEmAndamento ?? 0}
+              hint="Pendentes de finalização"
+              icone={<Clock className="text-brand" />}
+            />
+            <StatCard
+              tom="mint"
+              rotulo="Sessões este Mês"
+              valor={stats?.sessoesRealizadasMes ?? 0}
+              hint="Sessões finalizadas"
+              icone={<CheckCircle />}
+            />
+            <StatCard
+              tom="peach"
+              rotulo="Anamneses Pendentes"
+              valor={stats?.anamnesesPendentes ?? 0}
+              hint="Em rascunho"
+              icone={<FileHeart />}
+            />
           </div>
 
-          {/* Estatísticas Admin */}
-          {isAdmin && stats && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total de Terapeutas
-                  </CardTitle>
-                  <UserCheck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {stats.totalTerapeutas || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Profissionais cadastrados
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Atividades Cadastradas
-                  </CardTitle>
-                  <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {stats.atividadesCadastradas || 0}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Protocolos disponíveis
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Agenda do Dia */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-purple-600" />
-                  Agenda de Hoje
-                </CardTitle>
-                <CardDescription>Seus agendamentos para hoje</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {agendamentosHoje.length > 0 ? (
-                  <>
-                    {agendamentosHoje.map((agendamento) => {
-                      const statusBadge = getStatusBadge(agendamento.status);
-                      return (
-                        <div
-                          key={agendamento.id}
-                          className="p-3 border rounded-lg"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1">
-                              <p className="font-medium">
-                                {agendamento.paciente.nome}
-                              </p>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                                <Clock className="h-3 w-3" />
-                                <span>
-                                  {formatHorario(agendamento.data_hora)} (
-                                  {agendamento.duracao_minutos} min)
-                                </span>
-                              </div>
-                              {agendamento.sala && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Sala: {agendamento.sala}
-                                </p>
-                              )}
-                              {isAdmin && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Terapeuta: {agendamento.profissional.nome}
-                                </p>
-                              )}
-                            </div>
-                            <Badge variant={statusBadge.variant}>
-                              {statusBadge.label}
-                            </Badge>
-                          </div>
-                          {agendamento.observacoes && (
-                            <p className="text-xs text-muted-foreground border-t pt-2 mt-2">
-                              {agendamento.observacoes}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => router.push("/agenda")}
-                    >
-                      Ver Agenda Completa
-                    </Button>
-                  </>
-                ) : (
-                  <div className="text-center py-8">
-                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">
-                      Sem agendamentos para hoje
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="mt-4"
-                      onClick={() => router.push("/agenda")}
-                    >
-                      Ver Agenda Completa
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Sessões Pendentes */}
-            {sessoesPendentes.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                    Sessões Pendentes
-                  </CardTitle>
-                  <CardDescription>
-                    Sessões em andamento que precisam ser finalizadas
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {sessoesPendentes.map((sessao) => (
-                    <div
-                      key={sessao.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium">{sessao.paciente.nome}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {sessao.curriculum.nome}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Iniciada em: {formatDate(sessao.iniciada_em)}
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          router.push(`/aplicar-curriculum/${sessao.id}`)
-                        }
-                      >
-                        <Play className="h-4 w-4 mr-1" />
-                        Continuar
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Sessões Recentes */}
-            {sessoesRecentes.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                    Sessões Recentes
-                  </CardTitle>
-                  <CardDescription>Últimas sessões realizadas</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {sessoesRecentes.map((sessao) => (
-                    <div key={sessao.id} className="p-3 border rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="font-medium">{sessao.paciente.nome}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {sessao.curriculum.nome}
+          {/* Agenda + sessões na composição do dashboard do v2:
+              `xl:grid-cols-[1.45fr_1fr]`, a lista larga à esquerda e a coluna
+              de apoio à direita. Antes eram três painéis num `md:grid-cols-2`,
+              onde o terceiro sobrava sozinho em meia largura. */}
+          <div className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
+            <Panel
+              icone={<Calendar />}
+              titulo="Agenda de Hoje"
+              subtitulo="Seus agendamentos para hoje"
+              rodape={
+                <>
+                  <span className="text-[0.8rem]">
+                    {agendamentosHoje.length === 1
+                      ? "1 agendamento hoje"
+                      : `${agendamentosHoje.length} agendamentos hoje`}
+                  </span>
+                  <ActionButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => router.push("/agenda")}
+                  >
+                    Abrir agenda
+                    <ArrowRight />
+                  </ActionButton>
+                </>
+              }
+            >
+              {agendamentosHoje.length > 0 ? (
+                <ol className="scrollbar-none max-h-[30rem] space-y-1 overflow-y-auto pr-1">
+                  {agendamentosHoje.map((agendamento) => (
+                    <ItemLista
+                      key={agendamento.id}
+                      nome={agendamento.paciente.nome}
+                      hora={
+                        <div className="text-center">
+                          <p className="tabular text-[1.25rem] leading-none font-semibold text-ink">
+                            {formatHorario(agendamento.data_hora)}
+                          </p>
+                          <p className="mt-1 text-[0.7rem] text-ink-3">
+                            {agendamento.duracao_minutos} min
                           </p>
                         </div>
-                        <Badge variant="default" className="bg-green-600">
-                          Média: {calcularMediaNotas(sessao)}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Finalizada em:{" "}
-                        {sessao.finalizada_em &&
-                          formatDate(sessao.finalizada_em)}
-                      </p>
-                    </div>
+                      }
+                      pill={
+                        <StatusPill status={agendamento.status}>
+                          {rotuloStatus(agendamento.status)}
+                        </StatusPill>
+                      }
+                      meta={
+                        isAdmin || agendamento.sala ? (
+                          <>
+                            {isAdmin && (
+                              <MetaItem
+                                icone={
+                                  <User className="size-3.5 shrink-0" aria-hidden />
+                                }
+                              >
+                                {agendamento.profissional.nome}
+                              </MetaItem>
+                            )}
+                            {agendamento.sala && (
+                              <MetaItem
+                                icone={
+                                  <MapPin className="size-3.5 shrink-0" aria-hidden />
+                                }
+                              >
+                                {agendamento.sala}
+                              </MetaItem>
+                            )}
+                          </>
+                        ) : undefined
+                      }
+                      nota={agendamento.observacoes}
+                    />
                   ))}
-                </CardContent>
-              </Card>
-            )}
+                </ol>
+              ) : (
+                <Vazio
+                  icone={<CalendarOff />}
+                  titulo="Sem agendamentos para hoje"
+                  texto="Nada marcado nesta data."
+                />
+              )}
+            </Panel>
+
+            <div className="flex flex-col gap-4">
+              {/* O painel noturno do v2 — um por tela, e no dashboard é este:
+                  a sessão aberta é o que a pessoa precisa retomar. */}
+              <Panel
+                variant="night"
+                icone={<Clock />}
+                titulo="Sessões Pendentes"
+                subtitulo="Em andamento, precisam ser finalizadas"
+                acoes={
+                  <span className="tabular grid size-8 place-items-center rounded-full bg-white/10 text-sm font-semibold text-white">
+                    {sessoesPendentes.length}
+                  </span>
+                }
+                rodape={
+                  <Link
+                    href="/iniciar-sessao"
+                    className="flex w-full items-center justify-between text-[0.85rem] text-white/75 transition hover:text-white"
+                  >
+                    Iniciar nova sessão
+                    <ArrowRight className="size-4" aria-hidden />
+                  </Link>
+                }
+              >
+                {sessoesPendentes.length > 0 ? (
+                  <div className="space-y-3">
+                    {sessoesPendentes.map((sessao) => (
+                      <div
+                        key={sessao.id}
+                        className="rounded-[1.25rem] border border-white/10 bg-white/[0.04] p-4"
+                      >
+                        <p className="flex items-center gap-2 text-[0.72rem] font-medium text-night-accent">
+                          <span className="relative flex size-2" aria-hidden>
+                            <span className="absolute inline-flex size-full animate-ping rounded-full bg-night-accent opacity-60" />
+                            <span className="relative inline-flex size-2 rounded-full bg-night-accent" />
+                          </span>
+                          Em andamento
+                        </p>
+                        <div className="mt-3 flex items-center gap-3">
+                          <PersonAvatar
+                            nome={sessao.paciente.nome}
+                            className="ring-white/20"
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-[1.05rem] font-semibold text-white">
+                              {sessao.paciente.nome}
+                            </p>
+                            <p className="truncate text-[0.75rem] text-white/60">
+                              {sessao.curriculum.nome}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-end justify-between gap-3">
+                          <div>
+                            <p className="text-[0.7rem] text-white/55">Iniciada em:</p>
+                            <p className="tabular text-sm font-semibold text-white">
+                              {formatDate(sessao.iniciada_em)}
+                            </p>
+                          </div>
+                          <ActionButton
+                            size="sm"
+                            onClick={() =>
+                              router.push(`/aplicar-curriculum/${sessao.id}`)
+                            }
+                          >
+                            <Play />
+                            Continuar
+                          </ActionButton>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Vazio
+                    noturno
+                    icone={<CheckCircle />}
+                    titulo="Nenhuma sessão em aberto"
+                    texto="Tudo finalizado por aqui."
+                  />
+                )}
+              </Panel>
+
+              {/* Indicadores de apoio: brancos e `sm`, na coluna estreita — é
+                  onde o v2 põe os dois KPIs secundários do dashboard. */}
+              {isAdmin && stats && (
+                <div className="anim-escalonada grid grid-cols-2 gap-4">
+                  <StatCard
+                    size="sm"
+                    icone={<UserCheck />}
+                    rotulo="Terapeutas"
+                    valor={stats.totalTerapeutas || 0}
+                    hint="Cadastrados"
+                  />
+                  <StatCard
+                    size="sm"
+                    icone={<ClipboardList />}
+                    rotulo="Atividades"
+                    valor={stats.atividadesCadastradas || 0}
+                    hint="Protocolos"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Empty State se não houver sessões */}
-          {sessoesPendentes.length === 0 && sessoesRecentes.length === 0 && (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <ClipboardList className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">
-                  Nenhuma sessão encontrada
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Comece iniciando uma nova sessão com um paciente
-                </p>
-                <Button onClick={() => router.push("/iniciar-sessao")}>
-                  <Play className="h-4 w-4 mr-2" />
-                  Iniciar Sessão
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          {/* Mesma anatomia de linha da agenda: hairline, sem caixa por item */}
+          <Panel
+            icone={<TrendingUp />}
+            titulo="Sessões Recentes"
+            subtitulo="Últimas sessões realizadas"
+          >
+            {sessoesRecentes.length > 0 ? (
+              <ol className="space-y-1">
+                {sessoesRecentes.map((sessao) => (
+                  <ItemLista
+                    key={sessao.id}
+                    nome={sessao.paciente.nome}
+                    pill={
+                      <StatusPill tom="success">
+                        Média {calcularMediaNotas(sessao)}
+                      </StatusPill>
+                    }
+                    meta={
+                      <>
+                        <MetaItem
+                          icone={
+                            <ClipboardList className="size-3.5 shrink-0" aria-hidden />
+                          }
+                        >
+                          {sessao.curriculum.nome}
+                        </MetaItem>
+                        {sessao.finalizada_em && (
+                          <MetaItem
+                            icone={
+                              <CheckCircle className="size-3.5 shrink-0" aria-hidden />
+                            }
+                          >
+                            Finalizada em {formatDate(sessao.finalizada_em)}
+                          </MetaItem>
+                        )}
+                      </>
+                    }
+                  />
+                ))}
+              </ol>
+            ) : (
+              <Vazio
+                icone={<Play />}
+                titulo="Nenhuma sessão encontrada"
+                texto="Comece iniciando uma nova sessão com um paciente."
+                acao={
+                  <ActionButton onClick={() => router.push("/iniciar-sessao")}>
+                    <Play />
+                    Iniciar Sessão
+                  </ActionButton>
+                }
+              />
+            )}
+          </Panel>
         </div>
       </MainLayout>
     </ProtectedRoute>

@@ -5,12 +5,12 @@ import { Shield } from 'lucide-react'
 import { MainLayout } from '@/components/main-layout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { RoleList } from '@/components/rbac/role-list'
 import { PermissionMatrix } from '@/components/rbac/permission-matrix'
 import { UserRoleAssignment } from '@/components/rbac/user-role-assignment'
 import { AuditLog } from '@/components/rbac/audit-log'
 import { apiGet, handleApiResponse } from '@/lib/api'
+import { PageHeader, Panel } from '@/components/kit'
 
 interface Role {
   id: string
@@ -50,21 +50,14 @@ export default function PermissoesPage() {
     <ProtectedRoute requiredPermission={{ resource: 'permissoes', action: 'VIEW' }}>
       <MainLayout>
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Shield className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Gestão de Permissões</h1>
-              <p className="text-muted-foreground">
-                Gerencie perfis de acesso e permissões dos usuários
-              </p>
-            </div>
-          </div>
+          <PageHeader
+            icone={<Shield />}
+            titulo="Gestão de Permissões"
+            subtitulo="Gerencie perfis de acesso e permissões dos usuários"
+          />
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full max-w-lg grid-cols-4">
+            <TabsList>
               <TabsTrigger value="perfis">Perfis</TabsTrigger>
               <TabsTrigger value="permissoes" disabled={!selectedRole}>
                 Permissões
@@ -75,78 +68,58 @@ export default function PermissoesPage() {
 
             {/* Tab: Perfis */}
             <TabsContent value="perfis" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Perfis de Acesso</CardTitle>
-                  <CardDescription>
-                    Crie e gerencie perfis customizados. Clique em um perfil para configurar suas permissões.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RoleList
-                    onSelectRole={handleSelectRole}
-                    selectedRoleId={selectedRole?.id}
-                  />
-                </CardContent>
-              </Card>
+              <Panel
+                titulo="Perfis de Acesso"
+                subtitulo="Crie e gerencie perfis customizados. Clique em um perfil para configurar suas permissões."
+              >
+                <RoleList
+                  onSelectRole={handleSelectRole}
+                  selectedRoleId={selectedRole?.id}
+                />
+              </Panel>
             </TabsContent>
 
             {/* Tab: Permissões */}
             <TabsContent value="permissoes" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Matriz de Permissões</CardTitle>
-                  <CardDescription>
-                    Configure quais ações cada perfil pode realizar em cada módulo.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {selectedRole ? (
-                    <PermissionMatrix
-                      roleId={selectedRole.id}
-                      roleName={selectedRole.nome}
-                      isSystem={selectedRole.isSystem}
-                      allRoles={allRoles}
-                    />
-                  ) : (
-                    <p className="text-center py-12 text-muted-foreground">
-                      Selecione um perfil na aba &quot;Perfis&quot; para configurar as permissões.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+              <Panel
+                titulo="Matriz de Permissões"
+                subtitulo="Configure quais ações cada perfil pode realizar em cada módulo."
+              >
+                {selectedRole ? (
+                  <PermissionMatrix
+                    roleId={selectedRole.id}
+                    roleName={selectedRole.nome}
+                    isSystem={selectedRole.isSystem}
+                    allRoles={allRoles}
+                  />
+                ) : (
+                  <p className="text-center py-12 text-muted-foreground">
+                    Selecione um perfil na aba &quot;Perfis&quot; para configurar as permissões.
+                  </p>
+                )}
+              </Panel>
             </TabsContent>
 
             {/* Tab: Usuários */}
             <TabsContent value="usuarios" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Atribuição de Perfis</CardTitle>
-                  <CardDescription>
-                    Atribua perfis aos usuários da clínica. A justificativa é obrigatória para auditoria.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <UserRoleAssignment
-                    availableRoles={allRoles.filter(r => r.ativo)}
-                  />
-                </CardContent>
-              </Card>
+              <Panel
+                titulo="Atribuição de Perfis"
+                subtitulo="Atribua perfis aos usuários da clínica. A justificativa é obrigatória para auditoria."
+              >
+                <UserRoleAssignment
+                  availableRoles={allRoles.filter(r => r.ativo)}
+                />
+              </Panel>
             </TabsContent>
 
             {/* Tab: Histórico */}
             <TabsContent value="historico" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Log de Auditoria</CardTitle>
-                  <CardDescription>
-                    Registro completo de todas as alterações de perfis. Exportável em CSV.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <AuditLog />
-                </CardContent>
-              </Card>
+              <Panel
+                titulo="Log de Auditoria"
+                subtitulo="Registro completo de todas as alterações de perfis. Exportável em CSV."
+              >
+                <AuditLog />
+              </Panel>
             </TabsContent>
           </Tabs>
         </div>

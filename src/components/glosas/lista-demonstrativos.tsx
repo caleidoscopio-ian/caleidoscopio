@@ -26,10 +26,10 @@ export function ListaDemonstrativos({ demonstrativos, onDetalhe, onExcluir }: Li
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className="overflow-x-auto">
       <Table className="text-xs">
         <TableHeader>
-          <TableRow className="bg-muted/40">
+          <TableRow>
             <TableHead>Operadora</TableHead>
             <TableHead>Tipo</TableHead>
             <TableHead>Nº Demonstrativo</TableHead>
@@ -54,13 +54,13 @@ export function ListaDemonstrativos({ demonstrativos, onDetalhe, onExcluir }: Li
               <TableCell className="font-mono text-muted-foreground">{d.numero_demonstrativo ?? "—"}</TableCell>
               <TableCell>{d.data_emissao ? format(new Date(d.data_emissao), "dd/MM/yyyy", { locale: ptBR }) : "—"}</TableCell>
               <TableCell className="text-right tabular-nums">{formatBRL(d.valor_informado_total)}</TableCell>
-              <TableCell className="text-right tabular-nums text-green-600">{formatBRL(d.valor_liberado_total)}</TableCell>
-              <TableCell className="text-right tabular-nums text-red-600 font-medium">{formatBRL(d.valor_glosa_total)}</TableCell>
+              <TableCell className="text-right tabular-nums text-success-ink">{formatBRL(d.valor_liberado_total)}</TableCell>
+              <TableCell className="text-right tabular-nums text-danger-ink font-medium">{formatBRL(d.valor_glosa_total)}</TableCell>
               <TableCell className="text-center">
-                <span className="text-green-600 font-medium">{d.guias_conciliadas}</span>
+                <span className="text-success-ink font-medium">{d.guias_conciliadas}</span>
                 <span className="text-muted-foreground">/{d.total_guias}</span>
                 {d.guias_nao_encontradas > 0 && (
-                  <Badge variant="outline" className="ml-1 text-[10px] text-red-600 border-red-300">
+                  <Badge variant="outline" className="ml-1 text-[10px] text-danger-ink border-danger">
                     {d.guias_nao_encontradas} ⚠
                   </Badge>
                 )}

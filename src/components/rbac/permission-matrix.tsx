@@ -195,7 +195,7 @@ export function PermissionMatrix({ roleId, roleName, isSystem, allRoles }: Permi
           <h3 className="font-medium">{roleName}</h3>
           {isSystem && <Badge variant="secondary">Sistema — somente leitura</Badge>}
           {isDirty && !isSystem && (
-            <Badge variant="outline" className="text-amber-600 border-amber-400">
+            <Badge variant="outline" className="text-warning-ink border-warning">
               Alterações não salvas
             </Badge>
           )}

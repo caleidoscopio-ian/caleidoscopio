@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 import { AbaGeral } from "@/components/avaliacoes/aba-geral";
 import { AbaNiveis } from "@/components/avaliacoes/aba-niveis";
 import { AbaHabilidades } from "@/components/avaliacoes/aba-habilidades";
@@ -17,6 +17,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader } from "@/components/kit";
 
 function EditarAvaliacaoPageContent() {
   const params = useParams();
@@ -99,7 +100,7 @@ function EditarAvaliacaoPageContent() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-red-600 mb-4">{error}</p>
+              <p className="text-danger-ink mb-4">{error}</p>
               <Button onClick={() => router.push("/avaliacoes")}>
                 Voltar para Avaliações
               </Button>
@@ -114,31 +115,21 @@ function EditarAvaliacaoPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleVoltar}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Voltar
-              </Button>
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Editar Avaliação
-            </h1>
-            <p className="text-muted-foreground">
-              Edite o protocolo de avaliação
-            </p>
-          </div>
-
-          <Button onClick={() => router.push("/avaliacoes")}>
-            <Save className="mr-2 h-4 w-4" />
-            Concluir
-          </Button>
-        </div>
+        <PageHeader
+          voltar={{ onClick: handleVoltar }}
+          titulo="Editar Avaliação"
+          subtitulo="Edite o protocolo de avaliação"
+          acoes={
+            <Button onClick={() => router.push("/avaliacoes")}>
+              <Save className="mr-2 h-4 w-4" />
+              Concluir
+            </Button>
+          }
+        />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList>
             <TabsTrigger value="geral">Geral</TabsTrigger>
             <TabsTrigger value="niveis">Níveis</TabsTrigger>
             <TabsTrigger value="habilidades">Habilidades</TabsTrigger>

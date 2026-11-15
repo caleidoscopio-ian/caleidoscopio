@@ -36,17 +36,17 @@ export default function LogoutPage() {
   }, [logout, router])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-danger-soft to-warning-soft flex items-center justify-center">
       <div className="text-center">
-        <div className="mx-auto h-12 w-12 rounded-lg bg-red-600 flex items-center justify-center mb-4">
+        <div className="mx-auto h-12 w-12 rounded-lg bg-danger flex items-center justify-center mb-4">
           <span className="text-white font-bold text-xl">👋</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        <h1 className="text-ink mb-2">
           Limpando Dados Mock...
         </h1>
-        <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full mx-auto mb-2"></div>
-        <p className="text-gray-600 mb-2">Removendo todos os dados mockados</p>
-        <p className="text-sm text-gray-500">Configurando para usar Sistema 1 real (porta 3000)</p>
+        <div className="animate-spin h-4 w-4 border-2 border-danger border-t-transparent rounded-full mx-auto mb-2"></div>
+        <p className="text-ink mb-2">Removendo todos os dados mockados</p>
+        <p className="text-sm text-ink-3">Configurando para usar Sistema 1 real (porta 3000)</p>
       </div>
     </div>
   )

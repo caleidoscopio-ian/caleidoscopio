@@ -81,13 +81,13 @@ export function layoutColunas(ags: Agendamento[]): Map<string, { col: number; co
 }
 
 export const STATUS_CARD_BG: Record<StatusAgendamento, string> = {
-  [StatusAgendamento.AGENDADO]:       "bg-blue-50 border-blue-300 hover:bg-blue-100",
-  [StatusAgendamento.CONFIRMADO]:     "bg-green-50 border-green-300 hover:bg-green-100",
-  [StatusAgendamento.EM_ATENDIMENTO]: "bg-amber-50 border-amber-300 hover:bg-amber-100",
-  [StatusAgendamento.ATENDIDO]:       "bg-purple-50 border-purple-300 hover:bg-purple-100",
-  [StatusAgendamento.FALTOU]:         "bg-gray-50 border-gray-300 hover:bg-gray-100",
-  [StatusAgendamento.CANCELADO]:      "bg-red-50 border-red-300 hover:bg-red-100",
+  [StatusAgendamento.AGENDADO]:       "bg-brand-soft border-brand hover:bg-brand-soft",
+  [StatusAgendamento.CONFIRMADO]:     "bg-success-soft border-success hover:bg-success-soft",
+  [StatusAgendamento.EM_ATENDIMENTO]: "bg-warning-soft border-warning hover:bg-warning-soft",
+  [StatusAgendamento.ATENDIDO]:       "bg-violet-soft border-violet hover:bg-violet-soft",
+  [StatusAgendamento.FALTOU]:         "bg-surface-sunken border-border hover:bg-surface-sunken",
+  [StatusAgendamento.CANCELADO]:      "bg-danger-soft border-danger hover:bg-danger-soft",
 };
 
 export const getStatusCardBg = (status: StatusAgendamento) =>
-  STATUS_CARD_BG[status] ?? "bg-gray-50 border-gray-300 hover:bg-gray-100";
+  STATUS_CARD_BG[status] ?? "bg-surface-sunken border-border hover:bg-surface-sunken";

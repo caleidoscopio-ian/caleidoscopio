@@ -5,11 +5,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +41,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import {
+  ClipboardList, Plus, Trash2, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import { Panel, EstadoVazio } from "@/components/kit";
 
 interface Atividade {
   id: string;
@@ -256,34 +253,23 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
 
   if (!curriculumId) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">
-            Salve as informações gerais primeiro para adicionar atividades
-          </p>
-        </CardContent>
-      </Card>
+      <EstadoVazio titulo="Salve as informações gerais primeiro para adicionar atividades" />
     );
   }
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Atividades do Plano Terapêutico</CardTitle>
-              <CardDescription>
-                Adicione e organize as atividades deste plano
-              </CardDescription>
-            </div>
-            <Button onClick={() => setDialogOpen(true)} size="sm">
+      <Panel
+        icone={<ClipboardList />}
+        titulo="Atividades do Plano Terapêutico"
+        subtitulo="Adicione e organize as atividades deste plano"
+        acoes={
+          <Button onClick={() => setDialogOpen(true)} size="sm">
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Atividade
             </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
+        }
+      >
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -377,8 +363,7 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </Panel>
 
       {/* Dialog Adicionar Atividade */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

@@ -9,13 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   Form,
@@ -35,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, ArrowRight, Save, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Panel } from "@/components/kit";
 
 const anamneseSchema = z.object({
   pacienteId: z.string().min(1, "Paciente é obrigatório"),
@@ -376,21 +371,19 @@ export function NovaAnamneseForm({ anamneseId, initialData, onSuccess, onCancel 
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{anamneseId ? "Editar" : "Nova"} Anamnese — {ETAPAS[etapaAtual].titulo}</CardTitle>
-          <CardDescription>{ETAPAS[etapaAtual].descricao}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Etapa {etapaAtual + 1} de {ETAPAS.length}</span>
-              <span>{Math.round(progresso)}%</span>
-            </div>
-            <Progress value={progresso} />
+      <Panel
+        titulo={<>{anamneseId ? "Editar" : "Nova"} Anamnese — {ETAPAS[etapaAtual].titulo}</>}
+        subtitulo={ETAPAS[etapaAtual].descricao}
+      >
+
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm text-muted-foreground">
+            <span>Etapa {etapaAtual + 1} de {ETAPAS.length}</span>
+            <span>{Math.round(progresso)}%</span>
           </div>
-        </CardContent>
-      </Card>
+          <Progress value={progresso} />
+        </div>
+      </Panel>
 
       <Card>
         <CardContent className="pt-6">

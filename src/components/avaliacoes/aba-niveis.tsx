@@ -4,11 +4,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +34,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import {
+  Layers, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Panel } from "@/components/kit";
 
 interface Nivel {
   id: string;
@@ -192,22 +189,17 @@ export function AbaNiveis({ avaliacaoId }: AbaNiveisProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Níveis da Avaliação</CardTitle>
-            <CardDescription>
-              Cadastre os níveis/estágios da avaliação
-            </CardDescription>
-          </div>
-          <Button onClick={handleNovo}>
+    <Panel
+      icone={<Layers />}
+      titulo="Níveis da Avaliação"
+      subtitulo="Cadastre os níveis/estágios da avaliação"
+      acoes={
+        <Button onClick={handleNovo}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Nível
           </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+      }
+    >
         {loading ? (
           <div className="text-center py-8">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
@@ -277,7 +269,7 @@ export function AbaNiveis({ avaliacaoId }: AbaNiveisProps) {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="ordem">
-                  Ordem <span className="text-red-500">*</span>
+                  Ordem <span className="text-danger-ink">*</span>
                 </Label>
                 <Input
                   id="ordem"
@@ -294,7 +286,7 @@ export function AbaNiveis({ avaliacaoId }: AbaNiveisProps) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="descricao">
-                  Descrição <span className="text-red-500">*</span>
+                  Descrição <span className="text-danger-ink">*</span>
                 </Label>
                 <Input
                   id="descricao"
@@ -356,7 +348,6 @@ export function AbaNiveis({ avaliacaoId }: AbaNiveisProps) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </CardContent>
-    </Card>
+      </Panel>
   );
 }

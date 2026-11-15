@@ -4,13 +4,6 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,6 +20,7 @@ import {
   habilidadesDoProtocolo,
   habilidadeValida,
 } from "@/lib/protocolo-habilidades";
+import { Panel } from "@/components/kit";
 
 interface AbaGeralProps {
   atividadeId: string | null;
@@ -148,14 +142,9 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Informações Gerais</CardTitle>
-        <CardDescription>
-          Defina as informações básicas da atividade
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Panel titulo="Informações Gerais" subtitulo="Defina as informações básicas da atividade">
+      <div className="space-y-4">
+
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="protocolo">Protocolo</Label>
@@ -187,7 +176,7 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
 
           <div className="grid gap-2">
             <Label htmlFor="nome">
-              Nome da Atividade <span className="text-red-500">*</span>
+              Nome da Atividade <span className="text-danger-ink">*</span>
             </Label>
             <Input
               id="nome"
@@ -233,7 +222,7 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
               </SelectContent>
             </Select>
             {habilidadeLegada && (
-              <p className="text-xs text-amber-600">
+              <p className="text-xs text-warning-ink">
                 Esta habilidade não pertence ao protocolo {formData.protocolo}.
                 Ela foi mantida como estava; escolha outra para atualizar.
               </p>
@@ -373,7 +362,7 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
         </Button>
 
         {atividadeId && (
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+          <div className="bg-brand-soft border border-brand-soft text-brand px-4 py-3 rounded">
             <p className="text-sm">
               ✓ Atividade salva! Agora você pode adicionar Pontuações/Dicas e
               Instruções usando as abas acima.
@@ -382,14 +371,14 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
         )}
 
         {!atividadeId && (
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          <div className="bg-warning-soft border border-warning-soft text-warning-ink px-4 py-3 rounded">
             <p className="text-sm">
               ⚠ Salve as informações gerais primeiro para habilitar as outras
               abas.
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }

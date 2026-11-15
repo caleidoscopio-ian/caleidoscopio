@@ -8,13 +8,6 @@ import { VisualizarAtividadeDialog } from "@/components/forms/visualizar-ativida
 import { ExcluirAtividadeDialog } from "@/components/forms/excluir-atividade-dialog";
 import { AtribuirAtividadeDialog } from "@/components/forms/atribuir-atividade-dialog";
 import { Edit } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +22,7 @@ import {
 import { ClipboardList, Search, Plus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader, Panel, StatCard } from "@/components/kit";
 
 interface Instrucao {
   id: string;
@@ -152,85 +146,47 @@ function AtividadesClinicasPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Atividades
-            </h1>
-            <p className="text-muted-foreground">
-              Gerencie protocolos e atividades terapêuticas
-            </p>
-          </div>
-          <Button onClick={() => router.push("/atividades-clinicas/nova")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Atividade
-          </Button>
-        </div>
+        <PageHeader
+          titulo="Atividades"
+          subtitulo="Gerencie protocolos e atividades terapêuticas"
+          acoes={
+            <Button onClick={() => router.push("/atividades-clinicas/nova")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Atividade
+            </Button>
+          }
+        />
 
         {/* Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Atividades
-              </CardTitle>
-              <ClipboardList className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? "..." : atividades.length}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard
+            tom="blue"
+            size="hero"
+            icone={<ClipboardList />}
+            rotulo="Total Atividades"
+            valor={loading ? "..." : atividades.length}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Com Protocolo
-              </CardTitle>
-              <ClipboardList className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {loading ? "..." : atividades.filter((a) => a.protocolo).length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="lavender"
+            icone={<ClipboardList className="text-brand" />}
+            rotulo="Com Protocolo"
+            valor={<span className="text-brand">{loading ? "..." : atividades.filter((a) => a.protocolo).length}</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Atribuídas</CardTitle>
-              <ClipboardList className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {loading
-                  ? "..."
-                  : atividades.filter(
-                      (a) => a._count && a._count.atribuicoes > 0
-                    ).length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="mint"
+            icone={<ClipboardList />}
+            rotulo="Atribuídas"
+            valor={<span className="text-success-ink">{loading ? "..." : atividades.filter( (a) => a._count && a._count.atribuicoes > 0 ).length}</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Sessões Realizadas
-              </CardTitle>
-              <ClipboardList className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {loading
-                  ? "..."
-                  : atividades.reduce(
-                      (acc, a) => acc + (a._count?.sessoes || 0),
-                      0
-                    )}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="peach"
+            icone={<ClipboardList />}
+            rotulo="Sessões Realizadas"
+            valor={loading ? "..." : atividades.reduce( (acc, a) => acc + (a._count?.sessoes || 0), 0 )}
+          />
         </div>
 
         {/* Busca */}
@@ -249,158 +205,147 @@ function AtividadesClinicasPageContent() {
         </div>
 
         {/* Tabela de Atividades */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Lista de Atividades
-              {!loading && (
-                <Badge variant="secondary" className="ml-2">
-                  {filteredAtividades.length} de {atividades.length}
-                </Badge>
-              )}
-            </CardTitle>
-            <CardDescription>
-              Atividades e protocolos cadastrados na clínica
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="text-center py-8">
-                <div className="text-red-600 mb-4">{error}</div>
-                <Button onClick={fetchAtividades} variant="outline">
-                  Tentar Novamente
-                </Button>
-              </div>
-            )}
+        <Panel
+          titulo={<>Lista de Atividades {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredAtividades.length} de {atividades.length} </Badge> )}</>}
+          subtitulo="Atividades e protocolos cadastrados na clínica"
+        >
 
-            {loading && !error && (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Carregando atividades...
-                </p>
-              </div>
-            )}
+          {error && (
+            <div className="text-center py-8">
+              <div className="text-danger-ink mb-4">{error}</div>
+              <Button onClick={fetchAtividades} variant="outline">
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
 
-            {!loading && !error && atividades.length === 0 && (
-              <div className="text-center py-8">
-                <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">
-                  Nenhuma atividade encontrada
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Comece criando a primeira atividade clínica.
-                </p>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova Atividade
-                </Button>
-              </div>
-            )}
+          {loading && !error && (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                Carregando atividades...
+              </p>
+            </div>
+          )}
 
-            {!loading && !error && filteredAtividades.length > 0 && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Protocolo</TableHead>
-                    <TableHead>Habilidade</TableHead>
-                    <TableHead>Instruções</TableHead>
-                    <TableHead>Pontuações</TableHead>
-                    <TableHead>Atribuída</TableHead>
-                    <TableHead>Sessões</TableHead>
-                    <TableHead>Criada em</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAtividades.map((atividade) => (
-                    <TableRow key={atividade.id}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div>{atividade.nome}</div>
-                          {atividade.marco_codificacao && (
-                            <div className="text-xs text-muted-foreground">
-                              {atividade.marco_codificacao}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {atividade.protocolo ? (
-                          <Badge variant="outline">{atividade.protocolo}</Badge>
-                        ) : (
-                          "-"
+          {!loading && !error && atividades.length === 0 && (
+            <div className="text-center py-8">
+              <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                Nenhuma atividade encontrada
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Comece criando a primeira atividade clínica.
+              </p>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Atividade
+              </Button>
+            </div>
+          )}
+
+          {!loading && !error && filteredAtividades.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Protocolo</TableHead>
+                  <TableHead>Habilidade</TableHead>
+                  <TableHead>Instruções</TableHead>
+                  <TableHead>Pontuações</TableHead>
+                  <TableHead>Atribuída</TableHead>
+                  <TableHead>Sessões</TableHead>
+                  <TableHead>Criada em</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAtividades.map((atividade) => (
+                  <TableRow key={atividade.id}>
+                    <TableCell className="font-medium">
+                      <div>
+                        <div>{atividade.nome}</div>
+                        {atividade.marco_codificacao && (
+                          <div className="text-xs text-muted-foreground">
+                            {atividade.marco_codificacao}
+                          </div>
                         )}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {atividade.habilidade || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {atividade.instrucoes?.length || 0} itens
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {atividade.pontuacoes?.length || 0} itens
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {atividade._count?.atribuicoes || 0} pacientes
-                      </TableCell>
-                      <TableCell>
-                        {atividade._count?.sessoes || 0} sessões
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(atividade.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <VisualizarAtividadeDialog atividade={atividade} />
-                          <AtribuirAtividadeDialog
-                            atividade={atividade}
-                            onSuccess={fetchAtividades}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              router.push(
-                                `/atividades-clinicas/editar/${atividade.id}`
-                              )
-                            }
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <ExcluirAtividadeDialog
-                            atividade={atividade}
-                            onSuccess={fetchAtividades}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {atividade.protocolo ? (
+                        <Badge variant="outline">{atividade.protocolo}</Badge>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {atividade.habilidade || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {atividade.instrucoes?.length || 0} itens
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {atividade.pontuacoes?.length || 0} itens
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {atividade._count?.atribuicoes || 0} pacientes
+                    </TableCell>
+                    <TableCell>
+                      {atividade._count?.sessoes || 0} sessões
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(atividade.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-2">
+                        <VisualizarAtividadeDialog atividade={atividade} />
+                        <AtribuirAtividadeDialog
+                          atividade={atividade}
+                          onSuccess={fetchAtividades}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            router.push(
+                              `/atividades-clinicas/editar/${atividade.id}`
+                            )
+                          }
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <ExcluirAtividadeDialog
+                          atividade={atividade}
+                          onSuccess={fetchAtividades}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
 
-            {!loading &&
-              !error &&
-              atividades.length > 0 &&
-              filteredAtividades.length === 0 && (
-                <div className="text-center py-8">
-                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Nenhum resultado encontrado
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Tente ajustar os termos da sua busca.
-                  </p>
-                </div>
-              )}
-          </CardContent>
-        </Card>
+          {!loading &&
+            !error &&
+            atividades.length > 0 &&
+            filteredAtividades.length === 0 && (
+              <div className="text-center py-8">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">
+                  Nenhum resultado encontrado
+                </h3>
+                <p className="text-muted-foreground">
+                  Tente ajustar os termos da sua busca.
+                </p>
+              </div>
+            )}
+        </Panel>
       </div>
     </MainLayout>
   );

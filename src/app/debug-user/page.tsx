@@ -3,9 +3,9 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageHeader, Panel } from "@/components/kit";
 
 export default function DebugUserPage() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -31,16 +31,10 @@ export default function DebugUserPage() {
   if (!isAuthenticated || !user) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-red-600">
-              ❌ Usuário Não Autenticado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Nenhum usuário logado encontrado. Faça login primeiro.</p>
-          </CardContent>
-        </Card>
+        <Panel titulo="❌ Usuário Não Autenticado" className="max-w-2xl mx-auto">
+
+          <p>Nenhum usuário logado encontrado. Faça login primeiro.</p>
+        </Panel>
       </MainLayout>
     );
   }
@@ -49,28 +43,21 @@ export default function DebugUserPage() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6 max-w-4xl mx-auto">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            🔍 Debug - Dados do Usuário
-          </h1>
-          <p className="text-muted-foreground">
-            Visualize os dados que vêm do Sistema 1 para identificar o tenant
-            correto
-          </p>
-        </div>
+        <PageHeader
+          titulo="🔍 Debug - Dados do Usuário"
+          subtitulo="Visualize os dados que vêm do Sistema 1 para identificar o tenant correto"
+        />
 
         {/* Informações Básicas */}
-        <Card>
-          <CardHeader>
-            <CardTitle>👤 Informações do Usuário</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Panel titulo="👤 Informações do Usuário">
+          <div className="space-y-4">
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">
                   ID
                 </label>
-                <p className="font-mono text-sm bg-gray-100 p-2 rounded">
+                <p className="font-mono text-sm bg-surface-sunken p-2 rounded">
                   {user.id}
                 </p>
               </div>
@@ -93,22 +80,20 @@ export default function DebugUserPage() {
                 <Badge variant="outline">{user.role}</Badge>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
         {/* Informações do Tenant */}
         {user.tenant && (
-          <Card>
-            <CardHeader>
-              <CardTitle>🏥 Informações da Clínica/Tenant</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <Panel titulo="🏥 Informações da Clínica/Tenant">
+            <div className="space-y-4">
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     ID do Tenant
                   </label>
-                  <p className="font-mono text-sm bg-blue-50 p-2 rounded border border-blue-200">
+                  <p className="font-mono text-sm bg-brand-soft p-2 rounded border border-brand-soft">
                     {user.tenant.id}
                   </p>
                 </div>
@@ -135,7 +120,7 @@ export default function DebugUserPage() {
               </div>
 
               {user.tenant.plan && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="mt-4 p-4 bg-surface-sunken rounded-lg">
                   <h4 className="font-medium mb-2">📋 Plano</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -153,46 +138,36 @@ export default function DebugUserPage() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
         )}
 
         {/* Configurações */}
         {user.config && (
-          <Card>
-            <CardHeader>
-              <CardTitle>⚙️ Configurações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">
-                {JSON.stringify(user.config, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
+          <Panel titulo="⚙️ Configurações">
+
+            <pre className="bg-surface-sunken p-4 rounded text-sm overflow-auto">
+              {JSON.stringify(user.config, null, 2)}
+            </pre>
+          </Panel>
         )}
 
         {/* Dados Brutos */}
-        <Card>
-          <CardHeader>
-            <CardTitle>📄 Objeto Completo (Debug)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-gray-900 text-green-400 p-4 rounded text-xs overflow-auto max-h-96">
-              {JSON.stringify(user, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
+        <Panel titulo="📄 Objeto Completo (Debug)">
+
+          <pre className="bg-ink-3 text-success-ink p-4 rounded text-xs overflow-auto max-h-96">
+            {JSON.stringify(user, null, 2)}
+          </pre>
+        </Panel>
 
         {/* Próximos Passos */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardHeader>
-            <CardTitle className="text-blue-800">📋 Próximos Passos</CardTitle>
-          </CardHeader>
-          <CardContent className="text-blue-700">
+        <Panel titulo="📋 Próximos Passos" className="bg-brand-soft border-brand-soft">
+          <div className="text-brand">
+
             <ol className="list-decimal list-inside space-y-2">
               <li>
                 Copie o <strong>ID do Tenant</strong> mostrado acima:
-                <code className="bg-blue-100 px-2 py-1 rounded mx-1">
+                <code className="bg-brand-soft px-2 py-1 rounded mx-1">
                   {user.tenant?.id || "N/A"}
                 </code>
               </li>
@@ -205,8 +180,8 @@ export default function DebugUserPage() {
                 fictícios
               </li>
             </ol>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       </div>
     </MainLayout>
   );

@@ -10,7 +10,6 @@ import { EditarPacienteForm } from "@/components/forms/editar-paciente-form";
 import { PacienteDetailsDialog } from "@/components/paciente-details-dialog";
 import { DeletePatientDialog } from "@/components/delete-patient-dialog";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,10 +22,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Users, Search, Filter, Calendar, Clock, Loader2, FileText } from "lucide-react";
+import { idadeEmAnos } from "@/lib/datas-fuso";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useFilial } from "@/hooks/useFilial";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { agruparPorFilial } from "@/lib/agrupar-filial";
+import { PageHeader, Panel, StatCard, PersonAvatar } from "@/components/kit";
 
 interface ResponsavelData {
   id?: string;
@@ -119,8 +120,11 @@ function PacientesTable({
       <TableBody>
         {patients.map((patient) => (
           <TableRow key={patient.id}>
-            <TableCell className="font-medium">
-              {patient.name}
+            <TableCell>
+              <div className="flex min-w-0 items-center gap-3">
+                <PersonAvatar nome={patient.name} tamanho={36} />
+                <span className="truncate font-semibold text-ink">{patient.name}</span>
+              </div>
             </TableCell>
             <TableCell>
               {calculateAge(patient.birthDate)} anos
@@ -317,21 +321,7 @@ function PacientesPageContent() {
   );
 
   // Calcular idade baseada na data de nascimento
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birth.getDate())
-    ) {
-      age--;
-    }
-
-    return age;
-  };
+  const calculateAge = (birthDate: string) => idadeEmAnos(birthDate) ?? 0;
 
   // Formatar data para exibição
   const formatDate = (dateString: string) => {
@@ -342,94 +332,45 @@ function PacientesPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Gestão de Pacientes
-            </h1>
-            <p className="text-muted-foreground">
-              Gerencie os pacientes e seus atendimentos
-            </p>
-          </div>
-          <NovoPacienteForm onSuccess={fetchPatients} />
-        </div>
+        <PageHeader
+          titulo="Gestão de Pacientes"
+          subtitulo="Gerencie os pacientes e seus atendimentos"
+          acoes={
+            <NovoPacienteForm onSuccess={fetchPatients} />
+          }
+        />
 
         {/* Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Pacientes
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? "..." : patients.length}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard
+            tom="blue"
+            size="hero"
+            icone={<Users />}
+            rotulo="Total Pacientes"
+            valor={loading ? "..." : patients.length}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ativos</CardTitle>
-              <Users className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? "..." : patients.length}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Todos os pacientes estão ativos
-              </p>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="lavender"
+            icone={<Users />}
+            rotulo="Ativos"
+            valor={loading ? "..." : patients.length}
+            hint="Todos os pacientes estão ativos"
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Cadastrados Este Mês
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading
-                  ? "..."
-                  : patients.filter((p) => {
-                      const created = new Date(p.createdAt);
-                      const now = new Date();
-                      return (
-                        created.getMonth() === now.getMonth() &&
-                        created.getFullYear() === now.getFullYear()
-                      );
-                    }).length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="mint"
+            icone={<Calendar />}
+            rotulo="Cadastrados Este Mês"
+            valor={loading ? "..." : patients.filter((p) => { const created = new Date(p.createdAt); const now = new Date(); return ( created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear() ); }).length}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Média de Idade
-              </CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading
-                  ? "..."
-                  : patients.length > 0
-                    ? Math.round(
-                        patients.reduce(
-                          (acc, p) => acc + calculateAge(p.birthDate),
-                          0
-                        ) / patients.length
-                      ) + " anos"
-                    : "0 anos"}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="peach"
+            icone={<Clock />}
+            rotulo="Média de Idade"
+            valor={loading ? "..." : patients.length > 0 ? Math.round( patients.reduce( (acc, p) => acc + calculateAge(p.birthDate), 0 ) / patients.length ) + " anos" : "0 anos"}
+          />
         </div>
 
         {/* Filtros e Busca */}
@@ -452,106 +393,97 @@ function PacientesPageContent() {
         </div>
 
         {/* Tabela de Pacientes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Lista de Pacientes
-              {!loading && (
-                <Badge variant="secondary" className="ml-2">
-                  {filteredPatients.length} de {patients.length}
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="text-center py-8">
-                <div className="text-red-600 mb-4">{error}</div>
-                <Button onClick={fetchPatients} variant="outline">
-                  Tentar Novamente
-                </Button>
-              </div>
-            )}
+        <Panel
+          titulo={<>Lista de Pacientes {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredPatients.length} de {patients.length} </Badge> )}</>}
+        >
 
-            {loading && !error && (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Carregando pacientes...</p>
-              </div>
-            )}
+          {error && (
+            <div className="text-center py-8">
+              <div className="text-danger-ink mb-4">{error}</div>
+              <Button onClick={fetchPatients} variant="outline">
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
 
-            {!loading && !error && patients.length === 0 && (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">
-                  Nenhum paciente encontrado
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Comece adicionando o primeiro paciente da sua clínica.
-                </p>
-                <NovoPacienteForm onSuccess={fetchPatients} />
-              </div>
-            )}
+          {loading && !error && (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Carregando pacientes...</p>
+            </div>
+          )}
 
-            {!loading && !error && filteredPatients.length > 0 && (
-              filialAtiva ? (
-                <PacientesTable
-                  patients={filteredPatients}
-                  onSuccess={fetchPatients}
-                  calculateAge={calculateAge}
-                  formatDate={formatDate}
-                  onAgendar={() => router.push("/agenda")}
-                />
-              ) : (
-                <Accordion
-                  type="multiple"
-                  defaultValue={agruparPorFilial(filteredPatients, (p) => p.filial ?? null).map(
-                    (g) => g.filial?.id ?? "_sem_filial"
-                  )}
-                >
-                  {agruparPorFilial(filteredPatients, (p) => p.filial ?? null).map((grupo) => (
-                    <AccordionItem key={grupo.filial?.id ?? "_sem_filial"} value={grupo.filial?.id ?? "_sem_filial"}>
-                      <AccordionTrigger>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-2.5 h-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: grupo.filial?.cor ?? "#94a3b8" }}
-                          />
-                          <span className="font-medium">{grupo.filial?.nome ?? "Sem filial"}</span>
-                          <Badge variant="secondary" className="text-xs">{grupo.items.length}</Badge>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <PacientesTable
-                          patients={grupo.items}
-                          onSuccess={fetchPatients}
-                          calculateAge={calculateAge}
-                          formatDate={formatDate}
-                          onAgendar={() => router.push("/agenda")}
+          {!loading && !error && patients.length === 0 && (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                Nenhum paciente encontrado
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Comece adicionando o primeiro paciente da sua clínica.
+              </p>
+              <NovoPacienteForm onSuccess={fetchPatients} />
+            </div>
+          )}
+
+          {!loading && !error && filteredPatients.length > 0 && (
+            filialAtiva ? (
+              <PacientesTable
+                patients={filteredPatients}
+                onSuccess={fetchPatients}
+                calculateAge={calculateAge}
+                formatDate={formatDate}
+                onAgendar={() => router.push("/agenda")}
+              />
+            ) : (
+              <Accordion
+                type="multiple"
+                defaultValue={agruparPorFilial(filteredPatients, (p) => p.filial ?? null).map(
+                  (g) => g.filial?.id ?? "_sem_filial"
+                )}
+              >
+                {agruparPorFilial(filteredPatients, (p) => p.filial ?? null).map((grupo) => (
+                  <AccordionItem key={grupo.filial?.id ?? "_sem_filial"} value={grupo.filial?.id ?? "_sem_filial"}>
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: grupo.filial?.cor ?? "#94a3b8" }}
                         />
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              )
-            )}
+                        <span className="font-medium">{grupo.filial?.nome ?? "Sem filial"}</span>
+                        <Badge variant="secondary" className="text-xs">{grupo.items.length}</Badge>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <PacientesTable
+                        patients={grupo.items}
+                        onSuccess={fetchPatients}
+                        calculateAge={calculateAge}
+                        formatDate={formatDate}
+                        onAgendar={() => router.push("/agenda")}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )
+          )}
 
-            {!loading &&
-              !error &&
-              patients.length > 0 &&
-              filteredPatients.length === 0 && (
-                <div className="text-center py-8">
-                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Nenhum resultado encontrado
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Tente ajustar os termos da sua busca.
-                  </p>
-                </div>
-              )}
-          </CardContent>
-        </Card>
+          {!loading &&
+            !error &&
+            patients.length > 0 &&
+            filteredPatients.length === 0 && (
+              <div className="text-center py-8">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">
+                  Nenhum resultado encontrado
+                </h3>
+                <p className="text-muted-foreground">
+                  Tente ajustar os termos da sua busca.
+                </p>
+              </div>
+            )}
+        </Panel>
       </div>
     </MainLayout>
   );

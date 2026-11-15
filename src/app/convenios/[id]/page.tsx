@@ -8,7 +8,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -45,6 +44,7 @@ import {
   TIPO_CONVENIO_ANEXO_LABELS,
   TIPO_HISTORICO_LABELS,
 } from "@/types/convenio";
+import { PageHeader, Panel, EstadoVazio } from "@/components/kit";
 
 export default function ConvenioDetalhePage() {
   const { user, isAuthenticated } = useAuth();
@@ -255,30 +255,27 @@ export default function ConvenioDetalhePage() {
     <ProtectedRoute requiredPermission={{ resource: "convenios", action: "VIEW" }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => router.push("/convenios")}>
-                <ArrowLeft className="h-4 w-4" />
+          <PageHeader
+            voltar={{ onClick: () => router.push("/convenios") }}
+            titulo={convenio.razao_social}
+            subtitulo={convenio.nome_fantasia || undefined}
+            meta={
+              <>
+                <Badge variant={convenio.status === "ATIVO" ? "default" : "secondary"}>
+                  {STATUS_CONVENIO_LABELS[convenio.status]}
+                </Badge>
+                <span className="font-mono text-sm text-ink-3">
+                  {formatarCNPJ(convenio.cnpj)}
+                </span>
+              </>
+            }
+            acoes={
+              <Button variant="outline" onClick={() => setEditando(true)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
               </Button>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{convenio.razao_social}</h1>
-                  <Badge variant={convenio.status === "ATIVO" ? "default" : "secondary"}>
-                    {STATUS_CONVENIO_LABELS[convenio.status]}
-                  </Badge>
-                </div>
-                {convenio.nome_fantasia && (
-                  <p className="text-muted-foreground">{convenio.nome_fantasia}</p>
-                )}
-                <p className="text-sm text-muted-foreground font-mono">{formatarCNPJ(convenio.cnpj)}</p>
-              </div>
-            </div>
-            <Button variant="outline" onClick={() => setEditando(true)}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
-          </div>
+            }
+          />
 
           {/* Tabs */}
           <Tabs defaultValue="dados">
@@ -308,9 +305,8 @@ export default function ConvenioDetalhePage() {
             {/* ==================== DADOS GERAIS ==================== */}
             <TabsContent value="dados" className="space-y-4 mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader><CardTitle className="text-sm">Identificação</CardTitle></CardHeader>
-                  <CardContent className="space-y-3 text-sm">
+                <Panel titulo="Identificação">
+                  <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Tipo</span>
                       <span>{TIPO_CONVENIO_LABELS[convenio.tipo]}</span>
@@ -325,12 +321,11 @@ export default function ConvenioDetalhePage() {
                       <span className="text-muted-foreground">Cadastrado em</span>
                       <span>{formatarData(convenio.createdAt)}</span>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </Panel>
 
-                <Card>
-                  <CardHeader><CardTitle className="text-sm">Contato</CardTitle></CardHeader>
-                  <CardContent className="space-y-3 text-sm">
+                <Panel titulo="Contato">
+                  <div className="space-y-3 text-sm">
                     {convenio.telefone && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Telefone</span>
@@ -361,12 +356,11 @@ export default function ConvenioDetalhePage() {
                     {!convenio.telefone && !convenio.email && !convenio.contato_nome && (
                       <p className="text-muted-foreground">Nenhum contato cadastrado</p>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </Panel>
 
-                <Card>
-                  <CardHeader><CardTitle className="text-sm">Configurações Financeiras</CardTitle></CardHeader>
-                  <CardContent className="space-y-3 text-sm">
+                <Panel titulo="Configurações Financeiras">
+                  <div className="space-y-3 text-sm">
                     {convenio.prazo_pagamento_dias != null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Prazo de pagamento</span>
@@ -394,16 +388,13 @@ export default function ConvenioDetalhePage() {
                     {convenio.prazo_pagamento_dias == null && convenio.dia_fechamento == null && (
                       <p className="text-muted-foreground">Nenhuma configuração financeira</p>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </Panel>
 
                 {convenio.observacoes && (
-                  <Card>
-                    <CardHeader><CardTitle className="text-sm">Observações</CardTitle></CardHeader>
-                    <CardContent>
-                      <p className="text-sm whitespace-pre-wrap">{convenio.observacoes}</p>
-                    </CardContent>
-                  </Card>
+                  <Panel titulo="Observações">
+                    <p className="text-sm whitespace-pre-wrap">{convenio.observacoes}</p>
+                  </Panel>
                 )}
               </div>
             </TabsContent>
@@ -418,31 +409,19 @@ export default function ConvenioDetalhePage() {
                 </Button>
               </div>
               {tabelaLoading ? (
-                <Card>
-                  <CardContent className="p-0">
-                    <div className="p-4 space-y-3">
-                      {[...Array(3)].map((_, i) => (
-                        <div key={i} className="flex items-center gap-4">
-                          <Skeleton className="h-4 w-24" />
-                          <Skeleton className="h-4 flex-1" />
-                          <Skeleton className="h-4 w-20" />
-                          <Skeleton className="h-4 w-20" />
-                          <Skeleton className="h-4 w-16" />
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : tabela.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border rounded-lg">
-                  <FileText className="h-8 w-8 mb-2 opacity-30" />
-                  <p>Nenhum procedimento cadastrado</p>
-                  <p className="text-sm">Clique em &quot;Adicionar Procedimento&quot; para começar</p>
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-14 w-full rounded-2xl" />
+                  ))}
                 </div>
+              ) : tabela.length === 0 ? (
+                <EstadoVazio
+                  icone={<FileText />}
+                  titulo="Nenhum procedimento cadastrado"
+                  texto="Clique em “Adicionar Procedimento” para começar"
+                />
               ) : (
-                <Card>
-                  <CardContent className="p-0">
-                    <Table>
+                <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Procedimento</TableHead>
@@ -506,9 +485,7 @@ export default function ConvenioDetalhePage() {
                           );
                         })}
                       </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
+                </Table>
               )}
             </TabsContent>
 
@@ -547,7 +524,7 @@ export default function ConvenioDetalhePage() {
               {anexosLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={i} className="flex items-center justify-between gap-3 rounded-2xl bg-surface-muted p-3.5">
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-5 w-5 rounded" />
                         <div className="space-y-1">
@@ -560,17 +537,17 @@ export default function ConvenioDetalhePage() {
                   ))}
                 </div>
               ) : anexos.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border rounded-lg">
-                  <FileText className="h-8 w-8 mb-2 opacity-30" />
-                  <p>Nenhum anexo cadastrado</p>
-                  <p className="text-sm">Faça upload de contratos, tabelas e documentos</p>
-                </div>
+                <EstadoVazio
+                  icone={<FileText />}
+                  titulo="Nenhum anexo cadastrado"
+                  texto="Faça upload de contratos, tabelas e documentos"
+                />
               ) : (
                 <div className="space-y-2">
                   {anexos.map((anexo) => (
                     <div
                       key={anexo.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
+                      className="flex items-center justify-between gap-3 rounded-2xl bg-surface-muted p-3.5 transition-colors hover:bg-surface-sunken"
                     >
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -611,7 +588,7 @@ export default function ConvenioDetalhePage() {
               {historicoLoading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="border rounded-lg p-4">
+                    <div key={i} className="rounded-2xl bg-surface-muted p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-2">
@@ -637,7 +614,7 @@ export default function ConvenioDetalhePage() {
               ) : (
                 <div className="space-y-3">
                   {historico.map((item) => (
-                    <div key={item.id} className="border rounded-lg p-4">
+                    <div key={item.id} className="rounded-2xl bg-surface-muted p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">

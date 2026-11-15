@@ -154,8 +154,8 @@ export const resumoBlocos = (blocos: GradeBloco[]): string =>
 
 /** Classes de estilo por status de slot */
 export const SLOT_STATUS_CLASS: Record<SlotStatus, string> = {
-  livre: "bg-green-50 border-green-300 text-green-800 hover:bg-green-100",
-  ocupado: "bg-blue-50 border-blue-300 text-blue-900 hover:bg-blue-100",
-  extra: "bg-amber-50 border-amber-400 border-dashed text-amber-900 hover:bg-amber-100",
+  livre: "bg-success-soft border-success text-success-ink hover:bg-success-soft",
+  ocupado: "bg-brand-soft border-brand text-brand hover:bg-brand-soft",
+  extra: "bg-warning-soft border-warning border-dashed text-warning-ink hover:bg-warning-soft",
   fora: "bg-muted/40 border-transparent text-muted-foreground",
 };

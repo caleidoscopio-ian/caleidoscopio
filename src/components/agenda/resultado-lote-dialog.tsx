@@ -65,9 +65,9 @@ export function ResultadoLoteDialog({ resultados, open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {falhas.length === 0 ? (
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              <CheckCircle2 className="h-5 w-5 text-success-ink" />
             ) : (
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-warning-ink" />
             )}
             Agendamento em massa
           </DialogTitle>
@@ -80,15 +80,15 @@ export function ResultadoLoteDialog({ resultados, open, onOpenChange }: Props) {
 
         <div className="space-y-3 max-h-[50vh] overflow-y-auto">
           {[...porMotivo.entries()].map(([motivo, datas]) => (
-            <div key={motivo} className="rounded-md border border-amber-200 bg-amber-50 p-3">
-              <p className="text-sm font-medium text-amber-900">
+            <div key={motivo} className="rounded-md border border-warning-soft bg-warning-soft p-3">
+              <p className="text-sm font-medium text-warning-ink">
                 {motivo}
                 <span className="font-normal">
                   {" "}
                   ({datas.length} {datas.length === 1 ? "data" : "datas"})
                 </span>
               </p>
-              <p className="mt-1 text-xs text-amber-900/80">{datas.join(", ")}</p>
+              <p className="mt-1 text-xs text-warning-ink/80">{datas.join(", ")}</p>
             </div>
           ))}
 

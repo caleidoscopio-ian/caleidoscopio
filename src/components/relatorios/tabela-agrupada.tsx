@@ -56,7 +56,7 @@ export function TabelaAgrupada({
 
   if (grupos.length === 0) {
     return (
-      <div className="rounded-lg border bg-card p-10 text-center">
+      <div className="rounded-3xl border border-rim bg-surface/90 p-10 text-center shadow-card">
         <p className="text-sm font-medium">Nenhum registro no período</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Ajuste o período ou remova um filtro. Vale lembrar que este relatório conta apenas
@@ -68,15 +68,15 @@ export function TabelaAgrupada({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border bg-card">
+    <div className="overflow-x-auto rounded-3xl border border-rim bg-surface/90 shadow-card">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b bg-muted/50 text-left">
-            <th className="px-4 py-2.5 font-medium">
+          <tr className="border-b border-hairline text-left">
+            <th className="px-4 pt-3 pb-2 text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
               {agrupamento.map(rotuloDim).join(" › ")}
             </th>
             {visiveis.map((m) => (
-              <th key={m.chave} className="px-4 py-2.5 text-right font-medium whitespace-nowrap">
+              <th key={m.chave} className="px-4 pt-3 pb-2 text-right text-[0.72rem] font-medium tracking-wide whitespace-nowrap text-ink-4 uppercase">
                 {m.rotulo}
               </th>
             ))}
@@ -84,7 +84,7 @@ export function TabelaAgrupada({
         </thead>
         <tbody>
           {/* Total geral primeiro: é o número que mais se olha */}
-          <tr className="border-b bg-primary/5 font-semibold">
+          <tr className="border-b border-hairline bg-brand-soft/60 font-semibold">
             <td className="px-4 py-2.5">
               Total geral
               <span className="ml-2 text-xs font-normal text-muted-foreground">
@@ -135,8 +135,8 @@ function LinhaGrupo({
     <>
       <tr
         className={cn(
-          "border-b transition-colors",
-          temFilhos && "cursor-pointer hover:bg-muted/40",
+          "border-b border-hairline transition-colors",
+          temFilhos && "cursor-pointer hover:bg-surface-muted",
           grupo.nivel === 0 && "font-medium",
           grupo.nivel === 1 && "text-[13px]",
           grupo.nivel === 2 && "text-[13px] text-muted-foreground"
@@ -199,7 +199,7 @@ function LinhaGrupo({
 
       {aberto && grupo.subgrupos.length === 0 && temDetalhe && (
         <tr>
-          <td colSpan={metricas.length + 1} className="bg-muted/20 p-0">
+          <td colSpan={metricas.length + 1} className="bg-surface-sunken/60 p-0">
             <Detalhamento grupo={grupo} colunas={colunasDetalhe} />
           </td>
         </tr>
@@ -223,7 +223,7 @@ function Detalhamento({
       <div className="overflow-x-auto rounded border bg-background">
         <table className="w-full text-[13px]">
           <thead>
-            <tr className="border-b text-left text-muted-foreground">
+            <tr className="border-b border-hairline text-left text-ink-3">
               {colunas.map((c) => (
                 <th
                   key={c.chave}
@@ -241,7 +241,7 @@ function Detalhamento({
             {grupo.detalhe.map((l) => {
               const d = l.detalhe ?? {};
               return (
-                <tr key={l.id} className="border-b last:border-0">
+                <tr key={l.id} className="border-b border-hairline last:border-0">
                   {colunas.map((c) => (
                     <CelulaDetalhe key={c.chave} coluna={c} valores={d} />
                   ))}
@@ -342,7 +342,7 @@ function Celula({
       <TooltipTrigger asChild>
         <span className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2">
           {texto}
-          <Info className="h-3 w-3 text-amber-600" />
+          <Info className="h-3 w-3 text-warning-ink" />
         </span>
       </TooltipTrigger>
       <TooltipContent>

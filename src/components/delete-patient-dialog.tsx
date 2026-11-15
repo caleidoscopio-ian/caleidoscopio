@@ -91,13 +91,13 @@ export function DeletePatientDialog({ patient, onSuccess }: DeletePatientDialogP
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+        <Button variant="outline" size="sm" className="text-danger-ink hover:text-danger-ink hover:bg-danger-soft">
           <Trash2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600">
+          <DialogTitle className="flex items-center gap-2 text-danger-ink">
             <AlertTriangle className="h-5 w-5" />
             Confirmar Remoção
           </DialogTitle>
@@ -108,7 +108,7 @@ export function DeletePatientDialog({ patient, onSuccess }: DeletePatientDialogP
 
         <div className="space-y-4">
           {/* Informações do paciente */}
-          <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+          <div className="p-4 bg-surface-sunken rounded-lg space-y-2">
             <div className="font-medium">{patient.name}</div>
             <div className="text-sm text-muted-foreground">
               CPF: {patient.cpf ? patient.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : 'Não informado'}
@@ -118,18 +118,18 @@ export function DeletePatientDialog({ patient, onSuccess }: DeletePatientDialogP
                 Email: {patient.email}
               </div>
             )}
-            <Badge variant="outline" className="bg-red-50 text-red-700">
+            <Badge variant="outline" className="bg-danger-soft text-danger-ink">
               Será removido do sistema
             </Badge>
           </div>
 
           {/* Aviso importante */}
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="p-3 bg-warning-soft border border-warning-soft rounded-lg">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+              <AlertTriangle className="h-4 w-4 text-warning-ink mt-0.5" />
               <div className="text-sm">
-                <div className="font-medium text-yellow-800">Atenção!</div>
-                <div className="text-yellow-700">
+                <div className="font-medium text-warning-ink">Atenção!</div>
+                <div className="text-warning-ink">
                   O paciente será desativado do sistema. Seus dados não serão perdidos,
                   mas ele não aparecerá mais nas listagens. Históricos e agendamentos
                   serão preservados.

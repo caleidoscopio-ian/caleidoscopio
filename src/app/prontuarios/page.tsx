@@ -8,7 +8,6 @@ import { NovoProntuarioForm } from "@/components/forms/novo-prontuario-form";
 import { EditarProntuarioForm } from "@/components/forms/editar-prontuario-form";
 import { ProntuarioDetailsDialog } from "@/components/prontuario-details-dialog";
 import { DeleteProntuarioDialog } from "@/components/delete-prontuario-dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +37,7 @@ import {
   BarChart,
 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader, Panel, StatCard } from "@/components/kit";
 
 interface Patient {
   id: string;
@@ -218,76 +218,47 @@ function ProntuariosPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Registros de Sessão
-            </h1>
-            <p className="text-muted-foreground">
-              Histórico de atendimentos, evoluções clínicas e registros
-            </p>
-          </div>
-          <NovoProntuarioForm onSuccess={fetchMedicalRecords} />
-        </div>
+        <PageHeader
+          titulo="Registros de Sessão"
+          subtitulo="Histórico de atendimentos, evoluções clínicas e registros"
+          acoes={
+            <NovoProntuarioForm onSuccess={fetchMedicalRecords} />
+          }
+        />
 
         {/* Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Registros
-              </CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? "..." : totalSessoes}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard
+            tom="blue"
+            size="hero"
+            icone={<FileText />}
+            rotulo="Total Registros"
+            valor={loading ? "..." : totalSessoes}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Este Mês</CardTitle>
-              <Calendar className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {loading ? "..." : sessoesEsteMes}
-              </div>
-              <p className="text-xs text-muted-foreground">Registros criados</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="lavender"
+            icone={<Calendar className="text-brand" />}
+            rotulo="Este Mês"
+            valor={<span className="text-brand">{loading ? "..." : sessoesEsteMes}</span>}
+            hint="Registros criados"
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Pacientes Atendidos
-              </CardTitle>
-              <User className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {loading ? "..." : pacientesAtendidos}
-              </div>
-              <p className="text-xs text-muted-foreground">Pacientes únicos</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="mint"
+            icone={<User />}
+            rotulo="Pacientes Atendidos"
+            valor={<span className="text-success-ink">{loading ? "..." : pacientesAtendidos}</span>}
+            hint="Pacientes únicos"
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Profissionais Ativos
-              </CardTitle>
-              <Stethoscope className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {loading ? "..." : profissionaisUnicos}
-              </div>
-              <p className="text-xs text-muted-foreground">Com registros</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="peach"
+            icone={<Stethoscope />}
+            rotulo="Profissionais Ativos"
+            valor={loading ? "..." : profissionaisUnicos}
+            hint="Com registros"
+          />
         </div>
 
         {/* Filtros e Busca */}
@@ -352,149 +323,140 @@ function ProntuariosPageContent() {
         </div>
 
         {/* Tabela de Prontuários */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart className="h-5 w-5" />
-              Histórico de Atendimentos
-              {!loading && (
-                <Badge variant="secondary" className="ml-2">
-                  {filteredRecords.length} de {medicalRecords.length}
-                </Badge>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="text-center py-8">
-                <div className="text-red-600 mb-4">{error}</div>
-                <Button onClick={fetchMedicalRecords} variant="outline">
-                  Tentar Novamente
-                </Button>
-              </div>
-            )}
+        <Panel
+          icone={<BarChart />}
+          titulo={<>Histórico de Atendimentos {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredRecords.length} de {medicalRecords.length} </Badge> )}</>}
+        >
 
-            {loading && !error && (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Carregando registros...
-                </p>
-              </div>
-            )}
+          {error && (
+            <div className="text-center py-8">
+              <div className="text-danger-ink mb-4">{error}</div>
+              <Button onClick={fetchMedicalRecords} variant="outline">
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
 
-            {!loading && !error && medicalRecords.length === 0 && (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">
-                  Nenhum registro encontrado
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Comece registrando o primeiro atendimento.
-                </p>
-                <NovoProntuarioForm onSuccess={fetchMedicalRecords} />
-              </div>
-            )}
+          {loading && !error && (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                Carregando registros...
+              </p>
+            </div>
+          )}
 
-            {!loading && !error && filteredRecords.length > 0 && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data Sessão</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Profissional</TableHead>
-                    <TableHead>Tipo Atendimento</TableHead>
-                    <TableHead>Evolução Clínica</TableHead>
-                    <TableHead>Anexos</TableHead>
-                    <TableHead>Criado em</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+          {!loading && !error && medicalRecords.length === 0 && (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                Nenhum registro encontrado
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Comece registrando o primeiro atendimento.
+              </p>
+              <NovoProntuarioForm onSuccess={fetchMedicalRecords} />
+            </div>
+          )}
+
+          {!loading && !error && filteredRecords.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data Sessão</TableHead>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Profissional</TableHead>
+                  <TableHead>Tipo Atendimento</TableHead>
+                  <TableHead>Evolução Clínica</TableHead>
+                  <TableHead>Anexos</TableHead>
+                  <TableHead>Criado em</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRecords.map((record) => (
+                  <TableRow key={record.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        {formatDate(record.sessionDate)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        {record.patient.name}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium">
+                          {record.professional.name}
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {record.professional.specialty}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{record.serviceType}</Badge>
+                    </TableCell>
+                    <TableCell className="max-w-[300px]">
+                      <div className="truncate text-sm">
+                        {record.clinicalEvolution}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {record.attachments.length > 0 ? (
+                        <Badge
+                          variant="outline"
+                          className="bg-brand-soft text-brand"
+                        >
+                          {record.attachments.length} arquivo(s)
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          -
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDateTime(record.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-2">
+                        <ProntuarioDetailsDialog record={record} />
+                        <EditarProntuarioForm
+                          record={record}
+                          onSuccess={fetchMedicalRecords}
+                        />
+                        <DeleteProntuarioDialog
+                          record={record}
+                          onSuccess={fetchMedicalRecords}
+                        />
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRecords.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {formatDate(record.sessionDate)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          {record.patient.name}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">
-                            {record.professional.name}
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {record.professional.specialty}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{record.serviceType}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[300px]">
-                        <div className="truncate text-sm">
-                          {record.clinicalEvolution}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {record.attachments.length > 0 ? (
-                          <Badge
-                            variant="outline"
-                            className="bg-blue-50 text-blue-700"
-                          >
-                            {record.attachments.length} arquivo(s)
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">
-                            -
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTime(record.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <ProntuarioDetailsDialog record={record} />
-                          <EditarProntuarioForm
-                            record={record}
-                            onSuccess={fetchMedicalRecords}
-                          />
-                          <DeleteProntuarioDialog
-                            record={record}
-                            onSuccess={fetchMedicalRecords}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                ))}
+              </TableBody>
+            </Table>
+          )}
 
-            {!loading &&
-              !error &&
-              medicalRecords.length > 0 &&
-              filteredRecords.length === 0 && (
-                <div className="text-center py-8">
-                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Nenhum resultado encontrado
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Tente ajustar os filtros ou termos da sua busca.
-                  </p>
-                </div>
-              )}
-          </CardContent>
-        </Card>
+          {!loading &&
+            !error &&
+            medicalRecords.length > 0 &&
+            filteredRecords.length === 0 && (
+              <div className="text-center py-8">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">
+                  Nenhum resultado encontrado
+                </h3>
+                <p className="text-muted-foreground">
+                  Tente ajustar os filtros ou termos da sua busca.
+                </p>
+              </div>
+            )}
+        </Panel>
       </div>
     </MainLayout>
   );

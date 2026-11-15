@@ -79,7 +79,7 @@ export function UserRoleAssignment({ availableRoles }: UserRoleAssignmentProps) 
         />
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

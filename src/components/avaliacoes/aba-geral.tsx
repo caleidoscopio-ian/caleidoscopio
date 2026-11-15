@@ -3,13 +3,6 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Panel } from "@/components/kit";
 
 interface AbaGeralProps {
   dados: {
@@ -72,16 +66,12 @@ export function AbaGeral({ dados, onChange, avaliacaoId }: AbaGeralProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Informações Gerais</CardTitle>
-        <CardDescription>Defina o tipo e nome da avaliação</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Panel titulo="Informações Gerais" subtitulo="Defina o tipo e nome da avaliação">
+      <div className="space-y-4">
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="tipo">
-              Tipo de Avaliação <span className="text-red-500">*</span>
+              Tipo de Avaliação <span className="text-danger-ink">*</span>
             </Label>
             <Select
               value={dados.tipo}
@@ -109,7 +99,7 @@ export function AbaGeral({ dados, onChange, avaliacaoId }: AbaGeralProps) {
 
           <div className="grid gap-2">
             <Label htmlFor="nome">
-              Nome da Avaliação <span className="text-red-500">*</span>
+              Nome da Avaliação <span className="text-danger-ink">*</span>
             </Label>
             <Input
               id="nome"
@@ -140,7 +130,7 @@ export function AbaGeral({ dados, onChange, avaliacaoId }: AbaGeralProps) {
         )}
 
         {avaliacaoId && (
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+          <div className="bg-brand-soft border border-brand-soft text-brand px-4 py-3 rounded">
             <p className="text-sm">
               ✓ Avaliação salva! Agora você pode adicionar Níveis, Habilidades,
               Pontuações e Tarefas usando as abas acima.
@@ -149,14 +139,14 @@ export function AbaGeral({ dados, onChange, avaliacaoId }: AbaGeralProps) {
         )}
 
         {!avaliacaoId && (
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          <div className="bg-warning-soft border border-warning-soft text-warning-ink px-4 py-3 rounded">
             <p className="text-sm">
               ⚠ Salve as informações gerais primeiro para habilitar as outras
               abas.
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }

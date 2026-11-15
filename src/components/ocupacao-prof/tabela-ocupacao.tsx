@@ -20,13 +20,13 @@ type Direcao = "asc" | "desc"
 
 function TaxaBarra({ taxa }: { taxa: number }) {
   const pct = Math.min(Math.round(taxa * 100), 100)
-  const cor = taxa >= 1 ? "bg-red-500" : taxa >= 0.8 ? "bg-amber-500" : taxa >= 0.5 ? "bg-green-500" : "bg-blue-400"
+  const cor = taxa >= 1 ? "bg-danger" : taxa >= 0.8 ? "bg-warning" : taxa >= 0.5 ? "bg-success" : "bg-brand"
   return (
     <div className="flex items-center gap-2 min-w-[120px]">
       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all ${cor}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className={`text-xs font-medium w-10 text-right tabular-nums ${taxa >= 1 ? "text-red-600" : taxa >= 0.8 ? "text-amber-600" : taxa >= 0.5 ? "text-green-600" : "text-muted-foreground"}`}>
+      <span className={`text-xs font-medium w-10 text-right tabular-nums ${taxa >= 1 ? "text-danger-ink" : taxa >= 0.8 ? "text-warning-ink" : taxa >= 0.5 ? "text-success-ink" : "text-muted-foreground"}`}>
         {formatarTaxa(taxa)}
         {taxa > 1 && " ⚠"}
       </span>
@@ -106,8 +106,8 @@ export function TabelaOcupacao({ profissionais, onConfigurarGrade }: TabelaOcupa
                     <Tooltip>
                       <TooltipTrigger>
                         <span className="relative flex h-2.5 w-2.5 mx-auto">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
                         </span>
                       </TooltipTrigger>
                       <TooltipContent>Atendendo agora</TooltipContent>
@@ -119,7 +119,7 @@ export function TabelaOcupacao({ profissionais, onConfigurarGrade }: TabelaOcupa
                   <div className="font-medium text-sm">{prof.nome}</div>
                   <div className="text-xs text-muted-foreground">{prof.especialidade}</div>
                   {!prof.tem_grade && (
-                    <Badge variant="outline" className="mt-1 text-xs text-amber-600 border-amber-300">
+                    <Badge variant="outline" className="mt-1 text-xs text-warning-ink border-warning">
                       grade não configurada
                     </Badge>
                   )}
@@ -145,7 +145,7 @@ export function TabelaOcupacao({ profissionais, onConfigurarGrade }: TabelaOcupa
 
                 <TableCell className="text-right">
                   {prof.faltas > 0 && (
-                    <span className="text-xs font-medium text-orange-600">{prof.faltas}</span>
+                    <span className="text-xs font-medium text-warning-ink">{prof.faltas}</span>
                   )}
                   {prof.cancelamentos > 0 && (
                     <span className="text-xs text-muted-foreground ml-1">({prof.cancelamentos} canc.)</span>

@@ -216,7 +216,7 @@ export function RegistrarGlosaDialog({ open, onOpenChange, agendamento, onSucces
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <AlertTriangle className="h-5 w-5 text-danger-ink" />
             Registrar Glosa
           </DialogTitle>
           <DialogDescription>
@@ -279,8 +279,8 @@ export function RegistrarGlosaDialog({ open, onOpenChange, agendamento, onSucces
                   <div className="flex gap-3 text-xs text-muted-foreground">
                     {at.profissional && <span>{at.profissional.nome}</span>}
                     {at.procedimento && <span>{at.procedimento.nome}</span>}
-                    {at.convenio && <Badge variant="outline" className="text-[10px] h-4 text-blue-700 border-blue-300">{at.convenio.nome}</Badge>}
-                    {at.valor !== null && <span className="text-green-700 font-medium">{formatBRL(at.valor)}</span>}
+                    {at.convenio && <Badge variant="outline" className="text-[10px] h-4 text-brand border-brand">{at.convenio.nome}</Badge>}
+                    {at.valor !== null && <span className="text-success-ink font-medium">{formatBRL(at.valor)}</span>}
                   </div>
                 </button>
               ))}
@@ -310,10 +310,10 @@ export function RegistrarGlosaDialog({ open, onOpenChange, agendamento, onSucces
                 <div className="text-muted-foreground">Procedimento: <span className="text-foreground">{agendamentoSelecionado.procedimentoNome}</span></div>
               )}
               {agendamentoSelecionado.convenioNome && (
-                <div className="text-muted-foreground">Convênio: <span className="text-blue-700 font-medium">{agendamentoSelecionado.convenioNome}</span></div>
+                <div className="text-muted-foreground">Convênio: <span className="text-brand font-medium">{agendamentoSelecionado.convenioNome}</span></div>
               )}
               {agendamentoSelecionado.valorSugerido !== null && agendamentoSelecionado.valorSugerido !== undefined && agendamentoSelecionado.valorSugerido > 0 && (
-                <div className="text-muted-foreground">Valor cobrado sugerido: <span className="text-green-700 font-medium">{formatBRL(agendamentoSelecionado.valorSugerido)}</span></div>
+                <div className="text-muted-foreground">Valor cobrado sugerido: <span className="text-success-ink font-medium">{formatBRL(agendamentoSelecionado.valorSugerido)}</span></div>
               )}
             </div>
 

@@ -48,6 +48,7 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
+import { EstadoVazio, Carregando } from "@/components/kit";
 
 interface Relatorio {
   id: string;
@@ -285,9 +286,9 @@ export function ProntuarioRelatorios({
     const variants: Record<string, { variant: any; className?: string }> = {
       EVOLUCAO_CLINICA: { variant: "default" },
       AVALIACAO_PERIODICA: { variant: "secondary" },
-      ALTA: { variant: "default", className: "bg-purple-600" },
-      ATESTADO: { variant: "default", className: "bg-blue-600" },
-      LAUDO: { variant: "default", className: "bg-indigo-600" },
+      ALTA: { variant: "default", className: "bg-violet" },
+      ATESTADO: { variant: "default", className: "bg-brand" },
+      LAUDO: { variant: "default", className: "bg-brand" },
       OUTROS: { variant: "outline" },
     };
 
@@ -303,7 +304,7 @@ export function ProntuarioRelatorios({
   const getAssinadoBadge = (assinado: boolean) => {
     if (assinado) {
       return (
-        <Badge variant="default" className="bg-green-600">
+        <Badge variant="default" className="bg-success">
           <FileCheck className="h-3 w-3 mr-1" />
           Assinado
         </Badge>
@@ -319,13 +320,7 @@ export function ProntuarioRelatorios({
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">
-            Carregando relatórios...
-          </p>
-        </CardContent>
-      </Card>
+      <Carregando texto="Carregando relatórios..." />
     );
   }
 
@@ -350,7 +345,7 @@ export function ProntuarioRelatorios({
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="tipo">
-                  Tipo de Relatório <span className="text-red-500">*</span>
+                  Tipo de Relatório <span className="text-danger-ink">*</span>
                 </Label>
                 <Select
                   value={formData.tipo}
@@ -377,7 +372,7 @@ export function ProntuarioRelatorios({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="titulo">
-                  Título <span className="text-red-500">*</span>
+                  Título <span className="text-danger-ink">*</span>
                 </Label>
                 <Input
                   id="titulo"
@@ -445,7 +440,7 @@ export function ProntuarioRelatorios({
             {/* Conteúdo */}
             <div className="grid gap-2">
               <Label htmlFor="conteudo">
-                Conteúdo <span className="text-red-500">*</span>
+                Conteúdo <span className="text-danger-ink">*</span>
               </Label>
               <Textarea
                 id="conteudo"
@@ -486,14 +481,7 @@ export function ProntuarioRelatorios({
 
       {/* Lista de Relatórios */}
       {relatorios.length === 0 ? (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">
-              <FileBarChart className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nenhum relatório clínico registrado</p>
-            </div>
-          </CardContent>
-        </Card>
+        <EstadoVazio icone={<FileBarChart />} titulo="Nenhum relatório clínico registrado" />
       ) : (
         <div className="space-y-3">
           {relatorios.map((relatorio) => (
@@ -589,8 +577,8 @@ export function ProntuarioRelatorios({
 
                 {/* Assinatura */}
                 {relatorio.assinado && relatorio.data_assinatura && (
-                  <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg">
-                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                  <div className="bg-success-soft dark:bg-success p-3 rounded-lg">
+                    <p className="text-sm font-medium text-success-ink dark:text-success-ink">
                       Assinado em {formatDate(relatorio.data_assinatura)}
                     </p>
                   </div>
@@ -603,7 +591,7 @@ export function ProntuarioRelatorios({
                       href={relatorio.arquivo_pdf}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1"
+                      className="text-sm text-brand hover:underline inline-flex items-center gap-1"
                     >
                       <FileBarChart className="h-4 w-4" />
                       Baixar PDF

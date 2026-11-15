@@ -67,13 +67,13 @@ export function ConciliacaoDetalhe({ demonstrativoId, open, onOpenChange }: Conc
                 <div className="text-xs text-muted-foreground">Informado</div>
                 <div className="font-semibold">{formatBRL(dem.valor_informado_total)}</div>
               </div>
-              <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-center">
-                <div className="text-xs text-green-600">Liberado</div>
-                <div className="font-semibold text-green-700">{formatBRL(dem.valor_liberado_total)}</div>
+              <div className="p-3 rounded-lg bg-success-soft border border-success-soft text-center">
+                <div className="text-xs text-success-ink">Liberado</div>
+                <div className="font-semibold text-success-ink">{formatBRL(dem.valor_liberado_total)}</div>
               </div>
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-center">
-                <div className="text-xs text-red-600">Glosado</div>
-                <div className="font-semibold text-red-700">{formatBRL(dem.valor_glosa_total)}</div>
+              <div className="p-3 rounded-lg bg-danger-soft border border-danger-soft text-center">
+                <div className="text-xs text-danger-ink">Glosado</div>
+                <div className="font-semibold text-danger-ink">{formatBRL(dem.valor_glosa_total)}</div>
               </div>
             </div>
 
@@ -92,10 +92,10 @@ export function ConciliacaoDetalhe({ demonstrativoId, open, onOpenChange }: Conc
             </div>
 
             {/* Tabela de guias */}
-            <div className="rounded-md border overflow-x-auto">
+            <div className="overflow-x-auto">
               <Table className="text-xs">
                 <TableHeader>
-                  <TableRow className="bg-muted/40">
+                  <TableRow>
                     <TableHead>Status</TableHead>
                     <TableHead>Senha</TableHead>
                     <TableHead>Guia</TableHead>
@@ -129,17 +129,17 @@ export function ConciliacaoDetalhe({ demonstrativoId, open, onOpenChange }: Conc
                             </div>
                           </div>
                         ) : (
-                          <span className="text-red-500 text-[11px]">sem atendimento</span>
+                          <span className="text-danger-ink text-[11px]">sem atendimento</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{formatBRL(g.valor_informado)}</TableCell>
-                      <TableCell className="text-right tabular-nums text-green-600">{formatBRL(g.valor_liberado)}</TableCell>
-                      <TableCell className="text-right tabular-nums text-red-600 font-medium">
+                      <TableCell className="text-right tabular-nums text-success-ink">{formatBRL(g.valor_liberado)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-danger-ink font-medium">
                         {g.valor_glosa > 0 ? formatBRL(g.valor_glosa) : "—"}
                       </TableCell>
                       <TableCell className="max-w-[180px]">
                         {g.descricao_glosa ? (
-                          <span className="text-amber-700">
+                          <span className="text-warning-ink">
                             {g.codigo_glosa && <span className="font-mono mr-1">{g.codigo_glosa}</span>}
                             {g.descricao_glosa}
                           </span>

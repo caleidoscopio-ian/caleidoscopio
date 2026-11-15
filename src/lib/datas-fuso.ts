@@ -295,3 +295,37 @@ export function parseFimPeriodo(
   }
   return new Date(param);
 }
+
+/**
+ * Data **sem hora** (nascimento, validade, competência) para exibição.
+ *
+ * `new Date("2015-10-15")` é meia-noite em **UTC**; renderizada no Brasil
+ * (UTC−3) vira 14/10. Como o banco guarda esse campo como dia civil, não como
+ * instante, a conversão de fuso não deve acontecer: aqui a string é lida como
+ * texto e remontada.
+ *
+ * Para data **com hora** (um agendamento) continue usando `Date` normal — ali
+ * o instante é o dado.
+ */
+export function formatarDataCivil(valor: string | Date | null | undefined): string {
+  if (!valor) return "—";
+  const texto = typeof valor === "string" ? valor : valor.toISOString();
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(texto);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  const d = new Date(texto);
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("pt-BR");
+}
+
+/** Idade em anos cheios, pela mesma leitura civil da data. */
+export function idadeEmAnos(valor: string | Date | null | undefined): number | null {
+  if (!valor) return null;
+  const texto = typeof valor === "string" ? valor : valor.toISOString();
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(texto);
+  if (!m) return null;
+  const [ano, mes, dia] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - ano;
+  const passouMes = hoje.getMonth() + 1 - mes;
+  if (passouMes < 0 || (passouMes === 0 && hoje.getDate() < dia)) idade--;
+  return idade;
+}

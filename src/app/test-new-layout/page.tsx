@@ -1,9 +1,9 @@
 'use client'
 
 import { MainLayout } from '@/components/main-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { PageHeader, Panel } from '@/components/kit'
 
 export default function TestNewLayoutPage() {
   const breadcrumbs = [
@@ -15,26 +15,21 @@ export default function TestNewLayoutPage() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">🎉 Novo Layout do Caleidoscópio</h1>
-            <p className="text-muted-foreground">
-              Teste do sistema moderno com shadcn/ui sidebar
-            </p>
-          </div>
-          <Badge variant="outline" className="bg-green-50 text-green-700">
-            ✅ Sistema Moderno
-          </Badge>
-        </div>
+        <PageHeader
+          titulo="🎉 Novo Layout do Caleidoscópio"
+          subtitulo="Teste do sistema moderno com shadcn/ui sidebar"
+          acoes={
+            <Badge variant="outline" className="bg-success-soft text-success-ink">
+              ✅ Sistema Moderno
+            </Badge>
+          }
+        />
 
         {/* Comparação de Features */}
         <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-green-600">✅ Sistema Antigo</CardTitle>
-              <CardDescription>Funcionalidades já implementadas</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
+          <Panel titulo="✅ Sistema Antigo" subtitulo="Funcionalidades já implementadas">
+            <div className="space-y-2">
+
               <div className="flex items-center gap-2">
                 <span>✅</span> <span>Sidebar custom manual</span>
               </div>
@@ -50,15 +45,12 @@ export default function TestNewLayoutPage() {
               <div className="flex items-center gap-2">
                 <span>✅</span> <span>Breadcrumbs no header</span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-blue-600">🚀 Sistema Novo</CardTitle>
-              <CardDescription>Melhorias com shadcn/ui moderno</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
+          <Panel titulo="🚀 Sistema Novo" subtitulo="Melhorias com shadcn/ui moderno">
+            <div className="space-y-2">
+
               <div className="flex items-center gap-2">
                 <span>🆕</span> <span>Sidebar shadcn/ui moderna</span>
               </div>
@@ -80,19 +72,17 @@ export default function TestNewLayoutPage() {
               <div className="flex items-center gap-2">
                 <span>🆕</span> <span>Responsividade automática</span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
         </div>
 
         {/* Instruções */}
-        <Card>
-          <CardHeader>
-            <CardTitle>🧪 Como Testar</CardTitle>
-            <CardDescription>
-              Experimente as novas funcionalidades do sidebar moderno
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Panel
+          titulo="🧪 Como Testar"
+          subtitulo="Experimente as novas funcionalidades do sidebar moderno"
+        >
+          <div className="space-y-4">
+
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <h4 className="font-medium mb-2">🔍 Navegação por Grupos</h4>
@@ -131,8 +121,8 @@ export default function TestNewLayoutPage() {
                 </a>
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       </div>
     </MainLayout>
   )

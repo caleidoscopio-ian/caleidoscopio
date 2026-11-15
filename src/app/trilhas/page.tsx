@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Map, Play, Clock, Star } from 'lucide-react'
+import { PageHeader, StatCard } from '@/components/kit'
 
 export default function TrilhasPage() {
   const breadcrumbs = [
@@ -50,60 +51,26 @@ export default function TrilhasPage() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Trilhas de Aprendizado</h1>
-            <p className="text-muted-foreground">
-              Explore as trilhas educacionais personalizadas
-            </p>
-          </div>
-          <Button>
-            <Map className="mr-2 h-4 w-4" />
-            Nova Trilha
-          </Button>
-        </div>
+        <PageHeader
+          titulo="Trilhas de Aprendizado"
+          subtitulo="Explore as trilhas educacionais personalizadas"
+          acoes={
+            <Button>
+              <Map className="mr-2 h-4 w-4" />
+              Nova Trilha
+            </Button>
+          }
+        />
 
         {/* Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Trilhas</CardTitle>
-              <Map className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{trilhas.length}</div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard tom="blue" size="hero" icone={<Map />} rotulo="Total Trilhas" valor={trilhas.length} />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Em Progresso</CardTitle>
-              <Play className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">2</div>
-            </CardContent>
-          </Card>
+          <StatCard tom="lavender" icone={<Play />} rotulo="Em Progresso" valor="2" />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Concluídas</CardTitle>
-              <Star className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-            </CardContent>
-          </Card>
+          <StatCard tom="mint" icone={<Star />} rotulo="Concluídas" valor="0" />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tempo Total</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">7h 30min</div>
-            </CardContent>
-          </Card>
+          <StatCard tom="peach" icone={<Clock />} rotulo="Tempo Total" valor="7h 30min" />
         </div>
 
         {/* Lista de Trilhas */}

@@ -23,6 +23,7 @@ import type {
   Glosa, GlosaListResponse, GlosaDashboard, GlosaFiltros, GlosaResumo, StatusGlosa,
 } from "@/types/glosa";
 import type { DemonstrativoResumo, ComparativoConciliacao } from "@/types/conciliacao";
+import { PageHeader } from "@/components/kit";
 
 const TODOS_STATUS: StatusGlosa[] = ["PENDENTE", "EM_RECURSO", "RECUPERADA", "PARCIAL", "NEGADA", "ACATADA"];
 
@@ -226,25 +227,23 @@ function GlosasContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Cabeçalho */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Atendimentos Glosados</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Controle de glosas, processo de recurso e análise por convênio.
-            </p>
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCSV} disabled={exportandoCSV || total === 0}>
-              <FileDown className="h-4 w-4" />{exportandoCSV ? "Exportando..." : "CSV"}
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2" onClick={handleExportPDF} disabled={exportandoPDF || total === 0}>
-              <FileText className="h-4 w-4" />{exportandoPDF ? "Gerando..." : "PDF"}
-            </Button>
-            <Button size="sm" className="gap-2" onClick={() => setRegistrarOpen(true)}>
-              <Plus className="h-4 w-4" />Registrar Glosa
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          titulo="Atendimentos Glosados"
+          subtitulo="Controle de glosas, processo de recurso e análise por convênio."
+          acoes={
+            <div className="flex gap-2 flex-shrink-0">
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCSV} disabled={exportandoCSV || total === 0}>
+                <FileDown className="h-4 w-4" />{exportandoCSV ? "Exportando..." : "CSV"}
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleExportPDF} disabled={exportandoPDF || total === 0}>
+                <FileText className="h-4 w-4" />{exportandoPDF ? "Gerando..." : "PDF"}
+              </Button>
+              <Button size="sm" className="gap-2" onClick={() => setRegistrarOpen(true)}>
+                <Plus className="h-4 w-4" />Registrar Glosa
+              </Button>
+            </div>
+          }
+        />
 
         <Tabs defaultValue="dashboard">
           <TabsList>

@@ -58,32 +58,32 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
 
   const getServiceTypeColor = (serviceType: string) => {
     const colors: Record<string, string> = {
-      'Consulta Inicial': 'bg-blue-100 text-blue-800',
-      'Sessão de Terapia': 'bg-green-100 text-green-800',
-      'Avaliação': 'bg-purple-100 text-purple-800',
-      'Reavaliação': 'bg-orange-100 text-orange-800',
-      'Orientação Familiar': 'bg-yellow-100 text-yellow-800',
-      'Atendimento Conjunto': 'bg-pink-100 text-pink-800',
-      'Sessão de Grupo': 'bg-indigo-100 text-indigo-800',
-      'Acompanhamento': 'bg-gray-100 text-gray-800',
+      'Consulta Inicial': 'bg-brand-soft text-brand',
+      'Sessão de Terapia': 'bg-success-soft text-success-ink',
+      'Avaliação': 'bg-violet-soft text-violet-ink',
+      'Reavaliação': 'bg-warning-soft text-warning-ink',
+      'Orientação Familiar': 'bg-warning-soft text-warning-ink',
+      'Atendimento Conjunto': 'bg-violet-soft text-violet-ink',
+      'Sessão de Grupo': 'bg-brand-soft text-brand',
+      'Acompanhamento': 'bg-surface-sunken text-ink',
     }
-    return colors[serviceType] || 'bg-gray-100 text-gray-800'
+    return colors[serviceType] || 'bg-surface-sunken text-ink'
   }
 
   const getSpecialtyColor = (specialty: string) => {
     const colors: Record<string, string> = {
-      'Fonoaudiologia': 'bg-blue-100 text-blue-800',
-      'Terapia Ocupacional': 'bg-green-100 text-green-800',
-      'Psicologia': 'bg-purple-100 text-purple-800',
-      'Fisioterapia': 'bg-orange-100 text-orange-800',
-      'Neuropsicologia': 'bg-pink-100 text-pink-800',
-      'Psicopedagogia': 'bg-yellow-100 text-yellow-800',
-      'Musicoterapia': 'bg-indigo-100 text-indigo-800',
+      'Fonoaudiologia': 'bg-brand-soft text-brand',
+      'Terapia Ocupacional': 'bg-success-soft text-success-ink',
+      'Psicologia': 'bg-violet-soft text-violet-ink',
+      'Fisioterapia': 'bg-warning-soft text-warning-ink',
+      'Neuropsicologia': 'bg-violet-soft text-violet-ink',
+      'Psicopedagogia': 'bg-warning-soft text-warning-ink',
+      'Musicoterapia': 'bg-brand-soft text-brand',
       'Educação Física Adaptada': 'bg-cyan-100 text-cyan-800',
-      'Análise do Comportamento Aplicada (ABA)': 'bg-red-100 text-red-800',
-      'Nutrição': 'bg-emerald-100 text-emerald-800',
+      'Análise do Comportamento Aplicada (ABA)': 'bg-danger-soft text-danger-ink',
+      'Nutrição': 'bg-success-soft text-success-ink',
     }
-    return colors[specialty] || 'bg-gray-100 text-gray-800'
+    return colors[specialty] || 'bg-surface-sunken text-ink'
   }
 
   return (
@@ -106,17 +106,17 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
 
         <div className="space-y-6">
             {/* Header com Informações Principais */}
-            <div className="text-center space-y-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+            <div className="text-center space-y-3 p-4 bg-gradient-to-r from-brand-soft to-brand-soft rounded-lg">
               <div className="space-y-1">
-                <h2 className="text-xl font-bold text-gray-900">{record.patient.name}</h2>
-                <p className="text-sm text-gray-600">Paciente</p>
+                <h2 className="text-xl font-bold text-ink">{record.patient.name}</h2>
+                <p className="text-sm text-ink">Paciente</p>
               </div>
 
               <div className="flex justify-center items-center gap-4 flex-wrap">
                 <Badge className={`${getServiceTypeColor(record.serviceType)} border-0`}>
                   {record.serviceType}
                 </Badge>
-                <Badge variant="outline" className="bg-white">
+                <Badge variant="outline" className="bg-surface">
                   <Calendar className="mr-1 h-3 w-3" />
                   {formatDate(record.sessionDate)}
                 </Badge>
@@ -135,28 +135,28 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Paciente */}
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                  <h4 className="font-medium text-ink flex items-center gap-2">
                     <User className="h-4 w-4" />
                     Paciente
                   </h4>
-                  <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="p-3 bg-surface-sunken rounded-lg">
                     <p className="font-medium">{record.patient.name}</p>
-                    <p className="text-sm text-gray-600">ID: {record.patient.id}</p>
+                    <p className="text-sm text-ink">ID: {record.patient.id}</p>
                   </div>
                 </div>
 
                 {/* Profissional */}
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                  <h4 className="font-medium text-ink flex items-center gap-2">
                     <Stethoscope className="h-4 w-4" />
                     Profissional Responsável
                   </h4>
-                  <div className="p-3 bg-gray-50 rounded-lg space-y-2">
+                  <div className="p-3 bg-surface-sunken rounded-lg space-y-2">
                     <p className="font-medium">{record.professional.name}</p>
                     <Badge className={`${getSpecialtyColor(record.professional.specialty)} border-0 text-xs`}>
                       {record.professional.specialty}
                     </Badge>
-                    <p className="text-sm text-gray-600">ID: {record.professional.id}</p>
+                    <p className="text-sm text-ink">ID: {record.professional.id}</p>
                   </div>
                 </div>
               </div>
@@ -164,15 +164,15 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
               {/* Dados da Sessão */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Data da Sessão</label>
-                  <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-md">
-                    <Calendar className="h-4 w-4 text-blue-600" />
+                  <label className="text-sm font-medium text-ink">Data da Sessão</label>
+                  <div className="flex items-center gap-2 p-2 bg-brand-soft rounded-md">
+                    <Calendar className="h-4 w-4 text-brand" />
                     <span className="font-medium">{formatDate(record.sessionDate)}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Tipo de Atendimento</label>
+                  <label className="text-sm font-medium text-ink">Tipo de Atendimento</label>
                   <div className="flex items-center gap-2">
                     <Badge className={`${getServiceTypeColor(record.serviceType)} border-0`}>
                       {record.serviceType}
@@ -191,10 +191,10 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
                 Evolução Clínica
               </h3>
 
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="p-4 bg-success-soft border border-success-soft rounded-lg">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-green-800">Descrição da Evolução</label>
-                  <div className="text-sm text-green-700 leading-relaxed whitespace-pre-wrap">
+                  <label className="text-sm font-medium text-success-ink">Descrição da Evolução</label>
+                  <div className="text-sm text-success-ink leading-relaxed whitespace-pre-wrap">
                     {record.clinicalEvolution}
                   </div>
                 </div>
@@ -211,10 +211,10 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
                     Observações Adicionais
                   </h3>
 
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="p-4 bg-warning-soft border border-warning-soft rounded-lg">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-yellow-800">Observações Complementares</label>
-                      <div className="text-sm text-yellow-700 leading-relaxed whitespace-pre-wrap">
+                      <label className="text-sm font-medium text-warning-ink">Observações Complementares</label>
+                      <div className="text-sm text-warning-ink leading-relaxed whitespace-pre-wrap">
                         {record.observations}
                       </div>
                     </div>
@@ -234,14 +234,14 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
               {record.attachments && record.attachments.length > 0 ? (
                 <div className="space-y-2">
                   {record.attachments.map((attachment, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 rounded-md">
-                      <Paperclip className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm text-blue-800">{attachment}</span>
+                    <div key={index} className="flex items-center gap-2 p-2 bg-brand-soft rounded-md">
+                      <Paperclip className="h-4 w-4 text-brand" />
+                      <span className="text-sm text-brand">{attachment}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 italic">
+                <p className="text-sm text-ink-3 italic">
                   Nenhum anexo adicionado a este prontuário.
                 </p>
               )}
@@ -258,18 +258,18 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
-                  <label className="font-medium text-gray-700">Criado em</label>
-                  <p className="text-gray-600">{formatDateTime(record.createdAt)}</p>
+                  <label className="font-medium text-ink">Criado em</label>
+                  <p className="text-ink">{formatDateTime(record.createdAt)}</p>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-medium text-gray-700">Última atualização</label>
-                  <p className="text-gray-600">{formatDateTime(record.updatedAt)}</p>
+                  <label className="font-medium text-ink">Última atualização</label>
+                  <p className="text-ink">{formatDateTime(record.updatedAt)}</p>
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
-                  <label className="font-medium text-gray-700">ID do Prontuário</label>
-                  <p className="font-mono text-xs text-gray-600">{record.id}</p>
+                  <label className="font-medium text-ink">ID do Prontuário</label>
+                  <p className="font-mono text-xs text-ink">{record.id}</p>
                 </div>
               </div>
             </div>

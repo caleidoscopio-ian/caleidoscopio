@@ -1,215 +1,197 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Design system do Caleidoscópio v2 (Módulo 28).
+   `tokens-v2.css` é GERADO de design/origem/v2-producao.css por
+   tools/extrair-tokens-v2.mjs — não editar.
+   `tokens-ajustes.css` carrega depois e guarda as divergências deliberadas. */
+@import "../styles/tokens-v2.css";
+@import "../styles/tokens-ajustes.css";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Ponte com os componentes shadcn: eles consomem estes nomes, e os valores
+     vêm dos tokens do v2 (--background = --panel, --card = --surface, ...).
+     É o que faz as 39 telas herdarem a paleta sem reescrever componente. */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
-:root {
-  /* Caleidoscópio Design System Tokens - Baseado no Sistema 1 */
-  --radius: 8px; /* radius-md consistente */
+  /* Pilha de fontes do v2: zero webfont. Renderiza SF Pro no Apple, Inter ou
+     Helvetica nos demais. O projeto carregava Mulish do Google Fonts; a troca
+     é parte do design, não economia de request. */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter",
+    "Helvetica Neue", Arial, sans-serif;
+  --font-display:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter",
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
 
-  /* Cores extraídas do Sistema 1 */
-  --caleidoscopio-primary: 210 47% 30%; /* azul escuro para textos/headers */
-  --caleidoscopio-action: 225 93% 54%; /* #1E56F0 - azul vibrante dos botões */
-  --caleidoscopio-text-primary: 0 0% 10%; /* #1A1A1A - texto principal */
-  --caleidoscopio-text-secondary: 0 0% 40%; /* #666666 - texto secundário */
-  --caleidoscopio-background: 0 0% 100%; /* #FFFFFF - fundo */
-  --caleidoscopio-border: 0 0% 92%; /* #EBEBEB - bordas sutis */
-  --caleidoscopio-input: 0 0% 96%; /* #F5F5F5 - fundo de inputs */
-  --caleidoscopio-feedback-error: 0 70% 50%;
-  --caleidoscopio-feedback-success: 120 60% 45%;
-  --caleidoscopio-feedback-warning: 38 90% 50%;
-  --caleidoscopio-white: 0 0% 100%;
-
-  /* Mapeamento para Shadcn - Tailwind CSS v4 format */
-  --background: hsl(0 0% 100%); /* branco puro */
-  --foreground: hsl(0 0% 10%); /* texto principal escuro */
-  --card: hsl(0 0% 100%); /* cards brancos */
-  --card-foreground: hsl(0 0% 10%); /* texto em cards */
-  --popover: hsl(0 0% 100%); /* popovers brancos */
-  --popover-foreground: hsl(0 0% 10%); /* texto em popovers */
-  --primary: hsl(225 93% 54%); /* azul vibrante do Figma #1E56F0 */
-  --primary-foreground: hsl(0 0% 100%); /* texto branco em primary */
-  --secondary: hsl(0 0% 96%); /* cinza muito claro */
-  --secondary-foreground: hsl(0 0% 10%); /* texto escuro em secondary */
-  --muted: hsl(0 0% 96%); /* elementos muted */
-  --muted-foreground: hsl(0 0% 40%); /* texto muted */
-  --accent: hsl(225 93% 54%); /* accent = primary */
-  --accent-foreground: hsl(0 0% 100%); /* texto branco em accent */
-  --destructive: hsl(0 70% 50%); /* vermelho para erros */
-  --destructive-foreground: hsl(0 0% 100%); /* texto branco em destructive */
-  --border: hsl(0 0% 92%); /* bordas sutis */
-  --input: hsl(0 0% 92%); /* bordas de input */
-  --ring: hsl(225 93% 54%); /* ring = primary para foco */
-
-  /* Tokens de espaçamento (8px grid) */
-  --space-1: 8px;
-  --space-2: 16px;
-  --space-3: 24px;
-  --space-4: 32px;
-  --space-6: 48px;
-  --space-8: 64px;
-
-  /* Charts mantendo cores harmoniosas */
-  --chart-1: 225 93% 54%; /* azul primary */
-  --chart-2: 160 60% 45%; /* verde complementar */
-  --chart-3: 30 80% 55%; /* laranja */
-  --chart-4: 280 65% 60%; /* roxo */
-  --chart-5: 340 75% 55%; /* rosa */
-
-  /* Sidebar branco - configuração original */
-  --sidebar: 0 0% 100%; /* fundo branco */
-  --sidebar-foreground: 0 0% 10%; /* texto escuro */
-  --sidebar-primary: 225 93% 54%; /* azul primary */
-  --sidebar-primary-foreground: 0 0% 100%; /* texto branco */
-  --sidebar-accent: 0 0% 96%; /* cinza claro para hover */
-  --sidebar-accent-foreground: 0 0% 10%; /* texto escuro */
-  --sidebar-border: 0 0% 92%; /* bordas sutis */
-  --sidebar-ring: 225 93% 54%; /* ring azul primary */
-}
-
-/* Cards brancos */
-.bg-card {
-  background-color: hsl(0 0% 100%) !important;
-}
-
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* A escala de raio vem de tokens-v2.css (--radius: 1rem →
+     sm 10 · md 12 · lg 16 · xl 20 · 2xl 24 · 3xl 28px). Não redeclarar aqui. */
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-canvas text-ink font-sans antialiased;
+    /* Halos radiais do fundo — assinatura visual do v2 */
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, var(--halo-1), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, var(--halo-2), transparent 55%);
+    background-attachment: fixed;
+    font-feature-settings: "ss01", "cv11";
+    letter-spacing: -0.005em;
+    /* Troca de tema: 400ms só em cor, para não arrastar layout */
+    transition:
+      background-color 400ms ease,
+      color 400ms ease;
   }
 
-  /* Tipografia harmoniosa baseada no Sistema 1 */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.022em;
+  }
+
   h1 {
-    @apply text-4xl font-bold leading-tight; /* Headers grandes e bold */
+    @apply text-[2rem] leading-[1.1] font-semibold md:text-[2.375rem];
   }
 
   h2 {
-    @apply text-2xl font-bold leading-tight; /* Títulos de seção */
+    @apply text-[1.3rem] leading-[1.25] font-semibold;
   }
 
   h3 {
-    @apply text-xl font-semibold leading-tight; /* Subtítulos */
+    @apply text-[1.05rem] leading-[1.5] font-semibold;
   }
 
-  /* Body text com melhor legibilidade */
-  p {
-    @apply text-base leading-relaxed; /* Texto de parágrafo */
+  /* O v2 não usa itálico em lugar nenhum da interface */
+  em,
+  i {
+    font-style: normal;
   }
 
-  /* Labels e Links */
-  .label {
-    @apply text-sm font-medium text-foreground; /* Labels de formulário */
+  /* Seleção de texto na cor da marca */
+  ::selection {
+    background-color: var(--brand-soft);
+    color: var(--brand-strong);
+  }
+}
+
+@layer utilities {
+  /* Vidro da sidebar e da topbar */
+  .glass {
+    background-color: var(--glass);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
   }
 
-  .link {
-    @apply text-sm font-medium text-primary hover:text-primary/80 transition-colors;
+  /* Números que não dançam ao atualizar: KPI, horário, contador */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Classes utilitárias para espaçamento */
-  .space-figma-xs {
-    margin: var(--space-1);
-  } /* 8px */
-  .space-figma-sm {
-    margin: var(--space-2);
-  } /* 16px */
-  .space-figma-md {
-    margin: var(--space-3);
-  } /* 24px */
-  .space-figma-lg {
-    margin: var(--space-4);
-  } /* 32px */
-  .space-figma-xl {
-    margin: var(--space-6);
-  } /* 48px */
-  .space-figma-2xl {
-    margin: var(--space-8);
-  } /* 64px */
-
-  /* Forçar cor do botão primary */
-  .btn-primary {
-    background-color: #1e56f0 !important;
-    color: white !important;
+  /* Lista alta dentro de painel (agenda do dia): rola sem barra à vista, como
+     no v2. A barra do sistema cortaria o raio de 28px do painel. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 
-  .btn-primary:hover {
-    background-color: #1847d1 !important;
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-float {
+    box-shadow: var(--shadow-float);
+  }
+
+  /* Entrada de painel, KPI e linha de tabela.
+     Fica em CSS de propósito: é animação de um elemento só, sem estado — o
+     `motion` entra onde há layout compartilhado (ver kit/movimento.tsx).
+     Uma vez, sem repetição, e o `prefers-reduced-motion` abaixo a neutraliza. */
+  @keyframes entrada-v2 {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .anim-entrada {
+    animation: entrada-v2 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  /* Escalonamento em grade de KPI/painel: o atraso é por posição, não por
+     componente, então nenhuma peça precisa saber que índice ocupa. */
+  .anim-escalonada > * {
+    animation: entrada-v2 0.34s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .anim-escalonada > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .anim-escalonada > *:nth-child(2) {
+    animation-delay: 45ms;
+  }
+  .anim-escalonada > *:nth-child(3) {
+    animation-delay: 90ms;
+  }
+  .anim-escalonada > *:nth-child(4) {
+    animation-delay: 135ms;
+  }
+  .anim-escalonada > *:nth-child(n + 5) {
+    animation-delay: 180ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -221,11 +203,15 @@
    escuro — pior par adjacente ΔE 8.4 (protan) / 19.3 (visão normal)
    O modo claro tem 3 slots abaixo de 3:1 de contraste; a regra de alívio é
    atendida pela tabela agrupada, que fica sempre abaixo do gráfico.
-   Nunca gerar cor nova: do 7º grupo em diante, agrupar em "Outros". */
+   Nunca gerar cor nova: do 7º grupo em diante, agrupar em "Outros".
+
+   NÃO substituir pelos --chart-1..5 do v2: são 5 cores, em outra ordem, sem
+   essa validação. Os dois convivem — `--chart-*` para o kit, `--viz-serie-*`
+   para a Central de Relatórios. */
 .viz-relatorio {
-  --viz-superficie: hsl(0 0% 100%);
-  --viz-grade: hsl(0 0% 90%);
-  --viz-eixo: hsl(0 0% 45%);
+  --viz-superficie: var(--surface);
+  --viz-grade: var(--hairline);
+  --viz-eixo: var(--ink-3);
   --viz-serie-1: #2a78d6;
   --viz-serie-2: #eb6834;
   --viz-serie-3: #1baf7a;
@@ -236,9 +222,9 @@
 
 /* Passos próprios para a superfície escura — não é inversão automática */
 .dark .viz-relatorio {
-  --viz-superficie: oklch(0.205 0 0);
-  --viz-grade: hsl(0 0% 27%);
-  --viz-eixo: hsl(0 0% 65%);
+  --viz-superficie: var(--surface);
+  --viz-grade: var(--hairline);
+  --viz-eixo: var(--ink-3);
   --viz-serie-1: #3987e5;
   --viz-serie-2: #d95926;
   --viz-serie-3: #199e70;

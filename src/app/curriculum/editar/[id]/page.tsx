@@ -6,11 +6,12 @@ import { useParams, useRouter } from "next/navigation";
 import { MainLayout } from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 import { AbaGeral } from "@/components/curriculum/aba-geral";
 import { AbaAtividades } from "@/components/curriculum/aba-atividades";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader } from "@/components/kit";
 
 function EditarCurriculumPageContent() {
   const params = useParams();
@@ -85,31 +86,23 @@ function EditarCurriculumPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleVoltar}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Voltar
-              </Button>
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Editar Curriculum
-            </h1>
-            {curriculumNome && (
+        <PageHeader
+          voltar={{ onClick: handleVoltar }}
+          titulo="Editar Curriculum"
+          subtitulo={curriculumNome && (
               <p className="text-muted-foreground">{curriculumNome}</p>
             )}
-          </div>
-
-          <Button onClick={handleConcluir}>
-            <Save className="mr-2 h-4 w-4" />
-            Concluir
-          </Button>
-        </div>
+          acoes={
+            <Button onClick={handleConcluir}>
+              <Save className="mr-2 h-4 w-4" />
+              Concluir
+            </Button>
+          }
+        />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList>
             <TabsTrigger value="geral">Geral</TabsTrigger>
             <TabsTrigger value="atividades">Atividades</TabsTrigger>
           </TabsList>

@@ -42,6 +42,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { SIGLA_ERRO, SIGLA_INDEPENDENTE } from "@/lib/pontuacao";
+import { PageHeader, Panel } from "@/components/kit";
 
 // ============ Interfaces ============
 
@@ -177,14 +178,14 @@ interface ResultadoSessao {
 // ============ Fase Badge ============
 
 const FASE_CONFIG: Record<string, { label: string; color: string }> = {
-  LINHA_BASE: { label: "Linha de Base", color: "bg-gray-500" },
-  INTERVENCAO: { label: "Intervenção", color: "bg-blue-500" },
-  MANUTENCAO: { label: "Manutenção", color: "bg-green-500" },
-  GENERALIZACAO: { label: "Generalização", color: "bg-amber-500" },
+  LINHA_BASE: { label: "Linha de Base", color: "bg-surface-muted" },
+  INTERVENCAO: { label: "Intervenção", color: "bg-brand" },
+  MANUTENCAO: { label: "Manutenção", color: "bg-success" },
+  GENERALIZACAO: { label: "Generalização", color: "bg-warning" },
 };
 
 function FaseBadge({ fase }: { fase: string }) {
-  const config = FASE_CONFIG[fase] || { label: fase, color: "bg-gray-400" };
+  const config = FASE_CONFIG[fase] || { label: fase, color: "bg-surface-muted" };
   return (
     <Badge className={`${config.color} text-white text-xs`}>
       {config.label}
@@ -510,7 +511,7 @@ function AplicarCurriculumPageContent() {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="text-center py-12">
-          <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <AlertCircle className="h-12 w-12 text-danger-ink mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">
             Erro ao carregar sessão
           </h3>
@@ -605,62 +606,54 @@ function AplicarCurriculumPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Aplicar Plano Terapêutico
-          </h1>
-          <p className="text-muted-foreground">
-            Paciente: <strong>{sessao.paciente.nome}</strong> • Curriculum:{" "}
-            <strong>{sessao.curriculum.nome}</strong>
-          </p>
-        </div>
+        <PageHeader
+          titulo="Aplicar Plano Terapêutico"
+          subtitulo={<>Paciente: <strong>{sessao.paciente.nome}</strong> • Curriculum:{" "} <strong>{sessao.curriculum.nome}</strong></>}
+        />
 
         {/* Painel de Navegação — cada instrução selecionada é um item */}
-        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <BookMarked className="h-4 w-4" />
-              Instruções da Sessão ({itensNavegacao.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {itensNavegacao.map((nav, idx) => {
-                const qtdTentativas = nav.instrucao.qtd_tentativas_alvo || 1;
-                let avaliada = true;
-                for (let t = 1; t <= qtdTentativas; t++) {
-                  const key = `${nav.clone.id}-${nav.instrucao.id}-${t}`;
-                  if (!avaliacoes.has(key)) { avaliada = false; break; }
-                }
-                const isAtual = idx === itemAtual;
+        <Panel
+          icone={<BookMarked />}
+          titulo={<>Instruções da Sessão ({itensNavegacao.length})</>}
+          className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20"
+        >
 
-                return (
-                  <Button
-                    key={`${nav.clone.id}-${nav.instrucao.id}`}
-                    variant={isAtual ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => navegarParaItem(idx)}
-                    className={`flex-shrink-0 min-w-[160px] max-w-[260px] justify-between ${
-                      avaliada && !isAtual
-                        ? "border-green-500 bg-green-50 hover:bg-green-100"
-                        : ""
-                    }`}
-                  >
-                    <span className="text-xs font-medium truncate">
-                      {idx + 1}. {nav.clone.nome} - {nav.instrucao.texto}
-                    </span>
-                    <span className="flex items-center gap-1 ml-1">
-                      {nav.instrucao.faseAtual && <FaseBadge fase={nav.instrucao.faseAtual} />}
-                      {avaliada && (
-                        <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-600" />
-                      )}
-                    </span>
-                  </Button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {itensNavegacao.map((nav, idx) => {
+              const qtdTentativas = nav.instrucao.qtd_tentativas_alvo || 1;
+              let avaliada = true;
+              for (let t = 1; t <= qtdTentativas; t++) {
+                const key = `${nav.clone.id}-${nav.instrucao.id}-${t}`;
+                if (!avaliacoes.has(key)) { avaliada = false; break; }
+              }
+              const isAtual = idx === itemAtual;
+
+              return (
+                <Button
+                  key={`${nav.clone.id}-${nav.instrucao.id}`}
+                  variant={isAtual ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => navegarParaItem(idx)}
+                  className={`flex-shrink-0 min-w-[160px] max-w-[260px] justify-between ${
+                    avaliada && !isAtual
+                      ? "border-success bg-success-soft hover:bg-success-soft"
+                      : ""
+                  }`}
+                >
+                  <span className="text-xs font-medium truncate">
+                    {idx + 1}. {nav.clone.nome} - {nav.instrucao.texto}
+                  </span>
+                  <span className="flex items-center gap-1 ml-1">
+                    {nav.instrucao.faseAtual && <FaseBadge fase={nav.instrucao.faseAtual} />}
+                    {avaliada && (
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-success-ink" />
+                    )}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+        </Panel>
 
         {/* Progresso */}
         <Card>
@@ -680,7 +673,7 @@ function AplicarCurriculumPageContent() {
         </Card>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-center gap-2">
+          <div className="bg-danger-soft border border-danger-soft text-danger-ink px-4 py-3 rounded flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
             {error}
           </div>
@@ -716,44 +709,44 @@ function AplicarCurriculumPageContent() {
               </div>
 
               {clone.como_aplicar && (
-                <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-                  <p className="text-sm font-semibold text-blue-700 mb-1">
+                <div className="p-4 bg-brand-soft border-l-4 border-brand rounded">
+                  <p className="text-sm font-semibold text-brand mb-1">
                     Como Aplicar:
                   </p>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-ink">
                     {clone.como_aplicar}
                   </p>
                 </div>
               )}
 
               {clone.observacao && (
-                <div className="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded">
-                  <p className="text-sm font-semibold text-yellow-700 mb-1">
+                <div className="p-4 bg-warning-soft border-l-4 border-warning rounded">
+                  <p className="text-sm font-semibold text-warning-ink mb-1">
                     Observação:
                   </p>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-ink">
                     {clone.observacao}
                   </p>
                 </div>
               )}
 
               {clone.procedimento_correcao && (
-                <div className="p-4 bg-orange-50 border-l-4 border-orange-500 rounded">
-                  <p className="text-sm font-semibold text-orange-700 mb-1">
+                <div className="p-4 bg-warning-soft border-l-4 border-warning rounded">
+                  <p className="text-sm font-semibold text-warning-ink mb-1">
                     Procedimento de Correção:
                   </p>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-ink">
                     {clone.procedimento_correcao}
                   </p>
                 </div>
               )}
 
               {clone.materiais_utilizados && (
-                <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded">
-                  <p className="text-sm font-semibold text-green-700 mb-1">
+                <div className="p-4 bg-success-soft border-l-4 border-success rounded">
+                  <p className="text-sm font-semibold text-success-ink mb-1">
                     Materiais Utilizados:
                   </p>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-ink">
                     {clone.materiais_utilizados}
                   </p>
                 </div>
@@ -777,12 +770,12 @@ function AplicarCurriculumPageContent() {
                       className="p-4 border-2 rounded-lg space-y-4 bg-white"
                     >
                       <div className="flex items-center gap-2">
-                        <Badge variant="default" className="bg-blue-600">
+                        <Badge variant="outline" className="bg-brand-soft text-brand">
                           Tentativa {tentativa}/
                           {instrucao.qtd_tentativas_alvo || 1}
                         </Badge>
                         {avalTentativa.nota !== null && (
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          <CheckCircle2 className="h-5 w-5 text-success-ink" />
                         )}
                       </div>
 
@@ -816,9 +809,9 @@ function AplicarCurriculumPageContent() {
                                       className={`h-14 text-lg font-bold ${
                                         isSelecionado
                                           ? isUltimo
-                                            ? "bg-green-600 hover:bg-green-700"
+                                            ? "bg-success hover:bg-success"
                                             : isPrimeiro
-                                              ? "bg-red-600 hover:bg-red-700"
+                                              ? "bg-danger hover:bg-danger"
                                               : ""
                                           : "hover:bg-primary/10"
                                       }`}
@@ -855,7 +848,7 @@ function AplicarCurriculumPageContent() {
                             </div>
                           </>
                         ) : (
-                          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+                          <div className="bg-warning-soft border border-warning-soft text-warning-ink px-4 py-3 rounded">
                             <p className="text-sm">
                               Esta instrução não possui pontuações configuradas para a fase atual. Configure no painel de Evolução.
                             </p>
@@ -925,7 +918,7 @@ function AplicarCurriculumPageContent() {
                     }
                   }}
                   disabled={salvando || finalizando}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-success hover:bg-success"
                 >
                   {salvando || finalizando ? (
                     <>
@@ -985,8 +978,8 @@ function AplicarCurriculumPageContent() {
               <div className="grid grid-cols-4 divide-x border-b bg-muted/40">
                 {[
                   { label: "Instruções", value: todasInstrucoes.length, color: "text-foreground" },
-                  { label: "Avançaram", value: avancaram, color: "text-green-600" },
-                  { label: "Regrediram", value: regrediram, color: "text-red-500" },
+                  { label: "Avançaram", value: avancaram, color: "text-success-ink" },
+                  { label: "Regrediram", value: regrediram, color: "text-danger-ink" },
                   { label: "Mantiveram", value: mantiveram, color: "text-muted-foreground" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="p-3 text-center">
@@ -1028,12 +1021,12 @@ function AplicarCurriculumPageContent() {
                           <div className="flex items-start justify-between gap-2">
                             <span className="text-xs text-muted-foreground leading-snug flex-1">{instr.textoInstrucao}</span>
                             {instr.avancou && (
-                              <Badge className="bg-green-100 text-green-700 border-green-200 shrink-0 gap-1 text-xs">
+                              <Badge className="bg-success-soft text-success-ink border-success-soft shrink-0 gap-1 text-xs">
                                 <TrendingUp className="h-3 w-3" /> Avançou
                               </Badge>
                             )}
                             {instr.regrediu && (
-                              <Badge className="bg-red-100 text-red-600 border-red-200 shrink-0 gap-1 text-xs">
+                              <Badge className="bg-danger-soft text-danger-ink border-danger-soft shrink-0 gap-1 text-xs">
                                 <TrendingDown className="h-3 w-3" /> Regrediu
                               </Badge>
                             )}
@@ -1060,13 +1053,13 @@ function AplicarCurriculumPageContent() {
                             <div className="flex justify-between text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Target className="h-3 w-3" />
-                                Acerto: <span className={`font-semibold ml-0.5 ${atingiu ? "text-green-600" : "text-red-500"}`}>{pct}%</span>
+                                Acerto: <span className={`font-semibold ml-0.5 ${atingiu ? "text-success-ink" : "text-danger-ink"}`}>{pct}%</span>
                               </span>
                               <span>Critério: ≥{criterio}%</span>
                             </div>
                             <div className="relative h-1.5 w-full bg-muted rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full ${atingiu ? "bg-green-500" : "bg-red-400"}`}
+                                className={`h-full rounded-full ${atingiu ? "bg-success" : "bg-danger"}`}
                                 style={{ width: `${Math.min(pct, 100)}%` }}
                               />
                               <div className="absolute top-0 h-full w-0.5 bg-foreground/40" style={{ left: `${criterio}%` }} />
@@ -1074,8 +1067,8 @@ function AplicarCurriculumPageContent() {
                             <div className="flex justify-between text-xs text-muted-foreground">
                               <span>{instr.stats.tentativasCorretas}/{instr.stats.totalTentativas} corretas</span>
                               {atingiu
-                                ? <span className="text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Atingiu</span>
-                                : <span className="text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Não atingiu</span>
+                                ? <span className="text-success-ink flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Atingiu</span>
+                                : <span className="text-danger-ink flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Não atingiu</span>
                               }
                             </div>
                           </div>

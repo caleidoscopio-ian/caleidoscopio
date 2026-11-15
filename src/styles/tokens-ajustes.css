@@ -1,0 +1,60 @@
+/* Ajustes sobre os tokens do v2 — editável à mão, carregado DEPOIS do gerado.
+ *
+ * `tokens-v2.css` é regenerado por script e perde qualquer edição. Tudo que a
+ * gente decide diferente do v2 mora aqui, com o motivo escrito.
+ *
+ * Só há um motivo aceito para divergir: contraste. A auditoria do v2 lista 8
+ * pares abaixo de 4.5:1, e três deles são o `StatusPill`, que aparece em quase
+ * toda tela do sistema. Texto que a clínica não consegue ler não é fidelidade
+ * visual, é defeito copiado.
+ *
+ * Valores calculados, não estimados (razão de contraste WCAG 2.2 sobre o
+ * próprio fundo `-soft`).
+ */
+
+:root {
+  /* Cor do TEXTO de status sobre o fundo `-soft`.
+     O v2 usa o mesmo token para preenchimento (ícone, ponto, gráfico) e para
+     texto; como cor sólida ele está certo, como texto sobre `-soft` reprova.
+     Preenchimento continua em `--success`/`--warning`/`--danger`. */
+  --success-ink: #0d7e55; /* era #12a46f sobre #e3f6ee: 2.85 → 4.52 */
+  --warning-ink: #9a610c; /* era #d98a12 sobre #fdf1dc: 2.47 → 4.60 */
+  --danger-ink: #bd394d; /* era #e2445c sobre #fde6ea: 3.39 → 4.59 */
+  --info-ink: var(--info); /* 4.84 sobre #e6ecff — já passa */
+  --violet-ink: var(--violet); /* 4.74 sobre #efeaff — já passa */
+
+  /* Texto pequeno e discreto: placeholder do campo de busca e rótulo de seção
+     da sidebar. O `--ink-4` do v2 (#9aa3bb) dá 2.52:1 no branco. Mantemos o
+     `--ink-4` para uso decorativo (ícone, separador) e usamos este no texto. */
+  --ink-sutil: #707688; /* 4.53:1 sobre #ffffff */
+
+  /* Fundo do botão primário. No claro é o próprio brand; existe como token
+     separado só porque o modo noite precisa divergir (ver `.dark`). */
+  --brand-acao: var(--brand);
+}
+
+.dark {
+  /* No escuro as cores de status já passam sobre o `-soft` translúcido
+     (5.88 a 9.13:1), então texto e preenchimento voltam a ser a mesma cor. */
+  --success-ink: var(--success);
+  --warning-ink: var(--warning);
+  --danger-ink: var(--danger);
+  --info-ink: var(--info);
+  --violet-ink: var(--violet);
+
+  --ink-sutil: #8e9bc6; /* = --ink-3 do escuro, 5.86:1 sobre --surface */
+
+  /* Branco sobre o brand noite (#5a7bff) dá 3.68:1 e o texto do botão tem
+     14px/500. Escurecer 4% resolve sem mudar a cor percebida. */
+  --brand-acao: #506de2; /* branco sobre este: 4.54:1 */
+}
+
+@theme inline {
+  --color-success-ink: var(--success-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-danger-ink: var(--danger-ink);
+  --color-info-ink: var(--info-ink);
+  --color-violet-ink: var(--violet-ink);
+  --color-ink-sutil: var(--ink-sutil);
+  --color-brand-acao: var(--brand-acao);
+}

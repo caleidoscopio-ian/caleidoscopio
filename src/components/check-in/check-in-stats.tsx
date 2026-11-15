@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
 import { Users, Clock, Activity, AlertTriangle } from "lucide-react";
 import { StatusAgendamento } from "@/types/agendamento";
 import type { AgendamentoCheckIn } from "@/types/check-in";
+import { StatCard, type TomKpi } from "@/components/kit";
 
 interface CheckInStatsProps {
   agendamentos: AgendamentoCheckIn[];
@@ -21,27 +21,34 @@ export function CheckInStats({ agendamentos }: CheckInStatsProps) {
     (a) => a.status === StatusAgendamento.FALTOU
   ).length;
 
-  const stats = [
-    { label: "Total do Dia", value: total, icon: Users, color: "text-muted-foreground" },
-    { label: "Aguardando", value: aguardando, icon: Clock, color: "text-blue-600" },
-    { label: "Em Atendimento", value: emAtendimento, icon: Activity, color: "text-amber-600" },
-    { label: "Faltas", value: faltas, icon: AlertTriangle, color: "text-red-600" },
+  // Tons na ordem do v2 nesta tela: azul, lavanda, pêssego e **branco** na
+  // última. Falta não ganha pastel — o cartão que conta ausência é o único
+  // sóbrio da fileira, e isso é do original.
+  const stats: {
+    label: string;
+    value: number;
+    icon: typeof Users;
+    color: string;
+    tom: TomKpi;
+  }[] = [
+    { label: "Total do Dia", value: total, icon: Users, color: "text-ink-3", tom: "blue" },
+    { label: "Aguardando", value: aguardando, icon: Clock, color: "text-brand", tom: "lavender" },
+    { label: "Em Atendimento", value: emAtendimento, icon: Activity, color: "text-warning-ink", tom: "peach" },
+    { label: "Faltas", value: faltas, icon: AlertTriangle, color: "text-danger-ink", tom: "white" },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      {stats.map(({ label, value, icon: Icon, color }) => (
-        <Card key={label}>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <Icon className={`h-4 w-4 ${color}`} />
-              <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-2xl font-bold">{value}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {stats.map(({ label, value, icon: Icon, color, tom }) => (
+        <StatCard
+          key={label}
+          tom={tom}
+          // A cor é do estado da recepção (aguardando, em atendimento, falta),
+          // então vai no ícone: a classe do svg vence a do chip.
+          icone={<Icon className={color} />}
+          rotulo={label}
+          valor={value}
+        />
       ))}
     </div>
   );

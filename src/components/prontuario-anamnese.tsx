@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Loader2,
   CheckCircle,
   Clock,
   Calendar,
@@ -19,6 +18,7 @@ import {
   Eye,
   Edit,
 } from "lucide-react";
+import { EstadoVazio, Carregando } from "@/components/kit";
 import {
   Collapsible,
   CollapsibleContent,
@@ -128,36 +128,23 @@ export function ProntuarioAnamnese({ pacienteId }: ProntuarioAnamneseProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando anamneses...</p>
-        </div>
-      </div>
+      <Carregando texto="Carregando anamneses..." />
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">Erro ao carregar anamneses</h3>
-        <p className="text-muted-foreground">{error}</p>
-      </div>
+      <EstadoVazio icone={<FileText />} titulo="Erro ao carregar anamneses" texto={error} />
     );
   }
 
   if (anamneses.length === 0) {
     return (
-      <div className="text-center py-12">
-        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">
-          Nenhuma anamnese encontrada
-        </h3>
-        <p className="text-muted-foreground">
-          Este paciente ainda não possui anamnese cadastrada.
-        </p>
-      </div>
+      <EstadoVazio
+        icone={<FileText />}
+        titulo="Nenhuma anamnese encontrada"
+        texto="Este paciente ainda não possui anamnese cadastrada."
+      />
     );
   }
 
@@ -178,14 +165,14 @@ export function ProntuarioAnamnese({ pacienteId }: ProntuarioAnamneseProps) {
                       Anamnese - {formatDate(anamnese.createdAt)}
                     </CardTitle>
                     {anamnese.status === "FINALIZADA" ? (
-                      <Badge variant="default" className="bg-green-600">
+                      <Badge variant="default" className="bg-success">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Finalizada
                       </Badge>
                     ) : (
                       <Badge
                         variant="outline"
-                        className="border-orange-600 text-orange-600"
+                        className="border-warning text-warning-ink"
                       >
                         <Clock className="h-3 w-3 mr-1" />
                         Rascunho
@@ -239,7 +226,7 @@ export function ProntuarioAnamnese({ pacienteId }: ProntuarioAnamneseProps) {
                   </div>
                   {anamnese.finalizadaEm && (
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-success-ink" />
                       <span>
                         Finalizada: {formatDate(anamnese.finalizadaEm)}
                       </span>

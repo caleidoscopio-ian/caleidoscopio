@@ -4,17 +4,11 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/kit";
 
 interface AbaGeralProps {
   curriculumId: string | null;
@@ -113,18 +107,15 @@ export function AbaGeral({ curriculumId, onSave }: AbaGeralProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Informações Gerais</CardTitle>
-        <CardDescription>
-          Defina as informações básicas do plano terapêutico
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Panel
+      titulo="Informações Gerais"
+      subtitulo="Defina as informações básicas do plano terapêutico"
+    >
+      <div className="space-y-4">
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="nome">
-              Nome do Plano Terapêutico <span className="text-red-500">*</span>
+              Nome do Plano Terapêutico <span className="text-danger-ink">*</span>
             </Label>
             <Input
               id="nome"
@@ -176,7 +167,7 @@ export function AbaGeral({ curriculumId, onSave }: AbaGeralProps) {
         </Button>
 
         {curriculumId && (
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+          <div className="bg-brand-soft border border-brand-soft text-brand px-4 py-3 rounded">
             <p className="text-sm">
               ✓ Plano Terapêutico salvo! Agora você pode adicionar Atividades usando a
               aba acima.
@@ -185,14 +176,14 @@ export function AbaGeral({ curriculumId, onSave }: AbaGeralProps) {
         )}
 
         {!curriculumId && (
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+          <div className="bg-warning-soft border border-warning-soft text-warning-ink px-4 py-3 rounded">
             <p className="text-sm">
               ⚠ Salve as informações gerais primeiro para habilitar a aba de
               Atividades.
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }

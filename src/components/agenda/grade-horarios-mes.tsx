@@ -84,13 +84,13 @@ export function GradeHorariosMes({
               <div className="mt-1 space-y-0.5">
                 <div
                   className={`text-[11px] font-medium ${
-                    livres > 0 ? "text-green-700" : "text-muted-foreground"
+                    livres > 0 ? "text-success-ink" : "text-muted-foreground"
                   }`}
                 >
                   {livres > 0 ? `${livres} livre${livres > 1 ? "s" : ""}` : "Lotado"}
                 </div>
                 {ocupados > 0 && (
-                  <div className="text-[10px] text-blue-700">
+                  <div className="text-[10px] text-brand">
                     {ocupados} agendado{ocupados > 1 ? "s" : ""}
                   </div>
                 )}

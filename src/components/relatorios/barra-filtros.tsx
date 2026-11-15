@@ -100,7 +100,7 @@ export function BarraFiltros({ definicao, opcoes, loading, onFiltrar }: Props) {
   ];
 
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-4">
+    <div className="space-y-4 rounded-3xl border border-rim bg-surface/90 p-5 shadow-card md:p-6">
       {/* Período */}
       <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
         <div className="space-y-1.5">

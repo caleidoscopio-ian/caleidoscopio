@@ -4,11 +4,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +34,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import {
+  Brain, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Panel } from "@/components/kit";
 
 interface Habilidade {
   id: string;
@@ -190,22 +187,17 @@ export function AbaHabilidades({ avaliacaoId }: AbaHabilidadesProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Habilidades da Avaliação</CardTitle>
-            <CardDescription>
-              Cadastre as habilidades que serão avaliadas
-            </CardDescription>
-          </div>
-          <Button onClick={handleNovo}>
+    <Panel
+      icone={<Brain />}
+      titulo="Habilidades da Avaliação"
+      subtitulo="Cadastre as habilidades que serão avaliadas"
+      acoes={
+        <Button onClick={handleNovo}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Habilidade
           </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+      }
+    >
         {loading ? (
           <div className="text-center py-8">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
@@ -274,7 +266,7 @@ export function AbaHabilidades({ avaliacaoId }: AbaHabilidadesProps) {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="ordem">
-                  Ordem <span className="text-red-500">*</span>
+                  Ordem <span className="text-danger-ink">*</span>
                 </Label>
                 <Input
                   id="ordem"
@@ -291,7 +283,7 @@ export function AbaHabilidades({ avaliacaoId }: AbaHabilidadesProps) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="habilidade">
-                  Habilidade <span className="text-red-500">*</span>
+                  Habilidade <span className="text-danger-ink">*</span>
                 </Label>
                 <Input
                   id="habilidade"
@@ -341,7 +333,6 @@ export function AbaHabilidades({ avaliacaoId }: AbaHabilidadesProps) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </CardContent>
-    </Card>
+      </Panel>
   );
 }

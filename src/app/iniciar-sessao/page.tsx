@@ -7,13 +7,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader, Panel } from "@/components/kit";
 
 // ========== Interfaces ==========
 
@@ -117,14 +112,14 @@ interface AvaliacaoAtribuida {
 // ========== FaseBadge ==========
 
 const FASE_CONFIG: Record<string, { label: string; className: string }> = {
-  LINHA_BASE: { label: "Linha de Base", className: "bg-gray-500 text-white" },
-  INTERVENCAO: { label: "Intervenção", className: "bg-blue-500 text-white" },
-  MANUTENCAO: { label: "Manutenção", className: "bg-green-500 text-white" },
-  GENERALIZACAO: { label: "Generalização", className: "bg-amber-500 text-white" },
+  LINHA_BASE: { label: "Linha de Base", className: "bg-surface-muted text-white" },
+  INTERVENCAO: { label: "Intervenção", className: "bg-brand text-white" },
+  MANUTENCAO: { label: "Manutenção", className: "bg-success text-white" },
+  GENERALIZACAO: { label: "Generalização", className: "bg-warning text-white" },
 };
 
 function FaseBadge({ fase }: { fase: string }) {
-  const config = FASE_CONFIG[fase] || { label: fase, className: "bg-gray-400 text-white" };
+  const config = FASE_CONFIG[fase] || { label: fase, className: "bg-surface-muted text-white" };
   return <Badge className={`${config.className} text-xs`}>{config.label}</Badge>;
 }
 
@@ -426,319 +421,299 @@ function IniciarSessaoPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Iniciar Sessão</h1>
-          <p className="text-muted-foreground">
-            Selecione o paciente e a atividade para iniciar a sessão terapêutica
-          </p>
-        </div>
+        <PageHeader
+          titulo="Iniciar Sessão"
+          subtitulo="Selecione o paciente e a atividade para iniciar a sessão terapêutica"
+        />
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-center gap-2">
+          <div className="bg-danger-soft border border-danger-soft text-danger-ink px-4 py-3 rounded flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
             {error}
           </div>
         )}
 
         {/* Seleção de Paciente */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Selecionar Paciente
-            </CardTitle>
-            <CardDescription>
-              Escolha o paciente que participará da sessão
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome ou CPF..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+        <Panel
+          icone={<User />}
+          titulo="Selecionar Paciente"
+          subtitulo="Escolha o paciente que participará da sessão"
+        >
 
-              {pacienteAtual && (
-                <div className="p-5 border-2 rounded-lg bg-primary/5 border-primary shadow-sm">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-lg">{pacienteAtual.name}</span>
-                        <Badge className="bg-primary">✓ Selecionado</Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-3">
-                        {pacienteAtual.cpf && <span><span className="font-medium">CPF:</span> {pacienteAtual.cpf}</span>}
-                        {pacienteAtual.profissional && (
-                          <span><span className="font-medium">Terapeuta:</span> {pacienteAtual.profissional.nome}</span>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setPacienteSelecionado(null)}
-                      className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
-                    >
-                      Alterar
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {loading && (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">Carregando pacientes...</p>
-                </div>
-              )}
-
-              {!loading && filteredPacientes.length === 0 && (
-                <div className="text-center py-8">
-                  <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhum paciente encontrado</h3>
-                  <p className="text-muted-foreground">
-                    {searchTerm ? "Tente ajustar os termos da busca." : "Não há pacientes cadastrados."}
-                  </p>
-                </div>
-              )}
-
-              {!loading && filteredPacientes.length > 0 && (
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/50">
-                        <TableHead className="font-semibold">Nome do Paciente</TableHead>
-                        <TableHead className="font-semibold">CPF</TableHead>
-                        <TableHead className="font-semibold">Terapeuta Responsável</TableHead>
-                        <TableHead className="text-right font-semibold">Ação</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPacientes.map((paciente) => (
-                        <TableRow
-                          key={paciente.id}
-                          className={`cursor-pointer transition-colors ${
-                            pacienteSelecionado === paciente.id
-                              ? "bg-primary/10 hover:bg-primary/15 border-l-4 border-l-primary"
-                              : "hover:bg-muted/30"
-                          }`}
-                          onClick={() => setPacienteSelecionado(paciente.id)}
-                        >
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                <User className="h-4 w-4 text-primary" />
-                              </div>
-                              <span className="font-medium">{paciente.name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">{paciente.cpf || "-"}</TableCell>
-                          <TableCell>
-                            {paciente.profissional?.nome ? (
-                              <Badge variant="outline" className="font-normal">{paciente.profissional.nome}</Badge>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {pacienteSelecionado === paciente.id ? (
-                              <Badge className="bg-primary">✓ Selecionado</Badge>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="hover:bg-primary/10 hover:text-primary"
-                                onClick={(e) => { e.stopPropagation(); setPacienteSelecionado(paciente.id); }}
-                              >
-                                Selecionar
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou CPF..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Planos Terapêuticos */}
-        {pacienteSelecionado && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5" />
-                Planos Terapêuticos Atribuídos
-              </CardTitle>
-              <CardDescription>
-                Escolha o plano terapêutico e selecione as instruções desta sessão
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loadingCurriculums && (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">Carregando planos...</p>
-                </div>
-              )}
-
-              {!loadingCurriculums && curriculums.length === 0 && (
-                <div className="text-center py-8">
-                  <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhum plano terapêutico atribuído</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Este paciente ainda não possui planos terapêuticos atribuídos.
-                  </p>
-                  <Button onClick={() => router.push("/curriculum")}>
-                    Gerenciar Planos Terapêuticos
+            {pacienteAtual && (
+              <div className="p-5 border-2 rounded-lg bg-primary/5 border-primary shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <User className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-lg">{pacienteAtual.name}</span>
+                      <Badge className="bg-primary">✓ Selecionado</Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-3">
+                      {pacienteAtual.cpf && <span><span className="font-medium">CPF:</span> {pacienteAtual.cpf}</span>}
+                      {pacienteAtual.profissional && (
+                        <span><span className="font-medium">Terapeuta:</span> {pacienteAtual.profissional.nome}</span>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPacienteSelecionado(null)}
+                    className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                  >
+                    Alterar
                   </Button>
                 </div>
-              )}
+              </div>
+            )}
 
-              {!loadingCurriculums && curriculums.length > 0 && (
+            {loading && (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Carregando pacientes...</p>
+              </div>
+            )}
+
+            {!loading && filteredPacientes.length === 0 && (
+              <div className="text-center py-8">
+                <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhum paciente encontrado</h3>
+                <p className="text-muted-foreground">
+                  {searchTerm ? "Tente ajustar os termos da busca." : "Não há pacientes cadastrados."}
+                </p>
+              </div>
+            )}
+
+            {!loading && filteredPacientes.length > 0 && (
+              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Atividades</TableHead>
-                      <TableHead>Atribuído em</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead className="font-semibold">Nome do Paciente</TableHead>
+                      <TableHead className="font-semibold">CPF</TableHead>
+                      <TableHead className="font-semibold">Terapeuta Responsável</TableHead>
+                      <TableHead className="text-right font-semibold">Ação</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {curriculums.map((atribuicao) => (
-                      <TableRow key={atribuicao.id}>
-                        <TableCell className="font-medium">{atribuicao.curriculum.nome}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground max-w-md">
-                          {atribuicao.curriculum.descricao
-                            ? atribuicao.curriculum.descricao.length > 80
-                              ? `${atribuicao.curriculum.descricao.substring(0, 80)}...`
-                              : atribuicao.curriculum.descricao
-                            : "-"}
-                        </TableCell>
+                    {filteredPacientes.map((paciente) => (
+                      <TableRow
+                        key={paciente.id}
+                        className={`cursor-pointer transition-colors ${
+                          pacienteSelecionado === paciente.id
+                            ? "bg-primary/10 hover:bg-primary/15 border-l-4 border-l-primary"
+                            : "hover:bg-muted/30"
+                        }`}
+                        onClick={() => setPacienteSelecionado(paciente.id)}
+                      >
                         <TableCell>
-                          <Badge variant="secondary">
-                            {atribuicao.curriculum.atividades.length} atividade(s)
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="font-medium">{paciente.name}</span>
+                          </div>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(atribuicao.atribuida_em).toLocaleDateString("pt-BR")}
+                        <TableCell className="text-muted-foreground">{paciente.cpf || "-"}</TableCell>
+                        <TableCell>
+                          {paciente.profissional?.nome ? (
+                            <Badge variant="outline" className="font-normal">{paciente.profissional.nome}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            onClick={() => abrirSelecaoInstrucoes(atribuicao.curriculum.id)}
-                            disabled={iniciandoSessao || loadingInstrucoes}
-                          >
-                            {loadingInstrucoes && curriculumParaIniciar === atribuicao.curriculum.id ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Carregando...
-                              </>
-                            ) : (
-                              <>
-                                <Play className="mr-2 h-4 w-4" />
-                                Iniciar Sessão
-                              </>
-                            )}
-                          </Button>
+                          {pacienteSelecionado === paciente.id ? (
+                            <Badge className="bg-primary">✓ Selecionado</Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="hover:bg-primary/10 hover:text-primary"
+                              onClick={(e) => { e.stopPropagation(); setPacienteSelecionado(paciente.id); }}
+                            >
+                              Selecionar
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
+        </Panel>
+
+        {/* Planos Terapêuticos */}
+        {pacienteSelecionado && (
+          <Panel
+            icone={<ClipboardList />}
+            titulo="Planos Terapêuticos Atribuídos"
+            subtitulo="Escolha o plano terapêutico e selecione as instruções desta sessão"
+          >
+
+            {loadingCurriculums && (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Carregando planos...</p>
+              </div>
+            )}
+
+            {!loadingCurriculums && curriculums.length === 0 && (
+              <div className="text-center py-8">
+                <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhum plano terapêutico atribuído</h3>
+                <p className="text-muted-foreground mb-4">
+                  Este paciente ainda não possui planos terapêuticos atribuídos.
+                </p>
+                <Button onClick={() => router.push("/curriculum")}>
+                  Gerenciar Planos Terapêuticos
+                </Button>
+              </div>
+            )}
+
+            {!loadingCurriculums && curriculums.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Atividades</TableHead>
+                    <TableHead>Atribuído em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {curriculums.map((atribuicao) => (
+                    <TableRow key={atribuicao.id}>
+                      <TableCell className="font-medium">{atribuicao.curriculum.nome}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-md">
+                        {atribuicao.curriculum.descricao
+                          ? atribuicao.curriculum.descricao.length > 80
+                            ? `${atribuicao.curriculum.descricao.substring(0, 80)}...`
+                            : atribuicao.curriculum.descricao
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {atribuicao.curriculum.atividades.length} atividade(s)
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(atribuicao.atribuida_em).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          onClick={() => abrirSelecaoInstrucoes(atribuicao.curriculum.id)}
+                          disabled={iniciandoSessao || loadingInstrucoes}
+                        >
+                          {loadingInstrucoes && curriculumParaIniciar === atribuicao.curriculum.id ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Carregando...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="mr-2 h-4 w-4" />
+                              Iniciar Sessão
+                            </>
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Panel>
         )}
 
         {/* Avaliações */}
         {pacienteSelecionado && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5" />
-                Avaliações Atribuídas
-              </CardTitle>
-              <CardDescription>
-                Escolha a avaliação que será aplicada nesta sessão
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loadingAvaliacoes && (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">Carregando avaliações...</p>
-                </div>
-              )}
+          <Panel
+            icone={<ClipboardCheck />}
+            titulo="Avaliações Atribuídas"
+            subtitulo="Escolha a avaliação que será aplicada nesta sessão"
+          >
 
-              {!loadingAvaliacoes && avaliacoes.length === 0 && (
-                <div className="text-center py-8">
-                  <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Nenhuma avaliação atribuída</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Este paciente ainda não possui avaliações atribuídas.
-                  </p>
-                  <Button onClick={() => router.push("/avaliacoes")}>
-                    Gerenciar Avaliações
-                  </Button>
-                </div>
-              )}
+            {loadingAvaliacoes && (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Carregando avaliações...</p>
+              </div>
+            )}
 
-              {!loadingAvaliacoes && avaliacoes.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Tarefas</TableHead>
-                      <TableHead>Atribuída em</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+            {!loadingAvaliacoes && avaliacoes.length === 0 && (
+              <div className="text-center py-8">
+                <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhuma avaliação atribuída</h3>
+                <p className="text-muted-foreground mb-4">
+                  Este paciente ainda não possui avaliações atribuídas.
+                </p>
+                <Button onClick={() => router.push("/avaliacoes")}>
+                  Gerenciar Avaliações
+                </Button>
+              </div>
+            )}
+
+            {!loadingAvaliacoes && avaliacoes.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Tarefas</TableHead>
+                    <TableHead>Atribuída em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {avaliacoes.map((atribuicao) => (
+                    <TableRow key={atribuicao.id}>
+                      <TableCell className="font-medium">{atribuicao.avaliacao.nome}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{traduzirTipoAvaliacao(atribuicao.avaliacao.tipo)}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{atribuicao.avaliacao.tarefas?.length || 0} tarefas</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(atribuicao.atribuida_em).toLocaleDateString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          onClick={() => iniciarAvaliacao(atribuicao.avaliacao.id)}
+                          disabled={iniciandoSessao}
+                          className="bg-success hover:bg-success"
+                        >
+                          {iniciandoSessao ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Iniciando...</>
+                          ) : (
+                            <><Play className="mr-2 h-4 w-4" />Iniciar Avaliação</>
+                          )}
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {avaliacoes.map((atribuicao) => (
-                      <TableRow key={atribuicao.id}>
-                        <TableCell className="font-medium">{atribuicao.avaliacao.nome}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{traduzirTipoAvaliacao(atribuicao.avaliacao.tipo)}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{atribuicao.avaliacao.tarefas?.length || 0} tarefas</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(atribuicao.atribuida_em).toLocaleDateString("pt-BR")}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            onClick={() => iniciarAvaliacao(atribuicao.avaliacao.id)}
-                            disabled={iniciandoSessao}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            {iniciandoSessao ? (
-                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Iniciando...</>
-                            ) : (
-                              <><Play className="mr-2 h-4 w-4" />Iniciar Avaliação</>
-                            )}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Panel>
         )}
 
         {!pacienteSelecionado && (
@@ -824,7 +799,7 @@ function IniciarSessaoPageContent() {
                           </span>
                         </div>
                         {manutencaoRecomendada(instrucao) && (
-                          <Badge className="bg-orange-500 text-white text-xs gap-1 shrink-0">
+                          <Badge variant="outline" className="bg-warning-soft text-warning-ink text-xs gap-1 shrink-0">
                             <AlertTriangle className="h-3 w-3" />
                             Manutenção Recomendada
                           </Badge>
@@ -872,7 +847,7 @@ function IniciarSessaoPageContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-blue-600" />
+              <AlertCircle className="h-5 w-5 text-brand" />
               Sessão em Andamento
             </AlertDialogTitle>
             <AlertDialogDescription className="text-base pt-2">

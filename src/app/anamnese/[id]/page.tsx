@@ -7,7 +7,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -22,7 +21,9 @@ import {
   Calendar,
   Download,
 } from "lucide-react";
+import { idadeEmAnos } from "@/lib/datas-fuso";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader, Panel } from "@/components/kit";
 
 interface AnamneseDetalhes {
   id: string;
@@ -134,19 +135,7 @@ export default function AnamneseDetalhesPage() {
     });
   };
 
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birth.getDate())
-    ) {
-      age--;
-    }
-    return age;
-  };
+  const calculateAge = (birthDate: string) => idadeEmAnos(birthDate) ?? 0;
 
   const handleVoltar = () => {
     router.push("/anamnese");
@@ -207,59 +196,44 @@ export default function AnamneseDetalhesPage() {
     <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold tracking-tight">Anamnese</h1>
-                {anamnese.status === "FINALIZADA" ? (
-                  <Badge variant="default" className="bg-green-600">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Finalizada
-                  </Badge>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="border-orange-600 text-orange-600"
-                  >
-                    <Clock className="h-3 w-3 mr-1" />
-                    Rascunho
-                  </Badge>
+          <PageHeader
+            voltar={{ onClick: handleVoltar }}
+            titulo="Anamnese"
+            subtitulo="Avaliação inicial completa do paciente"
+            meta={
+              anamnese.status === "FINALIZADA" ? (
+                <Badge variant="outline" className="bg-success-soft text-success-ink">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Finalizada
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-warning text-warning-ink">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Rascunho
+                </Badge>
+              )
+            }
+            acoes={
+              <>
+                {anamnese.status === "RASCUNHO" && (
+                  <Button onClick={handleEditar}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
                 )}
-              </div>
-              <p className="text-muted-foreground">
-                Avaliação inicial completa do paciente
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleVoltar} variant="outline">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
-              </Button>
-              {anamnese.status === "RASCUNHO" && (
-                <Button onClick={handleEditar}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar
+                <Button onClick={handleGerarPDF} variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar PDF
                 </Button>
-              )}
-              <Button onClick={handleGerarPDF} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar PDF
-              </Button>
-            </div>
-          </div>
+              </>
+            }
+          />
 
           {/* Informações Gerais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Informações do Paciente */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Paciente
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel icone={<User />} titulo="Paciente">
+              <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Nome
@@ -310,18 +284,12 @@ export default function AnamneseDetalhesPage() {
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
 
             {/* Informações do Profissional */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Profissional Responsável
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel icone={<User />} titulo="Profissional Responsável">
+              <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Nome
@@ -344,24 +312,21 @@ export default function AnamneseDetalhesPage() {
                   </div>
                   {anamnese.finalizadaEm && (
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className="h-4 w-4 text-success-ink" />
                       <span>
                         Finalizada em: {formatDate(anamnese.finalizadaEm)}
                       </span>
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           </div>
 
           {/* Etapa 1: História do Desenvolvimento */}
           {anamnese.historiaDesenvolvimento && (
-            <Card>
-              <CardHeader>
-                <CardTitle>1. História do Desenvolvimento</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel titulo="1. História do Desenvolvimento">
+              <div className="space-y-4">
                 {anamnese.historiaDesenvolvimento.gestacao && (
                   <div>
                     <label className="text-sm font-semibold text-muted-foreground">
@@ -402,20 +367,15 @@ export default function AnamneseDetalhesPage() {
                     </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           )}
 
           {/* Etapa 2: Comportamentos Excessivos e Deficitários */}
           {(anamnese.comportamentosExcessivos ||
             anamnese.comportamentosDeficitarios) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  2. Comportamentos Excessivos e Deficitários
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel titulo="2. Comportamentos Excessivos e Deficitários">
+              <div className="space-y-4">
                 {anamnese.comportamentosExcessivos && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
@@ -436,38 +396,28 @@ export default function AnamneseDetalhesPage() {
                     </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           )}
 
           {/* Etapa 3: Comportamentos-Problema (ABC) */}
           {anamnese.comportamentosProblema && (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  3. Comportamentos-Problema (Análise Funcional ABC)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-base whitespace-pre-wrap">
-                  {typeof anamnese.comportamentosProblema === "string"
-                    ? anamnese.comportamentosProblema
-                    : Array.isArray(anamnese.comportamentosProblema) &&
-                        anamnese.comportamentosProblema[0]?.descricao
-                      ? anamnese.comportamentosProblema[0].descricao
-                      : ""}
-                </p>
-              </CardContent>
-            </Card>
+            <Panel titulo="3. Comportamentos-Problema (Análise Funcional ABC)">
+              <p className="text-base whitespace-pre-wrap">
+                {typeof anamnese.comportamentosProblema === "string"
+                  ? anamnese.comportamentosProblema
+                  : Array.isArray(anamnese.comportamentosProblema) &&
+                      anamnese.comportamentosProblema[0]?.descricao
+                    ? anamnese.comportamentosProblema[0].descricao
+                    : ""}
+              </p>
+            </Panel>
           )}
 
           {/* Etapa 4: Rotina Diária */}
           {anamnese.rotinaDiaria && (
-            <Card>
-              <CardHeader>
-                <CardTitle>4. Rotina Diária</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel titulo="4. Rotina Diária">
+              <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {anamnese.rotinaDiaria.acordar && (
                     <div>
@@ -540,17 +490,14 @@ export default function AnamneseDetalhesPage() {
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           )}
 
           {/* Etapa 5: Ambiente Familiar e Escolar */}
           {(anamnese.ambienteFamiliar || anamnese.ambienteEscolar) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>5. Ambiente Familiar e Escolar</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel titulo="5. Ambiente Familiar e Escolar">
+              <div className="space-y-4">
                 {anamnese.ambienteFamiliar && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
@@ -571,87 +518,65 @@ export default function AnamneseDetalhesPage() {
                     </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           )}
 
           {/* Etapa 6: Preferências (Reforçadores) */}
           {anamnese.preferencias && (
-            <Card>
-              <CardHeader>
-                <CardTitle>6. Preferências (Reforçadores)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-base whitespace-pre-wrap">
-                  {typeof anamnese.preferencias === "string"
-                    ? anamnese.preferencias
-                    : anamnese.preferencias?.descricao
-                      ? anamnese.preferencias.descricao
-                      : ""}
-                </p>
-              </CardContent>
-            </Card>
+            <Panel titulo="6. Preferências (Reforçadores)">
+              <p className="text-base whitespace-pre-wrap">
+                {typeof anamnese.preferencias === "string"
+                  ? anamnese.preferencias
+                  : anamnese.preferencias?.descricao
+                    ? anamnese.preferencias.descricao
+                    : ""}
+              </p>
+            </Panel>
           )}
 
           {/* Etapa 7: Documentos Anexos */}
           {anamnese.documentosAnexos &&
             anamnese.documentosAnexos.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>7. Documentos e Vídeos Anexados</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="list-disc list-inside space-y-2">
-                    {anamnese.documentosAnexos.map((doc, index) => (
-                      <li key={index} className="text-sm">
-                        <a
-                          href={doc}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          Documento {index + 1}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+              <Panel titulo="7. Documentos e Vídeos Anexados">
+                <ul className="list-disc list-inside space-y-2">
+                  {anamnese.documentosAnexos.map((doc, index) => (
+                    <li key={index} className="text-sm">
+                      <a
+                        href={doc}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        Documento {index + 1}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
             )}
 
           {/* Etapa 8: Habilidades Críticas */}
           {anamnese.habilidadesCriticas && (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  8. Habilidades Críticas para o Desenvolvimento
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-base whitespace-pre-wrap">
-                  {typeof anamnese.habilidadesCriticas === "string"
-                    ? anamnese.habilidadesCriticas
-                    : Array.isArray(anamnese.habilidadesCriticas) &&
-                        anamnese.habilidadesCriticas[0]?.descricao
-                      ? anamnese.habilidadesCriticas[0].descricao
-                      : ""}
-                </p>
-              </CardContent>
-            </Card>
+            <Panel titulo="8. Habilidades Críticas para o Desenvolvimento">
+              <p className="text-base whitespace-pre-wrap">
+                {typeof anamnese.habilidadesCriticas === "string"
+                  ? anamnese.habilidadesCriticas
+                  : Array.isArray(anamnese.habilidadesCriticas) &&
+                      anamnese.habilidadesCriticas[0]?.descricao
+                    ? anamnese.habilidadesCriticas[0].descricao
+                    : ""}
+              </p>
+            </Panel>
           )}
 
           {/* Observações Gerais */}
           {anamnese.observacoesGerais && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Observações Gerais</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-base whitespace-pre-wrap">
-                  {anamnese.observacoesGerais}
-                </p>
-              </CardContent>
-            </Card>
+            <Panel titulo="Observações Gerais">
+              <p className="text-base whitespace-pre-wrap">
+                {anamnese.observacoesGerais}
+              </p>
+            </Panel>
           )}
         </div>
       </MainLayout>

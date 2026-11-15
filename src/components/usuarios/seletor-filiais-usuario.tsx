@@ -195,7 +195,7 @@ export function SeletorFiliaisUsuario({
                           className={cn(
                             "h-3.5 w-3.5",
                             principal === f.id
-                              ? "fill-amber-400 text-amber-500"
+                              ? "text-warning-ink text-warning-ink"
                               : "text-muted-foreground"
                           )}
                         />
@@ -207,7 +207,7 @@ export function SeletorFiliaisUsuario({
             </div>
 
             {rascunho.length === 0 && (
-              <p className="rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-800">
+              <p className="rounded-md bg-warning-soft px-2 py-1.5 text-xs text-warning-ink">
                 Sem filial marcada, o usuário enxerga <strong>todas</strong> as unidades.
               </p>
             )}

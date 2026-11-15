@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Gamepad2, Play, Clock, Star, Target, Brain } from 'lucide-react'
+import { PageHeader, StatCard } from '@/components/kit'
 
 export default function AtividadesPage() {
   const breadcrumbs = [
@@ -90,11 +91,11 @@ export default function AtividadesPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'concluido': return 'bg-green-100 text-green-800'
-      case 'em_progresso': return 'bg-blue-100 text-blue-800'
-      case 'disponivel': return 'bg-gray-100 text-gray-800'
-      case 'bloqueado': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'concluido': return 'bg-success-soft text-success-ink'
+      case 'em_progresso': return 'bg-brand-soft text-brand'
+      case 'disponivel': return 'bg-surface-sunken text-ink'
+      case 'bloqueado': return 'bg-danger-soft text-danger-ink'
+      default: return 'bg-surface-sunken text-ink'
     }
   }
 
@@ -110,10 +111,10 @@ export default function AtividadesPage() {
 
   const getDifficultyColor = (dificuldade: string) => {
     switch (dificuldade) {
-      case 'Fácil': return 'bg-green-100 text-green-800'
-      case 'Médio': return 'bg-yellow-100 text-yellow-800'
-      case 'Difícil': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'Fácil': return 'bg-success-soft text-success-ink'
+      case 'Médio': return 'bg-warning-soft text-warning-ink'
+      case 'Difícil': return 'bg-danger-soft text-danger-ink'
+      default: return 'bg-surface-sunken text-ink'
     }
   }
 
@@ -121,66 +122,49 @@ export default function AtividadesPage() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Atividades</h1>
-            <p className="text-muted-foreground">
-              Execute atividades e ganhe pontos e conquistas
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant="outline" className="bg-blue-50 text-blue-700">
-              <Star className="w-3 h-3 mr-1" />
-              1,250 pontos
-            </Badge>
-          </div>
-        </div>
+        <PageHeader
+          titulo="Atividades"
+          subtitulo="Execute atividades e ganhe pontos e conquistas"
+          acoes={
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="bg-brand-soft text-brand">
+                <Star className="w-3 h-3 mr-1" />
+                1,250 pontos
+              </Badge>
+            </div>
+          }
+        />
 
         {/* Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Atividades</CardTitle>
-              <Gamepad2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{atividades.length}</div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard
+            tom="blue"
+            size="hero"
+            icone={<Gamepad2 />}
+            rotulo="Total Atividades"
+            valor={atividades.length}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Concluídas</CardTitle>
-              <Target className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {atividades.filter(a => a.status === 'concluido').length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="lavender"
+            icone={<Target />}
+            rotulo="Concluídas"
+            valor={<span className="text-success-ink">{atividades.filter(a => a.status === 'concluido').length}</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Em Progresso</CardTitle>
-              <Play className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {atividades.filter(a => a.status === 'em_progresso').length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="mint"
+            icone={<Play className="text-brand" />}
+            rotulo="Em Progresso"
+            valor={<span className="text-brand">{atividades.filter(a => a.status === 'em_progresso').length}</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pontos Totais</CardTitle>
-              <Star className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">1,250</div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="peach"
+            icone={<Star />}
+            rotulo="Pontos Totais"
+            valor={<span className="text-warning-ink">1,250</span>}
+          />
         </div>
 
         {/* Lista de Atividades */}

@@ -15,7 +15,6 @@
 // Componente de apresentação: quem busca é o dashboard, que já tem o seletor de
 // período. Dois seletores de período na mesma tela divergiriam.
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -34,8 +33,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AlertTriangle, CalendarCheck, DoorOpen, UserPlus } from "lucide-react";
+import {
+  AlertTriangle,
+  Building2,
+  CalendarCheck,
+  DoorOpen,
+  UserPlus,
+} from "lucide-react";
 import type { CapacidadeResposta } from "@/types/ocupacao-sala";
+import { Panel, StatCard } from "@/components/kit";
 
 /** Minutos → "12h 30min", a mesma leitura usada na taxa de ocupação */
 function horas(min: number): string {
@@ -66,22 +72,15 @@ export function CapacidadeSalas({ dados }: Props) {
 
   if (salas.length === 0) {
     return (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">
-            Capacidade das salas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            {fechadas > 0
-              ? `Nenhuma sala abre nos dias selecionados — ${fechadas} ${
-                  fechadas === 1 ? "sala tem horário" : "salas têm horário"
-                } configurado, mas em outros dias da semana.`
-              : "Nenhuma sala com horário de funcionamento configurado neste filtro. Sem o horário da sala não há capacidade para comparar — configure em Salas, no botão do relógio."}
-          </p>
-        </CardContent>
-      </Card>
+      <Panel titulo="Capacidade das salas">
+        <p className="text-sm text-muted-foreground">
+          {fechadas > 0
+            ? `Nenhuma sala abre nos dias selecionados — ${fechadas} ${
+                fechadas === 1 ? "sala tem horário" : "salas têm horário"
+              } configurado, mas em outros dias da semana.`
+            : "Nenhuma sala com horário de funcionamento configurado neste filtro. Sem o horário da sala não há capacidade para comparar — configure em Salas, no botão do relógio."}
+        </p>
+      </Panel>
     );
   }
 
@@ -112,98 +111,54 @@ export function CapacidadeSalas({ dados }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Os quatro números da decisão */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-3">
-              <DoorOpen className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  Capacidade das salas
-                </p>
-                <p className="text-2xl font-bold">
-                  {horas(total.minutos_capacidade)}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {total.salas} {total.salas === 1 ? "sala" : "salas"} no
-                  período
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Os quatro números da decisão, no StatCard do kit (Módulo 28).
+          `tom="white"`: o gradiente pastel é a linha de destaque do dashboard;
+          aqui a leitura é comparativa entre quatro parcelas que somam a
+          capacidade, e quatro fundos diferentes atrapalhariam a comparação.
+          A cor fica no ícone, que é onde ela significa. */}
+      <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+        <StatCard
+          tom="blue"
+          size="hero"
+          icone={<DoorOpen />}
+          rotulo="Capacidade das salas"
+          valor={horas(total.minutos_capacidade)}
+          hint={`${total.salas} ${total.salas === 1 ? "sala" : "salas"} no período`}
+        />
 
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-3">
-              <CalendarCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">Utilizado</p>
-                <p className="text-2xl font-bold">
-                  {horas(total.minutos_agendados)}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {pct(total.minutos_agendados, total.minutos_capacidade)} da
-                  capacidade · {total.atendimentos} atend.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          tom="lavender"
+          icone={<CalendarCheck className="text-brand" />}
+          rotulo="Utilizado"
+          valor={horas(total.minutos_agendados)}
+          hint={`${pct(total.minutos_agendados, total.minutos_capacidade)} da capacidade · ${total.atendimentos} atend.`}
+        />
 
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-3">
-              <CalendarCheck className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  Livre com profissional
-                </p>
-                <p className="text-2xl font-bold">
-                  {horas(total.minutos_livres_com_profissional)}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  sala aberta e gente escalada, falta agendar
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          tom="mint"
+          icone={<CalendarCheck />}
+          rotulo="Livre com profissional"
+          valor={horas(total.minutos_livres_com_profissional)}
+          hint="sala aberta e gente escalada, falta agendar"
+        />
 
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-3">
-              <UserPlus className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  Livre sem profissional
-                </p>
-                <p className="text-2xl font-bold">
-                  {horas(total.minutos_livres_sem_profissional)}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  sala aberta sem ninguém escalado
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          tom="peach"
+          icone={<UserPlus />}
+          rotulo="Livre sem profissional"
+          valor={horas(total.minutos_livres_sem_profissional)}
+          hint="sala aberta sem ninguém escalado"
+        />
       </div>
 
       {/* Teto vendável: o corte que as medidas por sala não fazem.
           Sem ele, a hora livre de uma pessoa é contada em todas as salas
           abertas ao mesmo tempo — e a sobra parece maior do que é. */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">
-            Teto vendável{" "}
-            <span className="font-normal text-muted-foreground">
-              (uma pessoa atende uma sala por vez)
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <Panel
+        titulo="Teto vendável"
+        subtitulo="uma pessoa atende uma sala por vez"
+      >
+        <div className="space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-xs text-muted-foreground">
@@ -230,7 +185,7 @@ export function CapacidadeSalas({ dados }: Props) {
               <p className="text-xs text-muted-foreground">
                 Ainda dá para vender
               </p>
-              <p className="text-xl font-bold tabular-nums text-amber-600">
+              <p className="text-xl font-bold tabular-nums text-warning-ink">
                 {horas(total.minutos_livres_efetivos)}
               </p>
               <p className="text-[11px] text-muted-foreground">
@@ -241,7 +196,7 @@ export function CapacidadeSalas({ dados }: Props) {
               <p className="text-xs text-muted-foreground">
                 Gargalo de pessoal
               </p>
-              <p className="text-xl font-bold tabular-nums text-emerald-700">
+              <p className="text-xl font-bold tabular-nums text-success-ink">
                 {horas(total.minutos_limitados_por_pessoa)}
               </p>
               <p className="text-[11px] text-muted-foreground">
@@ -268,22 +223,18 @@ export function CapacidadeSalas({ dados }: Props) {
               </>
             )}
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Comparativo por sala */}
-        <Card className="viz-relatorio">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">
-              Capacidade por sala
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Horas no período: agendado, livre com profissional e livre sem
-              ninguém escalado
-            </p>
-          </CardHeader>
-          <CardContent>
+        <Panel
+          className="viz-relatorio"
+          icone={<DoorOpen />}
+          titulo="Capacidade por sala"
+          subtitulo="Horas no período: agendado, livre com profissional e livre sem ninguém escalado"
+        >
+          <div>
             <ResponsiveContainer
               width="100%"
               height={Math.max(220, porSala.length * 34)}
@@ -331,18 +282,16 @@ export function CapacidadeSalas({ dados }: Props) {
                 ))}
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
         {/* Por filial */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">Por unidade</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Onde sobra sala sem profissional escalado
-            </p>
-          </CardHeader>
-          <CardContent>
+        <Panel
+          icone={<Building2 />}
+          titulo="Por unidade"
+          subtitulo="Onde sobra sala sem profissional escalado"
+        >
+          <div>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -379,8 +328,8 @@ export function CapacidadeSalas({ dados }: Props) {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       </div>
 
       {/* O que ficou fora dos números, dito na cara */}
@@ -401,7 +350,7 @@ export function CapacidadeSalas({ dados }: Props) {
           )}
           {semGrade.length > 0 && (
             <p className="flex items-start gap-2 text-xs text-muted-foreground">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+              <AlertTriangle className="h-3.5 w-3.5 text-warning-ink mt-0.5 shrink-0" />
               <span>
                 {semGrade.length}{" "}
                 {semGrade.length === 1 ? "sala não tem" : "salas não têm"}{" "}
@@ -419,7 +368,7 @@ export function CapacidadeSalas({ dados }: Props) {
           )}
           {total.minutos_agendados_fora > 0 && (
             <p className="flex items-start gap-2 text-xs text-muted-foreground">
-              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+              <AlertTriangle className="h-3.5 w-3.5 text-warning-ink mt-0.5 shrink-0" />
               <span>
                 {horas(total.minutos_agendados_fora)} de atendimento em horário
                 em que a sala está fechada ou a grade da sala está incompleta,

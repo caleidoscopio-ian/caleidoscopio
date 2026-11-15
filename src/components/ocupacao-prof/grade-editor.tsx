@@ -172,7 +172,7 @@ export function GradeEditor({
   return (
     <div className="space-y-4">
       {semVinculo && filiais.length > 1 && (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <p className="rounded-md border border-warning-soft bg-warning-soft px-3 py-2 text-xs text-warning-ink">
           Este profissional não tem filial vinculada, então todas as unidades
           aparecem na lista. Vincule a filial dele em Profissionais para
           restringir a grade.

@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Pill, Calendar, Clock, AlertCircle, Edit, Trash2 } from "lucide-react";
+import { EstadoVazio, Carregando } from "@/components/kit";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -281,7 +282,7 @@ export function ProntuarioPrescricao({
     }
 
     return (
-      <Badge variant="default" className="bg-green-600">
+      <Badge variant="default" className="bg-success">
         Em uso
       </Badge>
     );
@@ -289,13 +290,7 @@ export function ProntuarioPrescricao({
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8">
-          <p className="text-center text-muted-foreground">
-            Carregando prescrições...
-          </p>
-        </CardContent>
-      </Card>
+      <Carregando texto="Carregando prescrições..." />
     );
   }
 
@@ -319,7 +314,7 @@ export function ProntuarioPrescricao({
             {/* Medicamento */}
             <div className="grid gap-2">
               <Label htmlFor="medicamento">
-                Medicamento <span className="text-red-500">*</span>
+                Medicamento <span className="text-danger-ink">*</span>
               </Label>
               <Input
                 id="medicamento"
@@ -335,7 +330,7 @@ export function ProntuarioPrescricao({
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="dosagem">
-                  Dosagem <span className="text-red-500">*</span>
+                  Dosagem <span className="text-danger-ink">*</span>
                 </Label>
                 <Input
                   id="dosagem"
@@ -348,7 +343,7 @@ export function ProntuarioPrescricao({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="frequencia">
-                  Frequência <span className="text-red-500">*</span>
+                  Frequência <span className="text-danger-ink">*</span>
                 </Label>
                 <Input
                   id="frequencia"
@@ -463,14 +458,7 @@ export function ProntuarioPrescricao({
 
       {/* Lista de Prescrições */}
       {prescricoes.length === 0 ? (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">
-              <Pill className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Nenhuma prescrição médica registrada</p>
-            </div>
-          </CardContent>
-        </Card>
+        <EstadoVazio icone={<Pill />} titulo="Nenhuma prescrição médica registrada" />
       ) : (
         <div className="space-y-3">
           {prescricoes.map((prescricao) => (

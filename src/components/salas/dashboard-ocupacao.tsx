@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, Building2, Clock, CalendarCheck } from 'lucide-react'
 import {
   BarChart,
@@ -24,6 +23,7 @@ import {
   FiltrosDashboardSalas,
   type FiltrosDashboardValues,
 } from '@/components/salas/filtros-dashboard-salas'
+import { Panel, StatCard } from '@/components/kit'
 
 interface KPI {
   totalAtendimentos: number
@@ -159,62 +159,50 @@ export function DashboardOcupacao({ filialId }: DashboardOcupacaoProps) {
       <CapacidadeSalas dados={capacidade} />
 
       {/* Volume — quantos atendimentos, onde e quando */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-3">
-              <CalendarCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">Total atendimentos</p>
-                <p className="text-2xl font-bold">{kpis.totalAtendimentos}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="anim-escalonada grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          size="sm"
+          icone={<CalendarCheck />}
+          rotulo="Total atendimentos"
+          valor={kpis.totalAtendimentos}
+        />
 
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-3">
-              <TrendingUp className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">Taxa de ocupação</p>
-                <p className="text-2xl font-bold">
-                  {taxaCapacidade === null ? '—' : taxaCapacidade.toFixed(1)}
-                  <span className="text-sm font-normal text-muted-foreground">%</span>
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  sobre o horário das salas
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          size="sm"
+          tom="mint"
+          icone={<TrendingUp />}
+          rotulo="Taxa de ocupação"
+          valor={
+            taxaCapacidade === null ? (
+              "—"
+            ) : (
+              <>
+                {taxaCapacidade.toFixed(1)}
+                <span className="text-[0.55em] font-medium">%</span>
+              </>
+            )
+          }
+          hint="sobre o horário das salas"
+        />
 
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-3">
-              <Building2 className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">Sala mais usada</p>
-                <p className="text-sm font-semibold truncate max-w-[140px]">
-                  {kpis.salaMaisUsada ?? '—'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          size="sm"
+          tom="peach"
+          icone={<Building2 />}
+          rotulo="Sala mais usada"
+          valor={
+            <span className="block truncate text-[1.1rem]">
+              {kpis.salaMaisUsada ?? "—"}
+            </span>
+          }
+        />
 
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start gap-3">
-              <Clock className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-muted-foreground">Horário de pico</p>
-                <p className="text-2xl font-bold">{kpis.horarioPico ?? '—'}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          size="sm"
+          icone={<Clock className="text-warning-ink" />}
+          rotulo="Horário de pico"
+          valor={kpis.horarioPico ?? '—'}
+        />
       </div>
 
       {kpis.totalAtendimentos === 0 && !loading && (
@@ -227,101 +215,86 @@ export function DashboardOcupacao({ filialId }: DashboardOcupacaoProps) {
       {kpis.totalAtendimentos > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Atendimentos por sala */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Atendimentos por sala</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={dadosPorSala} layout="vertical" margin={{ left: 8, right: 16 }}>
-                  <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-                  <XAxis type="number" tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="nome" width={110} tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    formatter={(v) => [v, 'Atendimentos']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  />
-                  <Bar dataKey="total" radius={[0, 4, 4, 0]}>
-                    {dadosPorSala.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.cor ?? '#6366f1'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <Panel titulo="Atendimentos por sala">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={dadosPorSala} layout="vertical" margin={{ left: 8, right: 16 }}>
+                <CartesianGrid horizontal={false} strokeDasharray="3 3" />
+                <XAxis type="number" tick={{ fontSize: 11 }} />
+                <YAxis type="category" dataKey="nome" width={110} tick={{ fontSize: 11 }} />
+                <Tooltip
+                  formatter={(v) => [v, 'Atendimentos']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+                  {dadosPorSala.map((entry, idx) => (
+                    <Cell key={idx} fill={entry.cor ?? '#6366f1'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </Panel>
 
           {/* Atendimentos por dia */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Atendimentos por dia</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={dadosPorDia} margin={{ left: 0, right: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="dia"
-                    tick={{ fontSize: 10 }}
-                    interval={diasNoPeriodo > 10 ? Math.ceil(diasNoPeriodo / 8) : 0}
-                    angle={-30}
-                    textAnchor="end"
-                    height={40}
-                  />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <Tooltip
-                    formatter={(v) => [v, 'Atendimentos']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <Panel titulo="Atendimentos por dia">
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={dadosPorDia} margin={{ left: 0, right: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="dia"
+                  tick={{ fontSize: 10 }}
+                  interval={diasNoPeriodo > 10 ? Math.ceil(diasNoPeriodo / 8) : 0}
+                  angle={-30}
+                  textAnchor="end"
+                  height={40}
+                />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip
+                  formatter={(v) => [v, 'Atendimentos']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Panel>
 
           {/* Distribuição por hora do dia */}
-          <Card className="md:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">
-                Distribuição por horário{' '}
-                <span className="font-normal text-muted-foreground">(horas do dia)</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={dadosPorHora} margin={{ left: 0, right: 8 }}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                  <XAxis dataKey="hora" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <Tooltip
-                    formatter={(v) => [v, 'Atendimentos']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  />
-                  <Bar dataKey="total" fill="#10b981" radius={[4, 4, 0, 0]}>
-                    {dadosPorHora.map((entry, idx) => {
-                      const isPico =
-                        kpis.horarioPico != null &&
-                        entry.hora === kpis.horarioPico
-                      return <Cell key={idx} fill={isPico ? '#f59e0b' : '#10b981'} />
-                    })}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              {kpis.horarioPico && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  <span className="inline-block w-2 h-2 rounded-sm bg-amber-400 mr-1" />
-                  Horário de pico: {kpis.horarioPico}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <Panel
+            titulo={<>Distribuição por horário{' '} <span className="font-normal text-muted-foreground">(horas do dia)</span></>}
+            className="md:col-span-2"
+          >
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={dadosPorHora} margin={{ left: 0, right: 8 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis dataKey="hora" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip
+                  formatter={(v) => [v, 'Atendimentos']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Bar dataKey="total" fill="#10b981" radius={[4, 4, 0, 0]}>
+                  {dadosPorHora.map((entry, idx) => {
+                    const isPico =
+                      kpis.horarioPico != null &&
+                      entry.hora === kpis.horarioPico
+                    return <Cell key={idx} fill={isPico ? '#f59e0b' : '#10b981'} />
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            {kpis.horarioPico && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="inline-block w-2 h-2 rounded-sm bg-warning mr-1" />
+                Horário de pico: {kpis.horarioPico}
+              </p>
+            )}
+          </Panel>
         </div>
       )}
     </div>

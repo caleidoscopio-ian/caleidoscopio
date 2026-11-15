@@ -8,18 +8,24 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageLoader } from "@/components/page-loader";
 import { PacoteFormDialog } from "@/components/pacotes/pacote-form-dialog";
-import { ArrowLeft, Pencil, Clock } from "lucide-react";
+import { Pencil, Clock, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Pacote } from "@/types/pacote";
 import { TIPO_PACOTE_LABELS, STATUS_PACOTE_LABELS } from "@/types/pacote";
 import { formatBRL, formatDuracao } from "@/types/procedimento";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  PageHeader,
+  Panel,
+  StatCard,
+  GradeCampos,
+  CampoInfo,
+} from "@/components/kit";
 
 interface PacoteDetalhe extends Pacote {
   historicos?: Array<{
@@ -101,55 +107,61 @@ export default function PacoteDetalhePage() {
   return (
     <ProtectedRoute requiredPermission={{ resource: "procedimentos", action: "VIEW" }}>
       <MainLayout breadcrumbs={breadcrumbs}>
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="sm" onClick={() => router.push("/procedimentos")}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-          </Button>
-          <div className="flex items-center gap-3 flex-1">
-            {pacote.cor && (
-              <span className="h-10 w-10 rounded-lg shrink-0" style={{ backgroundColor: pacote.cor }} />
-            )}
-            <div>
-              <h1 className="text-2xl font-bold">{pacote.nome}</h1>
-              <div className="flex gap-2 mt-0.5">
-                <Badge variant="outline" className="text-xs">{TIPO_PACOTE_LABELS[pacote.tipo]}</Badge>
-                <Badge variant={pacote.status === "ATIVO" ? "default" : "destructive"} className="text-xs">
-                  {STATUS_PACOTE_LABELS[pacote.status]}
+        <PageHeader
+          className="mb-6"
+          voltar={{ onClick: () => router.push("/procedimentos") }}
+          avatar={
+            pacote.cor ? (
+              <span
+                className="block size-11 rounded-[0.95rem]"
+                style={{ backgroundColor: pacote.cor }}
+              />
+            ) : undefined
+          }
+          titulo={pacote.nome}
+          meta={
+            <>
+              <Badge variant="outline" className="text-xs">
+                {TIPO_PACOTE_LABELS[pacote.tipo]}
+              </Badge>
+              <Badge
+                variant={pacote.status === "ATIVO" ? "default" : "destructive"}
+                className="text-xs"
+              >
+                {STATUS_PACOTE_LABELS[pacote.status]}
+              </Badge>
+              {desconto > 0 && (
+                <Badge className="text-xs bg-success-soft text-success-ink">
+                  {desconto}% off
                 </Badge>
-                {desconto > 0 && (
-                  <Badge className="text-xs bg-green-100 text-green-700">{desconto}% off</Badge>
-                )}
-              </div>
-            </div>
-          </div>
-          <Button size="sm" onClick={() => setEditando(true)} disabled={!pacote.ativo}>
-            <Pencil className="h-4 w-4 mr-1" /> Editar
-          </Button>
-        </div>
+              )}
+            </>
+          }
+          acoes={
+            <Button size="sm" onClick={() => setEditando(true)} disabled={!pacote.ativo}>
+              <Pencil className="h-4 w-4 mr-1" /> Editar
+            </Button>
+          }
+        />
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card><CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Valor do Pacote</p>
-            <p className="text-xl font-bold">{formatBRL(valorTotal)}</p>
-          </CardContent></Card>
-          <Card><CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Valor Original</p>
-            <p className="text-xl font-bold">{valorOriginal ? formatBRL(valorOriginal) : "—"}</p>
-          </CardContent></Card>
-          <Card><CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Total de Sessões</p>
-            <p className="text-xl font-bold">{pacote.total_sessoes ?? "—"}</p>
-          </CardContent></Card>
-          <Card><CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground">Validade</p>
-            <p className="text-xl font-bold">{pacote.validade_dias ? `${pacote.validade_dias}d` : "—"}</p>
-          </CardContent></Card>
+        <div className="anim-escalonada mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard tom="blue" size="hero" rotulo="Valor do Pacote" valor={formatBRL(valorTotal)} />
+          <StatCard
+            tom="lavender"
+            rotulo="Valor Original"
+            valor={valorOriginal ? formatBRL(valorOriginal) : "—"}
+          />
+          <StatCard tom="mint" rotulo="Total de Sessões" valor={pacote.total_sessoes ?? "—"} />
+          <StatCard
+            tom="peach"
+            rotulo="Validade"
+            valor={pacote.validade_dias ? `${pacote.validade_dias}d` : "—"}
+          />
         </div>
 
         <Tabs defaultValue="dados">
-          <TabsList className="mb-4">
+          <TabsList>
             <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
             <TabsTrigger value="composicao">Composição</TabsTrigger>
             <TabsTrigger value="historico">Histórico</TabsTrigger>
@@ -157,118 +169,117 @@ export default function PacoteDetalhePage() {
 
           {/* Dados Gerais */}
           <TabsContent value="dados">
-            <Card>
-              <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                <div><p className="text-xs text-muted-foreground">Nome</p><p className="font-medium">{pacote.nome}</p></div>
-                <div><p className="text-xs text-muted-foreground">Tipo</p><p className="font-medium">{TIPO_PACOTE_LABELS[pacote.tipo]}</p></div>
-                <div><p className="text-xs text-muted-foreground">Valor Total</p><p className="font-medium">{formatBRL(valorTotal)}</p></div>
-                <div><p className="text-xs text-muted-foreground">Valor Particular</p><p className="font-medium">{formatBRL(pacote.valor_particular)}</p></div>
-                <div><p className="text-xs text-muted-foreground">Convênio</p><p className="font-medium">{pacote.convenio?.nome_fantasia || pacote.convenio?.razao_social || "—"}</p></div>
-                <div><p className="text-xs text-muted-foreground">Validade</p><p className="font-medium">{pacote.validade_dias ? `${pacote.validade_dias} dias` : "—"}</p></div>
-                {pacote.descricao && (
-                  <div className="col-span-2"><p className="text-xs text-muted-foreground mb-1">Descrição</p><p>{pacote.descricao}</p></div>
-                )}
-                {pacote.observacoes && (
-                  <div className="col-span-2"><p className="text-xs text-muted-foreground mb-1">Observações</p><p className="text-muted-foreground">{pacote.observacoes}</p></div>
-                )}
-              </CardContent>
-            </Card>
+            <Panel icone={<Package />} titulo="Dados Gerais">
+              <GradeCampos colunas={2}>
+                <CampoInfo rotulo="Nome" valor={pacote.nome} />
+                <CampoInfo rotulo="Tipo" valor={TIPO_PACOTE_LABELS[pacote.tipo]} />
+                <CampoInfo rotulo="Valor total" valor={formatBRL(valorTotal)} />
+                <CampoInfo
+                  rotulo="Valor particular"
+                  valor={formatBRL(pacote.valor_particular)}
+                />
+                <CampoInfo
+                  rotulo="Convênio"
+                  valor={pacote.convenio?.nome_fantasia || pacote.convenio?.razao_social}
+                />
+                <CampoInfo
+                  rotulo="Validade"
+                  valor={pacote.validade_dias ? `${pacote.validade_dias} dias` : null}
+                />
+                <CampoInfo rotulo="Descrição" valor={pacote.descricao} larguraTotal />
+                <CampoInfo rotulo="Observações" valor={pacote.observacoes} larguraTotal />
+              </GradeCampos>
+            </Panel>
           </TabsContent>
 
           {/* Composição */}
           <TabsContent value="composicao">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Procedimentos do Pacote</CardTitle></CardHeader>
-              <CardContent>
-                {!pacote.procedimentos?.length ? (
-                  <p className="text-center py-8 text-sm text-muted-foreground">Nenhum procedimento neste pacote.</p>
-                ) : (
-                  <>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-8"></TableHead>
-                          <TableHead>Procedimento</TableHead>
-                          <TableHead>Duração</TableHead>
-                          <TableHead>Qtd</TableHead>
-                          <TableHead>Valor Unit.</TableHead>
-                          <TableHead>Subtotal</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pacote.procedimentos.map((item) => {
-                          const subtotal = item.procedimento?.valor
-                            ? Number(item.procedimento.valor) * item.quantidade
-                            : null;
-                          return (
-                            <TableRow key={item.id}>
-                              <TableCell>
-                                {item.procedimento?.cor && (
-                                  <span className="h-4 w-4 rounded block" style={{ backgroundColor: item.procedimento.cor }} />
-                                )}
-                              </TableCell>
-                              <TableCell className="font-medium">{item.procedimento?.nome ?? "—"}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {formatDuracao(item.procedimento?.duracao_padrao ?? null)}
-                              </TableCell>
-                              <TableCell className="font-mono">{item.quantidade}×</TableCell>
-                              <TableCell>{formatBRL(item.procedimento?.valor ?? null)}</TableCell>
-                              <TableCell className="font-medium">{formatBRL(subtotal)}</TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                    {valorOriginal && (
-                      <div className="mt-4 rounded-md bg-muted/50 p-3 text-sm space-y-1">
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>Soma dos procedimentos:</span><span>{formatBRL(valorOriginal)}</span>
-                        </div>
-                        <div className="flex justify-between font-semibold">
-                          <span>Valor do pacote:</span><span>{formatBRL(valorTotal)}</span>
-                        </div>
-                        {desconto > 0 && (
-                          <div className="flex justify-between text-green-600">
-                            <span>Economia:</span>
-                            <span>{formatBRL(valorOriginal - valorTotal)} ({desconto}% off)</span>
-                          </div>
-                        )}
+            <Panel titulo="Procedimentos do Pacote">
+              {!pacote.procedimentos?.length ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">Nenhum procedimento neste pacote.</p>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-8"></TableHead>
+                        <TableHead>Procedimento</TableHead>
+                        <TableHead>Duração</TableHead>
+                        <TableHead>Qtd</TableHead>
+                        <TableHead>Valor Unit.</TableHead>
+                        <TableHead>Subtotal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pacote.procedimentos.map((item) => {
+                        const subtotal = item.procedimento?.valor
+                          ? Number(item.procedimento.valor) * item.quantidade
+                          : null;
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              {item.procedimento?.cor && (
+                                <span className="h-4 w-4 rounded block" style={{ backgroundColor: item.procedimento.cor }} />
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium">{item.procedimento?.nome ?? "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDuracao(item.procedimento?.duracao_padrao ?? null)}
+                            </TableCell>
+                            <TableCell className="font-mono">{item.quantidade}×</TableCell>
+                            <TableCell>{formatBRL(item.procedimento?.valor ?? null)}</TableCell>
+                            <TableCell className="font-medium">{formatBRL(subtotal)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                  {valorOriginal && (
+                    <div className="mt-4 rounded-md bg-muted/50 p-3 text-sm space-y-1">
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Soma dos procedimentos:</span><span>{formatBRL(valorOriginal)}</span>
                       </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                      <div className="flex justify-between font-semibold">
+                        <span>Valor do pacote:</span><span>{formatBRL(valorTotal)}</span>
+                      </div>
+                      {desconto > 0 && (
+                        <div className="flex justify-between text-success-ink">
+                          <span>Economia:</span>
+                          <span>{formatBRL(valorOriginal - valorTotal)} ({desconto}% off)</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </Panel>
           </TabsContent>
 
           {/* Histórico */}
           <TabsContent value="historico">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Histórico de Alterações</CardTitle></CardHeader>
-              <CardContent>
-                {!pacote.historicos?.length ? (
-                  <p className="text-center py-8 text-sm text-muted-foreground">Nenhum histórico registrado.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {pacote.historicos.map((h) => (
-                      <div key={h.id} className="flex gap-3 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                        <div>
-                          <div className="flex gap-2 items-center">
-                            <Badge variant="outline" className="text-xs">{h.tipo_alteracao}</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(h.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                              {" · "}{h.usuario_nome}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground mt-0.5">{h.descricao}</p>
+            <Panel titulo="Histórico de Alterações">
+              {!pacote.historicos?.length ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">Nenhum histórico registrado.</p>
+              ) : (
+                <div className="space-y-3">
+                  {pacote.historicos.map((h) => (
+                    <div key={h.id} className="flex gap-3 text-sm">
+                      <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <div className="flex gap-2 items-center">
+                          <Badge variant="outline" className="text-xs">{h.tipo_alteracao}</Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(h.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            {" · "}{h.usuario_nome}
+                          </span>
                         </div>
+                        <p className="text-muted-foreground mt-0.5">{h.descricao}</p>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
           </TabsContent>
         </Tabs>
 

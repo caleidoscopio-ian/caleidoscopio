@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarCheck, DollarSign, TrendingDown, XCircle, ReceiptText } from "lucide-react";
 import { formatBRL } from "@/lib/preco-procedimento";
 import type { HistoricoResumo } from "@/types/historico-atendimento";
+import { StatCard } from "@/components/kit";
 
 interface ResumoHistoricoProps {
   resumo: HistoricoResumo;
@@ -17,73 +17,51 @@ export function ResumoHistorico({ resumo }: ResumoHistoricoProps) {
       : 0;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <CalendarCheck className="h-3.5 w-3.5" />
-            Atendimentos Realizados
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600">{resumo.total_atendimentos}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">de {resumo.total_registros} registros</p>
-        </CardContent>
-      </Card>
+    <div className="anim-escalonada grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <StatCard
+        tom="blue"
+        size="sm"
+        icone={<CalendarCheck />}
+        rotulo="Atendimentos Realizados"
+        valor={<span className="text-success-ink">{resumo.total_atendimentos}</span>}
+        hint={<>de {resumo.total_registros} registros</>}
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <DollarSign className="h-3.5 w-3.5" />
-            Valor Total Faturado
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatBRL(resumo.valor_total)}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">atendimentos realizados</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="lavender"
+        size="sm"
+        icone={<DollarSign />}
+        rotulo="Valor Total Faturado"
+        valor={formatBRL(resumo.valor_total)}
+        hint="atendimentos realizados"
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <ReceiptText className="h-3.5 w-3.5" />
-            Ticket Médio
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatBRL(resumo.ticket_medio)}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">por atendimento realizado</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="mint"
+        size="sm"
+        icone={<ReceiptText />}
+        rotulo="Ticket Médio"
+        valor={formatBRL(resumo.ticket_medio)}
+        hint="por atendimento realizado"
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <TrendingDown className="h-3.5 w-3.5" />
-            Faltas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-orange-600">{resumo.faltas}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">ausências no período</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="peach"
+        size="sm"
+        icone={<TrendingDown />}
+        rotulo="Faltas"
+        valor={<span className="text-warning-ink">{resumo.faltas}</span>}
+        hint="ausências no período"
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <XCircle className="h-3.5 w-3.5" />
-            Cancelamentos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-red-600">{resumo.cancelamentos}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {pctAbsenteismo}% de absenteísmo total
-          </p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="blue"
+        size="sm"
+        icone={<XCircle />}
+        rotulo="Cancelamentos"
+        valor={<span className="text-danger-ink">{resumo.cancelamentos}</span>}
+        hint={<>{pctAbsenteismo}% de absenteísmo total</>}
+      />
     </div>
   );
 }

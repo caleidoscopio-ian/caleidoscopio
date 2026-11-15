@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -33,6 +32,7 @@ import {
   REGIME_ATENDIMENTO_LABELS,
   CARATER_ATENDIMENTO_LABELS,
 } from "@/types/convenio";
+import { Panel } from "@/components/kit";
 
 interface ConvenioTissFormProps {
   convenio: Convenio;
@@ -91,12 +91,11 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Identificação */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Identificação TISS</CardTitle>
-            <CardDescription>Códigos de identificação junto à operadora</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Panel
+          titulo="Identificação TISS"
+          subtitulo="Códigos de identificação junto à operadora"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <FormField
               control={form.control}
               name="versao_tiss"
@@ -153,16 +152,15 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
         {/* Parâmetros de Guia */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Parâmetros Padrão de Guia</CardTitle>
-            <CardDescription>Configurações aplicadas por padrão nas guias TISS</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Panel
+          titulo="Parâmetros Padrão de Guia"
+          subtitulo="Configurações aplicadas por padrão nas guias TISS"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <FormField
               control={form.control}
               name="tipo_guia_padrao"
@@ -235,8 +233,8 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
         <div className="flex justify-end">
           <Button type="submit" disabled={loading}>

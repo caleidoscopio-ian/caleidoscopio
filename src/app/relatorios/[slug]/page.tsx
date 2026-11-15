@@ -44,6 +44,7 @@ import type {
   OpcoesRelatorio,
   ResultadoRelatorio,
 } from "@/types/relatorio";
+import { PageHeader, StatCard, TONS_FILEIRA } from "@/components/kit";
 
 /** Data para a query string: só o dia. A API resolve o fuso da clínica
  *  (parseInicioPeriodo / parseFimPeriodo), que é o certo — montar hora aqui
@@ -163,7 +164,7 @@ function Conteudo() {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-4">
-          <h1 className="text-2xl font-bold">Relatório não encontrado</h1>
+          <h1>Relatório não encontrado</h1>
           <p className="text-muted-foreground">
             O endereço <code className="rounded bg-muted px-1.5 py-0.5">{slug}</code> não
             corresponde a nenhum relatório do catálogo.
@@ -191,7 +192,7 @@ function Conteudo() {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-4">
-          <h1 className="text-2xl font-bold">{definicao.titulo}</h1>
+          <h1>{definicao.titulo}</h1>
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
@@ -267,10 +268,10 @@ function Conteudo() {
           <div className={`rounded-lg p-2.5 ${cor.fundo} ${cor.texto}`}>
             <Icone className="h-6 w-6" />
           </div>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold tracking-tight">{definicao.titulo}</h1>
-            <p className="text-sm text-muted-foreground">{definicao.descricao}</p>
-          </div>
+          <PageHeader
+            titulo={definicao.titulo}
+            subtitulo={definicao.descricao}
+          />
           {contextoExportacao && (
             <BotoesExportacao contexto={contextoExportacao} desabilitado={loading} />
           )}
@@ -329,19 +330,23 @@ function Conteudo() {
 
         {resultado && (
           <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {metricasDestaque.map((m) => (
-                <div key={m.chave} className="rounded-lg border bg-card p-4">
-                  <p className="text-xs text-muted-foreground">{m.rotulo}</p>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums">
-                    {formatarMetrica(resultado.total.metricas[m.chave], m.tipo)}
-                  </p>
-                  {resultado.total.semValor[m.chave] ? (
-                    <p className="mt-1 text-[11px] text-amber-600">
-                      {resultado.total.semValor[m.chave]} sem valor cadastrado
-                    </p>
-                  ) : null}
-                </div>
+            {/* Fileira pastel do v2: `sm` porque são até quatro métricas
+                escolhidas pelo usuário, e o número aqui divide espaço com a
+                tabela logo abaixo. */}
+            <div className="anim-escalonada grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {metricasDestaque.map((m, i) => (
+                <StatCard
+                  key={m.chave}
+                  size="sm"
+                  tom={TONS_FILEIRA[i % TONS_FILEIRA.length]}
+                  rotulo={m.rotulo}
+                  valor={formatarMetrica(resultado.total.metricas[m.chave], m.tipo)}
+                  hint={
+                    resultado.total.semValor[m.chave]
+                      ? `${resultado.total.semValor[m.chave]} sem valor cadastrado`
+                      : undefined
+                  }
+                />
               ))}
             </div>
 

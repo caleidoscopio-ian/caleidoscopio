@@ -326,8 +326,8 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
                   </div>
                   {desconto > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-green-600">Desconto:</span>
-                      <Badge variant="secondary" className="text-green-700 bg-green-100">{desconto}% off</Badge>
+                      <span className="text-success-ink">Desconto:</span>
+                      <Badge variant="secondary" className="text-success-ink bg-success-soft">{desconto}% off</Badge>
                     </div>
                   )}
                 </div>

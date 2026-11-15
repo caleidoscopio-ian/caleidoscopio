@@ -1,145 +1,128 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+// Fileira de indicadores de /taxa-ocupacao, no `StatCard` do kit v2.
+//
+// `tom="white"` e `size="sm"` nos seis: o gradiente pastel do v2 é a linha de
+// destaque do dashboard, uma por produto. Seis gradientes lado a lado viram
+// ruído, e esta é uma plataforma para TEA — `frontend.md` pede o contrário.
+//
+// A cor vive onde é limiar: no número (taxa acima de 100%, absenteísmo) e no
+// ícone. A classe do filho vence a do `StatCard`, então não é preciso prop nova.
+
 import { Activity, CalendarCheck, Clock, Users, TrendingUp, AlertTriangle } from "lucide-react"
 import { formatarTaxa } from "@/lib/ocupacao"
 import type { OcupacaoResumo, OcupacaoProfissional } from "@/types/ocupacao-profissional"
+import { StatCard } from "@/components/kit"
 
 interface KpiCardsProps {
   resumo: OcupacaoResumo
   profissionais: OcupacaoProfissional[]
 }
 
-export function KpiCards({ resumo, profissionais }: KpiCardsProps) {
-  const maisOcupado = profissionais
-    .filter((p) => p.tem_grade)
-    .sort((a, b) => b.taxa_ocupacao - a.taxa_ocupacao)[0] ?? null
+/** Faixa da taxa → tinta. Acima de 100% é vermelho porque é agendamento fora
+ *  da grade, não desempenho: a leitura certa é "confira a grade". */
+function tintaDaTaxa(taxa: number): string {
+  if (taxa >= 1) return "text-danger-ink"
+  if (taxa >= 0.8) return "text-warning-ink"
+  if (taxa >= 0.5) return "text-success-ink"
+  return "text-brand"
+}
 
-  const taxaColor =
-    resumo.taxa_media >= 1 ? "text-red-600" :
-    resumo.taxa_media >= 0.8 ? "text-amber-600" :
-    resumo.taxa_media >= 0.5 ? "text-green-600" :
-    "text-blue-600"
+export function KpiCards({ resumo, profissionais }: KpiCardsProps) {
+  const maisOcupado =
+    profissionais.filter((p) => p.tem_grade).sort((a, b) => b.taxa_ocupacao - a.taxa_ocupacao)[0] ??
+    null
+
+  const faltas = profissionais.reduce((s, p) => s + p.faltas, 0)
+  const cancelamentos = profissionais.reduce((s, p) => s + p.cancelamentos, 0)
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      {/* Taxa média */}
-      <Card className="col-span-1">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <TrendingUp className="h-3.5 w-3.5" />
-            Taxa Média
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-bold ${taxaColor}`}>
+    <div className="anim-escalonada grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <StatCard
+        tom="blue"
+        size="sm"
+        icone={<TrendingUp className="text-brand" />}
+        rotulo="Taxa Média"
+        valor={
+          <span className={tintaDaTaxa(resumo.taxa_media)}>
             {formatarTaxa(resumo.taxa_media)}
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {resumo.profissionais_sem_grade > 0 && (
-              <span className="text-amber-600">
-                {resumo.profissionais_sem_grade} sem grade no período
-              </span>
-            )}
-          </p>
-        </CardContent>
-      </Card>
+          </span>
+        }
+        hint={
+          resumo.profissionais_sem_grade > 0 ? (
+            <span className="text-warning-ink">
+              {resumo.profissionais_sem_grade} sem grade no período
+            </span>
+          ) : undefined
+        }
+      />
 
-      {/* Atendimentos */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <CalendarCheck className="h-3.5 w-3.5" />
-            Agendamentos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{resumo.total_agendamentos}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            ativos no período
-          </p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="lavender"
+        size="sm"
+        icone={<CalendarCheck />}
+        rotulo="Agendamentos"
+        valor={resumo.total_agendamentos}
+        hint="ativos no período"
+      />
 
-      {/* Horas agendadas */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            Horas Ocupadas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{resumo.horas_agendadas}h</div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {resumo.horas_disponiveis > 0
-              ? `de ${resumo.horas_disponiveis}h disponíveis`
-              : "sem grade configurada"}
-          </p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="mint"
+        size="sm"
+        icone={<Clock />}
+        rotulo="Horas Ocupadas"
+        valor={`${resumo.horas_agendadas}h`}
+        hint={
+          resumo.horas_disponiveis > 0
+            ? `de ${resumo.horas_disponiveis}h disponíveis`
+            : "sem grade configurada"
+        }
+      />
 
-      {/* Atendendo agora */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <Activity className="h-3.5 w-3.5" />
-            Atendendo Agora
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            <div className="text-2xl font-bold text-green-600">{resumo.atendendo_agora}</div>
+      <StatCard
+        tom="peach"
+        size="sm"
+        icone={<Activity />}
+        rotulo="Atendendo Agora"
+        valor={
+          <span className="inline-flex items-center gap-2">
+            <span className="text-success-ink">{resumo.atendendo_agora}</span>
             {resumo.atendendo_agora > 0 && (
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+              <span className="relative flex size-2.5" aria-hidden>
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex size-2.5 rounded-full bg-success" />
               </span>
             )}
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">profissional(is)</p>
-        </CardContent>
-      </Card>
+          </span>
+        }
+        hint="profissional(is)"
+      />
 
-      {/* Mais ocupado */}
-      <Card className="col-span-1 md:col-span-1">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" />
-            Maior Ocupação
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {maisOcupado ? (
-            <>
-              <div className="text-sm font-semibold truncate">{maisOcupado.nome.split(' ')[0]}</div>
-              <div className={`text-xl font-bold ${maisOcupado.taxa_ocupacao >= 1 ? 'text-red-600' : maisOcupado.taxa_ocupacao >= 0.8 ? 'text-amber-600' : 'text-green-600'}`}>
-                {formatarTaxa(maisOcupado.taxa_ocupacao)}
-              </div>
-            </>
+      <StatCard
+        tom="blue"
+        size="sm"
+        icone={<Users />}
+        rotulo="Maior Ocupação"
+        valor={
+          maisOcupado ? (
+            <span className={tintaDaTaxa(maisOcupado.taxa_ocupacao)}>
+              {formatarTaxa(maisOcupado.taxa_ocupacao)}
+            </span>
           ) : (
-            <div className="text-sm text-muted-foreground">—</div>
-          )}
-        </CardContent>
-      </Card>
+            <span className="text-ink-3">—</span>
+          )
+        }
+        hint={maisOcupado ? maisOcupado.nome.split(" ")[0] : undefined}
+      />
 
-      {/* Absenteísmo */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            Absenteísmo
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-orange-600">
-            {profissionais.reduce((s, p) => s + p.faltas, 0)}
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            faltas · {profissionais.reduce((s, p) => s + p.cancelamentos, 0)} cancelamentos
-          </p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="lavender"
+        size="sm"
+        icone={<AlertTriangle />}
+        rotulo="Absenteísmo"
+        valor={<span className="text-warning-ink">{faltas}</span>}
+        hint={`faltas · ${cancelamentos} cancelamentos`}
+      />
     </div>
   )
 }

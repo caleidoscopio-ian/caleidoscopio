@@ -4,11 +4,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -47,7 +42,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import {
+  ListChecks, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Panel } from "@/components/kit";
 
 interface Nivel {
   id: string;
@@ -245,22 +242,17 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Tarefas da Avaliação</CardTitle>
-            <CardDescription>
-              Cadastre as tarefas/perguntas da avaliação
-            </CardDescription>
-          </div>
-          <Button onClick={handleNovo}>
+    <Panel
+      icone={<ListChecks />}
+      titulo="Tarefas da Avaliação"
+      subtitulo="Cadastre as tarefas/perguntas da avaliação"
+      acoes={
+        <Button onClick={handleNovo}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Tarefa
           </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+      }
+    >
         {loading ? (
           <div className="text-center py-8">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
@@ -334,7 +326,7 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="pergunta">
-                  Pergunta <span className="text-red-500">*</span>
+                  Pergunta <span className="text-danger-ink">*</span>
                 </Label>
                 <Textarea
                   id="pergunta"
@@ -476,7 +468,6 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </CardContent>
-    </Card>
+      </Panel>
   );
 }

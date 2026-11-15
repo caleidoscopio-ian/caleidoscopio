@@ -4,10 +4,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Carregando, EstadoVazio, StatCard } from "@/components/kit";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  Loader2,
   Activity,
   Calendar,
   Clock,
@@ -197,21 +197,21 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
     switch (status) {
       case "FINALIZADA":
         return (
-          <Badge variant="default" className="bg-green-600">
+          <Badge variant="default" className="bg-success">
             <CheckCircle className="h-3 w-3 mr-1" />
             Finalizada
           </Badge>
         );
       case "EM_ANDAMENTO":
         return (
-          <Badge variant="outline" className="border-blue-600 text-blue-600">
+          <Badge variant="outline" className="border-brand text-brand">
             <PlayCircle className="h-3 w-3 mr-1" />
             Em Andamento
           </Badge>
         );
       case "CANCELADA":
         return (
-          <Badge variant="outline" className="border-red-600 text-red-600">
+          <Badge variant="outline" className="border-danger text-danger-ink">
             Cancelada
           </Badge>
         );
@@ -222,79 +222,55 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">
-            Carregando evolução clínica...
-          </p>
-        </div>
-      </div>
+      <Carregando texto="Carregando evolução clínica..." />
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">Erro ao carregar evolução</h3>
-        <p className="text-muted-foreground">{error}</p>
-      </div>
+      <EstadoVazio
+        icone={<Activity />}
+        titulo="Erro ao carregar evolução"
+        texto={error}
+      />
     );
   }
 
   if (sessoes.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">Nenhuma sessão encontrada</h3>
-        <p className="text-muted-foreground">
-          Este paciente ainda não possui sessões de atividades cadastradas.
-        </p>
-      </div>
+      <EstadoVazio
+        icone={<Activity />}
+        titulo="Nenhuma sessão encontrada"
+        texto="Este paciente ainda não possui sessões de atividades cadastradas."
+      />
     );
   }
 
   return (
     <div className="space-y-4">
       {/* Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Sessões
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{sessoes.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Finalizadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {sessoes.filter((s) => s.status === "FINALIZADA").length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Em Andamento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {sessoes.filter((s) => s.status === "EM_ANDAMENTO").length}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="anim-escalonada grid gap-4 sm:grid-cols-3">
+        <StatCard
+          size="sm"
+          tom="blue"
+          icone={<Activity />}
+          rotulo="Total de Sessões"
+          valor={sessoes.length}
+        />
+        <StatCard
+          size="sm"
+          tom="mint"
+          icone={<CheckCircle />}
+          rotulo="Finalizadas"
+          valor={sessoes.filter((s) => s.status === "FINALIZADA").length}
+        />
+        <StatCard
+          size="sm"
+          tom="peach"
+          icone={<Clock />}
+          rotulo="Em Andamento"
+          valor={sessoes.filter((s) => s.status === "EM_ANDAMENTO").length}
+        />
       </div>
 
       {/* Lista de Sessões */}

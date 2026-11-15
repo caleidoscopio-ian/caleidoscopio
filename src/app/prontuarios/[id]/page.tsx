@@ -6,7 +6,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -22,7 +21,9 @@ import {
   FileCheck,
   Paperclip,
 } from "lucide-react";
+import { idadeEmAnos } from "@/lib/datas-fuso";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader, Panel } from "@/components/kit";
 
 interface ProntuarioDetalhes {
   id: string;
@@ -137,19 +138,7 @@ export default function ProntuarioDetalhesPage() {
     });
   };
 
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birth.getDate())
-    ) {
-      age--;
-    }
-    return age;
-  };
+  const calculateAge = (birthDate: string) => idadeEmAnos(birthDate) ?? 0;
 
   const handleVoltar = () => {
     router.push("/prontuarios");
@@ -210,49 +199,35 @@ export default function ProntuarioDetalhesPage() {
     <ProtectedRoute requiredPermission={{ resource: 'prontuarios', action: 'VIEW' }}>
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold tracking-tight">
-                  Registro de Sessão
-                </h1>
-                <Badge variant="default" className="bg-primary">
-                  <FileCheck className="h-3 w-3 mr-1" />
-                  Registro Clínico
-                </Badge>
-              </div>
-              <p className="text-muted-foreground">
-                Registro completo da sessão clínica
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleVoltar} variant="outline">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
-              </Button>
-              <Button onClick={handleEditar}>
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
-              </Button>
-              <Button onClick={handleGerarPDF} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar PDF
-              </Button>
-            </div>
-          </div>
+          <PageHeader
+            voltar={{ onClick: handleVoltar }}
+            titulo="Registro de Sessão"
+            subtitulo="Registro completo da sessão clínica"
+            meta={
+              <Badge variant="outline" className="bg-brand-soft text-brand">
+                <FileCheck className="h-3 w-3 mr-1" />
+                Registro Clínico
+              </Badge>
+            }
+            acoes={
+              <>
+                <Button onClick={handleEditar}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+                <Button onClick={handleGerarPDF} variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </Button>
+              </>
+            }
+          />
 
           {/* Informações Gerais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Informações do Paciente */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Paciente
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel icone={<User />} titulo="Paciente">
+              <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Nome
@@ -303,18 +278,12 @@ export default function ProntuarioDetalhesPage() {
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
 
             {/* Informações do Profissional e Sessão */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Stethoscope className="h-5 w-5" />
-                  Profissional e Sessão
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <Panel icone={<Stethoscope />} titulo="Profissional e Sessão">
+              <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Profissional Responsável
@@ -350,62 +319,44 @@ export default function ProntuarioDetalhesPage() {
                     </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           </div>
 
           {/* Evolução Clínica */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolução Clínica</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-base whitespace-pre-wrap">
-                {prontuario.clinicalEvolution}
-              </p>
-            </CardContent>
-          </Card>
+          <Panel titulo="Evolução Clínica">
+            <p className="text-base whitespace-pre-wrap">
+              {prontuario.clinicalEvolution}
+            </p>
+          </Panel>
 
           {/* Observações */}
           {prontuario.observations && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Observações Adicionais</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-base whitespace-pre-wrap">
-                  {prontuario.observations}
-                </p>
-              </CardContent>
-            </Card>
+            <Panel titulo="Observações Adicionais">
+              <p className="text-base whitespace-pre-wrap">
+                {prontuario.observations}
+              </p>
+            </Panel>
           )}
 
           {/* Anexos */}
           {prontuario.attachments && prontuario.attachments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Paperclip className="h-5 w-5" />
-                  Anexos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="list-disc list-inside space-y-2">
-                  {prontuario.attachments.map((attachment, index) => (
-                    <li key={index} className="text-sm">
-                      <a
-                        href={attachment}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        Anexo {index + 1}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <Panel icone={<Paperclip />} titulo="Anexos">
+              <ul className="list-disc list-inside space-y-2">
+                {prontuario.attachments.map((attachment, index) => (
+                  <li key={index} className="text-sm">
+                    <a
+                      href={attachment}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Anexo {index + 1}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
           )}
         </div>
       </MainLayout>

@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Panel } from '@/components/kit'
 
 const formSchema = z.object({
   // Dados de acesso (Sistema 1) + identificação básica (Sistema 2)
@@ -70,14 +70,8 @@ export function NovoUsuarioProfissionalForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         {/* Dados de Acesso (Sistema 1) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Dados de Acesso</CardTitle>
-            <CardDescription>
-              Informações para login no sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Panel titulo="Dados de Acesso" subtitulo="Informações para login no sistema">
+          <div className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -173,8 +167,8 @@ export function NovoUsuarioProfissionalForm({
               Especialidade, conselho e registro profissional são preenchidos depois,
               na ficha do profissional em Profissionais.
             </FormDescription>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
         {/* Ações */}
         <div className="flex justify-end space-x-2">

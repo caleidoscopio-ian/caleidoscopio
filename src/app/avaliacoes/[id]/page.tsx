@@ -4,13 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,8 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Edit, Loader2 } from "lucide-react";
+import { Edit, Loader2 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader, Panel } from "@/components/kit";
 
 interface Nivel {
   id: string;
@@ -148,7 +143,7 @@ function VisualizarAvaliacaoPageContent() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <p className="text-red-600 mb-4">{error || "Avaliação não encontrada"}</p>
+              <p className="text-danger-ink mb-4">{error || "Avaliação não encontrada"}</p>
               <Button onClick={() => router.push("/avaliacoes")}>
                 Voltar para Avaliações
               </Button>
@@ -162,46 +157,29 @@ function VisualizarAvaliacaoPageContent() {
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push("/avaliacoes")}
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Voltar
-              </Button>
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {avaliacao.nome}
-            </h1>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={
-                  avaliacao.tipo === "AQUISICAO_HABILIDADES"
-                    ? "default"
-                    : "secondary"
-                }
-              >
-                {traduzirTipo(avaliacao.tipo)}
-              </Badge>
-            </div>
-          </div>
-          <Button onClick={() => router.push(`/avaliacoes/${avaliacaoId}/editar`)}>
-            <Edit className="mr-2 h-4 w-4" />
-            Editar
-          </Button>
-        </div>
+        <PageHeader
+          voltar={{ onClick: () => router.push("/avaliacoes") }}
+          titulo={avaliacao.nome}
+          meta={
+            <Badge
+              variant={
+                avaliacao.tipo === "AQUISICAO_HABILIDADES" ? "default" : "secondary"
+              }
+            >
+              {traduzirTipo(avaliacao.tipo)}
+            </Badge>
+          }
+          acoes={
+            <Button onClick={() => router.push(`/avaliacoes/${avaliacaoId}/editar`)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+          }
+        />
 
         {/* Informações Gerais */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações Gerais</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Panel titulo="Informações Gerais">
+          <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">
                 Tipo de Avaliação
@@ -224,12 +202,12 @@ function VisualizarAvaliacaoPageContent() {
                 {new Date(avaliacao.createdAt).toLocaleDateString("pt-BR")}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
 
         {/* Tabs */}
         <Tabs defaultValue="niveis">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList>
             <TabsTrigger value="niveis">
               Níveis ({avaliacao.niveis.length})
             </TabsTrigger>
@@ -245,199 +223,175 @@ function VisualizarAvaliacaoPageContent() {
           </TabsList>
 
           <TabsContent value="niveis">
-            <Card>
-              <CardHeader>
-                <CardTitle>Níveis da Avaliação</CardTitle>
-                <CardDescription>
-                  Níveis de desenvolvimento cadastrados
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {avaliacao.niveis.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhum nível cadastrado
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-24">Ordem</TableHead>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead>Faixa Etária</TableHead>
+            <Panel
+              titulo="Níveis da Avaliação"
+              subtitulo="Níveis de desenvolvimento cadastrados"
+            >
+              {avaliacao.niveis.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhum nível cadastrado
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-24">Ordem</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Faixa Etária</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {avaliacao.niveis.map((nivel) => (
+                      <TableRow key={nivel.id}>
+                        <TableCell className="font-medium">
+                          {nivel.ordem}
+                        </TableCell>
+                        <TableCell>{nivel.descricao}</TableCell>
+                        <TableCell>{nivel.faixa_etaria || "-"}</TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {avaliacao.niveis.map((nivel) => (
-                        <TableRow key={nivel.id}>
-                          <TableCell className="font-medium">
-                            {nivel.ordem}
-                          </TableCell>
-                          <TableCell>{nivel.descricao}</TableCell>
-                          <TableCell>{nivel.faixa_etaria || "-"}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Panel>
           </TabsContent>
 
           <TabsContent value="habilidades">
-            <Card>
-              <CardHeader>
-                <CardTitle>Habilidades da Avaliação</CardTitle>
-                <CardDescription>Habilidades a serem avaliadas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {avaliacao.habilidades.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhuma habilidade cadastrada
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-24">Ordem</TableHead>
-                        <TableHead>Habilidade</TableHead>
+            <Panel
+              titulo="Habilidades da Avaliação"
+              subtitulo="Habilidades a serem avaliadas"
+            >
+              {avaliacao.habilidades.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhuma habilidade cadastrada
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-24">Ordem</TableHead>
+                      <TableHead>Habilidade</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {avaliacao.habilidades.map((habilidade) => (
+                      <TableRow key={habilidade.id}>
+                        <TableCell className="font-medium">
+                          {habilidade.ordem}
+                        </TableCell>
+                        <TableCell>{habilidade.habilidade}</TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {avaliacao.habilidades.map((habilidade) => (
-                        <TableRow key={habilidade.id}>
-                          <TableCell className="font-medium">
-                            {habilidade.ordem}
-                          </TableCell>
-                          <TableCell>{habilidade.habilidade}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Panel>
           </TabsContent>
 
           <TabsContent value="pontuacao">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sistema de Pontuação</CardTitle>
-                <CardDescription>Escala de pontuação da avaliação</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {avaliacao.pontuacoes.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhuma pontuação cadastrada
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-24">Ordem</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Valor</TableHead>
+            <Panel titulo="Sistema de Pontuação" subtitulo="Escala de pontuação da avaliação">
+              {avaliacao.pontuacoes.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhuma pontuação cadastrada
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-24">Ordem</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {avaliacao.pontuacoes.map((pontuacao) => (
+                      <TableRow key={pontuacao.id}>
+                        <TableCell className="font-medium">
+                          {pontuacao.ordem}
+                        </TableCell>
+                        <TableCell>
+                          {TIPOS_PONTUACAO[pontuacao.tipo] || pontuacao.tipo}
+                        </TableCell>
+                        <TableCell>
+                          {pontuacao.valor === -1
+                            ? "N/A"
+                            : `${pontuacao.valor}%`}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {avaliacao.pontuacoes.map((pontuacao) => (
-                        <TableRow key={pontuacao.id}>
-                          <TableCell className="font-medium">
-                            {pontuacao.ordem}
-                          </TableCell>
-                          <TableCell>
-                            {TIPOS_PONTUACAO[pontuacao.tipo] || pontuacao.tipo}
-                          </TableCell>
-                          <TableCell>
-                            {pontuacao.valor === -1
-                              ? "N/A"
-                              : `${pontuacao.valor}%`}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Panel>
           </TabsContent>
 
           <TabsContent value="tarefas">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tarefas da Avaliação</CardTitle>
-                <CardDescription>
-                  Perguntas e critérios de avaliação
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {avaliacao.tarefas.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhuma tarefa cadastrada
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {avaliacao.tarefas.map((tarefa, index) => (
-                      <Card key={tarefa.id}>
-                        <CardHeader>
-                          <CardTitle className="text-base">
-                            {index + 1}. {tarefa.pergunta}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                          {tarefa.nivel && (
-                            <div>
-                              <span className="text-sm font-medium text-muted-foreground">
-                                Nível:
-                              </span>{" "}
-                              <Badge variant="outline">
-                                {tarefa.nivel.descricao}
-                              </Badge>
-                            </div>
-                          )}
-                          {tarefa.habilidade && (
-                            <div>
-                              <span className="text-sm font-medium text-muted-foreground">
-                                Habilidade:
-                              </span>{" "}
-                              <Badge variant="outline">
-                                {tarefa.habilidade.habilidade}
-                              </Badge>
-                              {tarefa.numero != null && (
-                                <>
-                                  {" "}
-                                  <span className="text-sm font-medium text-muted-foreground">
-                                    Número:
-                                  </span>{" "}
-                                  <Badge variant="outline">{tarefa.numero}</Badge>
-                                </>
-                              )}
-                            </div>
-                          )}
-                          {tarefa.descricao && (
-                            <div>
-                              <span className="text-sm font-medium text-muted-foreground">
-                                Descrição:
-                              </span>
-                              <p className="text-sm mt-1">{tarefa.descricao}</p>
-                            </div>
-                          )}
-                          {tarefa.criterios_pontuacao && (
-                            <div>
-                              <span className="text-sm font-medium text-muted-foreground">
-                                Critérios de Pontuação:
-                              </span>
-                              <p className="text-sm mt-1">
-                                {tarefa.criterios_pontuacao}
-                              </p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <Panel
+              titulo="Tarefas da Avaliação"
+              subtitulo="Perguntas e critérios de avaliação"
+            >
+              {avaliacao.tarefas.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nenhuma tarefa cadastrada
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {avaliacao.tarefas.map((tarefa, index) => (
+                    <Panel key={tarefa.id} titulo={<>{index + 1}. {tarefa.pergunta}</>}>
+                      <div className="space-y-2">
+                        {tarefa.nivel && (
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Nível:
+                            </span>{" "}
+                            <Badge variant="outline">
+                              {tarefa.nivel.descricao}
+                            </Badge>
+                          </div>
+                        )}
+                        {tarefa.habilidade && (
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Habilidade:
+                            </span>{" "}
+                            <Badge variant="outline">
+                              {tarefa.habilidade.habilidade}
+                            </Badge>
+                            {tarefa.numero != null && (
+                              <>
+                                {" "}
+                                <span className="text-sm font-medium text-muted-foreground">
+                                  Número:
+                                </span>{" "}
+                                <Badge variant="outline">{tarefa.numero}</Badge>
+                              </>
+                            )}
+                          </div>
+                        )}
+                        {tarefa.descricao && (
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Descrição:
+                            </span>
+                            <p className="text-sm mt-1">{tarefa.descricao}</p>
+                          </div>
+                        )}
+                        {tarefa.criterios_pontuacao && (
+                          <div>
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Critérios de Pontuação:
+                            </span>
+                            <p className="text-sm mt-1">
+                              {tarefa.criterios_pontuacao}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </Panel>
+                  ))}
+                </div>
+              )}
+            </Panel>
           </TabsContent>
         </Tabs>
       </div>

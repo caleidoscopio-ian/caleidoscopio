@@ -506,8 +506,8 @@ export function NovoAgendamentoForm({
           {/* Profissional não atende no dia escolhido */}
           {/* Sem grade em lugar nenhum: cadastro incompleto não libera a agenda */}
           {semGradeNenhuma && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-500" aria-hidden="true" />
+            <div className="flex items-start gap-2 rounded-md border border-warning bg-warning-soft px-3 py-2 text-sm text-warning-ink" role="alert">
+              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-warning-ink" aria-hidden="true" />
               <div>
                 <span className="font-medium">
                   Este profissional não tem grade de atendimento configurada.
@@ -522,8 +522,8 @@ export function NovoAgendamentoForm({
               Mensagem própria, porque a ação é outra — configurar a grade DESTA
               filial, não mudar a data. */}
           {!semGradeNenhuma && semGradeNestaFilial && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-500" aria-hidden="true" />
+            <div className="flex items-start gap-2 rounded-md border border-warning bg-warning-soft px-3 py-2 text-sm text-warning-ink" role="alert">
+              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-warning-ink" aria-hidden="true" />
               <div>
                 <span className="font-medium">
                   Sem grade configurada em{" "}
@@ -536,8 +536,8 @@ export function NovoAgendamentoForm({
           )}
 
           {!bloqueadoPorGrade && semAtendimentoNoDia && (
-            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800" role="alert">
-              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-500" aria-hidden="true" />
+            <div className="flex items-start gap-2 rounded-md border border-warning bg-warning-soft px-3 py-2 text-sm text-warning-ink" role="alert">
+              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-warning-ink" aria-hidden="true" />
               <div>
                 <span className="font-medium">Este profissional não atende neste dia.</span>
                 {" "}Escolha outra data ou ajuste a grade dele em Taxa de Ocupação.
@@ -653,7 +653,7 @@ export function NovoAgendamentoForm({
                 </div>
               </div>
               {form.watch("dataLimite") && diasSemana.length > 0 && form.watch("data") && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                <div className="p-3 bg-brand-soft border border-brand-soft rounded-lg text-xs text-brand">
                   Recorrência:{" "}
                   <strong>{diasSemana.map((d) => ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][d]).join(", ")}</strong>
                   {" "}de {format(form.watch("data"), "dd/MM/yyyy", { locale: ptBR })} até {format(form.watch("dataLimite")!, "dd/MM/yyyy", { locale: ptBR })}.
@@ -725,7 +725,7 @@ export function NovoAgendamentoForm({
 
                 {/* O vazio precisa dizer o que fazer, não só que está vazio */}
                 {profissionalId && !filiaisLoading && filiaisProf.length === 0 && (
-                  <p className="text-xs text-amber-700">
+                  <p className="text-xs text-warning-ink">
                     {diagFiliais?.foraDoEscopoDoUsuario?.length
                       ? `Este profissional atende em ${diagFiliais.foraDoEscopoDoUsuario.join(", ")}, mas seu perfil não está vinculado a essa unidade. Peça a um administrador para incluí-la no seu cadastro em Usuários.`
                       : "Este profissional não tem grade de atendimento configurada em nenhuma unidade, então não pode ser agendado. Configure em Agenda › Grade de Horários."}
@@ -740,7 +740,7 @@ export function NovoAgendamentoForm({
                 )}
 
                 {filialId && !filiaisProf.find((f) => f.id === filialId)?.temSalaAtiva && (
-                  <p className="text-xs text-amber-700">
+                  <p className="text-xs text-warning-ink">
                     Esta unidade ainda não tem sala cadastrada. Cadastre uma sala em Salas
                     para poder agendar aqui.
                   </p>
@@ -773,7 +773,7 @@ export function NovoAgendamentoForm({
                   </SelectContent>
                 </Select>
                 {filialId && salasDaFilial.length === 0 && (
-                  <p className="text-xs text-amber-700">
+                  <p className="text-xs text-warning-ink">
                     Nenhuma sala ativa nesta filial.
                   </p>
                 )}
@@ -912,7 +912,7 @@ export function NovoAgendamentoForm({
                               <span>{t.nome_procedimento}</span>
                               <span className="text-xs text-muted-foreground">
                                 {t.codigo_procedimento && <span className="font-mono mr-2">{t.codigo_procedimento}</span>}
-                                <span className="text-green-600">{formatBRL(t.valor_convenio)}</span>
+                                <span className="text-success-ink">{formatBRL(t.valor_convenio)}</span>
                               </span>
                             </div>
                           </SelectItem>
@@ -928,9 +928,9 @@ export function NovoAgendamentoForm({
               )}
               {/* Preview de preço quando há item de tabela selecionado */}
               {selectedTabelaItem && (
-                <div className="mt-1.5 flex items-center justify-between rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm">
-                  <span className="text-green-800 font-medium">{selectedTabelaItem.nome_procedimento}</span>
-                  <span className="text-green-700 font-semibold">{formatBRL(selectedTabelaItem.valor_convenio)}</span>
+                <div className="mt-1.5 flex items-center justify-between rounded-md bg-success-soft border border-success-soft px-3 py-2 text-sm">
+                  <span className="text-success-ink font-medium">{selectedTabelaItem.nome_procedimento}</span>
+                  <span className="text-success-ink font-semibold">{formatBRL(selectedTabelaItem.valor_convenio)}</span>
                 </div>
               )}
               <FormMessage />
@@ -980,7 +980,7 @@ export function NovoAgendamentoForm({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <CheckCircle2 className="h-5 w-5 text-success-ink" />
               Confirmar Agendamento
             </DialogTitle>
             <DialogDescription>Revise os dados antes de confirmar.</DialogDescription>
@@ -1019,7 +1019,7 @@ export function NovoAgendamentoForm({
               <div className="text-muted-foreground">Convênio</div>
               <div className="font-medium">
                 {selectedConvenioId ? (
-                  <Badge variant="outline" className="text-blue-700 border-blue-300">{convenioNome}</Badge>
+                  <Badge variant="outline" className="text-brand border-brand">{convenioNome}</Badge>
                 ) : (
                   <span className="text-muted-foreground">Particular</span>
                 )}
@@ -1031,7 +1031,7 @@ export function NovoAgendamentoForm({
               {valorResumo !== null && (
                 <>
                   <div className="text-muted-foreground">Valor</div>
-                  <div className="font-semibold text-green-700">{formatBRL(valorResumo)}</div>
+                  <div className="font-semibold text-success-ink">{formatBRL(valorResumo)}</div>
                 </>
               )}
             </div>
@@ -1059,7 +1059,7 @@ export function NovoAgendamentoForm({
             {modoRecorrente && pendingData?.datasAdicionais && pendingData.datasAdicionais.length > 0 && (
               <>
                 <Separator />
-                <div className="rounded-md bg-blue-50 border border-blue-200 px-3 py-2 text-xs text-blue-800">
+                <div className="rounded-md bg-brand-soft border border-brand-soft px-3 py-2 text-xs text-brand">
                   {editandoExistente ? (
                     <>
                       Recorrência: <strong>{pendingData.datasAdicionais.length}</strong>{" "}

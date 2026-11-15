@@ -62,14 +62,14 @@ export function CheckinSenhaDialog({ agendamento, open, onOpenChange, onConfirm 
           <DialogDescription>
             {agendamento?.paciente.nome}
             {convenioNome && (
-              <Badge variant="outline" className="ml-2 text-xs text-blue-700 border-blue-300">{convenioNome}</Badge>
+              <Badge variant="outline" className="ml-2 text-xs text-brand border-brand">{convenioNome}</Badge>
             )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {temConvenio ? (
-            <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800 flex items-start gap-2">
+            <div className="rounded-md bg-warning-soft border border-warning-soft px-3 py-2 text-xs text-warning-ink flex items-start gap-2">
               <KeyRound className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <span>
                 Paciente com convênio. Informe a <strong>senha de autorização</strong> para permitir a conciliação de glosas posteriormente.
@@ -83,7 +83,7 @@ export function CheckinSenhaDialog({ agendamento, open, onOpenChange, onConfirm 
 
           <div className="space-y-1.5">
             <Label htmlFor="senha">
-              Senha de Autorização {temConvenio && <span className="text-red-500">*</span>}
+              Senha de Autorização {temConvenio && <span className="text-danger-ink">*</span>}
             </Label>
             <Input
               id="senha"
@@ -93,7 +93,7 @@ export function CheckinSenhaDialog({ agendamento, open, onOpenChange, onConfirm 
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter") handleConfirm(); }}
             />
-            {erro && <p className="text-xs text-red-500">{erro}</p>}
+            {erro && <p className="text-xs text-danger-ink">{erro}</p>}
           </div>
 
           <div className="space-y-1.5">

@@ -5,13 +5,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +37,7 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
+import { PageHeader, Panel, StatCard } from "@/components/kit";
 
 interface Avaliacao {
   id: string;
@@ -178,85 +172,47 @@ function AvaliacoesPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Avaliações</h1>
-            <p className="text-muted-foreground">
-              Gerencie protocolos de avaliação para pacientes
-            </p>
-          </div>
-          <Button onClick={() => router.push("/avaliacoes/nova")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Avaliação
-          </Button>
-        </div>
+        <PageHeader
+          titulo="Avaliações"
+          subtitulo="Gerencie protocolos de avaliação para pacientes"
+          acoes={
+            <Button onClick={() => router.push("/avaliacoes/nova")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Avaliação
+            </Button>
+          }
+        />
 
         {/* Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Avaliações
-              </CardTitle>
-              <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loading ? "..." : avaliacoes.length}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard
+            tom="blue"
+            size="hero"
+            icone={<ClipboardCheck />}
+            rotulo="Total Avaliações"
+            valor={loading ? "..." : avaliacoes.length}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Aquisição de Habilidades
-              </CardTitle>
-              <ClipboardCheck className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {loading
-                  ? "..."
-                  : avaliacoes.filter((a) => a.tipo === "AQUISICAO_HABILIDADES")
-                      .length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="lavender"
+            icone={<ClipboardCheck className="text-brand" />}
+            rotulo="Aquisição de Habilidades"
+            valor={<span className="text-brand">{loading ? "..." : avaliacoes.filter((a) => a.tipo === "AQUISICAO_HABILIDADES") .length}</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Redução de Comportamentos
-              </CardTitle>
-              <ClipboardCheck className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {loading
-                  ? "..."
-                  : avaliacoes.filter(
-                      (a) => a.tipo === "REDUCAO_COMPORTAMENTOS"
-                    ).length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="mint"
+            icone={<ClipboardCheck />}
+            rotulo="Redução de Comportamentos"
+            valor={loading ? "..." : avaliacoes.filter( (a) => a.tipo === "REDUCAO_COMPORTAMENTOS" ).length}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Atribuídas</CardTitle>
-              <ClipboardCheck className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {loading
-                  ? "..."
-                  : avaliacoes.filter(
-                      (a) => a._count && a._count.atribuicoes > 0
-                    ).length}
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="peach"
+            icone={<ClipboardCheck />}
+            rotulo="Atribuídas"
+            valor={<span className="text-success-ink">{loading ? "..." : avaliacoes.filter( (a) => a._count && a._count.atribuicoes > 0 ).length}</span>}
+          />
         </div>
 
         {/* Busca */}
@@ -275,157 +231,146 @@ function AvaliacoesPageContent() {
         </div>
 
         {/* Tabela */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Lista de Avaliações
-              {!loading && (
-                <Badge variant="secondary" className="ml-2">
-                  {filteredAvaliacoes.length} de {avaliacoes.length}
-                </Badge>
-              )}
-            </CardTitle>
-            <CardDescription>
-              Protocolos de avaliação cadastrados
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="text-center py-8">
-                <div className="text-red-600 mb-4">{error}</div>
-                <Button onClick={fetchAvaliacoes} variant="outline">
-                  Tentar Novamente
-                </Button>
-              </div>
-            )}
+        <Panel
+          titulo={<>Lista de Avaliações {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredAvaliacoes.length} de {avaliacoes.length} </Badge> )}</>}
+          subtitulo="Protocolos de avaliação cadastrados"
+        >
 
-            {loading && !error && (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Carregando avaliações...
-                </p>
-              </div>
-            )}
+          {error && (
+            <div className="text-center py-8">
+              <div className="text-danger-ink mb-4">{error}</div>
+              <Button onClick={fetchAvaliacoes} variant="outline">
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
 
-            {!loading && !error && avaliacoes.length === 0 && (
-              <div className="text-center py-8">
-                <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">
-                  Nenhuma avaliação encontrada
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Comece criando a primeira avaliação.
-                </p>
-                <Button onClick={() => router.push("/avaliacoes/nova")}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova Avaliação
-                </Button>
-              </div>
-            )}
+          {loading && !error && (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">
+                Carregando avaliações...
+              </p>
+            </div>
+          )}
 
-            {!loading && !error && filteredAvaliacoes.length > 0 && (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Tarefas</TableHead>
-                    <TableHead>Atribuída</TableHead>
-                    <TableHead>Criada em</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAvaliacoes.map((avaliacao) => (
-                    <TableRow key={avaliacao.id}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div>{avaliacao.nome}</div>
-                          {avaliacao.observacao && (
-                            <div className="text-xs text-muted-foreground line-clamp-1">
-                              {avaliacao.observacao}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            avaliacao.tipo === "AQUISICAO_HABILIDADES"
-                              ? "default"
-                              : "secondary"
+          {!loading && !error && avaliacoes.length === 0 && (
+            <div className="text-center py-8">
+              <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                Nenhuma avaliação encontrada
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Comece criando a primeira avaliação.
+              </p>
+              <Button onClick={() => router.push("/avaliacoes/nova")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Avaliação
+              </Button>
+            </div>
+          )}
+
+          {!loading && !error && filteredAvaliacoes.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Tarefas</TableHead>
+                  <TableHead>Atribuída</TableHead>
+                  <TableHead>Criada em</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAvaliacoes.map((avaliacao) => (
+                  <TableRow key={avaliacao.id}>
+                    <TableCell className="font-medium">
+                      <div>
+                        <div>{avaliacao.nome}</div>
+                        {avaliacao.observacao && (
+                          <div className="text-xs text-muted-foreground line-clamp-1">
+                            {avaliacao.observacao}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          avaliacao.tipo === "AQUISICAO_HABILIDADES"
+                            ? "default"
+                            : "secondary"
+                        }
+                      >
+                        {traduzirTipo(avaliacao.tipo)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {avaliacao._count?.tarefas || 0} tarefas
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {avaliacao._count?.atribuicoes || 0} pacientes
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(avaliacao.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            router.push(`/avaliacoes/${avaliacao.id}`)
                           }
                         >
-                          {traduzirTipo(avaliacao.tipo)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {avaliacao._count?.tarefas || 0} tarefas
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {avaliacao._count?.atribuicoes || 0} pacientes
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(avaliacao.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              router.push(`/avaliacoes/${avaliacao.id}`)
-                            }
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <AtribuirAvaliacaoDialog
-                            avaliacao={avaliacao}
-                            onSuccess={fetchAvaliacoes}
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              router.push(`/avaliacoes/${avaliacao.id}/editar`)
-                            }
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setDeleteId(avaliacao.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <AtribuirAvaliacaoDialog
+                          avaliacao={avaliacao}
+                          onSuccess={fetchAvaliacoes}
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            router.push(`/avaliacoes/${avaliacao.id}/editar`)
+                          }
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDeleteId(avaliacao.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
 
-            {!loading &&
-              !error &&
-              avaliacoes.length > 0 &&
-              filteredAvaliacoes.length === 0 && (
-                <div className="text-center py-8">
-                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Nenhum resultado encontrado
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Tente ajustar os termos da sua busca.
-                  </p>
-                </div>
-              )}
-          </CardContent>
-        </Card>
+          {!loading &&
+            !error &&
+            avaliacoes.length > 0 &&
+            filteredAvaliacoes.length === 0 && (
+              <div className="text-center py-8">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">
+                  Nenhum resultado encontrado
+                </h3>
+                <p className="text-muted-foreground">
+                  Tente ajustar os termos da sua busca.
+                </p>
+              </div>
+            )}
+        </Panel>
 
         {/* AlertDialog para confirmação de exclusão */}
         <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

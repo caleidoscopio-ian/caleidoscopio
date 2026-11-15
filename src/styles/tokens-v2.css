@@ -1,0 +1,255 @@
+/* Tokens do Caleidoscópio v2 — GERADO, não editar à mão.
+ *
+ * Origem: design/origem/v2-producao.css (md5 cff8721a8514686076206b8febe54dd7)
+ * Gerador: tools/extrair-tokens-v2.mjs
+ * Gerado em: 2026-11-04
+ *
+ * Ajuste de token se faz no v2 e se reextrai, ou num arquivo de override
+ * carregado depois deste. Editar aqui some na próxima extração.
+ */
+
+:root {
+  /* Superfícies */
+  --border: #0f1b3d17;
+  --canvas: #e8edf9;
+  --glass: #ffffffb8;
+  --hairline: #0f1b3d12;
+  --halo-1: #dfe7ff;
+  --halo-2: #e6e2ff;
+  --input: #0f1b3d1f;
+  --panel: #f3f6fd;
+  --popover: #fff;
+  --popover-foreground: var(--ink);
+  --rim: #fff;
+  --surface: #fff;
+  --surface-muted: #f4f6fc;
+  --surface-sunken: #eef1fa;
+
+  /* Tinta */
+  --ink: #0f1b3d;
+  --ink-2: #3d4867;
+  --ink-3: #6b7592;
+  --ink-4: #9aa3bb;
+
+  /* Marca */
+  --brand: #2f55f0;
+  --brand-ring: #2f55f047;
+  --brand-soft: #e6ecff;
+  --brand-strong: #1e43d8;
+
+  /* Status */
+  --danger: #e2445c;
+  --danger-soft: #fde6ea;
+  --destructive: var(--danger);
+  --info: #2f55f0;
+  --info-soft: #e6ecff;
+  --success: #12a46f;
+  --success-soft: #e3f6ee;
+  --violet: #6d4ae6;
+  --violet-soft: #efeaff;
+  --warning: #d98a12;
+  --warning-soft: #fdf1dc;
+
+  /* KPI */
+  --kpi-blue-from: #b9d3ff;
+  --kpi-blue-ink: #1e46e0;
+  --kpi-blue-to: #e9e6ff;
+  --kpi-blue-via: #d6e0ff;
+  --kpi-lavender-from: #e2e5ff;
+  --kpi-lavender-ink: #2f55f0;
+  --kpi-lavender-to: #f0f1ff;
+  --kpi-mint-from: #d8f1e8;
+  --kpi-mint-ink: #12795a;
+  --kpi-mint-to: #eef8f4;
+  --kpi-peach-from: #fde3d6;
+  --kpi-peach-ink: #b4542c;
+  --kpi-peach-to: #fff4ee;
+
+  /* Painel noturno */
+  --night-accent: #7ea0ff;
+  --night-from: #1b2645;
+  --night-line: #ffffff1a;
+  --night-to: #2d3b66;
+
+  /* Gráficos */
+  --chart-1: #2f55f0;
+  --chart-2: #12a46f;
+  --chart-3: #f08a4b;
+  --chart-4: #8b5cf6;
+  --chart-5: #06b6d4;
+
+  /* Sombras e raio */
+  --radius: 1rem;
+  --radius-xs: .125rem;
+  --shadow-card: 0 1px 2px #0f1b3d0a,0 8px 24px -12px #0f1b3d1f;
+  --shadow-float: 0 2px 6px #0f1b3d0d,0 24px 48px -24px #1e43d847;
+
+  /* Aliases shadcn */
+  --accent: var(--brand-soft);
+  --accent-foreground: var(--brand-strong);
+  --background: var(--panel);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --foreground: var(--ink);
+  --muted: var(--surface-muted);
+  --muted-foreground: var(--ink-3);
+  --primary: var(--brand);
+  --primary-foreground: #fff;
+  --ring: var(--brand);
+  --secondary: var(--surface-muted);
+  --secondary-foreground: var(--ink);
+  --sidebar: #ffffffb8;
+  --sidebar-accent: var(--brand-soft);
+  --sidebar-accent-foreground: var(--brand-strong);
+  --sidebar-border: #ffffffe6;
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: #fff;
+  --sidebar-ring: var(--brand);
+
+  /* Outros */
+  --font-display: -apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Helvetica Neue",Arial,sans-serif;
+}
+
+.dark {
+  /* Superfícies */
+  --border: #baccff1a;
+  --canvas: #070e24;
+  --glass: #0e1938b8;
+  --hairline: #baccff14;
+  --halo-1: #13245c;
+  --halo-2: #1d1a55;
+  --input: #baccff29;
+  --panel: #0c1633;
+  --popover: #15234b;
+  --rim: #baccff14;
+  --surface: #121f44;
+  --surface-muted: #172752;
+  --surface-sunken: #0e1a3b;
+
+  /* Tinta */
+  --ink: #eef2ff;
+  --ink-2: #c6d0ee;
+  --ink-3: #8e9bc6;
+  --ink-4: #66739e;
+
+  /* Marca */
+  --brand: #5a7bff;
+  --brand-ring: #5a7bff66;
+  --brand-soft: #5a7bff29;
+  --brand-strong: #7b96ff;
+
+  /* Status */
+  --danger: #ff6b81;
+  --danger-soft: #ff6b8124;
+  --info: #7b96ff;
+  --info-soft: #7b96ff29;
+  --success: #3dd6a0;
+  --success-soft: #3dd6a024;
+  --violet: #b39dff;
+  --violet-soft: #b39dff29;
+  --warning: #f5b94a;
+  --warning-soft: #f5b94a24;
+
+  /* KPI */
+  --kpi-blue-from: #2a46a8;
+  --kpi-blue-ink: #b7c9ff;
+  --kpi-blue-to: #2b2a7a;
+  --kpi-blue-via: #22358a;
+  --kpi-lavender-from: #282e70;
+  --kpi-lavender-ink: #aeb8ff;
+  --kpi-lavender-to: #1b2152;
+  --kpi-mint-from: #0f4a42;
+  --kpi-mint-ink: #6fe3b8;
+  --kpi-mint-to: #11313c;
+  --kpi-peach-from: #5a3127;
+  --kpi-peach-ink: #ffb18e;
+  --kpi-peach-to: #34243d;
+
+  /* Painel noturno */
+  --night-accent: #9db6ff;
+  --night-from: #1c2d66;
+  --night-line: #ffffff1f;
+  --night-to: #2a3f8c;
+
+  /* Gráficos */
+  --chart-1: #6f8cff;
+  --chart-2: #3dd6a0;
+  --chart-3: #ffa06b;
+  --chart-4: #b39dff;
+  --chart-5: #4fd3f0;
+
+  /* Sombras e raio */
+  --shadow-card: 0 1px 2px #0000004d,0 12px 32px -14px #0009;
+  --shadow-float: 0 2px 6px #00000059,0 28px 56px -24px #10206ebf;
+
+  /* Aliases shadcn */
+  --sidebar: #0e1938b8;
+  --sidebar-border: #baccff14;
+}
+
+@theme inline {
+  /* cores do projeto viram classe: bg-surface, text-ink-3, border-rim... */
+  --color-brand: var(--brand);
+  --color-brand-ring: var(--brand-ring);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-strong: var(--brand-strong);
+  --color-canvas: var(--canvas);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-glass: var(--glass);
+  --color-hairline: var(--hairline);
+  --color-halo-1: var(--halo-1);
+  --color-halo-2: var(--halo-2);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-kpi-blue-from: var(--kpi-blue-from);
+  --color-kpi-blue-ink: var(--kpi-blue-ink);
+  --color-kpi-blue-to: var(--kpi-blue-to);
+  --color-kpi-blue-via: var(--kpi-blue-via);
+  --color-kpi-lavender-from: var(--kpi-lavender-from);
+  --color-kpi-lavender-ink: var(--kpi-lavender-ink);
+  --color-kpi-lavender-to: var(--kpi-lavender-to);
+  --color-kpi-mint-from: var(--kpi-mint-from);
+  --color-kpi-mint-ink: var(--kpi-mint-ink);
+  --color-kpi-mint-to: var(--kpi-mint-to);
+  --color-kpi-peach-from: var(--kpi-peach-from);
+  --color-kpi-peach-ink: var(--kpi-peach-ink);
+  --color-kpi-peach-to: var(--kpi-peach-to);
+  --color-night-accent: var(--night-accent);
+  --color-night-from: var(--night-from);
+  --color-night-line: var(--night-line);
+  --color-night-to: var(--night-to);
+  --color-panel: var(--panel);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-rim: var(--rim);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+
+  /* Escala de raio do v2, lida das classes compiladas.
+     Com --radius: 1rem dá sm 10 · md 12 · lg 16 · xl 20 · 2xl 24 · 3xl 28px. */
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 1.75rem;
+  --radius-tile: 0.85rem; /* IconTile e ícone do Panel; não existe no :root do v2 */
+
+  /* Sombras: `var()` de si mesma é o idioma do @theme inline — o Tailwind
+     substitui pelo valor de runtime, então shadow-card/float seguem o tema. */
+  --shadow-card: var(--shadow-card);
+  --shadow-float: var(--shadow-float);
+}

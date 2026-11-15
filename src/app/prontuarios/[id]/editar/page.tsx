@@ -10,7 +10,6 @@ import * as z from "zod";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -32,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, Calendar, Stethoscope, ArrowLeft, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader, Panel } from "@/components/kit";
 
 const prontuarioSchema = z.object({
   patientId: z.string().min(1, "Paciente é obrigatório"),
@@ -297,263 +297,255 @@ export default function EditarProntuario() {
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Header */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Editar Registro de Sessão
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Atualize as informações do registro clínico
-              </p>
-            </div>
-            <Button onClick={handleCancel} variant="outline">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Cancelar
-            </Button>
-          </div>
+          <PageHeader
+            titulo="Editar Registro de Sessão"
+            subtitulo="Atualize as informações do registro clínico"
+            acoes={
+              <Button onClick={handleCancel} variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Cancelar
+              </Button>
+            }
+          />
 
           {/* Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações do Registro</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-6"
-                >
-                  {/* Seção: Dados da Sessão */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Dados da Sessão
-                    </h3>
+          <Panel titulo="Informações do Registro">
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Paciente */}
-                      <FormField
-                        control={form.control}
-                        name="patientId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Paciente *</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              disabled={loadingData}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={
-                                      loadingData
-                                        ? "Carregando..."
-                                        : "Selecione o paciente"
-                                    }
-                                  />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {patients.length > 0 ? (
-                                  patients.map((patient) => (
-                                    <SelectItem
-                                      key={patient.id}
-                                      value={patient.id}
-                                    >
-                                      {patient.nome}
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <SelectItem value="no-patients" disabled>
-                                    Nenhum paciente cadastrado
-                                  </SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
+                {/* Seção: Dados da Sessão */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Dados da Sessão
+                  </h3>
 
-                      {/* Profissional */}
-                      <FormField
-                        control={form.control}
-                        name="professionalId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Profissional *</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              disabled={loadingData}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={
-                                      loadingData
-                                        ? "Carregando..."
-                                        : "Selecione o profissional"
-                                    }
-                                  />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {professionals.length > 0 ? (
-                                  professionals.map((professional) => (
-                                    <SelectItem
-                                      key={professional.id}
-                                      value={professional.id}
-                                    >
-                                      {professional.nome} -{" "}
-                                      {professional.especialidade}
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <SelectItem value="no-professionals" disabled>
-                                    Nenhum profissional cadastrado
-                                  </SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Data da Sessão */}
-                      <FormField
-                        control={form.control}
-                        name="sessionDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Data da Sessão *</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="date"
-                                {...field}
-                                max={formatDate(new Date().toISOString())}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Tipo de Atendimento */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Paciente */}
                     <FormField
                       control={form.control}
-                      name="serviceType"
+                      name="patientId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tipo de Atendimento *</FormLabel>
+                          <FormLabel>Paciente *</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
+                            disabled={loadingData}
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Selecione o tipo de atendimento" />
+                                <SelectValue
+                                  placeholder={
+                                    loadingData
+                                      ? "Carregando..."
+                                      : "Selecione o paciente"
+                                  }
+                                />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {tiposAtendimento.map((tipo) => (
-                                <SelectItem key={tipo} value={tipo}>
-                                  {tipo}
+                              {patients.length > 0 ? (
+                                patients.map((patient) => (
+                                  <SelectItem
+                                    key={patient.id}
+                                    value={patient.id}
+                                  >
+                                    {patient.nome}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="no-patients" disabled>
+                                  Nenhum paciente cadastrado
                                 </SelectItem>
-                              ))}
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </div>
 
-                  {/* Seção: Evolução Clínica */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                      <Stethoscope className="h-4 w-4" />
-                      Evolução e Observações
-                    </h3>
-
-                    {/* Evolução Clínica */}
+                    {/* Profissional */}
                     <FormField
                       control={form.control}
-                      name="clinicalEvolution"
+                      name="professionalId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Evolução Clínica *</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Descreva detalhadamente a evolução do paciente durante a sessão, objetivos trabalhados, respostas observadas e progressos identificados..."
-                              className="min-h-[120px]"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Registre de forma detalhada a evolução clínica
-                            observada durante o atendimento.
-                          </FormDescription>
+                          <FormLabel>Profissional *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={loadingData}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue
+                                  placeholder={
+                                    loadingData
+                                      ? "Carregando..."
+                                      : "Selecione o profissional"
+                                  }
+                                />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {professionals.length > 0 ? (
+                                professionals.map((professional) => (
+                                  <SelectItem
+                                    key={professional.id}
+                                    value={professional.id}
+                                  >
+                                    {professional.nome} -{" "}
+                                    {professional.especialidade}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="no-professionals" disabled>
+                                  Nenhum profissional cadastrado
+                                </SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
-                    {/* Observações Adicionais */}
+                    {/* Data da Sessão */}
                     <FormField
                       control={form.control}
-                      name="observations"
+                      name="sessionDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Observações Adicionais</FormLabel>
+                          <FormLabel>Data da Sessão *</FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder="Adicione observações complementares, recomendações para próximas sessões, orientações para família..."
-                              className="min-h-[80px]"
+                            <Input
+                              type="date"
                               {...field}
+                              max={formatDate(new Date().toISOString())}
                             />
                           </FormControl>
-                          <FormDescription>
-                            Campo opcional para observações complementares e
-                            orientações.
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   </div>
 
-                  {/* Botões */}
-                  <div className="flex justify-end gap-2 pt-4 border-t">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleCancel}
-                      disabled={saving}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button type="submit" disabled={saving || loadingData}>
-                      {saving ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Salvando...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Salvar Alterações
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+                  {/* Tipo de Atendimento */}
+                  <FormField
+                    control={form.control}
+                    name="serviceType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Atendimento *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo de atendimento" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {tiposAtendimento.map((tipo) => (
+                              <SelectItem key={tipo} value={tipo}>
+                                {tipo}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Seção: Evolução Clínica */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
+                    <Stethoscope className="h-4 w-4" />
+                    Evolução e Observações
+                  </h3>
+
+                  {/* Evolução Clínica */}
+                  <FormField
+                    control={form.control}
+                    name="clinicalEvolution"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Evolução Clínica *</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Descreva detalhadamente a evolução do paciente durante a sessão, objetivos trabalhados, respostas observadas e progressos identificados..."
+                            className="min-h-[120px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Registre de forma detalhada a evolução clínica
+                          observada durante o atendimento.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Observações Adicionais */}
+                  <FormField
+                    control={form.control}
+                    name="observations"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Observações Adicionais</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Adicione observações complementares, recomendações para próximas sessões, orientações para família..."
+                            className="min-h-[80px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Campo opcional para observações complementares e
+                          orientações.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Botões */}
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={saving}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={saving || loadingData}>
+                    {saving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Salvar Alterações
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </Panel>
         </div>
       </MainLayout>
     </ProtectedRoute>

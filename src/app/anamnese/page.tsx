@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +27,10 @@ import {
   CheckCircle,
   Clock,
 } from "lucide-react";
+import { idadeEmAnos } from "@/lib/datas-fuso";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { PageHeader, Panel, StatCard } from "@/components/kit";
 
 interface Anamnese {
   id: string;
@@ -147,19 +148,7 @@ export default function AnamnesesPage() {
   };
 
   // Calcular idade
-  const calculateAge = (birthDate: string) => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birth.getDate())
-    ) {
-      age--;
-    }
-    return age;
-  };
+  const calculateAge = (birthDate: string) => idadeEmAnos(birthDate) ?? 0;
 
   const handleNovaAnamnese = () => {
     router.push("/anamnese/nova");
@@ -218,81 +207,49 @@ export default function AnamnesesPage() {
       <MainLayout breadcrumbs={breadcrumbs}>
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Anamneses</h1>
-              <p className="text-muted-foreground">
-                Avaliações iniciais e históricos clínicos dos pacientes
-              </p>
-            </div>
-            <Button onClick={handleNovaAnamnese}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Anamnese
-            </Button>
-          </div>
+          <PageHeader
+            titulo="Anamneses"
+            subtitulo="Avaliações iniciais e históricos clínicos dos pacientes"
+            acoes={
+              <Button onClick={handleNovaAnamnese}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Anamnese
+              </Button>
+            }
+          />
 
           {/* Estatísticas */}
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Anamneses
-                </CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? "..." : anamneses.length}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+            <StatCard
+              tom="blue"
+              size="hero"
+              icone={<FileText />}
+              rotulo="Total Anamneses"
+              valor={loading ? "..." : anamneses.length}
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Finalizadas
-                </CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? "..." : totalFinalizadas}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {anamneses.length > 0
-                    ? Math.round((totalFinalizadas / anamneses.length) * 100)
-                    : 0}
-                  % do total
-                </p>
-              </CardContent>
-            </Card>
+            <StatCard
+              tom="lavender"
+              icone={<CheckCircle />}
+              rotulo="Finalizadas"
+              valor={loading ? "..." : totalFinalizadas}
+              hint={<>{anamneses.length > 0 ? Math.round((totalFinalizadas / anamneses.length) * 100) : 0} % do total</>}
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Rascunhos</CardTitle>
-                <Clock className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? "..." : totalRascunhos}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Aguardando finalização
-                </p>
-              </CardContent>
-            </Card>
+            <StatCard
+              tom="mint"
+              icone={<Clock />}
+              rotulo="Rascunhos"
+              valor={loading ? "..." : totalRascunhos}
+              hint="Aguardando finalização"
+            />
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Este Mês</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {loading ? "..." : anamnesesMesAtual}
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              tom="peach"
+              icone={<FileText />}
+              rotulo="Este Mês"
+              valor={loading ? "..." : anamnesesMesAtual}
+            />
           </div>
 
           {/* Busca */}
@@ -311,147 +268,138 @@ export default function AnamnesesPage() {
           </div>
 
           {/* Tabela de Anamneses */}
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Lista de Anamneses
-                {!loading && (
-                  <Badge variant="secondary" className="ml-2">
-                    {filteredAnamneses.length} de {anamneses.length}
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {error && (
-                <div className="text-center py-8">
-                  <div className="text-red-600 mb-4">{error}</div>
-                  <Button onClick={fetchAnamneses} variant="outline">
-                    Tentar Novamente
-                  </Button>
-                </div>
-              )}
+          <Panel
+            titulo={<>Lista de Anamneses {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredAnamneses.length} de {anamneses.length} </Badge> )}</>}
+          >
 
-              {loading && !error && (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Carregando anamneses...
-                  </p>
-                </div>
-              )}
+            {error && (
+              <div className="text-center py-8">
+                <div className="text-danger-ink mb-4">{error}</div>
+                <Button onClick={fetchAnamneses} variant="outline">
+                  Tentar Novamente
+                </Button>
+              </div>
+            )}
 
-              {!loading && !error && anamneses.length === 0 && (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    Nenhuma anamnese encontrada
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Comece criando a primeira anamnese de avaliação.
-                  </p>
-                  <Button onClick={handleNovaAnamnese}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Anamnese
-                  </Button>
-                </div>
-              )}
+            {loading && !error && (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Carregando anamneses...
+                </p>
+              </div>
+            )}
 
-              {!loading && !error && filteredAnamneses.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Paciente</TableHead>
-                      <TableHead>Idade</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Criada em</TableHead>
-                      <TableHead>Atualizada em</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+            {!loading && !error && anamneses.length === 0 && (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">
+                  Nenhuma anamnese encontrada
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Comece criando a primeira anamnese de avaliação.
+                </p>
+                <Button onClick={handleNovaAnamnese}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Anamnese
+                </Button>
+              </div>
+            )}
+
+            {!loading && !error && filteredAnamneses.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Idade</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Criada em</TableHead>
+                    <TableHead>Atualizada em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAnamneses.map((anamnese) => (
+                    <TableRow key={anamnese.id}>
+                      <TableCell className="font-medium">
+                        {anamnese.paciente.nome}
+                      </TableCell>
+                      <TableCell>
+                        {calculateAge(anamnese.paciente.nascimento)} anos
+                      </TableCell>
+                      <TableCell>
+                        {anamnese.status === "FINALIZADA" ? (
+                          <Badge variant="outline" className="bg-success-soft text-success-ink">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Finalizada
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="border-warning text-warning-ink"
+                          >
+                            <Clock className="h-3 w-3 mr-1" />
+                            Rascunho
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(anamnese.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(anamnese.updatedAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleVisualizarAnamnese(anamnese.id)
+                            }
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              handleEditarAnamnese(anamnese.id)
+                            }
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-danger-ink hover:bg-danger-soft"
+                            onClick={() => handleDeletarAnamnese(anamnese.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAnamneses.map((anamnese) => (
-                      <TableRow key={anamnese.id}>
-                        <TableCell className="font-medium">
-                          {anamnese.paciente.nome}
-                        </TableCell>
-                        <TableCell>
-                          {calculateAge(anamnese.paciente.nascimento)} anos
-                        </TableCell>
-                        <TableCell>
-                          {anamnese.status === "FINALIZADA" ? (
-                            <Badge variant="default" className="bg-green-600">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Finalizada
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-orange-600 text-orange-600"
-                            >
-                              <Clock className="h-3 w-3 mr-1" />
-                              Rascunho
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(anamnese.createdAt)}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(anamnese.updatedAt)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                handleVisualizarAnamnese(anamnese.id)
-                              }
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                handleEditarAnamnese(anamnese.id)
-                              }
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:bg-red-50"
-                              onClick={() => handleDeletarAnamnese(anamnese.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+                  ))}
+                </TableBody>
+              </Table>
+            )}
 
-              {!loading &&
-                !error &&
-                anamneses.length > 0 &&
-                filteredAnamneses.length === 0 && (
-                  <div className="text-center py-8">
-                    <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">
-                      Nenhum resultado encontrado
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Tente ajustar os termos da sua busca.
-                    </p>
-                  </div>
-                )}
-            </CardContent>
-          </Card>
+            {!loading &&
+              !error &&
+              anamneses.length > 0 &&
+              filteredAnamneses.length === 0 && (
+                <div className="text-center py-8">
+                  <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">
+                    Nenhum resultado encontrado
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Tente ajustar os termos da sua busca.
+                  </p>
+                </div>
+              )}
+          </Panel>
         </div>
       </MainLayout>
     </ProtectedRoute>

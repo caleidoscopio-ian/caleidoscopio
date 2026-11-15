@@ -34,9 +34,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Carregando, EstadoVazio, StatCard } from "@/components/kit";
 import {
-  Loader2,
   Send,
+  Activity,
   Calendar,
   Building2,
   User,
@@ -304,28 +305,28 @@ export function ProntuarioEncaminhamento({
     switch (status) {
       case "CONCLUIDO":
         return (
-          <Badge variant="default" className="bg-green-600">
+          <Badge variant="default" className="bg-success">
             <CheckCircle className="h-3 w-3 mr-1" />
             Concluído
           </Badge>
         );
       case "EM_ANDAMENTO":
         return (
-          <Badge variant="outline" className="border-blue-600 text-blue-600">
+          <Badge variant="outline" className="border-brand text-brand">
             <PlayCircle className="h-3 w-3 mr-1" />
             Em Andamento
           </Badge>
         );
       case "PENDENTE":
         return (
-          <Badge variant="outline" className="border-orange-600 text-orange-600">
+          <Badge variant="outline" className="border-warning text-warning-ink">
             <Clock className="h-3 w-3 mr-1" />
             Pendente
           </Badge>
         );
       case "CANCELADO":
         return (
-          <Badge variant="outline" className="border-red-600 text-red-600">
+          <Badge variant="outline" className="border-danger text-danger-ink">
             <XCircle className="h-3 w-3 mr-1" />
             Cancelado
           </Badge>
@@ -360,7 +361,7 @@ export function ProntuarioEncaminhamento({
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="tipo">
-                  Tipo <span className="text-red-500">*</span>
+                  Tipo <span className="text-danger-ink">*</span>
                 </Label>
                 <Select
                   value={formData.tipo}
@@ -377,7 +378,7 @@ export function ProntuarioEncaminhamento({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="especialidade">
-                  Especialidade <span className="text-red-500">*</span>
+                  Especialidade <span className="text-danger-ink">*</span>
                 </Label>
                 <Input
                   id="especialidade"
@@ -417,7 +418,7 @@ export function ProntuarioEncaminhamento({
 
             <div className="grid gap-2">
               <Label htmlFor="motivo">
-                Motivo do Encaminhamento <span className="text-red-500">*</span>
+                Motivo do Encaminhamento <span className="text-danger-ink">*</span>
               </Label>
               <Textarea
                 id="motivo"
@@ -512,92 +513,60 @@ export function ProntuarioEncaminhamento({
 
       {/* Loading State */}
       {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando encaminhamentos...</p>
-          </div>
-        </div>
+        <Carregando texto="Carregando encaminhamentos..." />
       )}
 
       {/* Error State */}
       {!loading && error && (
-        <div className="text-center py-8">
-          <Send className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">
-            Erro ao carregar encaminhamentos
-          </h3>
-          <p className="text-muted-foreground">{error}</p>
-        </div>
+        <EstadoVazio
+        icone={<Send />}
+        titulo="Erro ao carregar encaminhamentos"
+        texto={error}
+      />
       )}
 
       {/* Empty State */}
       {!loading && !error && encaminhamentos.length === 0 && (
-        <div className="text-center py-12">
-          <Send className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">
-            Nenhum encaminhamento encontrado
-          </h3>
-          <p className="text-muted-foreground">
-            Este paciente ainda não possui encaminhamentos cadastrados.
-          </p>
-        </div>
+        <EstadoVazio
+        icone={<Send />}
+        titulo="Nenhum encaminhamento encontrado"
+        texto="Este paciente ainda não possui encaminhamentos cadastrados."
+      />
       )}
 
       {/* Resumo - apenas quando há dados */}
       {!loading && !error && encaminhamentos.length > 0 && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{encaminhamentos.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pendentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {encaminhamentos.filter((e) => e.status === "PENDENTE").length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Em Andamento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {encaminhamentos.filter((e) => e.status === "EM_ANDAMENTO").length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Concluídos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {encaminhamentos.filter((e) => e.status === "CONCLUIDO").length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              size="sm"
+              tom="blue"
+              icone={<Send />}
+              rotulo="Total"
+              valor={encaminhamentos.length}
+            />
+            <StatCard
+              size="sm"
+              tom="lavender"
+              icone={<Clock className="text-warning-ink" />}
+              rotulo="Pendentes"
+              valor={encaminhamentos.filter((e) => e.status === "PENDENTE").length}
+            />
+            <StatCard
+              size="sm"
+              tom="mint"
+              icone={<Activity />}
+              rotulo="Em Andamento"
+              valor={encaminhamentos.filter((e) => e.status === "EM_ANDAMENTO").length}
+            />
+            <StatCard
+              size="sm"
+              tom="peach"
+              icone={<CheckCircle />}
+              rotulo="Concluídos"
+              valor={encaminhamentos.filter((e) => e.status === "CONCLUIDO").length}
+            />
+          </div>
 
       {/* Lista de Encaminhamentos */}
       <div className="space-y-4">
@@ -702,7 +671,7 @@ export function ProntuarioEncaminhamento({
                   <Separator />
                   <div className="bg-muted/30 rounded-lg p-4 space-y-3">
                     <div className="flex items-center gap-2 text-sm font-medium">
-                      <Calendar className="h-4 w-4 text-green-600" />
+                      <Calendar className="h-4 w-4 text-success-ink" />
                       <span>Retorno em: {formatDate(encaminhamento.data_retorno)}</span>
                     </div>
                     {encaminhamento.retorno_observacao && (

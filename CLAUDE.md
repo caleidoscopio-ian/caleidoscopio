@@ -26,7 +26,7 @@ Não atualizar para mudanças triviais (ex: fix de bug pontual). Atualizar quand
 **Caleidoscópio Educacional** — plataforma terapêutica/educacional para TEA (Transtorno do Espectro Autista).
 Sistema 2 (Educacional) integrado ao Sistema 1 (Gestão) via SSO.
 
-**Stack**: Next.js 15 (App Router/RSC) · TypeScript strict · Prisma + PostgreSQL · Tailwind + shadcn/ui · Multi-tenant
+**Stack**: Next.js 15 (App Router/RSC) · TypeScript strict · Prisma + PostgreSQL · Tailwind v4 + shadcn/ui + kit v2 · next-themes (modo noite) · motion (marcador deslizante) · Multi-tenant
 
 ## Arquitetura (Visão Geral)
 
@@ -150,3 +150,4 @@ NUNCA: `any` type · query sem `tenantId` · import de `src/` · `dangerouslySet
 | 25 | Central de Relatórios | `/relatorios`, `/relatorios/[slug]` | Implementado (Fases 0-6 e 8; Fase 7 avaliada e descartada) |
 | 26 | Filial no Agendamento (campo autoritativo + escopo multi-filial) | `/agenda`, `/usuarios` | Implementado (Fases 0-4) |
 | 27 | Grade de Horário da Sala + Capacidade | `/salas` (modal), `/salas/mapa-ocupacao` (aba Dashboard) | Implementado |
+| 28 | Design System v2 (tokens, kit, casca, modo noite) | `/design-system` (guia visual) | Implementado |

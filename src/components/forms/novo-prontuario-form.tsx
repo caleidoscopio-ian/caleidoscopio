@@ -201,7 +201,7 @@ export function NovoProntuarioForm({ onSuccess }: NovoProntuarioFormProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button className="bg-brand hover:bg-brand">
           <Plus className="mr-2 h-4 w-4" />
           Novo Registro
         </Button>

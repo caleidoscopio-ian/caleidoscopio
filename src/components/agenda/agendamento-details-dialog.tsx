@@ -71,16 +71,16 @@ export function AgendamentoDetailsDialog({
   if (!agendamento) return null
 
   const STATUS_DIALOG_COLOR: Record<StatusAgendamento, string> = {
-    [StatusAgendamento.AGENDADO]:       'bg-blue-100 text-blue-800 border-blue-300',
-    [StatusAgendamento.CONFIRMADO]:     'bg-green-100 text-green-800 border-green-300',
-    [StatusAgendamento.EM_ATENDIMENTO]: 'bg-amber-100 text-amber-800 border-amber-300',
-    [StatusAgendamento.ATENDIDO]:       'bg-purple-100 text-purple-800 border-purple-300',
-    [StatusAgendamento.FALTOU]:         'bg-gray-100 text-gray-800 border-gray-300',
-    [StatusAgendamento.CANCELADO]:      'bg-red-100 text-red-800 border-red-300',
+    [StatusAgendamento.AGENDADO]:       'bg-brand-soft text-brand border-brand',
+    [StatusAgendamento.CONFIRMADO]:     'bg-success-soft text-success-ink border-success',
+    [StatusAgendamento.EM_ATENDIMENTO]: 'bg-warning-soft text-warning-ink border-warning',
+    [StatusAgendamento.ATENDIDO]:       'bg-violet-soft text-violet-ink border-violet',
+    [StatusAgendamento.FALTOU]:         'bg-surface-sunken text-ink border-border',
+    [StatusAgendamento.CANCELADO]:      'bg-danger-soft text-danger-ink border-danger',
   }
 
   const getStatusColor = (status: StatusAgendamento) =>
-    STATUS_DIALOG_COLOR[status] ?? 'bg-gray-100 text-gray-800 border-gray-300'
+    STATUS_DIALOG_COLOR[status] ?? 'bg-surface-sunken text-ink border-border'
 
   const getStatusText = (status: StatusAgendamento) =>
     STATUS_AGENDAMENTO_LABELS[status] ?? 'Agendado'
@@ -350,7 +350,7 @@ export function AgendamentoDetailsDialog({
                         </Badge>
                       )}
                     </div>
-                    <div className="font-semibold text-lg text-green-700">
+                    <div className="font-semibold text-lg text-success-ink">
                       {formatBRL(agendamento.precoCalculado.valor)}
                     </div>
                   </div>
@@ -396,13 +396,13 @@ export function AgendamentoDetailsDialog({
                       onClick={() => setModoCancelamento(opcao.value)}
                       className={cn(
                         "w-full text-left p-3 rounded-lg border transition-colors",
-                        modoCancelamento === opcao.value ? "border-red-500 bg-red-50" : "border-border hover:bg-muted/50"
+                        modoCancelamento === opcao.value ? "border-danger bg-danger-soft" : "border-border hover:bg-muted/50"
                       )}
                     >
                       <div className="flex items-center gap-2">
                         <div className={cn(
                           "h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
-                          modoCancelamento === opcao.value ? "border-red-600 bg-red-600" : "border-muted-foreground"
+                          modoCancelamento === opcao.value ? "border-danger bg-danger" : "border-muted-foreground"
                         )}>
                           {modoCancelamento === opcao.value && <Check className="h-3 w-3 text-white" />}
                         </div>
@@ -453,13 +453,13 @@ export function AgendamentoDetailsDialog({
                       onClick={() => setModoExclusao(opcao.value)}
                       className={cn(
                         "w-full text-left p-3 rounded-lg border transition-colors",
-                        modoExclusao === opcao.value ? "border-red-500 bg-red-50" : "border-border hover:bg-muted/50"
+                        modoExclusao === opcao.value ? "border-danger bg-danger-soft" : "border-border hover:bg-muted/50"
                       )}
                     >
                       <div className="flex items-center gap-2">
                         <div className={cn(
                           "h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
-                          modoExclusao === opcao.value ? "border-red-600 bg-red-600" : "border-muted-foreground"
+                          modoExclusao === opcao.value ? "border-danger bg-danger" : "border-muted-foreground"
                         )}>
                           {modoExclusao === opcao.value && <Check className="h-3 w-3 text-white" />}
                         </div>
@@ -520,7 +520,7 @@ export function AgendamentoDetailsDialog({
                 variant="outline"
                 onClick={handleAbrirConfirmacaoExclusao}
                 disabled={isLoading}
-                className="text-red-600 hover:text-red-700"
+                className="text-danger-ink hover:text-danger-ink"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir
@@ -534,7 +534,7 @@ export function AgendamentoDetailsDialog({
                 onClick={handleConfirmar}
                 disabled={isLoading}
                 variant="outline"
-                className="text-green-600 hover:text-green-700"
+                className="text-success-ink hover:text-success-ink"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Confirmar

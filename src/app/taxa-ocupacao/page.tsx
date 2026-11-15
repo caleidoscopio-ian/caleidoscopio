@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
 import { subDays, startOfDay, endOfDay } from "date-fns"
 import type { OcupacaoResponse, OcupacaoProfissional, OcupacaoResumo } from "@/types/ocupacao-profissional"
+import { PageHeader } from "@/components/kit"
 
 const RESUMO_VAZIO: OcupacaoResumo = {
   taxa_media: 0,
@@ -118,12 +119,10 @@ function TaxaOcupacaoContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Cabeçalho */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Taxa de Ocupação</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Visão gerencial dos agendamentos por profissional — taxa de ocupação, absenteísmo e indicadores em tempo real.
-          </p>
-        </div>
+        <PageHeader
+          titulo="Taxa de Ocupação"
+          subtitulo="Visão gerencial dos agendamentos por profissional — taxa de ocupação, absenteísmo e indicadores em tempo real."
+        />
 
         {/* Filtros */}
         <FiltrosOcupacao

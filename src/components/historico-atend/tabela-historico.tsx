@@ -46,10 +46,10 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
   return (
     <TooltipProvider>
       <div className="space-y-2">
-        <div className="rounded-md border overflow-x-auto">
+        <div className="overflow-x-auto">
           <Table className="text-xs min-w-[1600px]">
             <TableHeader>
-              <TableRow className="bg-muted/40">
+              <TableRow>
                 <TableHead className="w-24">Data</TableHead>
                 <TableHead className="w-24">Horário</TableHead>
                 <TableHead className="w-20">Duração</TableHead>
@@ -79,7 +79,7 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
                 </TableRow>
               )}
               {linhas.map((l) => {
-                const badgeClass = STATUS_AGENDAMENTO_BADGE[l.status] ?? "bg-gray-50 border-gray-300 text-gray-800";
+                const badgeClass = STATUS_AGENDAMENTO_BADGE[l.status] ?? "bg-surface-sunken border-border text-ink";
                 const temObsOuMotivo = l.motivo_falta || l.observacoes;
                 return (
                   <TableRow key={l.id} className="hover:bg-muted/30">
@@ -139,7 +139,7 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
                     {/* Convênio */}
                     <TableCell>
                       {l.convenio ? (
-                        <span className="text-blue-700 font-medium">{l.convenio.nome}</span>
+                        <span className="text-brand font-medium">{l.convenio.nome}</span>
                       ) : (
                         <span className="text-muted-foreground">Particular</span>
                       )}
@@ -189,7 +189,7 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
                     {/* Espera */}
                     <TableCell className="tabular-nums">
                       {l.tempo_espera_min !== null && l.tempo_espera_min > 15 ? (
-                        <span className="text-amber-600 font-medium">{fmtMin(l.tempo_espera_min)}</span>
+                        <span className="text-warning-ink font-medium">{fmtMin(l.tempo_espera_min)}</span>
                       ) : (
                         <span className="text-muted-foreground">{fmtMin(l.tempo_espera_min)}</span>
                       )}
@@ -206,7 +206,7 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-1 cursor-help max-w-[110px]">
-                              <AlertCircle className="h-3 w-3 text-orange-500 flex-shrink-0" />
+                              <AlertCircle className="h-3 w-3 text-warning-ink flex-shrink-0" />
                               <span className="truncate text-muted-foreground">
                                 {l.motivo_falta ?? l.observacoes}
                               </span>
@@ -229,7 +229,7 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
-                                variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                variant="ghost" size="icon" className="h-7 w-7 text-danger-ink hover:text-danger-ink hover:bg-danger-soft"
                                 onClick={() => onRegistrarGlosa(l)}
                                 aria-label="Registrar glosa"
                               >

@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Panel } from "@/components/kit";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -112,19 +112,18 @@ export function ProntuarioHistorico({ pacienteId }: ProntuarioHistoricoProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BarChart className="h-5 w-5" />
-          Histórico de Atendimentos
-          {!loading && (
-            <Badge variant="secondary" className="ml-2">
-              {prontuarios.length}
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Panel
+      icone={<BarChart />}
+      titulo="Histórico de Atendimentos"
+      acoes={
+        !loading && (
+          <span className="tabular grid size-8 place-items-center rounded-full bg-surface-sunken text-sm font-semibold text-ink-2">
+            {prontuarios.length}
+          </span>
+        )
+      }
+    >
+      <div>
         {loading && (
           <div className="text-center py-8">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
@@ -198,7 +197,7 @@ export function ProntuarioHistorico({ pacienteId }: ProntuarioHistoricoProps) {
                     {record.attachments.length > 0 ? (
                       <Badge
                         variant="outline"
-                        className="bg-blue-50 text-blue-700"
+                        className="bg-brand-soft text-brand"
                       >
                         {record.attachments.length} arquivo(s)
                       </Badge>
@@ -227,7 +226,7 @@ export function ProntuarioHistorico({ pacienteId }: ProntuarioHistoricoProps) {
             </TableBody>
           </Table>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Panel>
   );
 }

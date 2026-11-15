@@ -33,10 +33,10 @@ export function TabelaGlosas({ glosas, total, page, pageSize, onPage, onDetalhe,
   return (
     <TooltipProvider>
       <div className="space-y-2">
-        <div className="rounded-md border overflow-x-auto">
+        <div className="overflow-x-auto">
           <Table className="text-xs min-w-[1100px]">
             <TableHeader>
-              <TableRow className="bg-muted/40">
+              <TableRow>
                 <TableHead className="w-24">Data Glosa</TableHead>
                 <TableHead className="w-24">Dt. Atend.</TableHead>
                 <TableHead className="min-w-[140px]">Paciente</TableHead>
@@ -60,7 +60,7 @@ export function TabelaGlosas({ glosas, total, page, pageSize, onPage, onDetalhe,
                 </TableRow>
               )}
               {glosas.map((g) => {
-                const badgeClass = STATUS_GLOSA_BADGE[g.status] ?? "bg-gray-50 border-gray-300 text-gray-700";
+                const badgeClass = STATUS_GLOSA_BADGE[g.status] ?? "bg-surface-sunken border-border text-ink";
                 const saldoPendente = g.valor_recuperado === null && g.status !== "ACATADA" && g.status !== "NEGADA";
 
                 return (
@@ -77,7 +77,7 @@ export function TabelaGlosas({ glosas, total, page, pageSize, onPage, onDetalhe,
                         </div>
                       ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell className="text-blue-700">{g.convenio?.nome ?? <span className="text-muted-foreground">Particular</span>}</TableCell>
+                    <TableCell className="text-brand">{g.convenio?.nome ?? <span className="text-muted-foreground">Particular</span>}</TableCell>
                     <TableCell>
                       <span className="text-xs">{CATEGORIA_GLOSA_LABEL[g.categoria]}</span>
                     </TableCell>
@@ -87,14 +87,14 @@ export function TabelaGlosas({ glosas, total, page, pageSize, onPage, onDetalhe,
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(g.valor_cobrado)}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium text-red-600">{formatBRL(g.valor_glosado)}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium text-danger-ink">{formatBRL(g.valor_glosado)}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {g.valor_recuperado !== null ? (
-                        <span className="text-green-600 font-medium">{formatBRL(g.valor_recuperado)}</span>
+                        <span className="text-success-ink font-medium">{formatBRL(g.valor_recuperado)}</span>
                       ) : saldoPendente ? (
                         <span className="text-muted-foreground">—</span>
                       ) : (
-                        <span className="text-gray-400">R$ 0,00</span>
+                        <span className="text-ink-3">R$ 0,00</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">

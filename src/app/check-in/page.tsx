@@ -16,6 +16,7 @@ import { StatusAgendamento } from "@/types/agendamento";
 import { STATUS_LABELS, type AgendamentoCheckIn, type CheckInAction } from "@/types/check-in";
 import { ClipboardCheck } from "lucide-react";
 import { useFilial } from "@/hooks/useFilial";
+import { PageHeader } from "@/components/kit";
 
 const COLUNAS: StatusAgendamento[] = [
   StatusAgendamento.AGENDADO,
@@ -164,14 +165,12 @@ export default function CheckInPage() {
   return (
     <ProtectedRoute requiredPermission={{ resource: "agenda", action: "VIEW" }}>
       <MainLayout breadcrumbs={breadcrumbs}>
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <ClipboardCheck className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="text-2xl font-bold">Check-in e Recepção</h1>
-            <p className="text-sm text-muted-foreground">Gerencie o fluxo de chegada dos pacientes</p>
-          </div>
-        </div>
+        <PageHeader
+          className="mb-6"
+          icone={<ClipboardCheck />}
+          titulo="Check-in e Recepção"
+          subtitulo="Gerencie o fluxo de chegada dos pacientes"
+        />
 
         <CheckInStats agendamentos={agendamentos} />
 
@@ -185,7 +184,7 @@ export default function CheckInPage() {
         />
 
         <Tabs defaultValue={StatusAgendamento.AGENDADO}>
-          <TabsList className="mb-4 flex-wrap h-auto gap-1">
+          <TabsList>
             {COLUNAS.map((status) => {
               const count = porStatus(status).length;
               return (

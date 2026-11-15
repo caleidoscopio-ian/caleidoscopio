@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useRouter } from 'next/navigation'
 import { useEffect, ReactNode } from 'react'
+import { PageLoader } from '@/components/page-loader'
 
 interface RequiredPermission {
   resource: string
@@ -36,18 +37,12 @@ export default function ProtectedRoute({ children, requiredPermission }: Protect
     }
   }, [user, loading, router, requiredPermission, can])
 
+  // Mesma tela de espera do resto do sistema, com a marca de verdade. O
+  // desenho que estava aqui (quadrado azul com um ponto branco) não era o
+  // logotipo de lugar nenhum — e é a tela que aparece em TODA navegação,
+  // enquanto a sessão e as permissões carregam.
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 rounded-lg bg-blue-600 flex items-center justify-center mb-4">
-            <span className="text-white font-bold text-xl">C</span>
-          </div>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    )
+    return <PageLoader telaCheia />
   }
 
   if (!user) return null

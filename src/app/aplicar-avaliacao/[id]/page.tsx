@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader, Panel } from "@/components/kit";
 
 interface Tarefa {
   id: string;
@@ -302,54 +303,46 @@ function AplicarAvaliacaoPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header com informações da sessão */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Aplicar Avaliação
-          </h1>
-          <p className="text-muted-foreground">
-            Paciente: <strong>{sessao.paciente.name}</strong> • Avaliação:{" "}
-            <strong>{sessao.avaliacao.nome}</strong>
-          </p>
-        </div>
+        <PageHeader
+          titulo="Aplicar Avaliação"
+          subtitulo={<>Paciente: <strong>{sessao.paciente.name}</strong> • Avaliação:{" "} <strong>{sessao.avaliacao.nome}</strong></>}
+        />
 
         {/* Painel de Navegação de Tarefas */}
-        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              Tarefas da Avaliação ({tarefas.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {tarefas.map((trf, idx) => {
-                const tarefaRespondida = respostas[trf.id]?.pontuacao !== null && respostas[trf.id]?.pontuacao !== undefined;
-                const isAtual = idx === tarefaAtual;
+        <Panel
+          icone={<ClipboardList />}
+          titulo={<>Tarefas da Avaliação ({tarefas.length})</>}
+          className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20"
+        >
 
-                return (
-                  <Button
-                    key={trf.id}
-                    variant={isAtual ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => navegarParaTarefa(idx)}
-                    className={`flex-shrink-0 min-w-[100px] justify-between ${
-                      tarefaRespondida && !isAtual
-                        ? "border-green-500 bg-green-50 hover:bg-green-100"
-                        : ""
-                    }`}
-                  >
-                    <span className="text-xs font-medium">
-                      Tarefa {idx + 1}
-                    </span>
-                    {tarefaRespondida && (
-                      <CheckCircle2 className="h-4 w-4 ml-1 flex-shrink-0 text-green-600" />
-                    )}
-                  </Button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {tarefas.map((trf, idx) => {
+              const tarefaRespondida = respostas[trf.id]?.pontuacao !== null && respostas[trf.id]?.pontuacao !== undefined;
+              const isAtual = idx === tarefaAtual;
+
+              return (
+                <Button
+                  key={trf.id}
+                  variant={isAtual ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => navegarParaTarefa(idx)}
+                  className={`flex-shrink-0 min-w-[100px] justify-between ${
+                    tarefaRespondida && !isAtual
+                      ? "border-success bg-success-soft hover:bg-success-soft"
+                      : ""
+                  }`}
+                >
+                  <span className="text-xs font-medium">
+                    Tarefa {idx + 1}
+                  </span>
+                  {tarefaRespondida && (
+                    <CheckCircle2 className="h-4 w-4 ml-1 flex-shrink-0 text-success-ink" />
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+        </Panel>
 
         {/* Progresso */}
         <Card>
@@ -377,7 +370,7 @@ function AplicarAvaliacaoPageContent() {
                   <Badge variant="secondary">Tarefa {tarefaAtual + 1}</Badge>
                   {respostas[tarefa.id]?.pontuacao !== null &&
                     respostas[tarefa.id]?.pontuacao !== undefined && (
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      <CheckCircle2 className="h-5 w-5 text-success-ink" />
                     )}
                 </CardTitle>
                 <CardDescription>
@@ -486,7 +479,7 @@ function AplicarAvaliacaoPageContent() {
               ) : (
                 <Button
                   onClick={() => setShowFinalizar(true)}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-success hover:bg-success"
                 >
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   Finalizar Avaliação
@@ -505,7 +498,7 @@ function AplicarAvaliacaoPageContent() {
                 Você respondeu {respostasPreenchidas} de {tarefas.length}{" "}
                 tarefas.
                 {respostasPreenchidas < tarefas.length && (
-                  <span className="block mt-2 text-yellow-600">
+                  <span className="block mt-2 text-warning-ink">
                     Atenção: Existem {tarefas.length - respostasPreenchidas}{" "}
                     tarefas sem pontuação.
                   </span>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Loader2, Building2, MapPin } from 'lucide-react'
+import { Panel } from '@/components/kit'
 import { format, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { SalaOcupacao } from '@/types/ocupacao-sala'
@@ -31,9 +32,9 @@ interface FilialStats {
 }
 
 function taxaCor(taxa: number): string {
-  if (taxa >= 85) return 'bg-red-500'
-  if (taxa >= 60) return 'bg-amber-500'
-  return 'bg-emerald-500'
+  if (taxa >= 85) return 'bg-danger'
+  if (taxa >= 60) return 'bg-warning'
+  return 'bg-success'
 }
 
 interface MapaFiliaisProps {
@@ -135,8 +136,8 @@ export function MapaFiliais({ onFilialSelect, filialSelecionada }: MapaFiliaisPr
           <h3 className="font-semibold">Ocupação atual da unidade</h3>
           {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
-        <Card>
-          <CardContent className="pt-5 space-y-4">
+        <Panel>
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">{salasAtivas} de {totalSalas} salas em uso</p>
               <Badge variant={salasAtivas > 0 ? 'default' : 'secondary'}>
@@ -166,8 +167,8 @@ export function MapaFiliais({ onFilialSelect, filialSelecionada }: MapaFiliaisPr
                 )
               })}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       </div>
     )
   }

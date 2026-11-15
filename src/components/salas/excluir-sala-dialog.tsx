@@ -83,7 +83,7 @@ export function ExcluirSalaDialog({ sala, onSuccess }: ExcluirSalaDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50">
+        <Button variant="outline" size="sm" className="text-danger-ink hover:bg-danger-soft">
           <Trash2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>

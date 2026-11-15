@@ -4,13 +4,14 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, FileDown } from "lucide-react";
 import { FiltrosRelatorio } from "@/components/relatorios/filtros-relatorio";
 import { ResumoCards } from "@/components/relatorios/resumo-cards";
 import { TabelaAtendimentos } from "@/components/relatorios/tabela-atendimentos";
 import { GraficosRelatorio } from "@/components/relatorios/graficos-relatorio";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { PageHeader, Panel } from "@/components/kit";
 
 interface Resumo {
   totalSessoes: number;
@@ -124,20 +125,21 @@ function RelatoriosProfissionaisPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Relatórios de Profissionais</h1>
-            <p className="text-muted-foreground">
-              Visualize e exporte relatórios de atendimentos
-            </p>
-          </div>
-          {resumo && (
-            <Button onClick={exportarPDF} variant="outline">
-              <FileDown className="mr-2 h-4 w-4" />
-              Exportar PDF
-            </Button>
-          )}
-        </div>
+        <PageHeader
+          titulo="Relatórios de Profissionais"
+          subtitulo="Visualize e exporte relatórios de atendimentos"
+          acoes={
+            <>
+
+              {resumo && (
+                <Button onClick={exportarPDF} variant="outline">
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Exportar PDF
+                </Button>
+              )}
+            </>
+          }
+        />
 
         {/* Filtros */}
         <FiltrosRelatorio onBuscar={buscarRelatorio} />
@@ -159,17 +161,13 @@ function RelatoriosProfissionaisPageContent() {
             )}
 
             {/* Tabela de Atendimentos */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Detalhamento de Atendimentos</CardTitle>
-                <CardDescription>
-                  Visualização agrupada por paciente
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TabelaAtendimentos agrupados={agrupados} />
-              </CardContent>
-            </Card>
+            <Panel
+              titulo="Detalhamento de Atendimentos"
+              subtitulo="Visualização agrupada por paciente"
+            >
+
+              <TabelaAtendimentos agrupados={agrupados} />
+            </Panel>
           </>
         )}
 

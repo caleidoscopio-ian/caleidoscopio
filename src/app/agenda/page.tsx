@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,8 @@ import {
 import {
   Calendar,
   CalendarDays,
+  CheckCircle2,
+  XCircle,
   Clock,
   LayoutGrid,
   Plus,
@@ -70,6 +72,14 @@ import {
   type ResultadoLote,
 } from "@/components/agenda/resultado-lote-dialog";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import {
+  PageHeader,
+  StatCard,
+  Panel,
+  ActionButton,
+  IconButton,
+  Segmented,
+} from "@/components/kit";
 
 type ViewMode = "day" | "week" | "month";
 type AgendaTab = "geral" | "grade";
@@ -1073,147 +1083,96 @@ function AgendaPageContent() {
     <MainLayout breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Agenda</h1>
-            <p className="text-muted-foreground">
-              {filialSelecionada
-                ? `Filial: ${filialSelecionada.nome}`
-                : "Todos os agendamentos da clínica"}
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowNovoAgendamento(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" />
+        <PageHeader
+          titulo="Agenda"
+          subtitulo={filialSelecionada ? `Filial: ${filialSelecionada.nome}` : "Todos os agendamentos da clínica"}
+          acoes={
+            <ActionButton size="lg" onClick={() => setShowNovoAgendamento(true)}>
+              <Plus />
               Novo Agendamento
-            </Button>
-          </div>
-        </div>
+            </ActionButton>
+          }
+        />
 
         {/* Estatísticas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Hoje</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {agendamentosHoje.length}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+          <StatCard tom="blue" size="hero" icone={<Calendar />} rotulo="Hoje" valor={agendamentosHoje.length} />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Confirmados</CardTitle>
-              <Clock className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {
-                  agendamentos.filter(
-                    (a) => a.status === StatusAgendamento.CONFIRMADO
-                  ).length
-                }
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="mint"
+            icone={<Clock />}
+            rotulo="Confirmados"
+            valor={<span className="text-success-ink">{ agendamentos.filter( (a) => a.status === StatusAgendamento.CONFIRMADO ).length }</span>}
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Finalizados</CardTitle>
-              <User className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {
-                  agendamentos.filter(
-                    (a) => a.status === StatusAgendamento.ATENDIDO
-                  ).length
-                }
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="lavender"
+            icone={<CheckCircle2 />}
+            rotulo="Finalizados"
+            valor={ agendamentos.filter( (a) => a.status === StatusAgendamento.ATENDIDO ).length }
+          />
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Cancelados</CardTitle>
-              <Calendar className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {
-                  agendamentos.filter(
-                    (a) => a.status === StatusAgendamento.CANCELADO
-                  ).length
-                }
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            tom="peach"
+            icone={<XCircle />}
+            rotulo="Cancelados"
+            valor={<span className="text-danger-ink">{ agendamentos.filter( (a) => a.status === StatusAgendamento.CANCELADO ).length }</span>}
+          />
         </div>
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(v) => setActiveTab(v as AgendaTab)}
-          className="space-y-6"
-        >
-          <TabsList>
-            <TabsTrigger value="geral" className="gap-2">
-              <CalendarDays className="h-4 w-4" />
-              Agenda Geral
-            </TabsTrigger>
-            <TabsTrigger value="grade" className="gap-2">
-              <LayoutGrid className="h-4 w-4" />
-              Grade de Horários
-            </TabsTrigger>
-          </TabsList>
+        {/* Um painel só, como no v2: data, abas, filtros e conteúdo moram
+            juntos. Antes eram três blocos soltos — abas flutuando fora,
+            um cartão só para a data e outro para a grade. */}
+        <Panel>
+          <div className="space-y-5">
+            {/* Linha 1 — navegação de data */}
+            <div className="flex flex-wrap items-center gap-3">
+              <IconButton
+                aria-label="Período anterior"
+                onClick={() => navigateDate("prev")}
+              >
+                <ChevronLeft />
+              </IconButton>
+              <h2 className="text-[1.25rem] leading-tight font-semibold text-ink capitalize">
+                {format(
+                  selectedDate,
+                  viewMode === "day"
+                    ? "EEEE, d 'de' MMMM 'de' yyyy"
+                    : viewMode === "week"
+                      ? "'Semana de' d 'de' MMMM"
+                      : "MMMM 'de' yyyy",
+                  { locale: ptBR }
+                )}
+              </h2>
+              <IconButton
+                aria-label="Próximo período"
+                onClick={() => navigateDate("next")}
+              >
+                <ChevronRight />
+              </IconButton>
+              <ActionButton variant="secondary" size="sm" onClick={goToToday}>
+                Hoje
+              </ActionButton>
+            </div>
 
-          {/* Controles da Agenda — compartilhados pelas duas abas */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => navigateDate("prev")}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="text-lg font-semibold capitalize">
-                    {format(
-                      selectedDate,
-                      viewMode === "day"
-                        ? "EEEE, d 'de' MMMM 'de' yyyy"
-                        : viewMode === "week"
-                          ? "'Semana de' d 'de' MMMM"
-                          : "MMMM 'de' yyyy",
-                      { locale: ptBR }
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => navigateDate("next")}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={goToToday}>
-                    Hoje
-                  </Button>
-                </div>
-                <div className="flex items-center space-x-2">
+            {/* Linha 2 — abas à esquerda, filtros e período à direita */}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <Segmented
+                valor={activeTab}
+                onChange={(v) => setActiveTab(v)}
+                opcoes={[
+                  { valor: "geral", rotulo: "Agenda Geral", icone: <CalendarDays /> },
+                  { valor: "grade", rotulo: "Grade de Horários", icone: <LayoutGrid /> },
+                ]}
+              />
+              <div className="flex flex-wrap items-center gap-2">
                   {/* Filtro de filial — visível apenas para admin */}
                   {isAdmin && filiais.length > 0 && (
                     <Select
                       value={selectedFilialId ?? "_todas"}
                       onValueChange={handleFilialChange}
                     >
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="h-9 w-[12rem] rounded-full border-hairline bg-surface-muted text-[0.8rem]">
                         <SelectValue placeholder="Filial">
                           {filialSelecionada ? (
                             <span className="flex items-center gap-2">
@@ -1257,7 +1216,7 @@ function AgendaPageContent() {
                     value={selectedProfissional}
                     onValueChange={setSelectedProfissional}
                   >
-                    <SelectTrigger className="w-[200px]">
+                    <SelectTrigger className="h-9 w-[13rem] rounded-full border-hairline bg-surface-muted text-[0.8rem]">
                       <SelectValue placeholder="Profissional" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1281,36 +1240,22 @@ function AgendaPageContent() {
                     </SelectContent>
                   </Select>
 
-                  <Button
-                    variant={viewMode === "day" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setViewMode("day")}
-                  >
-                    Dia
-                  </Button>
-                  <Button
-                    variant={viewMode === "week" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setViewMode("week")}
-                  >
-                    Semana
-                  </Button>
-                  <Button
-                    variant={viewMode === "month" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setViewMode("month")}
-                  >
-                    Mês
-                  </Button>
-                </div>
+                <Segmented
+                  valor={viewMode}
+                  onChange={(v) => setViewMode(v)}
+                  opcoes={[
+                    { valor: "day", rotulo: "Dia" },
+                    { valor: "week", rotulo: "Semana" },
+                    { valor: "month", rotulo: "Mês" },
+                  ]}
+                />
               </div>
-            </CardHeader>
-          </Card>
+            </div>
 
-          {/* Visualização da Agenda */}
-          <TabsContent value="geral" className="mt-0">
-            <Card>
-              <CardContent className="p-0">
+            {/* Conteúdo: caixa interna de raio 20px com borda hairline, como
+                no v2 — a moldura externa já é o painel. */}
+            {activeTab === "geral" && (
+              <div className="scrollbar-none overflow-x-auto rounded-[1.25rem] border border-hairline bg-surface">
                 {viewMode === "day" ? (
                   isAdmin && selectedProfissional === "all" ? (
                     <AgendaDiariaResumo
@@ -1363,14 +1308,12 @@ function AgendaPageContent() {
                     onAgendamentoClick={handleAgendamentoClick}
                   />
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            )}
 
-          {/* Grade de Horários — disponibilidade por profissional */}
-          <TabsContent value="grade" className="mt-0">
-            <Card>
-              <CardContent className="p-0">
+            {/* Grade de Horários — disponibilidade por profissional */}
+            {activeTab === "grade" && (
+              <div>
                 <GradeHorarios
                   profissionais={profissionaisFiltrados}
                   grades={grades}
@@ -1381,10 +1324,10 @@ function AgendaPageContent() {
                   onAgendamentoClick={handleAgendamentoClick}
                   onDiaClick={handleDiaGradeClick}
                 />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+            )}
+          </div>
+        </Panel>
       </div>
 
       {/* Dialog: Novo Agendamento */}

@@ -1,9 +1,9 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, CheckCircle2, TrendingDown, FileX2, Percent, FileCheck2 } from "lucide-react";
 import { formatBRL } from "@/lib/preco-procedimento";
 import type { ComparativoConciliacao } from "@/types/conciliacao";
+import { StatCard } from "@/components/kit";
 
 interface ComparativoConciliacaoProps {
   comparativo: ComparativoConciliacao;
@@ -14,82 +14,80 @@ export function ComparativoConciliacaoView({ comparativo: c }: ComparativoConcil
   const pctConciliacao = c.total_guias > 0 ? Math.round((c.guias_conciliadas / c.total_guias) * 100) : 0;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <DollarSign className="h-3.5 w-3.5" />Faturado (informado)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-xl font-bold">{formatBRL(c.valor_informado_total)}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">{c.total_demonstrativos} demonstrativo(s)</p>
-        </CardContent>
-      </Card>
+    <div className="anim-escalonada grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <StatCard
+        tom="blue"
+        size="sm"
+        icone={<DollarSign />}
+        rotulo="Faturado (informado)"
+        valor={formatBRL(c.valor_informado_total)}
+        hint={<>{c.total_demonstrativos} demonstrativo(s)</>}
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5" />Liberado (pago)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-xl font-bold text-green-600">{formatBRL(c.valor_liberado_total)}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">recebido dos convênios</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="lavender"
+        size="sm"
+        icone={<CheckCircle2 />}
+        rotulo="Liberado (pago)"
+        valor={<span className="text-success-ink">{formatBRL(c.valor_liberado_total)}</span>}
+        hint="recebido dos convênios"
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <TrendingDown className="h-3.5 w-3.5" />Glosado
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-xl font-bold text-red-600">{formatBRL(c.valor_glosa_total)}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">valor recusado</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="mint"
+        size="sm"
+        icone={<TrendingDown />}
+        rotulo="Glosado"
+        valor={<span className="text-danger-ink">{formatBRL(c.valor_glosa_total)}</span>}
+        hint="valor recusado"
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <Percent className="h-3.5 w-3.5" />Taxa de Glosa
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={`text-xl font-bold ${pctGlosa <= 5 ? "text-green-600" : pctGlosa <= 15 ? "text-amber-600" : "text-red-600"}`}>
+      <StatCard
+        tom="peach"
+        size="sm"
+        icone={<Percent />}
+        rotulo="Taxa de Glosa"
+        valor={
+          <span
+            className={
+              pctGlosa <= 5
+                ? "text-success-ink"
+                : pctGlosa <= 15
+                  ? "text-warning-ink"
+                  : "text-danger-ink"
+            }
+          >
             {pctGlosa}%
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">do faturado</p>
-        </CardContent>
-      </Card>
+          </span>
+        }
+        hint="do faturado"
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <FileCheck2 className="h-3.5 w-3.5" />Conciliação
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-xl font-bold">{pctConciliacao}%</div>
-          <p className="text-xs text-muted-foreground mt-0.5">{c.guias_conciliadas}/{c.total_guias} guias</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        tom="blue"
+        size="sm"
+        icone={<FileCheck2 />}
+        rotulo="Conciliação"
+        valor={<>{pctConciliacao}%</>}
+        hint={<>{c.guias_conciliadas}/{c.total_guias} guias</>}
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs text-muted-foreground font-normal flex items-center gap-1">
-            <FileX2 className="h-3.5 w-3.5" />Não Conciliadas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={`text-xl font-bold ${c.guias_nao_encontradas > 0 ? "text-red-600" : "text-green-600"}`}>
+      <StatCard
+        tom="lavender"
+        size="sm"
+        icone={<FileX2 />}
+        rotulo="Não Conciliadas"
+        valor={
+          <span
+            className={
+              c.guias_nao_encontradas > 0 ? "text-danger-ink" : "text-success-ink"
+            }
+          >
             {c.guias_nao_encontradas}
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">{c.glosas_geradas} glosas geradas</p>
-        </CardContent>
-      </Card>
+          </span>
+        }
+        hint={<>{c.glosas_geradas} glosas geradas</>}
+      />
     </div>
   );
 }
