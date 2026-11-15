@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { UserPlus, Loader2, Search, CheckCircle2 } from "lucide-react";
+import { UserPlus, Loader2, CheckCircle2 } from "lucide-react";
+import { SearchField } from "@/components/kit";
 import { ScrollArea } from "@/components/ui/scrollarea";
 
 interface Avaliacao {
@@ -203,7 +203,7 @@ export function AtribuirAvaliacaoDialog({
 
         <div className="space-y-4">
           {/* Informações da avaliação */}
-          <div className="p-4 border rounded-lg bg-muted/30">
+          <div className="rounded-2xl bg-surface-muted p-4">
             <div className="font-medium">{avaliacao.nome}</div>
             <div className="text-sm text-muted-foreground mt-1">
               <Badge variant="outline">{traduzirTipo(avaliacao.tipo)}</Badge>
@@ -218,15 +218,11 @@ export function AtribuirAvaliacaoDialog({
 
           {/* Busca de pacientes */}
           <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
+            <SearchField
                 placeholder="Buscar por nome ou CPF..."
-                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
 
             {selectedPacientes.length > 0 && (
               <div className="text-sm text-muted-foreground">

@@ -24,7 +24,7 @@ import {
 import {
   Users,
   Search,
-  Filter,
+  SlidersHorizontal,
   Calendar,
   Clock,
   Loader2,
@@ -36,7 +36,7 @@ import {
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { agruparPorFilial } from "@/lib/agrupar-filial";
-import { PageHeader, Panel, StatCard, PersonAvatar } from "@/components/kit";
+import { ActionButton, PageHeader, Panel, PersonAvatar, SearchField, StatCard, StatusPill } from "@/components/kit";
 
 interface Professional {
   id: string;
@@ -101,56 +101,50 @@ function TerapeutasTable({
             </TableCell>
             <TableCell>
               {professional.specialty ? (
-                <Badge
-                  variant="outline"
-                  className="bg-brand-soft text-brand"
-                >
-                  {professional.specialty}
-                </Badge>
+                <StatusPill tom="info">{professional.specialty}</StatusPill>
               ) : (
-                <Badge variant="secondary">Não classificado</Badge>
+                <StatusPill tom="neutral">Não classificado</StatusPill>
               )}
             </TableCell>
-            <TableCell className="font-mono text-sm">
-              {formatCPF(professional.cpf)}
+            <TableCell>
+              <span className="tabular text-[0.82rem]">{formatCPF(professional.cpf)}</span>
             </TableCell>
             <TableCell>
-              <div className="text-sm">
+              <div className="text-[0.82rem] leading-snug">
                 {professional.phone && (
-                  <div>{professional.phone}</div>
+                  <p className="tabular text-ink-2">{professional.phone}</p>
                 )}
                 {professional.email && (
-                  <div className="text-muted-foreground">
+                  <p className="max-w-[14rem] truncate text-ink-3" title={professional.email}>
                     {professional.email}
-                  </div>
+                  </p>
                 )}
                 {!professional.phone && !professional.email && (
-                  <span className="text-muted-foreground">-</span>
+                  <span className="text-ink-4">-</span>
                 )}
               </div>
             </TableCell>
             <TableCell>
-              <div className="text-sm">
-                {professional.professionalRegistration ? (
-                  <span className="font-mono">
-                    {professional.professionalRegistration}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">-</span>
-                )}
-              </div>
+              {professional.professionalRegistration ? (
+                <span className="tabular text-[0.82rem]">
+                  {professional.professionalRegistration}
+                </span>
+              ) : (
+                <span className="text-ink-4">-</span>
+              )}
             </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
-              {formatDate(professional.createdAt)}
+            <TableCell>
+              <span className="tabular text-[0.82rem] text-ink-3">{formatDate(professional.createdAt)}</span>
             </TableCell>
             <TableCell className="text-right">
-              <div className="flex justify-end space-x-2">
-                <Button size="sm" variant="outline" asChild>
-                  <Link href={`/terapeutas/${professional.id}`}>
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Detalhes
-                  </Link>
-                </Button>
+              <div className="flex flex-nowrap items-center justify-end gap-1.5">
+                <Link
+                  href={`/terapeutas/${professional.id}`}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-rim bg-surface px-3.5 text-[0.8rem] font-medium whitespace-nowrap text-ink transition-colors hover:bg-surface-sunken"
+                >
+                  <ExternalLink className="size-3.5" />
+                  Detalhes
+                </Link>
                 <EditarTerapeutaForm
                   professional={professional}
                   onSuccess={onSuccess}
@@ -296,7 +290,7 @@ function TerapeutasPageContent() {
           />
 
           <StatCard
-            tom="lavender"
+            tom="mint"
             icone={<Users />}
             rotulo="Ativos"
             valor={loading ? "..." : professionals.length}
@@ -304,7 +298,7 @@ function TerapeutasPageContent() {
           />
 
           <StatCard
-            tom="mint"
+            tom="lavender"
             icone={<Stethoscope />}
             rotulo="Especialidades"
             valor={loading ? "..." : especialidadeStats.length}
@@ -321,16 +315,18 @@ function TerapeutasPageContent() {
 
         {/* Estatísticas por Especialidade */}
         {!loading && especialidadeStats.length > 0 && (
-          <Panel icone={<GraduationCap />} titulo="Distribuição por Especialidade">
+          <Panel icone={<Stethoscope />} titulo="Distribuição por Especialidade">
 
-            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
               {especialidadeStats.map((stat) => (
                 <div
                   key={stat.name}
-                  className="flex items-center justify-between gap-3 rounded-2xl bg-surface-muted p-3.5"
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-surface-muted px-4 py-3"
                 >
-                  <span className="text-sm font-medium">{stat.name}</span>
-                  <Badge variant="secondary">{stat.count}</Badge>
+                  <span className="truncate text-sm font-medium text-ink">{stat.name}</span>
+                  <span className="tabular grid min-w-7 place-items-center rounded-full bg-surface px-2 py-0.5 text-[0.8rem] font-semibold text-brand shadow-[0_1px_2px_rgba(15,27,61,0.06)]">
+                    {stat.count}
+                  </span>
                 </div>
               ))}
             </div>
@@ -338,27 +334,33 @@ function TerapeutasPageContent() {
         )}
 
         {/* Filtros e Busca */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-3">
           <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
+            <SearchField
                 placeholder="Buscar por nome, CPF, especialidade ou email..."
-                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
           </div>
-          <Button variant="outline" disabled>
-            <Filter className="mr-2 h-4 w-4" />
+          <ActionButton variant="ghost" disabled>
+            <SlidersHorizontal />
             Filtros
-          </Button>
+          </ActionButton>
         </div>
 
         {/* Tabela de Terapeutas */}
         <Panel
-          titulo={<>Lista de Profissionais {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredProfessionals.length} de {professionals.length} </Badge> )}</>}
+          icone={<Users />}
+          titulo={
+            <span className="inline-flex items-center gap-2">
+              Lista de Profissionais
+              {!loading && (
+                <span className="tabular rounded-full bg-surface-sunken px-2 py-0.5 text-[0.72rem] font-medium text-ink-3">
+                  {filteredProfessionals.length} de {professionals.length}
+                </span>
+              )}
+            </span>
+          }
         >
 
           {error && (
@@ -402,6 +404,7 @@ function TerapeutasPageContent() {
             ) : (
               <Accordion
                 type="multiple"
+                className="space-y-3"
                 defaultValue={agruparPorFilial(
                   filteredProfessionals,
                   (p) => filiais.find((f) => f.id === p.filialId) ?? null
@@ -411,18 +414,26 @@ function TerapeutasPageContent() {
                   filteredProfessionals,
                   (p) => filiais.find((f) => f.id === p.filialId) ?? null
                 ).map((grupo) => (
-                  <AccordionItem key={grupo.filial?.id ?? "_sem_filial"} value={grupo.filial?.id ?? "_sem_filial"}>
-                    <AccordionTrigger>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: grupo.filial?.cor ?? "#94a3b8" }}
+                  <AccordionItem
+                    key={grupo.filial?.id ?? "_sem_filial"}
+                    value={grupo.filial?.id ?? "_sem_filial"}
+                    className="rounded-2xl border border-hairline px-3 last:border-b md:px-4"
+                  >
+                    <AccordionTrigger className="py-3.5 hover:no-underline">
+                      <span className="flex items-center gap-2.5">
+                        <span
+                          className="size-2.5 shrink-0 rounded-full bg-ink-4"
+                          style={grupo.filial?.cor ? { backgroundColor: grupo.filial.cor } : undefined}
                         />
-                        <span className="font-medium">{grupo.filial?.nome ?? "Sem filial"}</span>
-                        <Badge variant="secondary" className="text-xs">{grupo.items.length}</Badge>
-                      </div>
+                        <span className="text-[0.95rem] font-semibold text-ink">
+                          {grupo.filial?.nome ?? "Sem filial"}
+                        </span>
+                        <span className="tabular rounded-full bg-surface-sunken px-2 py-0.5 text-xs font-medium text-ink-3">
+                          {grupo.items.length}
+                        </span>
+                      </span>
                     </AccordionTrigger>
-                    <AccordionContent>
+                    <AccordionContent className="pt-0 pb-4">
                       <TerapeutasTable
                         professionals={grupo.items}
                         onSuccess={fetchProfessionals}

@@ -140,25 +140,21 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                 )}
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Instruções</label>
-                  <p className="text-2xl font-bold">{atividade.instrucoes?.length || 0}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Pontuações</label>
-                  <p className="text-2xl font-bold">{atividade.pontuacoes?.length || 0}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Atribuída a</label>
-                  <p className="text-2xl font-bold">{atividade._count?.atribuicoes || 0}</p>
-                  <p className="text-xs text-muted-foreground">pacientes</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Sessões</label>
-                  <p className="text-2xl font-bold">{atividade._count?.sessoes || 0}</p>
-                  <p className="text-xs text-muted-foreground">realizadas</p>
-                </div>
+              <div className="grid grid-cols-2 gap-4 rounded-2xl bg-surface-muted p-4 sm:grid-cols-4">
+                {[
+                  { rotulo: "Instruções", valor: atividade.instrucoes?.length || 0 },
+                  { rotulo: "Pontuações", valor: atividade.pontuacoes?.length || 0 },
+                  { rotulo: "Atribuída a", valor: atividade._count?.atribuicoes || 0, nota: "pacientes" },
+                  { rotulo: "Sessões", valor: atividade._count?.sessoes || 0, nota: "realizadas" },
+                ].map(({ rotulo, valor, nota }) => (
+                  <div key={rotulo}>
+                    <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
+                      {rotulo}
+                    </p>
+                    <p className="tabular mt-1 text-2xl font-bold text-ink">{valor}</p>
+                    {nota && <p className="text-xs text-ink-3">{nota}</p>}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -172,7 +168,7 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                   {atividade.pontuacoes.map((pontuacao) => (
                     <div
                       key={pontuacao.id}
-                      className="p-3 border rounded-lg bg-muted/30"
+                      className="rounded-2xl bg-surface-muted p-3"
                     >
                       <div className="flex items-center gap-3">
                         <Badge variant="secondary" className="shrink-0">
@@ -199,7 +195,7 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
             {(atividade.como_aplicar || atividade.observacao || atividade.procedimento_correcao || atividade.materiais_utilizados) && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">Aplicação</label>
-                <div className="p-3 border rounded-lg bg-muted/30 space-y-2 text-sm">
+                <div className="rounded-2xl bg-surface-muted p-3 space-y-2 text-sm">
                   {atividade.como_aplicar && (
                     <p><strong>Como aplicar:</strong> {atividade.como_aplicar}</p>
                   )}
@@ -226,7 +222,7 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                   {atividade.instrucoes.map((instrucao) => (
                     <div
                       key={instrucao.id}
-                      className="p-3 border rounded-lg bg-muted/30"
+                      className="rounded-2xl bg-surface-muted p-3"
                     >
                       <div className="flex items-start gap-3">
                         <Badge variant="secondary" className="shrink-0 mt-0.5">

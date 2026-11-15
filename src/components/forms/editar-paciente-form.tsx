@@ -427,8 +427,8 @@ export function EditarPacienteForm({
                             <Button
                               variant="outline"
                               className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
+                                "h-11 w-full justify-between rounded-xl border-hairline bg-surface-muted px-3.5 text-left font-normal text-ink shadow-none hover:bg-surface-sunken",
+                                !field.value && "text-ink-4"
                               )}
                             >
                               {field.value ? (
@@ -820,7 +820,7 @@ export function EditarPacienteForm({
               )}
 
               {responsaveisArray.fields.map((item, index) => (
-                <div key={item.id} className="p-4 border rounded-lg space-y-4 relative">
+                <div key={item.id} className="rounded-2xl bg-surface-muted p-4 space-y-4 relative">
                   <Button
                     type="button"
                     variant="ghost"
@@ -1004,7 +1004,7 @@ export function EditarPacienteForm({
               )}
 
               {conveniosArray.fields.map((item, index) => (
-                <div key={item.id} className="p-4 border rounded-lg space-y-4 relative">
+                <div key={item.id} className="rounded-2xl bg-surface-muted p-4 space-y-4 relative">
                   <Button
                     type="button"
                     variant="ghost"

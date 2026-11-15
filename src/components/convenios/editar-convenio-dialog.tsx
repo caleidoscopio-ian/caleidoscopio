@@ -138,7 +138,7 @@ export function EditarConvenioDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Dados Básicos */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              <h3 className="mb-3 text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Dados Básicos
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -189,7 +189,7 @@ export function EditarConvenioDialog({
                       <FormLabel>Tipo *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -211,7 +211,7 @@ export function EditarConvenioDialog({
                       <FormLabel>Status</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -243,7 +243,7 @@ export function EditarConvenioDialog({
 
             {/* Contato */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              <h3 className="mb-3 text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Contato
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -304,7 +304,7 @@ export function EditarConvenioDialog({
 
             {/* Config Financeira */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              <h3 className="mb-3 text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Configurações Financeiras
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -359,7 +359,7 @@ export function EditarConvenioDialog({
                     <FormLabel>Filial</FormLabel>
                     <Select onValueChange={(v) => field.onChange(v === "_global" ? null : v)} value={field.value ?? "_global"}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Todas as filiais (global)" />
                         </SelectTrigger>
                       </FormControl>

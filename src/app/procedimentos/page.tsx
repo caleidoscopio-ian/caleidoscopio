@@ -9,7 +9,6 @@ import { MainLayout } from "@/components/main-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageLoader } from "@/components/page-loader";
@@ -21,12 +20,19 @@ import { formatBRL, formatDuracao } from "@/types/procedimento";
 import type { Pacote } from "@/types/pacote";
 import { TIPO_PACOTE_LABELS, STATUS_PACOTE_LABELS } from "@/types/pacote";
 import * as LucideIcons from "lucide-react";
-import {
-  Search, Plus, Pencil, Trash2, Package2, Activity,
+import { Plus, Pencil, Trash2, Package2, Activity,
   ExternalLink, AlertCircle,
 } from "lucide-react";
 import { LucideProps } from "lucide-react";
-import { PageHeader, StatCard } from "@/components/kit";
+import {
+  PageHeader,
+  StatCard,
+  SearchField,
+  Panel,
+  ActionButton,
+  StatusPill,
+  EstadoVazio,
+} from "@/components/kit";
 
 function DynIcon({ name, ...props }: { name: string } & LucideProps) {
   const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<LucideProps>>)[name];
@@ -37,10 +43,10 @@ function ProcColorChip({ cor, icone }: { cor?: string | null; icone?: string | n
   return (
     <span className="flex items-center gap-1.5">
       <span
-        className="inline-flex h-5 w-5 rounded items-center justify-center shrink-0"
-        style={{ backgroundColor: cor ?? "#e2e8f0" }}
+        className="grid size-10 shrink-0 place-items-center rounded-[0.85rem]"
+        style={{ backgroundColor: cor ?? "var(--surface-sunken)" }}
       >
-        {icone && <DynIcon name={icone} className="h-3 w-3 text-white" />}
+        {icone && <DynIcon name={icone} className="size-[19px] text-white" />}
       </span>
     </span>
   );
@@ -135,46 +141,51 @@ export default function ProcedimentosPage() {
           <StatCard tom="peach" rotulo="Pacotes Ativos" valor={pacotesAtivos} />
         </div>
 
-        {/* Busca */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, código ou especialidade..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-
-        {/* Tabs */}
+        {/* Abas e busca na mesma linha, como no v2 */}
         <Tabs defaultValue="procedimentos">
-          <TabsList>
-            <TabsTrigger value="procedimentos">
-              Procedimentos
-              <Badge variant="secondary" className="ml-2">{filteredProc.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="pacotes">
-              Pacotes
-              <Badge variant="secondary" className="ml-2">{filteredPac.length}</Badge>
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <TabsList>
+              <TabsTrigger value="procedimentos">
+                Procedimentos
+                <StatusPill tom="neutral">{filteredProc.length}</StatusPill>
+              </TabsTrigger>
+              <TabsTrigger value="pacotes">
+                Pacotes
+                <StatusPill tom="neutral">{filteredPac.length}</StatusPill>
+              </TabsTrigger>
+            </TabsList>
+            <SearchField
+              placeholder="Buscar por nome, código ou especialidade..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="lg:w-[22rem]"
+            />
+          </div>
 
           {/* ── Tab: Procedimentos ── */}
           <TabsContent value="procedimentos">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between py-3">
-                <CardTitle className="text-base">Lista de Procedimentos</CardTitle>
-                <Button size="sm" onClick={() => setProcForm({ open: true, proc: null })}>
-                  <Plus className="h-4 w-4 mr-1" /> Novo Procedimento
-                </Button>
-              </CardHeader>
-              <CardContent>
+            <Panel
+              icone={<Activity />}
+              titulo="Lista de Procedimentos"
+              subtitulo={`${filteredProc.length} ${filteredProc.length === 1 ? "procedimento" : "procedimentos"}`}
+              acoes={
+                <ActionButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setProcForm({ open: true, proc: null })}
+                >
+                  <Plus />
+                  Novo Procedimento
+                </ActionButton>
+              }
+            >
+              <div>
                 {filteredProc.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Activity className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">Nenhum procedimento encontrado.</p>
-                    <p className="text-sm mt-1">Clique em &ldquo;Novo Procedimento&rdquo; para começar.</p>
-                  </div>
+                  <EstadoVazio
+                    icone={<Activity />}
+                    titulo="Nenhum procedimento encontrado"
+                    texto="Clique em “Novo Procedimento” para começar."
+                  />
                 ) : (
                   <Table>
                     <TableHeader>
@@ -192,31 +203,43 @@ export default function ProcedimentosPage() {
                       {filteredProc.map((proc) => (
                         <TableRow key={proc.id}>
                           <TableCell><ProcColorChip cor={proc.cor} icone={proc.icone} /></TableCell>
-                          <TableCell className="font-medium">{proc.nome}</TableCell>
-                          <TableCell className="font-mono text-xs">{proc.codigo || "—"}</TableCell>
                           <TableCell>
-                            {proc.especialidade
-                              ? <Badge variant="outline" className="text-xs">{proc.especialidade}</Badge>
-                              : <span className="text-muted-foreground text-xs">—</span>}
+                            <p className="truncate font-semibold text-ink">{proc.nome}</p>
                           </TableCell>
-                          <TableCell className="text-sm whitespace-nowrap">
-                            {proc.duracao_padrao
-                              ? formatDuracao(proc.duracao_padrao)
-                              : <span className="text-muted-foreground text-xs">a definir</span>}
+                          <TableCell>
+                            <span className="tabular text-[0.8rem] text-ink-3">
+                              {proc.codigo || "—"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {proc.especialidade ? (
+                              <StatusPill tom="info">{proc.especialidade}</StatusPill>
+                            ) : (
+                              <span className="text-ink-4">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {proc.duracao_padrao ? (
+                              <span className="tabular text-[0.82rem]">
+                                {formatDuracao(proc.duracao_padrao)}
+                              </span>
+                            ) : (
+                              <span className="text-[0.82rem] text-ink-4">a definir</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             {proc.requer_autorizacao && (
-                              <Badge variant="secondary" className="text-xs gap-1">
-                                <AlertCircle className="h-3 w-3" /> Sim
-                              </Badge>
+                              <StatusPill tom="warning">
+                                <AlertCircle className="size-3" aria-hidden /> Sim
+                              </StatusPill>
                             )}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
+                              <Button size="icon" variant="ghost" className="size-9" asChild>
                                 <Link href={`/procedimentos/${proc.id}`}><ExternalLink className="h-3 w-3" /></Link>
                               </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setProcForm({ open: true, proc })}>
+                              <Button size="icon" variant="ghost" className="size-9" onClick={() => setProcForm({ open: true, proc })}>
                                 <Pencil className="h-3 w-3" />
                               </Button>
                               <ExcluirProcedimentoDialog procedimento={proc} onSuccess={fetchAll} />
@@ -227,8 +250,8 @@ export default function ProcedimentosPage() {
                     </TableBody>
                   </Table>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </Panel>
           </TabsContent>
 
           {/* ── Tab: Pacotes ── */}
@@ -287,13 +310,13 @@ export default function ProcedimentosPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Button size="icon" variant="ghost" className="h-7 w-7" asChild>
+                              <Button size="icon" variant="ghost" className="size-9" asChild>
                                 <Link href={`/pacotes/${pac.id}`}><ExternalLink className="h-3 w-3" /></Link>
                               </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setPacoteForm({ open: true, pacote: pac })} disabled={!pac.ativo}>
+                              <Button size="icon" variant="ghost" className="size-9" onClick={() => setPacoteForm({ open: true, pacote: pac })} disabled={!pac.ativo}>
                                 <Pencil className="h-3 w-3" />
                               </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDesativarPacote(pac.id)} disabled={!pac.ativo}>
+                              <Button size="icon" variant="ghost" className="size-9 text-destructive hover:text-destructive" onClick={() => handleDesativarPacote(pac.id)} disabled={!pac.ativo}>
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </div>

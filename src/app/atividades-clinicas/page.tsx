@@ -10,7 +10,6 @@ import { AtribuirAtividadeDialog } from "@/components/forms/atribuir-atividade-d
 import { Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -22,7 +21,13 @@ import {
 import { ClipboardList, Search, Plus, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { PageHeader, Panel, StatCard } from "@/components/kit";
+import {
+  PageHeader,
+  Panel,
+  SearchField,
+  StatCard,
+  StatusPill,
+} from "@/components/kit";
 
 interface Instrucao {
   id: string;
@@ -192,21 +197,25 @@ function AtividadesClinicasPageContent() {
         {/* Busca */}
         <div className="flex items-center space-x-4">
           <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
+            <SearchField
                 placeholder="Buscar por nome, protocolo, habilidade ou tipo de ensino..."
-                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
           </div>
         </div>
 
         {/* Tabela de Atividades */}
         <Panel
-          titulo={<>Lista de Atividades {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredAtividades.length} de {atividades.length} </Badge> )}</>}
+          icone={<ClipboardList />}
+            titulo="Lista de Atividades"
+            acoes={
+              !loading && (
+                <StatusPill tom="neutral">
+                  {filteredAtividades.length} de {atividades.length}
+                </StatusPill>
+              )
+            }
           subtitulo="Atividades e protocolos cadastrados na clínica"
         >
 
@@ -262,7 +271,7 @@ function AtividadesClinicasPageContent() {
               <TableBody>
                 {filteredAtividades.map((atividade) => (
                   <TableRow key={atividade.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-semibold text-ink">
                       <div>
                         <div>{atividade.nome}</div>
                         {atividade.marco_codificacao && (

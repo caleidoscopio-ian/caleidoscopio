@@ -283,7 +283,7 @@ export function EditarAtividadeForm({
                 {instrucoes.map((instrucao, index) => (
                   <div
                     key={index}
-                    className="p-4 border rounded-lg bg-muted/30 space-y-3"
+                    className="rounded-2xl bg-surface-muted p-4 space-y-3"
                   >
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{index + 1}</Badge>

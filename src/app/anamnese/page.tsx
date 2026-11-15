@@ -7,7 +7,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -30,7 +29,14 @@ import {
 import { idadeEmAnos } from "@/lib/datas-fuso";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { PageHeader, Panel, StatCard } from "@/components/kit";
+import {
+  PageHeader,
+  Panel,
+  PersonAvatar,
+  SearchField,
+  StatCard,
+  StatusPill,
+} from "@/components/kit";
 
 interface Anamnese {
   id: string;
@@ -255,21 +261,26 @@ export default function AnamnesesPage() {
           {/* Busca */}
           <div className="flex items-center space-x-4">
             <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome do paciente..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+              <SearchField
+                placeholder="Buscar por nome do paciente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
 
           {/* Tabela de Anamneses */}
           <Panel
-            titulo={<>Lista de Anamneses {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredAnamneses.length} de {anamneses.length} </Badge> )}</>}
+            icone={<FileText />}
+            titulo="Lista de Anamneses"
+            subtitulo="Anamneses registradas na clínica"
+            acoes={
+              !loading && (
+                <StatusPill tom="neutral">
+                  {filteredAnamneses.length} de {anamneses.length}
+                </StatusPill>
+              )
+            }
           >
 
             {error && (
@@ -321,9 +332,12 @@ export default function AnamnesesPage() {
                 <TableBody>
                   {filteredAnamneses.map((anamnese) => (
                     <TableRow key={anamnese.id}>
-                      <TableCell className="font-medium">
-                        {anamnese.paciente.nome}
-                      </TableCell>
+                      <TableCell>
+  <div className="flex min-w-0 items-center gap-2.5">
+    <PersonAvatar nome={anamnese.paciente.nome} tamanho={32} />
+    <span className="truncate font-semibold text-ink">{anamnese.paciente.nome}</span>
+  </div>
+</TableCell>
                       <TableCell>
                         {calculateAge(anamnese.paciente.nascimento)} anos
                       </TableCell>

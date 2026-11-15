@@ -76,7 +76,7 @@ export function ExcluirConvenioDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-lg border p-4 bg-muted/50">
+        <div className="rounded-2xl bg-surface-muted p-4">
           <p className="font-medium">{convenio.razao_social}</p>
           {convenio.nome_fantasia && (
             <p className="text-sm text-muted-foreground">{convenio.nome_fantasia}</p>

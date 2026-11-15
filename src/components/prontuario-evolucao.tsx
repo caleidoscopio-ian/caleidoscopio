@@ -197,7 +197,7 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
     switch (status) {
       case "FINALIZADA":
         return (
-          <Badge variant="default" className="bg-success">
+          <Badge variant="outline" className="bg-success-soft text-success-ink">
             <CheckCircle className="h-3 w-3 mr-1" />
             Finalizada
           </Badge>
@@ -320,11 +320,13 @@ export function ProntuarioEvolucao({ pacienteId }: ProntuarioEvolucaoProps) {
                   </div>
                   {media && (
                     <div className="text-right">
-                      <div className="text-2xl font-bold">
+                      <div className="tabular text-2xl font-bold text-ink">
                         {media}
                         {isAvaliacao ? "%" : ""}
                       </div>
-                      <div className="text-sm text-muted-foreground">Média</div>
+                      <div className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
+                        Média
+                      </div>
                     </div>
                   )}
                 </div>

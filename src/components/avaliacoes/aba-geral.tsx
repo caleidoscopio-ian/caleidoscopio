@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -14,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Panel } from "@/components/kit";
+import { ClipboardCheck } from "lucide-react";
+import { ActionButton, Panel } from "@/components/kit";
 
 interface AbaGeralProps {
   dados: {
@@ -66,7 +66,7 @@ export function AbaGeral({ dados, onChange, avaliacaoId }: AbaGeralProps) {
   };
 
   return (
-    <Panel titulo="Informações Gerais" subtitulo="Defina o tipo e nome da avaliação">
+    <Panel icone={<ClipboardCheck />} titulo="Informações Gerais" subtitulo="Defina o tipo e nome da avaliação">
       <div className="space-y-4">
         <div className="grid gap-4">
           <div className="grid gap-2">
@@ -91,7 +91,7 @@ export function AbaGeral({ dados, onChange, avaliacaoId }: AbaGeralProps) {
               </SelectContent>
             </Select>
             {!!avaliacaoId && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[0.75rem] text-ink-3">
                 O tipo não pode ser alterado após a criação
               </p>
             )}
@@ -124,13 +124,15 @@ export function AbaGeral({ dados, onChange, avaliacaoId }: AbaGeralProps) {
         </div>
 
         {avaliacaoId && (
-          <Button onClick={handleSalvar} disabled={saving} className="w-full">
-            {saving ? "Salvando..." : "Salvar Alterações"}
-          </Button>
+          <div className="flex justify-end">
+            <ActionButton onClick={handleSalvar} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar Alterações"}
+            </ActionButton>
+          </div>
         )}
 
         {avaliacaoId && (
-          <div className="bg-brand-soft border border-brand-soft text-brand px-4 py-3 rounded">
+          <div className="rounded-2xl bg-brand-soft px-4 py-3 text-brand">
             <p className="text-sm">
               ✓ Avaliação salva! Agora você pode adicionar Níveis, Habilidades,
               Pontuações e Tarefas usando as abas acima.

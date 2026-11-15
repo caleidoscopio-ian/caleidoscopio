@@ -19,12 +19,12 @@ export const STATUS_AGENDAMENTO_LABELS: Record<StatusAgendamento, string> = {
 }
 
 export const STATUS_AGENDAMENTO_BADGE: Record<StatusAgendamento, string> = {
-  [StatusAgendamento.AGENDADO]:       'bg-blue-50 border-blue-300 text-blue-800',
-  [StatusAgendamento.CONFIRMADO]:     'bg-green-50 border-green-300 text-green-800',
-  [StatusAgendamento.EM_ATENDIMENTO]: 'bg-amber-50 border-amber-300 text-amber-800',
-  [StatusAgendamento.ATENDIDO]:       'bg-purple-50 border-purple-300 text-purple-800',
-  [StatusAgendamento.FALTOU]:         'bg-gray-50 border-gray-300 text-gray-800',
-  [StatusAgendamento.CANCELADO]:      'bg-red-50 border-red-300 text-red-800',
+  [StatusAgendamento.AGENDADO]:       'bg-info-soft text-info-ink',
+  [StatusAgendamento.CONFIRMADO]:     'bg-success-soft text-success-ink',
+  [StatusAgendamento.EM_ATENDIMENTO]: 'bg-warning-soft text-warning-ink',
+  [StatusAgendamento.ATENDIDO]:       'bg-violet-soft text-violet-ink',
+  [StatusAgendamento.FALTOU]:         'bg-surface-sunken text-ink-3',
+  [StatusAgendamento.CANCELADO]:      'bg-danger-soft text-danger-ink',
 }
 
 export interface Agendamento {

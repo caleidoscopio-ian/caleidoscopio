@@ -6,7 +6,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
@@ -19,7 +18,7 @@ import { ExcluirFilialDialog } from "@/components/filiais/excluir-filial-dialog"
 import { useFilial } from "@/hooks/useFilial";
 import { formatCNPJ } from "@/lib/masks";
 import type { Filial } from "@/types/filial";
-import { PageHeader, Panel, StatCard } from "@/components/kit";
+import { PageHeader, Panel, StatCard, SearchField } from "@/components/kit";
 
 export default function FiliaisPage() {
   const { user, isAuthenticated } = useAuth();
@@ -121,15 +120,12 @@ export default function FiliaisPage() {
           </div>
 
           {/* Busca */}
-          <div className="relative max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome, cidade ou endereço..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchField
+          placeholder="Buscar por nome, cidade ou endereço..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
 
           {/* Tabela */}
           <Panel
@@ -193,7 +189,7 @@ export default function FiliaisPage() {
                     const enderecoExibicao = enderecoEstruturado || filial.endereco;
                     return (
                     <TableRow key={filial.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-semibold text-ink">
                         <div className="flex items-center gap-2">
                           <div
                             className="w-3 h-3 rounded-full shrink-0"

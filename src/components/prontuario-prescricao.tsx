@@ -277,12 +277,16 @@ export function ProntuarioPrescricao({
       const dataFim = new Date(prescricao.data_fim);
       const hoje = new Date();
       if (dataFim < hoje) {
-        return <Badge variant="destructive">Expirada</Badge>;
+        return (
+          <Badge variant="outline" className="bg-danger-soft text-danger-ink">
+            Expirada
+          </Badge>
+        );
       }
     }
 
     return (
-      <Badge variant="default" className="bg-success">
+      <Badge variant="outline" className="bg-success-soft text-success-ink">
         Em uso
       </Badge>
     );

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { ActionButton } from "@/components/kit";
 import {
   Dialog,
   DialogContent,
@@ -90,10 +91,10 @@ export function ConvenioHistoricoNota({ convenioId, onSuccess }: ConvenioHistori
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Plus className="h-4 w-4 mr-2" />
+        <ActionButton variant="secondary" size="sm">
+          <Plus />
           Adicionar Nota
-        </Button>
+        </ActionButton>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

@@ -46,6 +46,12 @@ src/app/design-system/             guia visual vivo
 | 10 | Agenda recomposta: barra de controle e abas dentro de um painel só, grade com avatar e faixa |
 | 11 | Abas no primitivo (17 telas de uma vez), cabeçalho com voltar na linha da trilha, ficha de dados do prontuário |
 | 12 | Varredura final: `Card` restantes, estados vazios, KPIs disfarçados e a data civil |
+| 13 | Taxa de Ocupação: tabela na anatomia do v2 (painel, faixa, avatar, barra, ações em círculo) |
+| 14 | Convênios no padrão + varredura automática das telas fora do desenho (`tools/varrer-design-v2.mjs`) |
+| 15 | Varredura resolvida: de 74 para 18 marcadores, com as três telas de peso alto |
+| 16 | Varredura zerada e Avaliações conferida à vista — o que o scanner não vê |
+| 17 | Anatomia das tabelas: scanner próprio, peso do nome, avatar e chip do painel |
+| 18 | Histórico de Atendimentos + as cores cruas que sobreviveram em arquivos `.ts` |
 
 ## Decisões
 
@@ -342,6 +348,270 @@ dados interceptados: **19 passaram** e a vigésima (`/curriculum/novo`) parou em
 "Acesso Negado" por falta do recurso na lista de permissões do próprio teste,
 não por erro de tela.
 
+## Fase 13 — a última tabela fora do padrão
+
+`/taxa-ocupacao` tinha ficado para trás: a tabela morava num
+`div.rounded-md.border` com um `<h2>` "PROFISSIONAIS" em microetiqueta solta
+por cima, sem painel. O primitivo já dava as faixas, mas a moldura antiga em
+volta e a falta de cabeçalho denunciavam a tela.
+
+| Peça | Antes | Agora (v2) |
+|---|---|---|
+| moldura | `rounded-md border` + `<h2>` solto | `Panel` com ícone, título e subtítulo |
+| nome | texto simples | `PersonAvatar` 36px + nome semibold + especialidade |
+| barra de taxa | trilho `bg-muted`, 120px | `bg-surface-sunken`, `min-w-[9rem]`, número de largura fixa |
+| faltas | número em `warning-ink` | `--kpi-peach-ink` + "(N canc.)" em `ink-3` |
+| ações | `Button ghost` quadrado | círculo de 32px que só acende no hover |
+| horas | sempre visíveis | `hidden md:table-cell` |
+| "grade não configurada" | `Badge` com borda | `StatusPill` âmbar |
+
+Uma divergência consciente: **o v2 pinta o número da taxa com a cor cheia da
+barra** (`text-success` em cima de `52%`). Aqui o número usa o token `-ink`.
+É a mesma regra dos status — cor cheia como texto reprova no contraste.
+
+## Fase 14 — convênios, e um mapa do que falta
+
+Convênios repetia a mesma lista de desvios de `/taxa-ocupacao`: quatro `Panel`
+com número dentro no lugar da fileira pastel, busca solta acima da tabela,
+painel sem cabeçalho, status em pílula sólida azul e ações sem moldura. Tudo
+corrigido contra o clone — inclusive a busca, que no v2 mora **no cabeçalho do
+painel** (e desce para o corpo no telefone, onde espremeria o título).
+
+### A varredura
+
+`tools/varrer-design-v2.mjs` procura os marcadores que, nas telas já
+corrigidas, sempre apareceram juntos:
+
+| Marcador | Peso |
+|---|---|
+| moldura `rounded-md/lg border` em volta de tabela | 3 |
+| `Card` + `CardContent p-0` segurando tabela | 3 |
+| KPI escrito à mão (`text-2xl/3xl font-bold`) | 3 |
+| status em pílula sólida | 2 |
+| ação de linha como `Button ghost size=icon` | 2 |
+| busca solta fora do painel | 2 |
+| `<h2>` em microetiqueta maiúscula solta | 2 |
+
+**Não é lint — é um mapa de onde olhar.** O marcador de KPI, por exemplo, dá
+falso positivo no resumo de desempenho do histórico de sessões: ali os números
+vivem num bloco denso de quatro colunas dentro de um diálogo, e `StatCard`
+(13rem de altura) estragaria. Foi o que aconteceu ao investigar os 8 achados
+daquela tela — viraram ajuste de moldura, não troca de componente.
+
+Corrigido em lote nesta passada:
+
+- **ação de linha de 28px → 36px** em 7 arquivos. A forma já estava certa (o
+  `Button` do kit é redondo desde o ajuste dos primitivos); o que destoava era
+  o alvo de toque pequeno demais.
+- **molduras `rounded-lg border`** dos blocos de resumo do histórico de sessões.
+
+Restam **39 arquivos com 68 marcadores**, a maioria de peso 2 (detalhe, não
+tela inteira). Os de peso alto: `historico-sessoes`, `evolucao` e
+`visualizar-atividade-dialog`.
+
+## Fase 15 — a varredura levada até o fim
+
+De **74 marcadores para 18**. O que mudou, por tipo:
+
+| Correção | Onde |
+|---|---|
+| Filtros soltos entram no painel que filtram | histórico de sessões (busca + 2 selects), evolução |
+| Ação de linha 44px → 36px | 10 arquivos |
+| Pílula sólida → suave | prescrição, anamnese, encaminhamento, relatórios, diagnóstico, ficha do profissional |
+| Número de resumo ganha `tabular` + rótulo em microetiqueta | histórico de sessões (8), diálogos de atividade, currículo, paciente e profissional |
+| Moldura `rounded-lg border` → raio e borda de token | aviso de sincronia da evolução, resumos do histórico |
+
+### O marcador não é o remédio
+
+Três vezes o scanner apontou "KPI escrito à mão" e a resposta **não** foi
+`StatCard`: nos diálogos e nos resumos de sessão os números vivem em blocos
+densos de quatro colunas, e um cartão de 13rem estouraria a tela. O ajuste
+certo foi tipográfico — `tabular` no número, microetiqueta no rótulo.
+
+Por isso o scanner agora ignora quem já tem `tabular` (número de resumo
+tratado) e quem já está em `size-9` (ação de linha no tamanho do v2): o que
+sobra é o que realmente falta olhar.
+
+### O que restou
+
+18 marcadores, sendo **16 de "busca fora do painel"** em telas de listagem
+(anamnese, atividades clínicas, avaliações, pacientes, salas, terapeutas,
+usuários…). São todas o mesmo gesto — mover o campo para o cabeçalho do
+`Panel`, como em convênios — e cada uma precisa que a tabela já esteja num
+painel com cabeçalho, o que nem todas têm.
+
+### Verificação
+
+Varredura de renderização em 24 telas: **20 passaram**. As quatro restantes
+(`taxa-ocupacao`, `historico-atendimentos`, `glosas`, `permissoes`) param no
+mock genérico do teste, que devolve `data: []` onde a página espera um objeto
+`resumo` — é a mesma falha de antes das mudanças, não regressão.
+
+## Fase 16 — zero marcadores, e o que o scanner não via
+
+Os 18 restantes caíram para **0**. Dezesseis eram o mesmo campo de busca, e a
+conferência no clone mudou o remédio:
+
+> **A posição da busca varia no v2.** Em `/convenios` ela mora no cabeçalho do
+> painel; em `/avaliacoes` fica solta acima da lista, com `max-w-xl`. O que
+> **não** varia é a forma: é sempre a pílula (`SearchField`), nunca um `Input`
+> retangular com a lupa posicionada por cima.
+
+Então a troca foi de forma, mantendo a posição de cada tela — 17 campos em 16
+arquivos, a maioria por codemod e quatro à mão (tinham `onKeyDown` ou classe
+própria no invólucro).
+
+### Avaliações: seis diferenças que nenhum marcador pegava
+
+Conferida à vista contra o clone, por pedido. O scanner acusava **um** sinal
+(a busca); os outros cinco só apareceram na comparação lado a lado:
+
+| | v2 | estava aqui |
+|---|---|---|
+| Ordem dos tons | blue · lavender · **peach** · **mint** | 3º e 4º trocados |
+| Ícones dos KPIs | quatro diferentes | a mesma prancheta nas quatro |
+| Cabeçalho do painel | chip de ícone, contagem à direita | sem chip, contagem colada no título |
+| Nome na linha | semibold `ink` | peso normal |
+| Tipo | pílula suave | **azul sólida** |
+| Data | `tabular` | texto comum |
+
+**É a lição da fase: o scanner acha padrão, não desenho.** Ordem de cores,
+escolha de ícone e hierarquia de peso tipográfico não têm assinatura no
+código — só aparecem comparando as duas telas. O caminho que funciona é o
+clone servido ao lado (`tools/clone-v2/servir.mjs`) e a captura da nossa com
+dados equivalentes.
+
+## Fase 17 — a anatomia de dentro da linha
+
+O relato foi preciso: *"nas tabelas, letras, negrito ou não, ícone e etc,
+estou achando recorrente"*. E era mesmo um padrão, não um acaso — só que o
+`varrer-design-v2.mjs` não via, porque ele procura molduras e pílulas soltas,
+não o desenho **dentro** da linha.
+
+`tools/varrer-tabelas-v2.mjs` faz isso: casa cada `<TableHead>` com a
+`<TableCell>` de mesmo índice e checa três coisas que no v2 nunca variam:
+
+1. a coluna que **identifica** a linha tem chip ou avatar **e** nome em
+   `font-semibold text-ink`;
+2. coluna categórica (tipo, especialidade, status, perfil…) é **pílula**, não
+   texto solto;
+3. o painel que segura a tabela tem **ícone e subtítulo** no cabeçalho.
+
+Primeira passada: **36 tabelas, 56 diferenças**. Depois dos codemods, 20 com 25.
+
+### Dois codemods que valeram
+
+- `tools/semibold-identidade.mjs` — o nome da linha em `font-semibold text-ink`
+  em **16 tabelas**. É a queixa literal ("negrito ou não") e some em uma passada.
+- `tools/avatar-identidade.mjs` — `PersonAvatar` na coluna de pessoa, em 5
+  tabelas. Recusou 5 por forma não reconhecida e **listou quais**, em vez de
+  tentar adivinhar.
+
+### Procedimentos: o chip estava com um terço do tamanho
+
+`ProcColorChip` desenhava um quadrado de **20px** com a cor do procedimento; no
+v2 é um chip de 40px com o raio do kit. Junto: especialidade virou pílula,
+"Autorizações" virou pílula âmbar, o painel ganhou chip e contagem, o botão
+"Novo Procedimento" passou a secundário e a busca foi para a linha das abas.
+
+### Prontuários
+
+Avatar no paciente, especialidade do profissional em pílula, tipo de
+atendimento em pílula, "Nenhum" no lugar do traço em Anexos e o subtítulo
+"Evoluções clínicas registradas por sessão" — que o v2 tem e aqui faltava.
+
+### O limite do scanner
+
+Quando a tabela tem **coluna condicional** (`{pode && <TableHead>}`), o índice
+do cabeçalho não casa com o da célula e ele acusa coluna errada — foi o que
+aconteceu em `/convenios` e `/usuarios`, onde a pílula já existia. O número
+final (25) carrega esses falsos positivos; o relatório aponta onde olhar, a
+decisão continua sendo de quem olha.
+
+## Fase 18 — a tabela solta, e cor crua escondida em `.ts`
+
+`/historico-atendimentos` era o caso que faltava no scanner: a tabela **não
+tinha painel nenhum** em volta, e o teste de cabeçalho só olhava painel que já
+existisse. Sinal novo acrescentado.
+
+Três correções:
+
+| | Antes | Agora (v2) |
+|---|---|---|
+| Resumo | cinco cartões `sm` em fila | **dinheiro em destaque** (faturado `hero` + ticket médio) e a contagem numa linha de três |
+| Tabela | solta no fundo da tela, com `<h2>` por cima | `Panel` com chip e "1528 registro(s) encontrado(s)" no subtítulo |
+| Status | pílula com borda e cor crua | pílula suave em token |
+
+### O achado: 24 cores cruas em arquivos `.ts`
+
+A migração de cores do início do módulo trocou 965 ocorrências **em `.tsx`**.
+Os mapas de status moram em `.ts` — e passaram batido:
+
+```ts
+// src/types/agendamento.ts, antes
+[StatusAgendamento.CANCELADO]: 'bg-red-50 border-red-300 text-red-800',
+```
+
+Cinco arquivos (`types/agendamento`, `types/check-in`, `types/glosa`,
+`types/conciliacao`, `lib/ocupacao`) com 24 cores que **não trocam no modo
+noite** — `bg-gray-50` continua claro no escuro. Todos passaram para os pares
+`-soft`/`-ink`.
+
+> Lição para a próxima varredura em lote: filtrar por extensão é um
+> pressuposto. Constante de estilo não vive só onde há JSX.
+
+## Fase 19 — modais e telas de detalhe (lista de 9 itens)
+
+Conferido contra fotos do v2 enviadas pelo usuário e, quando a rota existe no
+clone, contra o DOM do clone (`/iniciar-sessao`, `/historico-sessoes` com o
+modal aberto, `/terapeutas`, `/perfil`, `/permissoes`, `/curriculum`).
+
+| Item | Tela | O que mudou |
+|---|---|---|
+| 1 | `/pacientes` | célula de uma linha com reticências e `title`; responsável longo não dobra mais a altura da linha |
+| 2 | todos os modais | `DialogContent` branco (`bg-surface`, `rounded-3xl`, `p-5 sm:p-7`); bloco interno `rounded-2xl bg-surface-muted`; campos preenchidos (`bg-surface-muted`, input 44px, select 36px); microetiqueta no lugar do título de seção; sem `<Separator />` — `tools/modais-v2.mjs` |
+| 3 | `/convenios/[id]` | título + `StatusPill` na mesma linha; abas com contagem em pílula; Dados Gerais em 4 painéis com ícone e `LinhaDado`; tabela, anexos e histórico dentro de `Panel`; histórico em linha do tempo; TISS com ícones e botão pílula |
+| 4 | `/procedimentos/[id]`, `/pacotes/[id]` | mesma linguagem do item 3; KPIs na fileira de tons |
+| 5 | `/iniciar-sessao` | avatar 34px, paginação de 8, cartão do selecionado em gradiente; planos e avaliações **lado a lado em cartões** (antes: duas tabelas empilhadas) |
+| 6 | `/terapeutas`, `/terapeutas/[id]` | ordem dos tons (Ativos menta, Especialidades lavanda); chip de especialidade com contador em pílula; grupo de filial em caixa com borda; detalhe com `LinhaDado` e painéis |
+| 7 | `/avaliacoes/[id]` e `/editar` | Informações Gerais em blocos com microetiqueta; abas na largura toda; ordem em círculo branco (`NumeroOrdem`); valor de pontuação em `brand` semibold; tarefas em cartões com pílulas |
+| 8 | modal de `/historico-sessoes` | um modal só por tela (antes um por linha); identificação em bloco; "Resumo do desempenho" em 4 cartões brancos sobre faixa em gradiente; tentativas em pílulas `+`/`-`; filtros acima dos KPIs e paginação de 12, como no clone |
+| 9 | `/perfil`, `/permissoes` | perfil com cartão de identidade (avatar 56px) e campos com hairline; lista de perfis com chip de escudo, pílulas de tipo e ações em círculo |
+| + | `/curriculum` | busca no cabeçalho do painel; chip + nome semibold; ações em círculo branco e "Atribuir" em pílula |
+
+Bug de contraste encontrado no caminho: a fase "Linha de Base" era **texto
+branco sobre `surface-muted`** em `/iniciar-sessao` e `/historico-sessoes` —
+resíduo da migração de `bg-gray-500` → `bg-surface-muted`. Agora é pílula
+suave. Vale procurar `text-white` junto de `bg-surface-*` quando migrar cor.
+
+Duas peças promovidas ao kit (eram cópias em 3+ telas): `LinhaDado` e
+`NumeroOrdem`.
+
+## Fase 20 — telas de aplicação da sessão
+
+`/aplicar-curriculum/[sessaoId]` e `/aplicar-avaliacao/[id]`, conferidas contra
+as duas páginas de demonstração do v2 **no ar** (o clone offline não as traz) —
+`playwright` abre a URL pública e lê as classes direto do DOM.
+
+Só o JSX mudou: estado, handlers, validação, chamadas de API e o modal de
+resultado ficaram como estavam. Teste de comportamento (pontuar, navegar,
+tentar avançar sem avaliar, salvar) passou igual antes e depois.
+
+- **Plano terapêutico**: grade `xl:grid-cols-[minmax(0,1fr)_22rem]`. À esquerda,
+  um `Panel` com a instrução atual (faixas coloridas por tipo de orientação,
+  um cartão por tentativa, botões de resposta de 56px em verde/vermelho/marca
+  conforme a sigla) e **o Anterior / Salvar e Próxima no `rodape` do painel**.
+  À direita, `aside` fixo: progresso em `Panel variant="night"` (número de 3rem)
+  e a lista de instruções (círculo numerado; verde com ✓ quando avaliada).
+  Antes era uma fileira horizontal de botões acima de tudo.
+- **Avaliação**: grade `xl:grid-cols-[1fr_1.6fr]`; à esquerda as tarefas em 3
+  colunas com rolagem e o progresso embaixo; à direita a tarefa atual.
+- A fase da instrução virou `FasePill` no kit — era a **terceira cópia** da
+  mesma função (iniciar sessão, histórico, aqui), e as duas primeiras tinham
+  "Linha de Base" em texto branco sobre fundo claro.
+- Faixa de orientação (`Destaque`): texto do rótulo em `-ink` (contraste), faixa
+  de 4px em cor cheia — mesma regra do `StatusPill`.
+
 ## Custo de runtime da casca (medido, não estimado)
 
 `tools/medir-navegacao.mjs` roda o circuito Dashboard → Pacientes → Usuários →
@@ -386,7 +656,9 @@ estavam em `95f08a2`.
   de conteúdo. Depois do ajuste dos primitivos, `Card` já tem raio 28px, borda
   `rim` e `shadow-card`: trocar por `Panel` não mudaria pixel sem alguém
   escolher um ícone para cada cabeçalho, que é decisão humana.
-- **27 rotas sem referência**: o clone só traz as 31 telas de **listagem**.
+- **Rotas sem referência**: o clone só traz as 31 telas de **listagem**.
+  Convênio, procedimento, pacote, profissional e avaliação ganharam referência
+  por foto na Fase 19; as demais telas de detalhe seguem o kit.
   `/anamnese/[id]`, `/terapeutas/[id]`, `/convenios/[id]` e as outras 24 de
   detalhe e edição devolvem 404 lá (o chunk da rota não foi capturado), assim
   como tudo do Módulo 25 ao 27. Seguem o kit — e é a decisão certa: o kit é a

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronLeft, ChevronRight, Eye, Trash2 } from "lucide-react";
+import { PersonAvatar } from "@/components/kit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -67,7 +68,12 @@ export function TabelaGlosas({ glosas, total, page, pageSize, onPage, onDetalhe,
                   <TableRow key={g.id} className="hover:bg-muted/30">
                     <TableCell className="font-medium">{fmtDt(g.data_glosa)}</TableCell>
                     <TableCell className="text-muted-foreground">{fmtDt(g.data_atendimento)}</TableCell>
-                    <TableCell className="font-medium">{g.paciente.nome}</TableCell>
+                    <TableCell>
+  <div className="flex min-w-0 items-center gap-2.5">
+    <PersonAvatar nome={g.paciente.nome} tamanho={32} />
+    <span className="truncate font-semibold text-ink">{g.paciente.nome}</span>
+  </div>
+</TableCell>
                     <TableCell className="text-muted-foreground">{g.profissional?.nome ?? "—"}</TableCell>
                     <TableCell>
                       {g.procedimento ? (
@@ -101,7 +107,7 @@ export function TabelaGlosas({ glosas, total, page, pageSize, onPage, onDetalhe,
                       <div className="flex items-center justify-end gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDetalhe(g)} aria-label="Ver detalhes">
+                            <Button variant="ghost" size="icon" className="size-9" onClick={() => onDetalhe(g)} aria-label="Ver detalhes">
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
                           </TooltipTrigger>
@@ -109,7 +115,7 @@ export function TabelaGlosas({ glosas, total, page, pageSize, onPage, onDetalhe,
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                            <Button variant="ghost" size="icon" className="size-9 text-destructive hover:text-destructive"
                               onClick={() => onExcluir(g.id)} aria-label="Excluir glosa">
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -130,11 +136,11 @@ export function TabelaGlosas({ glosas, total, page, pageSize, onPage, onDetalhe,
             {total === 0 ? "0 registros" : `${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} de ${total}`}
           </span>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onPage(page - 1)} disabled={page <= 1} aria-label="Anterior">
+            <Button variant="outline" size="icon" className="size-9" onClick={() => onPage(page - 1)} disabled={page <= 1} aria-label="Anterior">
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
             <span className="px-2">{page} / {totalPages}</span>
-            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onPage(page + 1)} disabled={page >= totalPages} aria-label="Próxima">
+            <Button variant="outline" size="icon" className="size-9" onClick={() => onPage(page + 1)} disabled={page >= totalPages} aria-label="Próxima">
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>

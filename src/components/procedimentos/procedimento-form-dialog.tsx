@@ -125,7 +125,7 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             {/* Identificação */}
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Identificação</p>
+              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">Identificação</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="nome" render={({ field }) => (
                   <FormItem className="col-span-2">
@@ -145,7 +145,7 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
                   <FormItem>
                     <FormLabel>Especialidade</FormLabel>
                     <Select onValueChange={(v) => field.onChange(v === "_none" ? null : v)} value={field.value ?? "_none"}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger></FormControl>
+                      <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Selecionar" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="_none">Nenhuma</SelectItem>
                         {ESPECIALIDADES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
@@ -181,7 +181,7 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
 
             {/* Visual */}
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Identificação Visual</p>
+              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">Identificação Visual</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="cor" render={({ field }) => (
                   <FormItem>
@@ -205,7 +205,7 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
 
             {/* Controle */}
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Controle</p>
+              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">Controle</p>
               <FormField control={form.control} name="requer_autorizacao" render={({ field }) => (
                 <FormItem className="flex items-center gap-3">
                   <FormControl><Switch checked={field.value ?? false} onCheckedChange={field.onChange} /></FormControl>
@@ -230,13 +230,13 @@ export function ProcedimentoFormDialog({ procedimento, open, onOpenChange, onSuc
 
             {filiais.length > 0 && (
               <div className="space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Filial</p>
+                <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">Filial</p>
                 <FormField control={form.control} name="filialId" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Restringir à filial</FormLabel>
                     <Select onValueChange={(v) => field.onChange(v === "_global" ? null : v)} value={field.value ?? "_global"}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Todas as filiais (global)" />
                         </SelectTrigger>
                       </FormControl>

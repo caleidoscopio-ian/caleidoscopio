@@ -5,13 +5,6 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +17,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   Loader2,
   CheckCircle2,
@@ -32,17 +24,27 @@ import {
   ArrowLeft,
   ArrowRight,
   ClipboardCheck,
-  BookMarked,
+  BookOpen,
+  Check,
+  Layers,
+  User,
   TrendingUp,
   TrendingDown,
   Minus,
   Trophy,
   Target,
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { SIGLA_ERRO, SIGLA_INDEPENDENTE } from "@/lib/pontuacao";
-import { PageHeader, Panel } from "@/components/kit";
+import {
+  ActionButton,
+  Carregando,
+  EstadoVazio,
+  FasePill,
+  PageHeader,
+  Panel,
+  StatusPill,
+} from "@/components/kit";
 
 // ============ Interfaces ============
 
@@ -177,19 +179,36 @@ interface ResultadoSessao {
 
 // ============ Fase Badge ============
 
-const FASE_CONFIG: Record<string, { label: string; color: string }> = {
-  LINHA_BASE: { label: "Linha de Base", color: "bg-surface-muted" },
-  INTERVENCAO: { label: "Intervenção", color: "bg-brand" },
-  MANUTENCAO: { label: "Manutenção", color: "bg-success" },
-  GENERALIZACAO: { label: "Generalização", color: "bg-warning" },
-};
+// ============ Destaque (faixa colorida das orientações) ============
 
-function FaseBadge({ fase }: { fase: string }) {
-  const config = FASE_CONFIG[fase] || { label: fase, color: "bg-surface-muted" };
+const TONS_DESTAQUE = {
+  brand: "bg-brand-soft/70 before:bg-brand text-brand",
+  info: "bg-info-soft before:bg-info text-info-ink",
+  danger: "bg-danger-soft before:bg-danger text-danger-ink",
+  success: "bg-success-soft before:bg-success text-success-ink",
+  warning: "bg-warning-soft before:bg-warning text-warning-ink",
+} as const;
+
+function Destaque({
+  tom,
+  rotulo,
+  principal,
+  children,
+}: {
+  tom: keyof typeof TONS_DESTAQUE;
+  rotulo: string;
+  principal?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <Badge className={`${config.color} text-white text-xs`}>
-      {config.label}
-    </Badge>
+    <div
+      className={`relative overflow-hidden rounded-2xl py-3.5 pr-4 pl-5 before:absolute before:inset-y-0 before:left-0 before:w-1 ${TONS_DESTAQUE[tom]}`}
+    >
+      <p className="text-[0.75rem] font-semibold tracking-wide uppercase">{rotulo}</p>
+      <div className={principal ? "mt-1 text-lg font-semibold text-ink" : "mt-1 text-sm text-ink-2"}>
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -499,10 +518,7 @@ function AplicarCurriculumPageContent() {
   if (loading) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="text-center py-12">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando sessão...</p>
-        </div>
+        <Carregando texto="Carregando sessão..." className="py-24" />
       </MainLayout>
     );
   }
@@ -510,15 +526,17 @@ function AplicarCurriculumPageContent() {
   if (error && !sessao) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="text-center py-12">
-          <AlertCircle className="h-12 w-12 text-danger-ink mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">
-            Erro ao carregar sessão
-          </h3>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={() => router.push("/iniciar-sessao")}>
-            Voltar para Iniciar Sessão
-          </Button>
+        <div className="py-16">
+          <EstadoVazio
+            icone={<AlertCircle />}
+            titulo="Erro ao carregar sessão"
+            texto={error}
+            acao={
+              <ActionButton onClick={() => router.push("/iniciar-sessao")}>
+                Voltar para Iniciar Sessão
+              </ActionButton>
+            }
+          />
         </div>
       </MainLayout>
     );
@@ -527,12 +545,16 @@ function AplicarCurriculumPageContent() {
   if (!sessao || !sessao.atividadesClone || sessao.atividadesClone.length === 0) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="text-center py-12">
-          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">Sessão não encontrada</h3>
-          <Button onClick={() => router.push("/iniciar-sessao")}>
-            Voltar para Iniciar Sessão
-          </Button>
+        <div className="py-16">
+          <EstadoVazio
+            icone={<AlertCircle />}
+            titulo="Sessão não encontrada"
+            acao={
+              <ActionButton onClick={() => router.push("/iniciar-sessao")}>
+                Voltar para Iniciar Sessão
+              </ActionButton>
+            }
+          />
         </div>
       </MainLayout>
     );
@@ -577,14 +599,16 @@ function AplicarCurriculumPageContent() {
   if (!currentItem) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="text-center py-12">
-          <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">
-            Instrução não encontrada
-          </h3>
-          <Button onClick={() => router.push("/iniciar-sessao")}>
-            Voltar para Iniciar Sessão
-          </Button>
+        <div className="py-16">
+          <EstadoVazio
+            icone={<AlertCircle />}
+            titulo="Instrução não encontrada"
+            acao={
+              <ActionButton onClick={() => router.push("/iniciar-sessao")}>
+                Voltar para Iniciar Sessão
+              </ActionButton>
+            }
+          />
         </div>
       </MainLayout>
     );
@@ -604,338 +628,331 @@ function AplicarCurriculumPageContent() {
   return (
     <>
     <MainLayout breadcrumbs={breadcrumbs}>
-      <div className="space-y-6">
-        {/* Header */}
+      <div className="space-y-7">
         <PageHeader
           titulo="Aplicar Plano Terapêutico"
-          subtitulo={<>Paciente: <strong>{sessao.paciente.nome}</strong> • Curriculum:{" "} <strong>{sessao.curriculum.nome}</strong></>}
+          subtitulo={
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="flex items-center gap-1.5">
+                <User className="size-4" />
+                Paciente: <strong className="font-semibold text-ink">{sessao.paciente.nome}</strong>
+              </span>
+              <span aria-hidden="true" className="text-ink-4">·</span>
+              <span className="flex items-center gap-1.5">
+                <BookOpen className="size-4" />
+                Curriculum: <strong className="font-semibold text-ink">{sessao.curriculum.nome}</strong>
+              </span>
+            </span>
+          }
         />
 
-        {/* Painel de Navegação — cada instrução selecionada é um item */}
-        <Panel
-          icone={<BookMarked />}
-          titulo={<>Instruções da Sessão ({itensNavegacao.length})</>}
-          className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20"
-        >
-
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {itensNavegacao.map((nav, idx) => {
-              const qtdTentativas = nav.instrucao.qtd_tentativas_alvo || 1;
-              let avaliada = true;
-              for (let t = 1; t <= qtdTentativas; t++) {
-                const key = `${nav.clone.id}-${nav.instrucao.id}-${t}`;
-                if (!avaliacoes.has(key)) { avaliada = false; break; }
-              }
-              const isAtual = idx === itemAtual;
-
-              return (
-                <Button
-                  key={`${nav.clone.id}-${nav.instrucao.id}`}
-                  variant={isAtual ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => navegarParaItem(idx)}
-                  className={`flex-shrink-0 min-w-[160px] max-w-[260px] justify-between ${
-                    avaliada && !isAtual
-                      ? "border-success bg-success-soft hover:bg-success-soft"
-                      : ""
-                  }`}
-                >
-                  <span className="text-xs font-medium truncate">
-                    {idx + 1}. {nav.clone.nome} - {nav.instrucao.texto}
-                  </span>
-                  <span className="flex items-center gap-1 ml-1">
-                    {nav.instrucao.faseAtual && <FaseBadge fase={nav.instrucao.faseAtual} />}
-                    {avaliada && (
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-success-ink" />
-                    )}
-                  </span>
-                </Button>
-              );
-            })}
-          </div>
-        </Panel>
-
-        {/* Progresso */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Progresso Geral da Sessão
-                </span>
-                <span className="font-medium">
-                  {avaliacoes.size} de {totalAvaliacoes} avaliações
-                </span>
+        {/* Instrução atual (esquerda) + progresso e lista (coluna lateral fixa) */}
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="min-w-0 space-y-4">
+            {error && (
+              <div className="flex items-center gap-2 rounded-2xl bg-danger-soft px-4 py-3 text-sm text-danger-ink">
+                <AlertCircle className="size-5 shrink-0" />
+                {error}
               </div>
-              <Progress value={progresso} className="h-2" />
-            </div>
-          </CardContent>
-        </Card>
+            )}
 
-        {error && (
-          <div className="bg-danger-soft border border-danger-soft text-danger-ink px-4 py-3 rounded flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            {error}
-          </div>
-        )}
-
-        {/* Instrução Atual */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="secondary">
+            <Panel
+              icone={<ClipboardCheck />}
+              titulo={
+                <span className="flex flex-wrap items-center gap-2">
+                  <StatusPill tom="info" className="text-[0.8rem]">
                     {clone.nome}
-                  </Badge>
-                  {instrucao.faseAtual && <FaseBadge fase={instrucao.faseAtual} />}
-                </CardTitle>
-                <CardDescription>
-                  Instrução {itemAtual + 1} de {itensNavegacao.length}
-                  {" • "}
-                  Total: {avaliacoes.size}/{totalAvaliacoes}
-                </CardDescription>
+                  </StatusPill>
+                  {instrucao.faseAtual && <FasePill fase={instrucao.faseAtual} />}
+                </span>
+              }
+              subtitulo={
+                <span className="tabular">
+                  Instrução {itemAtual + 1} de {itensNavegacao.length} · Total: {avaliacoes.size}/{totalAvaliacoes}
+                </span>
+              }
+              rodape={
+                <>
+                  <ActionButton
+                    variant="secondary"
+                    className="border-hairline"
+                    onClick={instrucaoAnterior}
+                    disabled={itemAtual === 0 || salvando}
+                  >
+                    <ArrowLeft />
+                    Anterior
+                  </ActionButton>
+
+                  {!isUltimaInstrucao ? (
+                    <ActionButton onClick={proximaInstrucao} disabled={salvando}>
+                      {salvando ? (
+                        <>
+                          <Loader2 className="animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          Salvar e Próxima
+                          <ArrowRight />
+                        </>
+                      )}
+                    </ActionButton>
+                  ) : (
+                    <ActionButton
+                      onClick={async () => {
+                        const sucesso = await salvarAvaliacoesInstrucao();
+                        if (sucesso && todasAvaliadas) {
+                          finalizarSessao();
+                        }
+                      }}
+                      disabled={salvando || finalizando}
+                      className="bg-success text-white shadow-[0_8px_20px_-8px_var(--success)] hover:bg-success/90"
+                    >
+                      {salvando || finalizando ? (
+                        <>
+                          <Loader2 className="animate-spin" />
+                          {finalizando ? "Finalizando..." : "Salvando..."}
+                        </>
+                      ) : (
+                        <>
+                          <ClipboardCheck />
+                          Salvar e Finalizar Sessão
+                        </>
+                      )}
+                    </ActionButton>
+                  )}
+                </>
+              }
+            >
+              <div className="space-y-6">
+                {/* Informações da instrução: faixa colorida à esquerda, cada uma no seu tom */}
+                <div className="space-y-2.5">
+                  <Destaque tom="brand" rotulo="Instrução:" principal>
+                    {instrucao.texto}
+                  </Destaque>
+                  {clone.como_aplicar && (
+                    <Destaque tom="info" rotulo="Como Aplicar:">
+                      {clone.como_aplicar}
+                    </Destaque>
+                  )}
+                  {clone.observacao && (
+                    <Destaque tom="warning" rotulo="Observação:">
+                      {clone.observacao}
+                    </Destaque>
+                  )}
+                  {clone.procedimento_correcao && (
+                    <Destaque tom="danger" rotulo="Procedimento de Correção:">
+                      {clone.procedimento_correcao}
+                    </Destaque>
+                  )}
+                  {clone.materiais_utilizados && (
+                    <Destaque tom="success" rotulo="Materiais Utilizados:">
+                      {clone.materiais_utilizados}
+                    </Destaque>
+                  )}
+                </div>
+
+                {/* Tentativas */}
+                <div className="space-y-4">
+                  {Array.from(
+                    { length: instrucao.qtd_tentativas_alvo || 1 },
+                    (_, index) => {
+                      const tentativa = index + 1;
+                      const avalTentativa = avaliacoesTentativas.get(tentativa) || {
+                        nota: null,
+                        observacao: "",
+                      };
+                      const colunas = `repeat(${Math.min(pontuacoesFase.length, 8)}, minmax(0, 1fr))`;
+
+                      return (
+                        <div
+                          key={tentativa}
+                          className="space-y-4 rounded-[1.4rem] border border-hairline bg-surface p-4 md:p-5"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="tabular rounded-full bg-brand px-3 py-1 text-[0.75rem] font-semibold text-white">
+                              Tentativa {tentativa}/{instrucao.qtd_tentativas_alvo || 1}
+                            </span>
+                            {avalTentativa.nota !== null && (
+                              <CheckCircle2 className="size-5 text-success-ink" />
+                            )}
+                          </div>
+
+                          {/* Respostas — pontuações por instrução/fase */}
+                          <div className="space-y-2">
+                            <p className="text-[0.85rem] font-semibold text-ink-2">Resposta *</p>
+                            {pontuacoesFase.length > 0 ? (
+                              <>
+                                <div
+                                  className="grid gap-2"
+                                  role="radiogroup"
+                                  aria-label={`Resposta da tentativa ${tentativa}`}
+                                  style={{ gridTemplateColumns: colunas }}
+                                >
+                                  {pontuacoesFase.map((pontuacao, idx) => {
+                                    // Verde/vermelho pela sigla, para o destaque
+                                    // nunca contradizer o que o cálculo considera acerto
+                                    const isUltimo = pontuacao.sigla === SIGLA_INDEPENDENTE;
+                                    const isPrimeiro = pontuacao.sigla === SIGLA_ERRO;
+                                    const isSelecionado = avalTentativa.nota === idx;
+                                    return (
+                                      <button
+                                        key={pontuacao.id}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={isSelecionado}
+                                        aria-label={`${pontuacao.sigla}: ${pontuacao.grau}`}
+                                        className={`h-14 rounded-2xl text-lg font-bold transition focus-visible:ring-4 focus-visible:ring-brand-ring focus-visible:outline-none ${
+                                          isSelecionado
+                                            ? isUltimo
+                                              ? "bg-success text-white shadow-[0_8px_20px_-10px_var(--success)]"
+                                              : isPrimeiro
+                                                ? "bg-danger text-white shadow-[0_8px_20px_-10px_var(--danger)]"
+                                                : "bg-brand text-white shadow-[0_8px_20px_-10px_var(--brand)]"
+                                            : "bg-surface-muted text-ink hover:bg-brand-soft"
+                                        }`}
+                                        onClick={() => {
+                                          setAvaliacoesTentativas((prev) => {
+                                            const newMap = new Map(prev);
+                                            newMap.set(tentativa, {
+                                              ...avalTentativa,
+                                              nota: idx,
+                                            });
+                                            return newMap;
+                                          });
+                                        }}
+                                      >
+                                        {pontuacao.sigla}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <div
+                                  className="grid gap-2 text-center text-[0.7rem] leading-tight text-ink-3"
+                                  style={{ gridTemplateColumns: colunas }}
+                                >
+                                  {pontuacoesFase.map((pontuacao) => (
+                                    <div key={pontuacao.id}>{pontuacao.grau}</div>
+                                  ))}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="rounded-2xl bg-warning-soft px-4 py-3 text-sm text-warning-ink">
+                                Esta instrução não possui pontuações configuradas para a fase atual. Configure no painel de Evolução.
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Observação */}
+                          <div className="space-y-2">
+                            <Label htmlFor={`observacao-${tentativa}`}>
+                              Observações (opcional)
+                            </Label>
+                            <Textarea
+                              id={`observacao-${tentativa}`}
+                              placeholder="Anote observações sobre o desempenho..."
+                              value={avalTentativa.observacao}
+                              onChange={(e) => {
+                                setAvaliacoesTentativas((prev) => {
+                                  const newMap = new Map(prev);
+                                  newMap.set(tentativa, {
+                                    ...avalTentativa,
+                                    observacao: e.target.value,
+                                  });
+                                  return newMap;
+                                });
+                              }}
+                              rows={2}
+                              className="resize-none py-3"
+                            />
+                          </div>
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Informações da instrução */}
-            <div className="space-y-3">
-              <div className="p-4 bg-primary/5 border-l-4 border-primary rounded">
-                <p className="text-sm font-semibold text-primary mb-1">
-                  Instrução:
-                </p>
-                <p className="text-lg font-medium">{instrucao.texto}</p>
+            </Panel>
+          </div>
+
+          {/* Coluna lateral: progresso (noturno) + lista de instruções */}
+          <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
+            <Panel variant="night" icone={<ClipboardCheck />} titulo="Progresso Geral da Sessão">
+              <p className="tabular text-[3rem] leading-none font-bold tracking-[-0.04em] text-white">
+                {Math.round(progresso)}%
+              </p>
+              <p className="tabular mt-2 text-sm text-white/70">
+                {avaliacoes.size} de {totalAvaliacoes} avaliações
+              </p>
+              <div
+                className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/15"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(progresso)}
+              >
+                <div className="h-full rounded-full bg-white" style={{ width: `${progresso}%` }} />
               </div>
+            </Panel>
 
-              {clone.como_aplicar && (
-                <div className="p-4 bg-brand-soft border-l-4 border-brand rounded">
-                  <p className="text-sm font-semibold text-brand mb-1">
-                    Como Aplicar:
-                  </p>
-                  <p className="text-sm text-ink">
-                    {clone.como_aplicar}
-                  </p>
-                </div>
-              )}
-
-              {clone.observacao && (
-                <div className="p-4 bg-warning-soft border-l-4 border-warning rounded">
-                  <p className="text-sm font-semibold text-warning-ink mb-1">
-                    Observação:
-                  </p>
-                  <p className="text-sm text-ink">
-                    {clone.observacao}
-                  </p>
-                </div>
-              )}
-
-              {clone.procedimento_correcao && (
-                <div className="p-4 bg-warning-soft border-l-4 border-warning rounded">
-                  <p className="text-sm font-semibold text-warning-ink mb-1">
-                    Procedimento de Correção:
-                  </p>
-                  <p className="text-sm text-ink">
-                    {clone.procedimento_correcao}
-                  </p>
-                </div>
-              )}
-
-              {clone.materiais_utilizados && (
-                <div className="p-4 bg-success-soft border-l-4 border-success rounded">
-                  <p className="text-sm font-semibold text-success-ink mb-1">
-                    Materiais Utilizados:
-                  </p>
-                  <p className="text-sm text-ink">
-                    {clone.materiais_utilizados}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Tentativas */}
-            <div className="space-y-8">
-              {Array.from(
-                { length: instrucao.qtd_tentativas_alvo || 1 },
-                (_, index) => {
-                  const tentativa = index + 1;
-                  const avalTentativa = avaliacoesTentativas.get(tentativa) || {
-                    nota: null,
-                    observacao: "",
-                  };
+            <Panel icone={<Layers />} titulo={<>Instruções da Sessão ({itensNavegacao.length})</>}>
+              <ol className="scrollbar-none -mx-1 -mt-2 flex gap-2 overflow-x-auto px-1 pb-1 xl:max-h-[28rem] xl:flex-col xl:overflow-x-visible xl:overflow-y-auto">
+                {itensNavegacao.map((nav, idx) => {
+                  const qtdTentativas = nav.instrucao.qtd_tentativas_alvo || 1;
+                  let avaliada = true;
+                  for (let t = 1; t <= qtdTentativas; t++) {
+                    const key = `${nav.clone.id}-${nav.instrucao.id}-${t}`;
+                    if (!avaliacoes.has(key)) { avaliada = false; break; }
+                  }
+                  const isAtual = idx === itemAtual;
 
                   return (
-                    <div
-                      key={tentativa}
-                      className="p-4 border-2 rounded-lg space-y-4 bg-white"
-                    >
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-brand-soft text-brand">
-                          Tentativa {tentativa}/
-                          {instrucao.qtd_tentativas_alvo || 1}
-                        </Badge>
-                        {avalTentativa.nota !== null && (
-                          <CheckCircle2 className="h-5 w-5 text-success-ink" />
+                    <li key={`${nav.clone.id}-${nav.instrucao.id}`} className="shrink-0 xl:shrink">
+                      <button
+                        type="button"
+                        aria-current={isAtual ? "step" : undefined}
+                        onClick={() => navegarParaItem(idx)}
+                        className={`flex w-[15rem] items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none xl:w-full ${
+                          isAtual
+                            ? "bg-brand text-white"
+                            : avaliada
+                              ? "bg-success-soft hover:bg-success-soft/70"
+                              : "bg-surface-muted hover:bg-brand-soft/60"
+                        }`}
+                      >
+                        <span
+                          className={`tabular grid size-7 shrink-0 place-items-center rounded-full text-[0.75rem] font-semibold ${
+                            isAtual
+                              ? "bg-white/20 text-white"
+                              : avaliada
+                                ? "bg-success text-white"
+                                : "bg-surface text-ink-2"
+                          }`}
+                        >
+                          {avaliada ? <Check className="size-4" /> : idx + 1}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className={`block truncate text-[0.8rem] font-semibold ${isAtual ? "text-white" : "text-ink"}`}>
+                            {nav.instrucao.texto}
+                          </span>
+                          <span className={`block truncate text-[0.7rem] ${isAtual ? "text-white/75" : "text-ink-3"}`}>
+                            {nav.clone.nome}
+                          </span>
+                        </span>
+                        {nav.instrucao.faseAtual && (
+                          <FasePill
+                            fase={nav.instrucao.faseAtual}
+                            className={`shrink-0 ${isAtual ? "bg-white/20 text-white" : ""}`}
+                          />
                         )}
-                      </div>
-
-                      {/* Respostas — pontuações por instrução/fase */}
-                      <div className="space-y-2">
-                        <Label className="text-base">Resposta *</Label>
-                        {pontuacoesFase.length > 0 ? (
-                          <>
-                            <div
-                              className={`grid gap-2`}
-                              style={{
-                                gridTemplateColumns: `repeat(${Math.min(pontuacoesFase.length, 8)}, minmax(0, 1fr))`,
-                              }}
-                            >
-                              {pontuacoesFase.map(
-                                (pontuacao, idx) => {
-                                  // Verde/vermelho pela sigla, para o destaque
-                                  // nunca contradizer o que o cálculo considera acerto
-                                  const isUltimo = pontuacao.sigla === SIGLA_INDEPENDENTE;
-                                  const isPrimeiro = pontuacao.sigla === SIGLA_ERRO;
-                                  const isSelecionado = avalTentativa.nota === idx;
-                                  return (
-                                    <Button
-                                      key={pontuacao.id}
-                                      type="button"
-                                      variant={
-                                        isSelecionado
-                                          ? "default"
-                                          : "outline"
-                                      }
-                                      className={`h-14 text-lg font-bold ${
-                                        isSelecionado
-                                          ? isUltimo
-                                            ? "bg-success hover:bg-success"
-                                            : isPrimeiro
-                                              ? "bg-danger hover:bg-danger"
-                                              : ""
-                                          : "hover:bg-primary/10"
-                                      }`}
-                                      onClick={() => {
-                                        setAvaliacoesTentativas((prev) => {
-                                          const newMap = new Map(prev);
-                                          newMap.set(tentativa, {
-                                            ...avalTentativa,
-                                            nota: idx,
-                                          });
-                                          return newMap;
-                                        });
-                                      }}
-                                    >
-                                      {pontuacao.sigla}
-                                    </Button>
-                                  );
-                                }
-                              )}
-                            </div>
-                            <div
-                              className={`grid gap-2 text-xs text-center text-muted-foreground`}
-                              style={{
-                                gridTemplateColumns: `repeat(${Math.min(pontuacoesFase.length, 8)}, minmax(0, 1fr))`,
-                              }}
-                            >
-                              {pontuacoesFase.map(
-                                (pontuacao) => (
-                                  <div key={pontuacao.id}>
-                                    {pontuacao.grau}
-                                  </div>
-                                )
-                              )}
-                            </div>
-                          </>
-                        ) : (
-                          <div className="bg-warning-soft border border-warning-soft text-warning-ink px-4 py-3 rounded">
-                            <p className="text-sm">
-                              Esta instrução não possui pontuações configuradas para a fase atual. Configure no painel de Evolução.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Observação */}
-                      <div className="space-y-2">
-                        <Label htmlFor={`observacao-${tentativa}`}>
-                          Observações (opcional)
-                        </Label>
-                        <Textarea
-                          id={`observacao-${tentativa}`}
-                          placeholder="Anote observações sobre o desempenho..."
-                          value={avalTentativa.observacao}
-                          onChange={(e) => {
-                            setAvaliacoesTentativas((prev) => {
-                              const newMap = new Map(prev);
-                              newMap.set(tentativa, {
-                                ...avalTentativa,
-                                observacao: e.target.value,
-                              });
-                              return newMap;
-                            });
-                          }}
-                          rows={2}
-                        />
-                      </div>
-                    </div>
+                      </button>
+                    </li>
                   );
-                }
-              )}
-            </div>
-
-            {/* Navegação */}
-            <div className="flex items-center justify-between pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={instrucaoAnterior}
-                disabled={itemAtual === 0 || salvando}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Anterior
-              </Button>
-
-              {!isUltimaInstrucao ? (
-                <Button onClick={proximaInstrucao} disabled={salvando}>
-                  {salvando ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      Salvar e Próxima
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  onClick={async () => {
-                    const sucesso = await salvarAvaliacoesInstrucao();
-                    if (sucesso && todasAvaliadas) {
-                      finalizarSessao();
-                    }
-                  }}
-                  disabled={salvando || finalizando}
-                  className="bg-success hover:bg-success"
-                >
-                  {salvando || finalizando ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {finalizando ? "Finalizando..." : "Salvando..."}
-                    </>
-                  ) : (
-                    <>
-                      <ClipboardCheck className="mr-2 h-4 w-4" />
-                      Salvar e Finalizar Sessão
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                })}
+              </ol>
+            </Panel>
+          </aside>
+        </div>
       </div>
     </MainLayout>
 
@@ -1016,7 +1033,7 @@ function AplicarCurriculumPageContent() {
                       const atingiu = instr.stats.atingiuCriterio;
 
                       return (
-                        <div key={j} className="border rounded-lg p-3 space-y-2 bg-muted/20">
+                        <div key={j} className="rounded-2xl bg-surface-muted p-3 space-y-2">
                           {/* Nome instrução + badge */}
                           <div className="flex items-start justify-between gap-2">
                             <span className="text-xs text-muted-foreground leading-snug flex-1">{instr.textoInstrucao}</span>
@@ -1039,11 +1056,11 @@ function AplicarCurriculumPageContent() {
 
                           {/* Fase anterior → nova */}
                           <div className="flex items-center gap-2">
-                            <FaseBadge fase={instr.faseAnterior} />
+                            <FasePill fase={instr.faseAnterior} />
                             {mudouFase && (
                               <>
                                 <span className="text-muted-foreground text-xs">→</span>
-                                <FaseBadge fase={instr.faseNova} />
+                                <FasePill fase={instr.faseNova} />
                               </>
                             )}
                           </div>
@@ -1087,7 +1104,6 @@ function AplicarCurriculumPageContent() {
             </div>
           )}
 
-          <Separator />
           <DialogFooter className="px-6 py-4">
             <Button onClick={() => router.push("/iniciar-sessao")} className="w-full">
               Concluir e Sair

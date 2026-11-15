@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Search, UserCog, Shield, ShieldOff } from 'lucide-react'
+import { UserCog, Shield, ShieldOff } from 'lucide-react'
+import { SearchField } from '@/components/kit'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -69,15 +69,12 @@ export function UserRoleAssignment({ availableRoles }: UserRoleAssignmentProps) 
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar usuários..."
-          className="pl-9"
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
-        />
-      </div>
+      <SearchField
+        placeholder="Buscar usuários..."
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        className="max-w-sm"
+      />
 
       <div className="overflow-x-auto">
         <Table>
@@ -107,7 +104,7 @@ export function UserRoleAssignment({ availableRoles }: UserRoleAssignmentProps) 
                 <TableRow key={u.id}>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{u.nome}</p>
+                      <p className="font-semibold text-ink">{u.nome}</p>
                       <p className="text-xs text-muted-foreground">{u.email}</p>
                     </div>
                   </TableCell>

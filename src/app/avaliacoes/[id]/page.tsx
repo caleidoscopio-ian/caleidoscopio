@@ -4,9 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -16,9 +13,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  ClipboardCheck,
+  Edit,
+  Gauge,
+  Layers,
+  ListChecks,
+  Target,
+} from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { PageHeader, Panel } from "@/components/kit";
+import {
+  ActionButton,
+  Carregando,
+  EstadoVazio,
+  NumeroOrdem,
+  PageHeader,
+  Panel,
+  StatusPill,
+} from "@/components/kit";
 
 interface Nivel {
   id: string;
@@ -70,6 +83,15 @@ const TIPOS_PONTUACAO: Record<string, string> = {
   NUNCA_0: "Nunca (0%)",
   NAO_SE_APLICA: "Não se Aplica",
 };
+
+/** Contagem na aba — pílula da marca. */
+function Contagem({ n }: { n: number }) {
+  return (
+    <span className="tabular ml-1.5 rounded-full bg-brand-soft px-2 py-0.5 text-[0.7rem] font-semibold text-brand">
+      {n}
+    </span>
+  );
+}
 
 function VisualizarAvaliacaoPageContent() {
   const params = useParams();
@@ -130,9 +152,7 @@ function VisualizarAvaliacaoPageContent() {
   if (loading) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+        <Carregando texto="Carregando avaliação..." className="py-24" />
       </MainLayout>
     );
   }
@@ -140,97 +160,102 @@ function VisualizarAvaliacaoPageContent() {
   if (error || !avaliacao) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-danger-ink mb-4">{error || "Avaliação não encontrada"}</p>
-              <Button onClick={() => router.push("/avaliacoes")}>
+        <div className="py-16">
+          <EstadoVazio
+            icone={<AlertCircle />}
+            titulo={error || "Avaliação não encontrada"}
+            acao={
+              <ActionButton variant="secondary" onClick={() => router.push("/avaliacoes")}>
                 Voltar para Avaliações
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              </ActionButton>
+            }
+          />
+        </div>
       </MainLayout>
     );
   }
 
+  const tomTipo = avaliacao.tipo === "AQUISICAO_HABILIDADES" ? "info" : "violet";
+
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
-      <div className="space-y-6">
+      <div className="space-y-7">
         <PageHeader
           voltar={{ onClick: () => router.push("/avaliacoes") }}
-          titulo={avaliacao.nome}
-          meta={
-            <Badge
-              variant={
-                avaliacao.tipo === "AQUISICAO_HABILIDADES" ? "default" : "secondary"
-              }
-            >
-              {traduzirTipo(avaliacao.tipo)}
-            </Badge>
+          titulo={
+            <span className="inline-flex flex-wrap items-center gap-3">
+              {avaliacao.nome}
+              <StatusPill tom={tomTipo}>{traduzirTipo(avaliacao.tipo)}</StatusPill>
+            </span>
           }
+          subtitulo={[
+            [avaliacao.tarefas.length, "tarefa", "tarefas"],
+            [avaliacao.niveis.length, "nível", "níveis"],
+            [avaliacao.habilidades.length, "habilidade", "habilidades"],
+          ]
+            .map(([n, um, varios]) => `${n} ${n === 1 ? um : varios}`)
+            .join(" · ")}
           acoes={
-            <Button onClick={() => router.push(`/avaliacoes/${avaliacaoId}/editar`)}>
-              <Edit className="mr-2 h-4 w-4" />
+            <ActionButton onClick={() => router.push(`/avaliacoes/${avaliacaoId}/editar`)}>
+              <Edit />
               Editar
-            </Button>
+            </ActionButton>
           }
         />
 
-        {/* Informações Gerais */}
-        <Panel titulo="Informações Gerais">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">
+        {/* Informações Gerais: blocos com microetiqueta, como no v2 */}
+        <Panel icone={<ClipboardCheck />} titulo="Informações Gerais">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5 rounded-2xl bg-surface-muted p-4">
+              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Tipo de Avaliação
-              </label>
-              <p className="mt-1">{traduzirTipo(avaliacao.tipo)}</p>
+              </p>
+              <StatusPill tom={tomTipo}>{traduzirTipo(avaliacao.tipo)}</StatusPill>
             </div>
-            {avaliacao.observacao && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">
-                  Observação
-                </label>
-                <p className="mt-1">{avaliacao.observacao}</p>
-              </div>
-            )}
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">
+            <div className="space-y-1.5 rounded-2xl bg-surface-muted p-4">
+              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Criada em
-              </label>
-              <p className="mt-1">
+              </p>
+              <p className="tabular font-medium text-ink">
                 {new Date(avaliacao.createdAt).toLocaleDateString("pt-BR")}
               </p>
             </div>
+            {avaliacao.observacao && (
+              <div className="space-y-1.5 rounded-2xl bg-surface-muted p-4 sm:col-span-2">
+                <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
+                  Observação
+                </p>
+                <p className="text-sm whitespace-pre-wrap text-ink-2">{avaliacao.observacao}</p>
+              </div>
+            )}
           </div>
         </Panel>
 
-        {/* Tabs */}
+        {/* Abas na largura toda — é como o v2 desenha esta tela */}
         <Tabs defaultValue="niveis">
-          <TabsList>
-            <TabsTrigger value="niveis">
-              Níveis ({avaliacao.niveis.length})
+          <TabsList className="w-full">
+            <TabsTrigger value="niveis" className="flex-1">
+              Níveis <Contagem n={avaliacao.niveis.length} />
             </TabsTrigger>
-            <TabsTrigger value="habilidades">
-              Habilidades ({avaliacao.habilidades.length})
+            <TabsTrigger value="habilidades" className="flex-1">
+              Habilidades <Contagem n={avaliacao.habilidades.length} />
             </TabsTrigger>
-            <TabsTrigger value="pontuacao">
-              Pontuação ({avaliacao.pontuacoes.length})
+            <TabsTrigger value="pontuacao" className="flex-1">
+              Pontuação <Contagem n={avaliacao.pontuacoes.length} />
             </TabsTrigger>
-            <TabsTrigger value="tarefas">
-              Tarefas ({avaliacao.tarefas.length})
+            <TabsTrigger value="tarefas" className="flex-1">
+              Tarefas <Contagem n={avaliacao.tarefas.length} />
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="niveis">
+          <TabsContent value="niveis" className="mt-5">
             <Panel
+              icone={<Layers />}
               titulo="Níveis da Avaliação"
               subtitulo="Níveis de desenvolvimento cadastrados"
             >
               {avaliacao.niveis.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhum nível cadastrado
-                </p>
+                <EstadoVazio icone={<Layers />} titulo="Nenhum nível cadastrado" />
               ) : (
                 <Table>
                   <TableHeader>
@@ -243,11 +268,17 @@ function VisualizarAvaliacaoPageContent() {
                   <TableBody>
                     {avaliacao.niveis.map((nivel) => (
                       <TableRow key={nivel.id}>
-                        <TableCell className="font-medium">
-                          {nivel.ordem}
+                        <TableCell>
+                          <NumeroOrdem n={nivel.ordem} />
                         </TableCell>
-                        <TableCell>{nivel.descricao}</TableCell>
-                        <TableCell>{nivel.faixa_etaria || "-"}</TableCell>
+                        <TableCell className="font-semibold text-ink">{nivel.descricao}</TableCell>
+                        <TableCell>
+                          {nivel.faixa_etaria ? (
+                            <StatusPill tom="neutral">{nivel.faixa_etaria}</StatusPill>
+                          ) : (
+                            <span className="text-ink-4">—</span>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -256,15 +287,14 @@ function VisualizarAvaliacaoPageContent() {
             </Panel>
           </TabsContent>
 
-          <TabsContent value="habilidades">
+          <TabsContent value="habilidades" className="mt-5">
             <Panel
+              icone={<Target />}
               titulo="Habilidades da Avaliação"
               subtitulo="Habilidades a serem avaliadas"
             >
               {avaliacao.habilidades.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhuma habilidade cadastrada
-                </p>
+                <EstadoVazio icone={<Target />} titulo="Nenhuma habilidade cadastrada" />
               ) : (
                 <Table>
                   <TableHeader>
@@ -276,10 +306,10 @@ function VisualizarAvaliacaoPageContent() {
                   <TableBody>
                     {avaliacao.habilidades.map((habilidade) => (
                       <TableRow key={habilidade.id}>
-                        <TableCell className="font-medium">
-                          {habilidade.ordem}
+                        <TableCell>
+                          <NumeroOrdem n={habilidade.ordem} />
                         </TableCell>
-                        <TableCell>{habilidade.habilidade}</TableCell>
+                        <TableCell className="font-semibold text-ink">{habilidade.habilidade}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -288,34 +318,36 @@ function VisualizarAvaliacaoPageContent() {
             </Panel>
           </TabsContent>
 
-          <TabsContent value="pontuacao">
-            <Panel titulo="Sistema de Pontuação" subtitulo="Escala de pontuação da avaliação">
+          <TabsContent value="pontuacao" className="mt-5">
+            <Panel
+              icone={<Gauge />}
+              titulo="Sistema de Pontuação"
+              subtitulo="Escala de pontuação da avaliação"
+            >
               {avaliacao.pontuacoes.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhuma pontuação cadastrada
-                </p>
+                <EstadoVazio icone={<Gauge />} titulo="Nenhuma pontuação cadastrada" />
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-24">Ordem</TableHead>
                       <TableHead>Tipo</TableHead>
-                      <TableHead>Valor</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {avaliacao.pontuacoes.map((pontuacao) => (
                       <TableRow key={pontuacao.id}>
-                        <TableCell className="font-medium">
-                          {pontuacao.ordem}
-                        </TableCell>
                         <TableCell>
+                          <NumeroOrdem n={pontuacao.ordem} />
+                        </TableCell>
+                        <TableCell className="font-medium text-ink">
                           {TIPOS_PONTUACAO[pontuacao.tipo] || pontuacao.tipo}
                         </TableCell>
-                        <TableCell>
-                          {pontuacao.valor === -1
-                            ? "N/A"
-                            : `${pontuacao.valor}%`}
+                        <TableCell className="text-right">
+                          <span className="tabular font-semibold text-brand">
+                            {pontuacao.valor === -1 ? "N/A" : `${pontuacao.valor}%`}
+                          </span>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -325,71 +357,60 @@ function VisualizarAvaliacaoPageContent() {
             </Panel>
           </TabsContent>
 
-          <TabsContent value="tarefas">
+          <TabsContent value="tarefas" className="mt-5">
             <Panel
+              icone={<ListChecks />}
               titulo="Tarefas da Avaliação"
               subtitulo="Perguntas e critérios de avaliação"
             >
               {avaliacao.tarefas.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhuma tarefa cadastrada
-                </p>
+                <EstadoVazio icone={<ListChecks />} titulo="Nenhuma tarefa cadastrada" />
               ) : (
-                <div className="space-y-4">
+                <ol className="space-y-2.5">
                   {avaliacao.tarefas.map((tarefa, index) => (
-                    <Panel key={tarefa.id} titulo={<>{index + 1}. {tarefa.pergunta}</>}>
-                      <div className="space-y-2">
-                        {tarefa.nivel && (
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">
-                              Nível:
-                            </span>{" "}
-                            <Badge variant="outline">
-                              {tarefa.nivel.descricao}
-                            </Badge>
-                          </div>
-                        )}
-                        {tarefa.habilidade && (
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">
-                              Habilidade:
-                            </span>{" "}
-                            <Badge variant="outline">
-                              {tarefa.habilidade.habilidade}
-                            </Badge>
-                            {tarefa.numero != null && (
-                              <>
-                                {" "}
-                                <span className="text-sm font-medium text-muted-foreground">
-                                  Número:
-                                </span>{" "}
-                                <Badge variant="outline">{tarefa.numero}</Badge>
-                              </>
-                            )}
-                          </div>
-                        )}
-                        {tarefa.descricao && (
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">
-                              Descrição:
-                            </span>
-                            <p className="text-sm mt-1">{tarefa.descricao}</p>
-                          </div>
-                        )}
-                        {tarefa.criterios_pontuacao && (
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">
-                              Critérios de Pontuação:
-                            </span>
-                            <p className="text-sm mt-1">
-                              {tarefa.criterios_pontuacao}
-                            </p>
-                          </div>
-                        )}
+                    <li key={tarefa.id} className="rounded-2xl bg-surface-muted p-4">
+                      <div className="flex items-start gap-3">
+                        <NumeroOrdem n={index + 1} />
+                        <div className="min-w-0 flex-1 space-y-2.5">
+                          <p className="pt-1 font-semibold text-ink">{tarefa.pergunta}</p>
+                          {(tarefa.nivel || tarefa.habilidade || tarefa.numero != null) && (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {tarefa.nivel && (
+                                <StatusPill tom="info">Nível: {tarefa.nivel.descricao}</StatusPill>
+                              )}
+                              {tarefa.habilidade && (
+                                <StatusPill tom="violet">
+                                  Habilidade: {tarefa.habilidade.habilidade}
+                                </StatusPill>
+                              )}
+                              {tarefa.numero != null && (
+                                <StatusPill tom="neutral">Número: {tarefa.numero}</StatusPill>
+                              )}
+                            </div>
+                          )}
+                          {tarefa.descricao && (
+                            <div className="space-y-1">
+                              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
+                                Descrição
+                              </p>
+                              <p className="text-sm whitespace-pre-wrap text-ink-2">{tarefa.descricao}</p>
+                            </div>
+                          )}
+                          {tarefa.criterios_pontuacao && (
+                            <div className="space-y-1">
+                              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
+                                Critérios de Pontuação
+                              </p>
+                              <p className="text-sm whitespace-pre-wrap text-ink-2">
+                                {tarefa.criterios_pontuacao}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </Panel>
+                    </li>
                   ))}
-                </div>
+                </ol>
               )}
             </Panel>
           </TabsContent>

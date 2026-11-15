@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Loader2, CheckCircle2, XCircle, ArrowRight, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -118,19 +117,17 @@ export function GlosaDetalheDialog({ glosaId, open, onOpenChange, onAtualizada }
               {glosa.convenio && <><div className="text-muted-foreground">Convênio</div><div className="text-brand font-medium">{glosa.convenio.nome}</div></>}
             </div>
 
-            <Separator />
-
             {/* Dados financeiros */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               <div className="text-center p-3 rounded-lg bg-muted/40">
                 <div className="text-xs text-muted-foreground">Cobrado</div>
                 <div className="font-semibold mt-1">{formatBRL(glosa.valor_cobrado)}</div>
               </div>
-              <div className="text-center p-3 rounded-lg bg-danger-soft border border-danger-soft">
+              <div className="rounded-2xl bg-surface-muted text-center p-3 bg-danger-soft border-danger-soft">
                 <div className="text-xs text-danger-ink">Glosado</div>
                 <div className="font-semibold text-danger-ink mt-1">{formatBRL(glosa.valor_glosado)}</div>
               </div>
-              <div className="text-center p-3 rounded-lg bg-success-soft border border-success-soft">
+              <div className="rounded-2xl bg-surface-muted text-center p-3 bg-success-soft border-success-soft">
                 <div className="text-xs text-success-ink">Recuperado</div>
                 <div className="font-semibold text-success-ink mt-1">
                   {glosa.valor_recuperado !== null ? formatBRL(glosa.valor_recuperado) : "—"}
@@ -156,8 +153,6 @@ export function GlosaDetalheDialog({ glosaId, open, onOpenChange, onAtualizada }
                 </div>
               )}
             </div>
-
-            <Separator />
 
             {/* Processo de recurso — ações */}
             <div className="space-y-3">
@@ -199,7 +194,7 @@ export function GlosaDetalheDialog({ glosaId, open, onOpenChange, onAtualizada }
               )}
 
               {acao === "interpor" && (
-                <div className="space-y-2 p-3 border rounded-lg">
+                <div className="rounded-2xl bg-surface-muted space-y-2 p-3">
                   <div className="text-sm font-medium text-brand">Interpor Recurso</div>
                   <Textarea placeholder="Argumentação para o recurso..." value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} />
                   <div className="flex gap-2">
@@ -213,7 +208,7 @@ export function GlosaDetalheDialog({ glosaId, open, onOpenChange, onAtualizada }
               )}
 
               {acao === "resultado" && (
-                <div className="space-y-2 p-3 border rounded-lg">
+                <div className="rounded-2xl bg-surface-muted space-y-2 p-3">
                   <div className="text-sm font-medium text-success-ink">Recuperação Parcial</div>
                   <Input type="number" step="0.01" min="0" placeholder="Valor recuperado (R$)" value={valorParcial} onChange={(e) => setValorParcial(e.target.value)} />
                   <Textarea placeholder="Observações sobre a resolução..." value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={2} />
@@ -228,7 +223,7 @@ export function GlosaDetalheDialog({ glosaId, open, onOpenChange, onAtualizada }
               )}
 
               {acao === "acatar" && (
-                <div className="space-y-2 p-3 border rounded-lg bg-surface-sunken">
+                <div className="rounded-2xl bg-surface-muted space-y-2 p-3 bg-surface-sunken">
                   <div className="text-sm font-medium text-ink">Acatar a glosa</div>
                   <p className="text-xs text-muted-foreground">A perda de {formatBRL(glosa.valor_glosado)} será registrada sem recurso.</p>
                   <Textarea placeholder="Motivo de não recorrer (opcional)..." value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={2} />
@@ -246,7 +241,6 @@ export function GlosaDetalheDialog({ glosaId, open, onOpenChange, onAtualizada }
             {/* Timeline de histórico */}
             {glosa.historico && glosa.historico.length > 0 && (
               <>
-                <Separator />
                 <div className="space-y-2">
                   <div className="text-sm font-medium">Histórico</div>
                   <div className="space-y-3">

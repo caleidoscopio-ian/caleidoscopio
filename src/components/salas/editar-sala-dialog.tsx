@@ -253,7 +253,7 @@ export function EditarSalaDialog({ sala, onSuccess }: EditarSalaDialogProps) {
 
             {/* Status Ativo */}
             <FormField control={form.control} name="ativo" render={({ field }) => (
-              <FormItem className="flex items-center justify-between rounded-lg border p-4">
+              <FormItem className="rounded-2xl bg-surface-muted flex items-center justify-between p-4">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">Sala Ativa</FormLabel>
                   <FormDescription>Salas inativas não aparecem no agendamento</FormDescription>

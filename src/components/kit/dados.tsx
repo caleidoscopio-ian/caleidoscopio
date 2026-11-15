@@ -202,3 +202,57 @@ export function Carregando({
     </div>
   );
 }
+
+/**
+ * Linha rótulo/valor de painel de detalhe — conferido no detalhe de convênio do
+ * v2: rótulo à esquerda em `ink-3`, valor à direita em `ink`, hairline entre as
+ * linhas. É a forma de "ficha curta" (4-6 dados por painel); para ficha longa
+ * em grade, `GradeCampos` + `CampoInfo`.
+ */
+export function LinhaDado({
+  rotulo,
+  children,
+  className,
+}: {
+  rotulo: React.ReactNode;
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  const vazio = children === null || children === undefined || children === "";
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-4 border-b border-hairline py-3 text-sm first:pt-0 last:border-none last:pb-0",
+        className
+      )}
+    >
+      <span className="shrink-0 text-ink-3">{rotulo}</span>
+      <span
+        className={cn(
+          "min-w-0 truncate text-right",
+          vazio ? "text-ink-4" : "font-medium text-ink"
+        )}
+      >
+        {vazio ? "—" : children}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Número de ordem em círculo branco — conferido no detalhe de avaliação do v2
+ * (níveis, habilidades, pontuação e tarefas). Fica sobre a faixa
+ * `surface-muted` da tabela ou do cartão, por isso é branco.
+ */
+export function NumeroOrdem({ n, className }: { n: React.ReactNode; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "tabular grid size-8 shrink-0 place-items-center rounded-full bg-surface text-[0.8rem] font-semibold text-ink-2 shadow-[0_1px_2px_rgba(15,27,61,0.06)]",
+        className
+      )}
+    >
+      {n}
+    </span>
+  );
+}

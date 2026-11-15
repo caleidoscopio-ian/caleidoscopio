@@ -7,7 +7,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -16,7 +15,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Building2, Search, Loader2, Users, Wrench, LayoutGrid, Clock } from "lucide-react";
+import {
+  Building2,
+  Clock,
+  LayoutGrid,
+  Loader2,
+  Search,
+  Users,
+  Wrench,
+} from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { NovaSalaDialog } from "@/components/salas/nova-sala-dialog";
@@ -26,7 +33,13 @@ import { GradeSalaDialog } from "@/components/salas/grade-sala-dialog";
 import { useFilial } from "@/hooks/useFilial";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { agruparPorFilial } from "@/lib/agrupar-filial";
-import { PageHeader, Panel, StatCard } from "@/components/kit";
+import {
+  PageHeader,
+  Panel,
+  SearchField,
+  StatCard,
+  StatusPill,
+} from "@/components/kit";
 
 interface Sala {
   id: string;
@@ -69,7 +82,7 @@ function SalasTable({
       <TableBody>
         {salas.map((sala) => (
           <TableRow key={sala.id}>
-            <TableCell className="font-medium">
+            <TableCell className="font-semibold text-ink">
               <div className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full"
@@ -137,6 +150,7 @@ function SalasTable({
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="size-9"
                   title="Horário de funcionamento"
                   aria-label={`Horário de funcionamento da ${sala.nome}`}
                   onClick={() => onConfigurarGrade(sala)}
@@ -297,22 +311,26 @@ export default function SalasPage() {
           {/* Busca */}
           <div className="flex items-center space-x-4">
             <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome, descrição ou recursos..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+              <SearchField
+                placeholder="Buscar por nome, descrição ou recursos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
 
           {/* Tabela de Salas */}
           <Panel
             icone={<Building2 />}
-            titulo={<>Salas Cadastradas {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredSalas.length} de {salas.length} </Badge> )}</>}
+            titulo="Salas Cadastradas"
+            subtitulo="Salas e consultórios da clínica"
+            acoes={
+              !loading && (
+                <StatusPill tom="neutral">
+                  {filteredSalas.length} de {salas.length}
+                </StatusPill>
+              )
+            }
           >
 
             {error && (

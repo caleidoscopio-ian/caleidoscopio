@@ -5,15 +5,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
@@ -38,7 +29,14 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { PageHeader, Panel } from "@/components/kit";
+import {
+  ActionButton,
+  Carregando,
+  EstadoVazio,
+  PageHeader,
+  Panel,
+  PersonAvatar,
+} from "@/components/kit";
 
 interface Tarefa {
   id: string;
@@ -64,7 +62,7 @@ interface Sessao {
   iniciada_em: string;
   paciente: {
     id: string;
-    name: string;
+    nome: string;
   };
   avaliacao: {
     id: string;
@@ -249,9 +247,7 @@ function AplicarAvaliacaoPageContent() {
   if (loading || !sessao) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+        <Carregando texto="Carregando avaliação..." className="py-24" />
       </MainLayout>
     );
   }
@@ -262,15 +258,17 @@ function AplicarAvaliacaoPageContent() {
   if (!tarefas || tarefas.length === 0) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="text-center py-12">
-          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">Nenhuma tarefa encontrada</h3>
-          <p className="text-muted-foreground mb-4">
-            Esta avaliação não possui tarefas cadastradas.
-          </p>
-          <Button onClick={() => router.push("/iniciar-sessao")}>
-            Voltar para Iniciar Sessão
-          </Button>
+        <div className="py-16">
+          <EstadoVazio
+            icone={<ClipboardList />}
+            titulo="Nenhuma tarefa encontrada"
+            texto="Esta avaliação não possui tarefas cadastradas."
+            acao={
+              <ActionButton onClick={() => router.push("/iniciar-sessao")}>
+                Voltar para Iniciar Sessão
+              </ActionButton>
+            }
+          />
         </div>
       </MainLayout>
     );
@@ -280,15 +278,17 @@ function AplicarAvaliacaoPageContent() {
   if (!tarefa) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="text-center py-12">
-          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">Tarefa não encontrada</h3>
-          <p className="text-muted-foreground mb-4">
-            Índice de tarefa inválido para esta avaliação.
-          </p>
-          <Button onClick={() => router.push("/iniciar-sessao")}>
-            Voltar para Iniciar Sessão
-          </Button>
+        <div className="py-16">
+          <EstadoVazio
+            icone={<ClipboardList />}
+            titulo="Tarefa não encontrada"
+            texto="Índice de tarefa inválido para esta avaliação."
+            acao={
+              <ActionButton onClick={() => router.push("/iniciar-sessao")}>
+                Voltar para Iniciar Sessão
+              </ActionButton>
+            }
+          />
         </div>
       </MainLayout>
     );
@@ -299,156 +299,178 @@ function AplicarAvaliacaoPageContent() {
     (k) => respostas[k].pontuacao !== null
   ).length;
 
+  const respondida = respostas[tarefa.id]?.pontuacao !== null && respostas[tarefa.id]?.pontuacao !== undefined;
+
+  // Nível e habilidade: no cabeçalho do painel em telas largas, no corpo em
+  // telas estreitas (onde o cabeçalho não tem espaço)
+  const marcadores = (
+    <>
+      {tarefa.nivel && (
+        <span className="rounded-full bg-surface-sunken px-2.5 py-1 text-[0.72rem] font-medium text-ink-2">
+          {tarefa.nivel.descricao}
+        </span>
+      )}
+      {tarefa.habilidade && (
+        <span className="rounded-full border border-hairline px-2.5 py-1 text-[0.72rem] font-medium text-ink-2">
+          {tarefa.habilidade.habilidade}
+          {tarefa.numero != null && ` · Número: ${tarefa.numero}`}
+        </span>
+      )}
+    </>
+  );
+
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
-      <div className="space-y-6">
-        {/* Header com informações da sessão */}
+      <div className="space-y-7">
         <PageHeader
           titulo="Aplicar Avaliação"
-          subtitulo={<>Paciente: <strong>{sessao.paciente.name}</strong> • Avaliação:{" "} <strong>{sessao.avaliacao.nome}</strong></>}
+          subtitulo={
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>
+                Paciente: <strong className="font-semibold text-ink">{sessao.paciente.nome}</strong>
+              </span>
+              <span aria-hidden="true" className="text-ink-4">·</span>
+              <span>
+                Avaliação: <strong className="font-semibold text-ink">{sessao.avaliacao.nome}</strong>
+              </span>
+            </span>
+          }
+          acoes={<PersonAvatar nome={sessao.paciente.nome} tamanho={52} />}
         />
 
-        {/* Painel de Navegação de Tarefas */}
-        <Panel
-          icone={<ClipboardList />}
-          titulo={<>Tarefas da Avaliação ({tarefas.length})</>}
-          className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20"
-        >
+        {/* Navegação de tarefas (esquerda) + tarefa atual (direita) — 1 : 1.6 */}
+        <div className="grid gap-4 xl:grid-cols-[1fr_1.6fr]">
+          <Panel icone={<ClipboardList />} titulo={<>Tarefas da Avaliação ({tarefas.length})</>}>
+            <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1 xl:grid xl:max-h-[30rem] xl:grid-cols-3 xl:overflow-y-auto">
+              {tarefas.map((trf, idx) => {
+                const tarefaRespondida =
+                  respostas[trf.id]?.pontuacao !== null && respostas[trf.id]?.pontuacao !== undefined;
+                const isAtual = idx === tarefaAtual;
 
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {tarefas.map((trf, idx) => {
-              const tarefaRespondida = respostas[trf.id]?.pontuacao !== null && respostas[trf.id]?.pontuacao !== undefined;
-              const isAtual = idx === tarefaAtual;
-
-              return (
-                <Button
-                  key={trf.id}
-                  variant={isAtual ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => navegarParaTarefa(idx)}
-                  className={`flex-shrink-0 min-w-[100px] justify-between ${
-                    tarefaRespondida && !isAtual
-                      ? "border-success bg-success-soft hover:bg-success-soft"
-                      : ""
-                  }`}
-                >
-                  <span className="text-xs font-medium">
+                return (
+                  <button
+                    key={trf.id}
+                    type="button"
+                    aria-current={isAtual ? "step" : undefined}
+                    onClick={() => navegarParaTarefa(idx)}
+                    className={`flex h-10 min-w-[6.5rem] shrink-0 items-center justify-between gap-1.5 rounded-full px-3.5 text-[0.78rem] font-medium transition focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none ${
+                      isAtual
+                        ? "bg-brand text-white shadow-[0_8px_20px_-8px_rgba(47,85,240,0.7)]"
+                        : tarefaRespondida
+                          ? "bg-success-soft text-success-ink hover:brightness-95"
+                          : "bg-surface-muted text-ink-2 hover:bg-brand-soft/60"
+                    }`}
+                  >
                     Tarefa {idx + 1}
-                  </span>
-                  {tarefaRespondida && (
-                    <CheckCircle2 className="h-4 w-4 ml-1 flex-shrink-0 text-success-ink" />
-                  )}
-                </Button>
-              );
-            })}
-          </div>
-        </Panel>
+                    {tarefaRespondida && <CheckCircle2 className="size-4 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
 
-        {/* Progresso */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-2">
+            <div className="mt-5 space-y-2 border-t border-hairline pt-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Progresso da Avaliação
-                </span>
-                <span className="font-medium">
+                <span className="text-ink-3">Progresso da Avaliação</span>
+                <span className="tabular font-semibold text-ink">
                   {respostasPreenchidas} de {tarefas.length} tarefas
                 </span>
               </div>
-              <Progress value={progresso} className="h-2" />
+              <Progress
+                value={progresso}
+                className="h-2 bg-surface-sunken [&>[data-slot=progress-indicator]]:rounded-full [&>[data-slot=progress-indicator]]:bg-brand"
+              />
             </div>
-          </CardContent>
-        </Card>
+          </Panel>
 
-        {/* Tarefa Atual */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Badge variant="secondary">Tarefa {tarefaAtual + 1}</Badge>
-                  {respostas[tarefa.id]?.pontuacao !== null &&
-                    respostas[tarefa.id]?.pontuacao !== undefined && (
-                      <CheckCircle2 className="h-5 w-5 text-success-ink" />
-                    )}
-                </CardTitle>
-                <CardDescription>
-                  {tarefaAtual + 1} de {tarefas.length}
-                </CardDescription>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {tarefa.nivel && (
-                  <Badge variant="secondary" className="text-xs">
-                    {tarefa.nivel.descricao}
-                  </Badge>
+          <Panel
+            titulo={
+              <span className="flex items-center gap-2">
+                <span className="rounded-full bg-brand-soft px-3 py-1 text-[0.85rem] font-semibold text-brand">
+                  Tarefa {tarefaAtual + 1}
+                </span>
+                {respondida && <CheckCircle2 className="size-5 text-success-ink" />}
+              </span>
+            }
+            subtitulo={`${tarefaAtual + 1} de ${tarefas.length}`}
+            acoes={<div className="hidden flex-wrap justify-end gap-1.5 sm:flex">{marcadores}</div>}
+            rodape={
+              <>
+                <ActionButton
+                  variant="secondary"
+                  onClick={() => setTarefaAtual(Math.max(0, tarefaAtual - 1))}
+                  disabled={tarefaAtual === 0}
+                >
+                  <ArrowLeft />
+                  Anterior
+                </ActionButton>
+
+                {tarefaAtual < tarefas.length - 1 ? (
+                  <ActionButton onClick={() => setTarefaAtual(tarefaAtual + 1)}>
+                    Próxima
+                    <ArrowRight />
+                  </ActionButton>
+                ) : (
+                  <ActionButton
+                    onClick={() => setShowFinalizar(true)}
+                    className="bg-success text-white shadow-[0_8px_20px_-8px_var(--success)] hover:bg-success/90"
+                  >
+                    <CheckCircle2 />
+                    Finalizar Avaliação
+                  </ActionButton>
                 )}
-                {tarefa.habilidade && (
-                  <Badge variant="outline" className="text-xs">
-                    {tarefa.habilidade.habilidade}
-                    {tarefa.numero != null && ` · Número: ${tarefa.numero}`}
-                  </Badge>
+              </>
+            }
+          >
+            <div className="space-y-6">
+              <div className="flex flex-wrap gap-1.5 sm:hidden">{marcadores}</div>
+
+              {/* Texto da tarefa */}
+              <div className="rounded-2xl border-l-4 border-brand bg-brand-soft/50 p-4 md:p-5">
+                <p className="text-[1.1rem] leading-snug font-semibold text-ink">{tarefa.pergunta}</p>
+                {tarefa.descricao && <p className="mt-2 text-sm text-ink-3">{tarefa.descricao}</p>}
+                {tarefa.criterios_pontuacao && (
+                  <div className="mt-3 border-t border-brand/15 pt-3">
+                    <p className="mb-1 text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
+                      Critérios de Pontuação:
+                    </p>
+                    <p className="text-sm text-ink-3">{tarefa.criterios_pontuacao}</p>
+                  </div>
                 )}
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Texto da tarefa */}
-            <div className="p-4 bg-primary/5 border-l-4 border-primary rounded">
-              <p className="text-lg font-medium">{tarefa.pergunta}</p>
-              {tarefa.descricao && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  {tarefa.descricao}
-                </p>
-              )}
-              {tarefa.criterios_pontuacao && (
-                <div className="mt-3 pt-3 border-t border-primary/20">
-                  <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Critérios de Pontuação:
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {tarefa.criterios_pontuacao}
-                  </p>
-                </div>
-              )}
-            </div>
 
-            {/* Avaliação */}
-            <div className="space-y-4">
+              {/* Pontuação */}
               <div>
-                <Label className="text-base">Selecione a Pontuação *</Label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Avalie o desempenho do paciente nesta tarefa
+                <p className="text-[0.95rem] font-semibold text-ink">
+                  Selecione a Pontuação <span className="text-danger-ink">*</span>
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {sessao.avaliacao.pontuacoes.map((pont) => (
-                    <Button
-                      key={pont.id}
-                      type="button"
-                      variant={
-                        respostas[tarefa.id]?.pontuacao === pont.valor
-                          ? "default"
-                          : "outline"
-                      }
-                      className={`h-auto py-3 flex flex-col items-center justify-center ${
-                        respostas[tarefa.id]?.pontuacao === pont.valor
-                          ? ""
-                          : "hover:bg-primary/10"
-                      }`}
-                      onClick={() => handlePontuacao(pont.valor)}
-                    >
-                      <span className="font-semibold text-sm">
-                        {TIPOS_PONTUACAO[pont.tipo]}
-                      </span>
-                      <span className="text-xs opacity-80 mt-1">
-                        {pont.valor === -1 ? "N/A" : `${pont.valor}%`}
-                      </span>
-                    </Button>
-                  ))}
+                <p className="mb-3 text-sm text-ink-3">Avalie o desempenho do paciente nesta tarefa</p>
+                <div role="radiogroup" aria-label="Pontuação" className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                  {sessao.avaliacao.pontuacoes.map((pont) => {
+                    const selecionada = respostas[tarefa.id]?.pontuacao === pont.valor;
+                    return (
+                      <button
+                        key={pont.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={selecionada}
+                        onClick={() => handlePontuacao(pont.valor)}
+                        className={`flex flex-col items-center justify-center rounded-2xl px-3 py-3.5 text-center transition focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none active:scale-[0.98] ${
+                          selecionada
+                            ? "bg-brand text-white shadow-[0_8px_20px_-8px_rgba(47,85,240,0.7)]"
+                            : "bg-surface-muted text-ink hover:bg-brand-soft/60"
+                        }`}
+                      >
+                        <span className="text-sm font-semibold">{TIPOS_PONTUACAO[pont.tipo]}</span>
+                        <span className={`tabular mt-1 text-xs ${selecionada ? "text-white/80" : "text-ink-3"}`}>
+                          {pont.valor === -1 ? "N/A" : `${pont.valor}%`}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="observacao">Observações (opcional)</Label>
                 <Textarea
                   id="observacao"
@@ -456,38 +478,12 @@ function AplicarAvaliacaoPageContent() {
                   value={respostas[tarefa.id]?.observacao || ""}
                   onChange={(e) => handleObservacao(e.target.value)}
                   rows={3}
+                  className="min-h-24"
                 />
               </div>
             </div>
-
-            {/* Navegação */}
-            <div className="flex items-center justify-between pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => setTarefaAtual(Math.max(0, tarefaAtual - 1))}
-                disabled={tarefaAtual === 0}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Anterior
-              </Button>
-
-              {tarefaAtual < tarefas.length - 1 ? (
-                <Button onClick={() => setTarefaAtual(tarefaAtual + 1)}>
-                  Próxima
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setShowFinalizar(true)}
-                  className="bg-success hover:bg-success"
-                >
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Finalizar Avaliação
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+          </Panel>
+        </div>
 
         {/* Dialog Finalizar */}
         <AlertDialog open={showFinalizar} onOpenChange={setShowFinalizar}>
@@ -498,7 +494,7 @@ function AplicarAvaliacaoPageContent() {
                 Você respondeu {respostasPreenchidas} de {tarefas.length}{" "}
                 tarefas.
                 {respostasPreenchidas < tarefas.length && (
-                  <span className="block mt-2 text-warning-ink">
+                  <span className="mt-2 block text-warning-ink">
                     Atenção: Existem {tarefas.length - respostasPreenchidas}{" "}
                     tarefas sem pontuação.
                   </span>

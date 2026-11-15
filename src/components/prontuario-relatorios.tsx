@@ -304,7 +304,7 @@ export function ProntuarioRelatorios({
   const getAssinadoBadge = (assinado: boolean) => {
     if (assinado) {
       return (
-        <Badge variant="default" className="bg-success">
+        <Badge variant="outline" className="bg-success-soft text-success-ink">
           <FileCheck className="h-3 w-3 mr-1" />
           Assinado
         </Badge>

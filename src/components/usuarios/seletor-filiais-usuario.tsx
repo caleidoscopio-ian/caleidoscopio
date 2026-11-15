@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -211,8 +210,6 @@ export function SeletorFiliaisUsuario({
                 Sem filial marcada, o usuário enxerga <strong>todas</strong> as unidades.
               </p>
             )}
-
-            <Separator />
 
             <div className="flex items-center justify-end gap-2">
               <Button variant="ghost" size="sm" onClick={() => setAberto(false)}>

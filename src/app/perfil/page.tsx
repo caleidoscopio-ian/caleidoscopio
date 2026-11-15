@@ -3,18 +3,20 @@
 import { useAuth } from '@/hooks/useAuth'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { MainLayout } from '@/components/main-layout'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
 import { AlterarSenhaDialog } from '@/components/alterar-senha-dialog'
-import {
-  User,
-  Mail,
-  Building,
-  Shield,
-  CheckCircle,
-} from 'lucide-react'
-import { PageHeader, Panel } from '@/components/kit'
+import { User, Mail, Building, Shield, CheckCircle } from 'lucide-react'
+import { PageHeader, Panel, PersonAvatar, StatusPill } from '@/components/kit'
+
+/** Campo da ficha: rótulo pequeno em `ink-3`, valor em `ink`, hairline embaixo
+ *  — medido no clone do v2 (/perfil). */
+function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5 border-b border-hairline py-4 first:pt-0 last:border-none last:pb-0">
+      <p className="text-[0.78rem] text-ink-3">{rotulo}</p>
+      <div className="text-[0.95rem] text-ink">{children}</div>
+    </div>
+  )
+}
 
 export default function PerfilPage() {
   const { user, tenant } = useAuth()
@@ -27,83 +29,58 @@ export default function PerfilPage() {
   return (
     <ProtectedRoute>
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="space-y-6">
-          {/* Header */}
+        <div className="space-y-7">
           <PageHeader
             titulo="Meu Perfil"
             subtitulo="Visualize suas informações e gerencie sua conta"
           />
 
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Informações Pessoais */}
+          <div className="grid items-start gap-5 md:grid-cols-2">
             <Panel
               icone={<User />}
               titulo="Informações Pessoais"
               subtitulo="Seus dados cadastrados no sistema"
             >
-              <div className="space-y-4">
-
-                <div>
-                  <Label className="text-muted-foreground text-sm">Nome Completo</Label>
-                  <p className="text-base font-medium mt-1">{user?.name || '-'}</p>
+              <div className="mb-5 flex items-center gap-4 rounded-2xl bg-surface-muted p-4">
+                <PersonAvatar nome={user?.name || '?'} tamanho={56} />
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-semibold text-ink">{user?.name || '-'}</p>
+                  <p className="truncate text-[0.8rem] text-ink-3">{user?.email || '-'}</p>
                 </div>
+              </div>
 
-                <Separator />
-
-                <div>
-                  <Label className="text-muted-foreground text-sm">Email</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-base">{user?.email || '-'}</p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <Label className="text-muted-foreground text-sm">Perfil de Acesso</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    <Badge variant="outline">{user?.role || '-'}</Badge>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <AlterarSenhaDialog />
-                </div>
+              <Campo rotulo="Nome Completo">{user?.name || '-'}</Campo>
+              <Campo rotulo="Email">
+                <span className="flex items-center gap-2">
+                  <Mail className="size-4 text-ink-3" />
+                  {user?.email || '-'}
+                </span>
+              </Campo>
+              <Campo rotulo="Perfil de Acesso">
+                <span className="flex items-center gap-2">
+                  <Shield className="size-4 text-ink-3" />
+                  <StatusPill tom="info">{user?.role || '-'}</StatusPill>
+                </span>
+              </Campo>
+              <div className="pt-4">
+                <AlterarSenhaDialog />
               </div>
             </Panel>
 
-            {/* Informações da Clínica */}
             <Panel
               icone={<Building />}
               titulo="Clínica"
               subtitulo="Informações da sua clínica"
             >
-              <div className="space-y-4">
-
-                <div>
-                  <Label className="text-muted-foreground text-sm">Nome da Clínica</Label>
-                  <p className="text-base font-medium mt-1">{tenant?.name || '-'}</p>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <Label className="text-muted-foreground text-sm">Status</Label>
-                  <div className="mt-1">
-                    <Badge variant="outline" className="bg-success-soft text-success-ink">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Ativa
-                    </Badge>
-                  </div>
-                </div>
-              </div>
+              <Campo rotulo="Nome da Clínica">{tenant?.name || '-'}</Campo>
+              <Campo rotulo="Status">
+                <StatusPill tom="success">
+                  <CheckCircle className="size-3.5" />
+                  Ativa
+                </StatusPill>
+              </Campo>
             </Panel>
           </div>
-
         </div>
       </MainLayout>
     </ProtectedRoute>

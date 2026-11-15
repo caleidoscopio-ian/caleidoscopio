@@ -4,10 +4,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -46,7 +43,6 @@ import {
   ChevronDown,
   Settings2,
   History,
-  Search,
   Edit,
   Plus,
   Trash2,
@@ -67,7 +63,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { PageHeader, Panel, EstadoVazio } from "@/components/kit";
+import { PageHeader, Panel, EstadoVazio, SearchField } from "@/components/kit";
 
 // ============ Interfaces ============
 
@@ -176,7 +172,12 @@ interface Paciente {
 
 // ============ Constants ============
 
-const FASES_ORDEM = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
+const FASES_ORDEM = [
+  "LINHA_BASE",
+  "INTERVENCAO",
+  "MANUTENCAO",
+  "GENERALIZACAO",
+];
 const SIGLAS = ["-", "AFT", "AFP", "AI", "AG", "AVE", "AVG", "+"];
 const GRAUS = ["Erro", "Independente", "Alta", "Média", "Baixa"];
 
@@ -193,7 +194,8 @@ function EvolucaoPageContent() {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [pacienteSelecionado, setPacienteSelecionado] = useState<string>("");
   const [atribuicoes, setAtribuicoes] = useState<PacienteCurriculumData[]>([]);
-  const [curriculumSelecionado, setCurriculumSelecionado] = useState<string>("");
+  const [curriculumSelecionado, setCurriculumSelecionado] =
+    useState<string>("");
   const [loading, setLoading] = useState(false);
   const [loadingPacientes, setLoadingPacientes] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -202,7 +204,8 @@ function EvolucaoPageContent() {
 
   // Modal states
   const [detalhesAberto, setDetalhesAberto] = useState(false);
-  const [cloneSelecionado, setCloneSelecionado] = useState<AtividadeClone | null>(null);
+  const [cloneSelecionado, setCloneSelecionado] =
+    useState<AtividadeClone | null>(null);
   const [detalhesTab, setDetalhesTab] = useState("detalhes");
   const [criteriosAberto, setCriteriosAberto] = useState(false);
   const [faseCriterio, setFaseCriterio] = useState<string>("");
@@ -214,11 +217,13 @@ function EvolucaoPageContent() {
   });
   const [salvandoCriterio, setSalvandoCriterio] = useState(false);
   const [salvandoFase, setSalvandoFase] = useState(false);
-  const [instrucaoParaCriterios, setInstrucaoParaCriterios] = useState<Instrucao | null>(null);
+  const [instrucaoParaCriterios, setInstrucaoParaCriterios] =
+    useState<Instrucao | null>(null);
 
   // Instruction detail modal states
   const [instrucaoDetalheAberto, setInstrucaoDetalheAberto] = useState(false);
-  const [instrucaoSelecionada, setInstrucaoSelecionada] = useState<Instrucao | null>(null);
+  const [instrucaoSelecionada, setInstrucaoSelecionada] =
+    useState<Instrucao | null>(null);
   const [instrucaoDetalheTab, setInstrucaoDetalheTab] = useState("evolucao");
   const [fasePontuacao, setFasePontuacao] = useState<string>("");
   const [salvandoPontuacao, setSalvandoPontuacao] = useState(false);
@@ -240,13 +245,17 @@ function EvolucaoPageContent() {
   });
   const [instrucoesList, setInstrucoesList] = useState<Instrucao[]>([]);
   const [instrucaoDialogAberto, setInstrucaoDialogAberto] = useState(false);
-  const [instrucaoEditIndex, setInstrucaoEditIndex] = useState<number | null>(null);
+  const [instrucaoEditIndex, setInstrucaoEditIndex] = useState<number | null>(
+    null,
+  );
   const [instrucaoForm, setInstrucaoForm] = useState({
     texto: "",
   });
   const [pontuacoesList, setPontuacoesList] = useState<Pontuacao[]>([]);
   const [pontuacaoDialogAberto, setPontuacaoDialogAberto] = useState(false);
-  const [pontuacaoEditIndex, setPontuacaoEditIndex] = useState<number | null>(null);
+  const [pontuacaoEditIndex, setPontuacaoEditIndex] = useState<number | null>(
+    null,
+  );
   const [pontuacaoForm, setPontuacaoForm] = useState({ sigla: "", grau: "" });
 
   // ============ Fetch pacientes ============
@@ -278,40 +287,43 @@ function EvolucaoPageContent() {
 
   // ============ Fetch evolução ============
 
-  const fetchEvolucao = useCallback(async (autoSelectFirst = false) => {
-    if (!isAuthenticated || !user || !pacienteSelecionado) return;
+  const fetchEvolucao = useCallback(
+    async (autoSelectFirst = false) => {
+      if (!isAuthenticated || !user || !pacienteSelecionado) return;
 
-    try {
-      setLoading(true);
-      setError(null);
-      const userDataEncoded = btoa(JSON.stringify(user));
+      try {
+        setLoading(true);
+        setError(null);
+        const userDataEncoded = btoa(JSON.stringify(user));
 
-      const response = await fetch(
-        `/api/evolucao?pacienteId=${pacienteSelecionado}`,
-        {
-          headers: {
-            "X-User-Data": userDataEncoded,
-            "X-Auth-Token": user.token,
+        const response = await fetch(
+          `/api/evolucao?pacienteId=${pacienteSelecionado}`,
+          {
+            headers: {
+              "X-User-Data": userDataEncoded,
+              "X-Auth-Token": user.token,
+            },
           },
-        }
-      );
+        );
 
-      const result = await response.json();
-      if (result.success) {
-        setAtribuicoes(result.data || []);
-        if (autoSelectFirst && result.data.length > 0) {
-          setCurriculumSelecionado(result.data[0].id);
+        const result = await response.json();
+        if (result.success) {
+          setAtribuicoes(result.data || []);
+          if (autoSelectFirst && result.data.length > 0) {
+            setCurriculumSelecionado(result.data[0].id);
+          }
+        } else {
+          setError(result.error);
         }
-      } else {
-        setError(result.error);
+      } catch (err) {
+        console.error("Erro ao buscar evolução:", err);
+        setError("Erro ao carregar dados de evolução");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Erro ao buscar evolução:", err);
-      setError("Erro ao carregar dados de evolução");
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated, user, pacienteSelecionado]);
+    },
+    [isAuthenticated, user, pacienteSelecionado],
+  );
 
   // ============ Desassociar plano do paciente ============
 
@@ -334,7 +346,7 @@ function EvolucaoPageContent() {
             "X-User-Data": btoa(JSON.stringify(user)),
             "X-Auth-Token": user.token,
           },
-        }
+        },
       );
       const result = await response.json();
       if (!response.ok || !result.success) {
@@ -342,13 +354,15 @@ function EvolucaoPageContent() {
       }
       setConfirmandoRemocao(false);
       setAvisoSincronia(
-        "Plano removido deste paciente. O histórico foi preservado e ele pode ser atribuído de novo quando precisar."
+        "Plano removido deste paciente. O histórico foi preservado e ele pode ser atribuído de novo quando precisar.",
       );
       setCurriculumSelecionado("");
       await fetchEvolucao(true);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Erro ao remover o plano do paciente"
+        err instanceof Error
+          ? err.message
+          : "Erro ao remover o plano do paciente",
       );
       setConfirmandoRemocao(false);
     } finally {
@@ -382,7 +396,7 @@ function EvolucaoPageContent() {
       await fetchEvolucao();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Erro ao atualizar o plano"
+        err instanceof Error ? err.message : "Erro ao atualizar o plano",
       );
     } finally {
       setSincronizando(false);
@@ -442,12 +456,17 @@ function EvolucaoPageContent() {
 
   // ============ Abrir critérios por instrução ============
 
-  const abrirCriteriosInstrucao = (instrucao: Instrucao, clone: AtividadeClone) => {
+  const abrirCriteriosInstrucao = (
+    instrucao: Instrucao,
+    clone: AtividadeClone,
+  ) => {
     setCloneSelecionado(clone);
     setInstrucaoParaCriterios(instrucao);
     setFaseCriterio(instrucao.faseAtual);
 
-    const criterioExistente = instrucao.fases?.find((f) => f.fase === instrucao.faseAtual);
+    const criterioExistente = instrucao.fases?.find(
+      (f) => f.fase === instrucao.faseAtual,
+    );
     if (criterioExistente) {
       setCriterioForm({
         porcentagem_acerto: criterioExistente.porcentagem_acerto,
@@ -470,7 +489,10 @@ function EvolucaoPageContent() {
   // ============ Abrir detalhes da instrução ============
 
   // Helper: filtra pontuações por fase e ordena com "+" sempre por último
-  const filtrarPontuacoesFase = (pontuacoes: InstrucaoPontuacaoData[], fase: string) =>
+  const filtrarPontuacoesFase = (
+    pontuacoes: InstrucaoPontuacaoData[],
+    fase: string,
+  ) =>
     pontuacoes
       .filter((p) => p.fase === fase)
       .sort((a, b) => {
@@ -480,12 +502,17 @@ function EvolucaoPageContent() {
       })
       .map((p) => ({ id: p.id, ordem: p.ordem, sigla: p.sigla, grau: p.grau }));
 
-  const abrirDetalhesInstrucao = (instrucao: Instrucao, clone: AtividadeClone) => {
+  const abrirDetalhesInstrucao = (
+    instrucao: Instrucao,
+    clone: AtividadeClone,
+  ) => {
     setInstrucaoSelecionada(instrucao);
     setCloneSelecionado(clone);
     setInstrucaoDetalheTab("evolucao");
     setFasePontuacao(instrucao.faseAtual);
-    setPontuacoesList(filtrarPontuacoesFase(instrucao.pontuacoes || [], instrucao.faseAtual));
+    setPontuacoesList(
+      filtrarPontuacoesFase(instrucao.pontuacoes || [], instrucao.faseAtual),
+    );
     setInstrucaoDetalheAberto(true);
   };
 
@@ -493,7 +520,9 @@ function EvolucaoPageContent() {
   const trocarFasePontuacao = (fase: string) => {
     if (!instrucaoSelecionada) return;
     setFasePontuacao(fase);
-    setPontuacoesList(filtrarPontuacoesFase(instrucaoSelecionada.pontuacoes || [], fase));
+    setPontuacoesList(
+      filtrarPontuacoesFase(instrucaoSelecionada.pontuacoes || [], fase),
+    );
   };
 
   // Salvar pontuações por instrução por fase
@@ -537,7 +566,10 @@ function EvolucaoPageContent() {
 
   // ============ Alterar fase de uma instrução manualmente ============
 
-  const alterarFaseInstrucao = async (instrucaoId: string, novaFase: string) => {
+  const alterarFaseInstrucao = async (
+    instrucaoId: string,
+    novaFase: string,
+  ) => {
     if (!user) return;
 
     try {
@@ -678,9 +710,18 @@ function EvolucaoPageContent() {
     }
 
     const novaInstrucao: Instrucao = {
-      id: instrucaoEditIndex !== null ? instrucoesList[instrucaoEditIndex].id : `temp-${Date.now()}`,
-      ordem: instrucaoEditIndex !== null ? instrucoesList[instrucaoEditIndex].ordem : instrucoesList.length + 1,
-      faseAtual: instrucaoEditIndex !== null ? instrucoesList[instrucaoEditIndex].faseAtual : "LINHA_BASE",
+      id:
+        instrucaoEditIndex !== null
+          ? instrucoesList[instrucaoEditIndex].id
+          : `temp-${Date.now()}`,
+      ordem:
+        instrucaoEditIndex !== null
+          ? instrucoesList[instrucaoEditIndex].ordem
+          : instrucoesList.length + 1,
+      faseAtual:
+        instrucaoEditIndex !== null
+          ? instrucoesList[instrucaoEditIndex].faseAtual
+          : "LINHA_BASE",
       texto: instrucaoForm.texto,
     };
 
@@ -695,10 +736,12 @@ function EvolucaoPageContent() {
   };
 
   const removerInstrucao = (index: number) => {
-    const novaLista = instrucoesList.filter((_, i) => i !== index).map((instr, i) => ({
-      ...instr,
-      ordem: i + 1,
-    }));
+    const novaLista = instrucoesList
+      .filter((_, i) => i !== index)
+      .map((instr, i) => ({
+        ...instr,
+        ordem: i + 1,
+      }));
     setInstrucoesList(novaLista);
   };
 
@@ -723,8 +766,14 @@ function EvolucaoPageContent() {
     }
 
     const novaPontuacao: Pontuacao = {
-      id: pontuacaoEditIndex !== null ? pontuacoesList[pontuacaoEditIndex].id : `temp-${Date.now()}`,
-      ordem: pontuacaoEditIndex !== null ? pontuacoesList[pontuacaoEditIndex].ordem : pontuacoesList.length + 1,
+      id:
+        pontuacaoEditIndex !== null
+          ? pontuacoesList[pontuacaoEditIndex].id
+          : `temp-${Date.now()}`,
+      ordem:
+        pontuacaoEditIndex !== null
+          ? pontuacoesList[pontuacaoEditIndex].ordem
+          : pontuacoesList.length + 1,
       sigla: pontuacaoForm.sigla,
       grau: pontuacaoForm.grau,
     };
@@ -740,10 +789,12 @@ function EvolucaoPageContent() {
   };
 
   const removerPontuacao = (index: number) => {
-    const novaLista = pontuacoesList.filter((_, i) => i !== index).map((pont, i) => ({
-      ...pont,
-      ordem: i + 1,
-    }));
+    const novaLista = pontuacoesList
+      .filter((_, i) => i !== index)
+      .map((pont, i) => ({
+        ...pont,
+        ordem: i + 1,
+      }));
     setPontuacoesList(novaLista);
   };
 
@@ -763,7 +814,7 @@ function EvolucaoPageContent() {
   // ============ Derived data ============
 
   const atribuicaoAtual = atribuicoes.find(
-    (a) => a.id === curriculumSelecionado
+    (a) => a.id === curriculumSelecionado,
   );
 
   const atividadesFiltradas = (atribuicaoAtual?.atividadesClone || []).filter(
@@ -773,7 +824,7 @@ function EvolucaoPageContent() {
       const matchBusca =
         !busca || clone.nome.toLowerCase().includes(busca.toLowerCase());
       return matchFase && matchBusca;
-    }
+    },
   );
 
   // ============ Render ============
@@ -877,15 +928,11 @@ function EvolucaoPageContent() {
 
             <div className="space-y-2 flex-1">
               <Label>Buscar atividade</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Nome da atividade..."
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+              <SearchField
+                placeholder="Nome da atividade..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
             </div>
           </div>
         )}
@@ -916,11 +963,15 @@ function EvolucaoPageContent() {
           />
         )}
 
-        <AlertDialog open={confirmandoRemocao} onOpenChange={setConfirmandoRemocao}>
+        <AlertDialog
+          open={confirmandoRemocao}
+          onOpenChange={setConfirmandoRemocao}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                Remover &quot;{atribuicaoAtual?.curriculum.nome}&quot; deste paciente?
+                Remover &quot;{atribuicaoAtual?.curriculum.nome}&quot; deste
+                paciente?
               </AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="space-y-2 text-sm">
@@ -931,14 +982,16 @@ function EvolucaoPageContent() {
                   <p>
                     <span className="font-medium">Nada é apagado.</span> As
                     atividades do paciente, as fases em que elas estão, os
-                    critérios e todo o histórico ficam guardados — se o plano for
-                    atribuído de novo, ele volta do jeito que estava.
+                    critérios e todo o histórico ficam guardados — se o plano
+                    for atribuído de novo, ele volta do jeito que estava.
                   </p>
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={removendo}>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel disabled={removendo}>
+                Cancelar
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={(e) => {
                   e.preventDefault();
@@ -955,7 +1008,7 @@ function EvolucaoPageContent() {
         </AlertDialog>
 
         {avisoSincronia && (
-          <div className="flex items-center gap-2 rounded-md border border-success bg-success-soft px-3 py-2 text-sm text-success-ink">
+          <div className="flex items-center gap-2 rounded-2xl border border-success/40 bg-success-soft px-4 py-3 text-sm text-success-ink">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             {avisoSincronia}
           </div>
@@ -963,39 +1016,46 @@ function EvolucaoPageContent() {
 
         {/* Plano desalinhado do currículo: diz o que falta e oferece a ação.
             Aditivo — o botão clona só o que não existe, nunca mexe no resto. */}
-        {atribuicaoAtual && !loading && (atribuicaoAtual.faltando?.length ?? 0) > 0 && (
-          <div className="rounded-3xl border border-warning/40 bg-warning-soft px-5 py-4">
-            <div>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="h-5 w-5 text-warning-ink mt-0.5 shrink-0" />
-                  <div className="text-sm text-warning-ink">
-                    <p className="font-medium">
-                      {atribuicaoAtual.faltando!.length === 1
-                        ? "O currículo tem 1 atividade que não está neste plano"
-                        : `O currículo tem ${atribuicaoAtual.faltando!.length} atividades que não estão neste plano`}
-                    </p>
-                    <p className="text-xs mt-0.5">
-                      {atribuicaoAtual.faltando!.map((a) => a.nome).join(", ")} — foram
-                      incluídas no currículo depois que este plano foi atribuído.
-                    </p>
+        {atribuicaoAtual &&
+          !loading &&
+          (atribuicaoAtual.faltando?.length ?? 0) > 0 && (
+            <div className="rounded-3xl border border-warning/40 bg-warning-soft px-5 py-4">
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-5 w-5 text-warning-ink mt-0.5 shrink-0" />
+                    <div className="text-sm text-warning-ink">
+                      <p className="font-medium">
+                        {atribuicaoAtual.faltando!.length === 1
+                          ? "O currículo tem 1 atividade que não está neste plano"
+                          : `O currículo tem ${atribuicaoAtual.faltando!.length} atividades que não estão neste plano`}
+                      </p>
+                      <p className="text-xs mt-0.5">
+                        {atribuicaoAtual
+                          .faltando!.map((a) => a.nome)
+                          .join(", ")}{" "}
+                        — foram incluídas no currículo depois que este plano foi
+                        atribuído.
+                      </p>
+                    </div>
                   </div>
+                  <Button
+                    size="sm"
+                    onClick={sincronizarPlano}
+                    disabled={sincronizando}
+                    className="gap-2"
+                  >
+                    {sincronizando && (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    )}
+                    {atribuicaoAtual.faltando!.length === 1
+                      ? "Adicionar ao plano"
+                      : "Adicionar ao plano"}
+                  </Button>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={sincronizarPlano}
-                  disabled={sincronizando}
-                  className="gap-2"
-                >
-                  {sincronizando && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {atribuicaoAtual.faltando!.length === 1
-                    ? "Adicionar ao plano"
-                    : "Adicionar ao plano"}
-                </Button>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Lista de Atividades */}
         {atribuicaoAtual && !loading && (
@@ -1004,84 +1064,100 @@ function EvolucaoPageContent() {
               // Calcular progresso: % de instruções em GENERALIZACAO
               const totalInstrucoes = clone.instrucoes.length;
               const instrucoesGeneralizacao = clone.instrucoes.filter(
-                (i) => i.faseAtual === "GENERALIZACAO"
+                (i) => i.faseAtual === "GENERALIZACAO",
               ).length;
               const progresso =
                 totalInstrucoes > 0
-                  ? Math.round((instrucoesGeneralizacao / totalInstrucoes) * 100)
+                  ? Math.round(
+                      (instrucoesGeneralizacao / totalInstrucoes) * 100,
+                    )
                   : 0;
 
               return (
-              <Card key={clone.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="font-semibold text-lg truncate">{clone.nome}</h3>
-                      </div>
-
-                      {/* Barra de progresso da atividade */}
-                      <div className="mb-3 space-y-1">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Progresso da atividade</span>
-                          <span className="font-medium">{progresso}% ({instrucoesGeneralizacao}/{totalInstrucoes} instrução(ões))</span>
+                <Card
+                  key={clone.id}
+                  className="hover:shadow-md transition-shadow"
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="font-semibold text-lg truncate">
+                            {clone.nome}
+                          </h3>
                         </div>
-                        <Progress value={progresso} className="h-2" />
-                      </div>
 
-                      {/* Instruções com fases individuais */}
-                      <div className="space-y-1">
-                        {clone.instrucoes.map((instrucao) => (
-                          <div
-                            key={instrucao.id}
-                            className="flex items-center justify-between gap-2 text-sm py-1 border-b last:border-0"
-                          >
-                            <span className="text-muted-foreground flex-1 truncate flex items-center gap-1">
-                              <ChevronRight className="h-3 w-3 flex-shrink-0" />
-                              {instrucao.texto}
+                        {/* Barra de progresso da atividade */}
+                        <div className="mb-3 space-y-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Progresso da atividade</span>
+                            <span className="font-medium">
+                              {progresso}% ({instrucoesGeneralizacao}/
+                              {totalInstrucoes} instrução(ões))
                             </span>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <FaseBadge fase={instrucao.faseAtual} />
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => abrirDetalhesInstrucao(instrucao, clone)}
-                              >
-                                <Edit className="h-3 w-3 mr-1" />
-                                Ver / Editar
-                              </Button>
-                            </div>
                           </div>
-                        ))}
+                          <Progress value={progresso} className="h-2" />
+                        </div>
+
+                        {/* Instruções com fases individuais */}
+                        <div className="space-y-1">
+                          {clone.instrucoes.map((instrucao) => (
+                            <div
+                              key={instrucao.id}
+                              className="flex items-center justify-between gap-2 text-sm py-1 border-b last:border-0"
+                            >
+                              <span className="text-muted-foreground flex-1 truncate flex items-center gap-1">
+                                <ChevronRight className="h-3 w-3 flex-shrink-0" />
+                                {instrucao.texto}
+                              </span>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <FaseBadge fase={instrucao.faseAtual} />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() =>
+                                    abrirDetalhesInstrucao(instrucao, clone)
+                                  }
+                                >
+                                  <Edit className="h-3 w-3 mr-1" />
+                                  Ver / Editar
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Meta info */}
+                        <div className="flex gap-4 text-xs text-muted-foreground mt-2">
+                          {clone.protocolo && (
+                            <span>Protocolo: {clone.protocolo}</span>
+                          )}
+                          {clone.habilidade && (
+                            <span>Habilidade: {clone.habilidade}</span>
+                          )}
+                          {clone.historico.length > 0 && (
+                            <span className="flex items-center gap-1">
+                              <History className="h-3 w-3" />
+                              {clone.historico.length} mudança(s) de fase
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Meta info */}
-                      <div className="flex gap-4 text-xs text-muted-foreground mt-2">
-                        {clone.protocolo && <span>Protocolo: {clone.protocolo}</span>}
-                        {clone.habilidade && <span>Habilidade: {clone.habilidade}</span>}
-                        {clone.historico.length > 0 && (
-                          <span className="flex items-center gap-1">
-                            <History className="h-3 w-3" />
-                            {clone.historico.length} mudança(s) de fase
-                          </span>
-                        )}
+                      <div className="flex flex-col gap-2 flex-shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => abrirDetalhes(clone)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Ver / Editar
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="flex flex-col gap-2 flex-shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => abrirDetalhes(clone)}
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Ver / Editar
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
               );
             })}
 
@@ -1118,7 +1194,10 @@ function EvolucaoPageContent() {
                       <Select
                         value={geralForm.protocolo || "SEM_PROTOCOLO"}
                         onValueChange={(v) =>
-                          setGeralForm({ ...geralForm, protocolo: v === "SEM_PROTOCOLO" ? "" : v })
+                          setGeralForm({
+                            ...geralForm,
+                            protocolo: v === "SEM_PROTOCOLO" ? "" : v,
+                          })
                         }
                       >
                         <SelectTrigger>
@@ -1128,11 +1207,17 @@ function EvolucaoPageContent() {
                           <SelectItem value="SEM_PROTOCOLO">Nenhum</SelectItem>
                           <SelectItem value="VB-MAPP">VB-MAPP</SelectItem>
                           <SelectItem value="AFLS">AFLS</SelectItem>
-                          <SelectItem value="Socially Savvy">Socially Savvy</SelectItem>
-                          <SelectItem value="Barreiras comportamentais">Barreiras comportamentais</SelectItem>
+                          <SelectItem value="Socially Savvy">
+                            Socially Savvy
+                          </SelectItem>
+                          <SelectItem value="Barreiras comportamentais">
+                            Barreiras comportamentais
+                          </SelectItem>
                           <SelectItem value="Portage">Portage</SelectItem>
                           <SelectItem value="Denver">Denver</SelectItem>
-                          <SelectItem value="Escala de Desenvolvimento Motor">Escala de Desenvolvimento Motor</SelectItem>
+                          <SelectItem value="Escala de Desenvolvimento Motor">
+                            Escala de Desenvolvimento Motor
+                          </SelectItem>
                           <SelectItem value="Vineland-3">Vineland-3</SelectItem>
                           <SelectItem value="Outros">Outros</SelectItem>
                         </SelectContent>
@@ -1140,7 +1225,10 @@ function EvolucaoPageContent() {
                     </div>
 
                     <div className="grid gap-2">
-                      <Label>Nome da Atividade <span className="text-danger-ink">*</span></Label>
+                      <Label>
+                        Nome da Atividade{" "}
+                        <span className="text-danger-ink">*</span>
+                      </Label>
                       <Input
                         value={geralForm.nome}
                         onChange={(e) =>
@@ -1154,32 +1242,69 @@ function EvolucaoPageContent() {
                       <Select
                         value={geralForm.habilidade || "SEM_HABILIDADE"}
                         onValueChange={(v) =>
-                          setGeralForm({ ...geralForm, habilidade: v === "SEM_HABILIDADE" ? "" : v })
+                          setGeralForm({
+                            ...geralForm,
+                            habilidade: v === "SEM_HABILIDADE" ? "" : v,
+                          })
                         }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione a habilidade" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="SEM_HABILIDADE">Nenhuma</SelectItem>
-                          <SelectItem value="Competências Sociais">Competências Sociais</SelectItem>
-                          <SelectItem value="Comportamentos de Atenção Conjunta">Comportamentos de Atenção Conjunta</SelectItem>
-                          <SelectItem value="Competências Sociais com Pares">Competências Sociais com Pares</SelectItem>
+                          <SelectItem value="SEM_HABILIDADE">
+                            Nenhuma
+                          </SelectItem>
+                          <SelectItem value="Competências Sociais">
+                            Competências Sociais
+                          </SelectItem>
+                          <SelectItem value="Comportamentos de Atenção Conjunta">
+                            Comportamentos de Atenção Conjunta
+                          </SelectItem>
+                          <SelectItem value="Competências Sociais com Pares">
+                            Competências Sociais com Pares
+                          </SelectItem>
                           <SelectItem value="Cognição">Cognição</SelectItem>
                           <SelectItem value="Jogo">Jogo</SelectItem>
-                          <SelectItem value="Jogo de Representação">Jogo de Representação</SelectItem>
-                          <SelectItem value="Motricidade Fina">Motricidade Fina</SelectItem>
-                          <SelectItem value="Motricidade Grossa">Motricidade Grossa</SelectItem>
-                          <SelectItem value="Comportamento">Comportamento</SelectItem>
-                          <SelectItem value="Comunicação Receptiva">Comunicação Receptiva</SelectItem>
-                          <SelectItem value="Comunicação Expressiva">Comunicação Expressiva</SelectItem>
-                          <SelectItem value="Independência Pessoal">Independência Pessoal</SelectItem>
-                          <SelectItem value="Independência Pessoal:Alimentação">Independência Pessoal:Alimentação</SelectItem>
-                          <SelectItem value="Independência Pessoal:Vestir">Independência Pessoal:Vestir</SelectItem>
-                          <SelectItem value="Independência Pessoal:Higiene">Independência Pessoal:Higiene</SelectItem>
-                          <SelectItem value="Independência Pessoal:Tarefas">Independência Pessoal:Tarefas</SelectItem>
-                          <SelectItem value="Independência Pessoal:Adultos">Independência Pessoal:Adultos</SelectItem>
-                          <SelectItem value="Imitação Motora">Imitação Motora</SelectItem>
+                          <SelectItem value="Jogo de Representação">
+                            Jogo de Representação
+                          </SelectItem>
+                          <SelectItem value="Motricidade Fina">
+                            Motricidade Fina
+                          </SelectItem>
+                          <SelectItem value="Motricidade Grossa">
+                            Motricidade Grossa
+                          </SelectItem>
+                          <SelectItem value="Comportamento">
+                            Comportamento
+                          </SelectItem>
+                          <SelectItem value="Comunicação Receptiva">
+                            Comunicação Receptiva
+                          </SelectItem>
+                          <SelectItem value="Comunicação Expressiva">
+                            Comunicação Expressiva
+                          </SelectItem>
+                          <SelectItem value="Independência Pessoal">
+                            Independência Pessoal
+                          </SelectItem>
+                          <SelectItem value="Independência Pessoal:Alimentação">
+                            Independência Pessoal:Alimentação
+                          </SelectItem>
+                          <SelectItem value="Independência Pessoal:Vestir">
+                            Independência Pessoal:Vestir
+                          </SelectItem>
+                          <SelectItem value="Independência Pessoal:Higiene">
+                            Independência Pessoal:Higiene
+                          </SelectItem>
+                          <SelectItem value="Independência Pessoal:Tarefas">
+                            Independência Pessoal:Tarefas
+                          </SelectItem>
+                          <SelectItem value="Independência Pessoal:Adultos">
+                            Independência Pessoal:Adultos
+                          </SelectItem>
+                          <SelectItem value="Imitação Motora">
+                            Imitação Motora
+                          </SelectItem>
                           <SelectItem value="Outros">Outros</SelectItem>
                         </SelectContent>
                       </Select>
@@ -1190,7 +1315,10 @@ function EvolucaoPageContent() {
                       <Input
                         value={geralForm.marco_codificacao}
                         onChange={(e) =>
-                          setGeralForm({ ...geralForm, marco_codificacao: e.target.value })
+                          setGeralForm({
+                            ...geralForm,
+                            marco_codificacao: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -1200,7 +1328,10 @@ function EvolucaoPageContent() {
                       <Select
                         value={geralForm.tipo_ensino || "SEM_TIPO"}
                         onValueChange={(v) =>
-                          setGeralForm({ ...geralForm, tipo_ensino: v === "SEM_TIPO" ? "" : v })
+                          setGeralForm({
+                            ...geralForm,
+                            tipo_ensino: v === "SEM_TIPO" ? "" : v,
+                          })
                         }
                       >
                         <SelectTrigger>
@@ -1208,8 +1339,12 @@ function EvolucaoPageContent() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="SEM_TIPO">Nenhum</SelectItem>
-                          <SelectItem value="Ensino Estruturado">Ensino Estruturado</SelectItem>
-                          <SelectItem value="Ensino Naturalístico">Ensino Naturalístico</SelectItem>
+                          <SelectItem value="Ensino Estruturado">
+                            Ensino Estruturado
+                          </SelectItem>
+                          <SelectItem value="Ensino Naturalístico">
+                            Ensino Naturalístico
+                          </SelectItem>
                           <SelectItem value="Duração">Duração</SelectItem>
                           <SelectItem value="Frequência">Frequência</SelectItem>
                         </SelectContent>
@@ -1241,7 +1376,12 @@ function EvolucaoPageContent() {
                       <Textarea
                         rows={3}
                         value={geralForm.como_aplicar}
-                        onChange={(e) => setGeralForm({ ...geralForm, como_aplicar: e.target.value })}
+                        onChange={(e) =>
+                          setGeralForm({
+                            ...geralForm,
+                            como_aplicar: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="grid gap-2">
@@ -1249,7 +1389,12 @@ function EvolucaoPageContent() {
                       <Textarea
                         rows={2}
                         value={geralForm.observacao}
-                        onChange={(e) => setGeralForm({ ...geralForm, observacao: e.target.value })}
+                        onChange={(e) =>
+                          setGeralForm({
+                            ...geralForm,
+                            observacao: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="grid gap-2">
@@ -1257,7 +1402,12 @@ function EvolucaoPageContent() {
                       <Textarea
                         rows={2}
                         value={geralForm.procedimento_correcao}
-                        onChange={(e) => setGeralForm({ ...geralForm, procedimento_correcao: e.target.value })}
+                        onChange={(e) =>
+                          setGeralForm({
+                            ...geralForm,
+                            procedimento_correcao: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="grid gap-2">
@@ -1265,7 +1415,12 @@ function EvolucaoPageContent() {
                       <Textarea
                         rows={2}
                         value={geralForm.materiais_utilizados}
-                        onChange={(e) => setGeralForm({ ...geralForm, materiais_utilizados: e.target.value })}
+                        onChange={(e) =>
+                          setGeralForm({
+                            ...geralForm,
+                            materiais_utilizados: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -1306,7 +1461,9 @@ function EvolucaoPageContent() {
                         <TableRow>
                           <TableHead className="w-16">#</TableHead>
                           <TableHead>Texto</TableHead>
-                          <TableHead className="w-24 text-right">Ações</TableHead>
+                          <TableHead className="w-24 text-right">
+                            Ações
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1321,6 +1478,7 @@ function EvolucaoPageContent() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="size-9 size-9"
                                   onClick={() => abrirInstrucaoDialog(index)}
                                 >
                                   <Edit className="h-4 w-4" />
@@ -1328,6 +1486,7 @@ function EvolucaoPageContent() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="size-9 size-9"
                                   onClick={() => removerInstrucao(index)}
                                 >
                                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -1353,7 +1512,6 @@ function EvolucaoPageContent() {
                     Salvar Instruções
                   </Button>
                 </TabsContent>
-
               </Tabs>
             </>
           )}
@@ -1361,7 +1519,13 @@ function EvolucaoPageContent() {
       </Dialog>
 
       {/* ============ Modal Detalhes da Instrução (Evolução + Pontuação) ============ */}
-      <Dialog open={instrucaoDetalheAberto} onOpenChange={(open) => { setInstrucaoDetalheAberto(open); if (!open) setInstrucaoSelecionada(null); }}>
+      <Dialog
+        open={instrucaoDetalheAberto}
+        onOpenChange={(open) => {
+          setInstrucaoDetalheAberto(open);
+          if (!open) setInstrucaoSelecionada(null);
+        }}
+      >
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           {instrucaoSelecionada && cloneSelecionado && (
             <>
@@ -1375,7 +1539,10 @@ function EvolucaoPageContent() {
                 </DialogDescription>
               </DialogHeader>
 
-              <Tabs value={instrucaoDetalheTab} onValueChange={setInstrucaoDetalheTab}>
+              <Tabs
+                value={instrucaoDetalheTab}
+                onValueChange={setInstrucaoDetalheTab}
+              >
                 <TabsList>
                   <TabsTrigger value="evolucao">Evolução</TabsTrigger>
                   <TabsTrigger value="pontuacao">Pontuação</TabsTrigger>
@@ -1385,7 +1552,9 @@ function EvolucaoPageContent() {
                 <TabsContent value="evolucao" className="space-y-6 mt-4">
                   {/* Tentativas por instrução */}
                   <div className="flex items-center gap-3">
-                    <Label className="whitespace-nowrap">Tentativas por sessão</Label>
+                    <Label className="whitespace-nowrap">
+                      Tentativas por sessão
+                    </Label>
                     <Input
                       type="number"
                       min={1}
@@ -1409,7 +1578,10 @@ function EvolucaoPageContent() {
                           }),
                         });
                         // Atualizar estado local
-                        setInstrucaoSelecionada({ ...instrucaoSelecionada, qtd_tentativas_alvo: val });
+                        setInstrucaoSelecionada({
+                          ...instrucaoSelecionada,
+                          qtd_tentativas_alvo: val,
+                        });
                         fetchEvolucao();
                       }}
                     />
@@ -1418,13 +1590,21 @@ function EvolucaoPageContent() {
                   {/* Critérios da fase atual */}
                   <div>
                     <h4 className="font-semibold mb-2">
-                      Critérios da Fase Atual ({FASE_LABELS[instrucaoSelecionada.faseAtual]?.label || instrucaoSelecionada.faseAtual})
+                      Critérios da Fase Atual (
+                      {FASE_LABELS[instrucaoSelecionada.faseAtual]?.label ||
+                        instrucaoSelecionada.faseAtual}
+                      )
                     </h4>
                     {(() => {
                       const criterio = instrucaoSelecionada.fases?.find(
-                        (f) => f.fase === instrucaoSelecionada.faseAtual
+                        (f) => f.fase === instrucaoSelecionada.faseAtual,
                       );
-                      if (!criterio) return <p className="text-sm text-muted-foreground">Sem critérios configurados</p>;
+                      if (!criterio)
+                        return (
+                          <p className="text-sm text-muted-foreground">
+                            Sem critérios configurados
+                          </p>
+                        );
                       return (
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div className="p-3 bg-muted rounded text-center">
@@ -1471,7 +1651,9 @@ function EvolucaoPageContent() {
                                   : "Manual"}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {new Date(h.alterado_em).toLocaleDateString("pt-BR")}
+                              {new Date(h.alterado_em).toLocaleDateString(
+                                "pt-BR",
+                              )}
                             </span>
                           </div>
                         ))}
@@ -1482,7 +1664,9 @@ function EvolucaoPageContent() {
                   {/* Botões de fase */}
                   <div className="flex flex-wrap gap-2 pt-2">
                     {(() => {
-                      const faseIndex = FASES_ORDEM.indexOf(instrucaoSelecionada.faseAtual);
+                      const faseIndex = FASES_ORDEM.indexOf(
+                        instrucaoSelecionada.faseAtual,
+                      );
                       const podVoltar = faseIndex > 0;
                       const podAvancar = faseIndex < FASES_ORDEM.length - 1;
 
@@ -1494,7 +1678,7 @@ function EvolucaoPageContent() {
                               onClick={() =>
                                 alterarFaseInstrucao(
                                   instrucaoSelecionada.id,
-                                  FASES_ORDEM[faseIndex - 1]
+                                  FASES_ORDEM[faseIndex - 1],
                                 )
                               }
                               disabled={salvandoFase}
@@ -1508,7 +1692,7 @@ function EvolucaoPageContent() {
                               onClick={() =>
                                 alterarFaseInstrucao(
                                   instrucaoSelecionada.id,
-                                  FASES_ORDEM[faseIndex + 1]
+                                  FASES_ORDEM[faseIndex + 1],
                                 )
                               }
                               disabled={salvandoFase}
@@ -1524,7 +1708,10 @@ function EvolucaoPageContent() {
                           <Button
                             variant="outline"
                             onClick={() =>
-                              abrirCriteriosInstrucao(instrucaoSelecionada, cloneSelecionado)
+                              abrirCriteriosInstrucao(
+                                instrucaoSelecionada,
+                                cloneSelecionado,
+                              )
                             }
                           >
                             <Settings2 className="h-4 w-4 mr-1" />
@@ -1541,7 +1728,10 @@ function EvolucaoPageContent() {
                   {/* Seletor de fase */}
                   <div className="space-y-2">
                     <Label>Fase</Label>
-                    <Select value={fasePontuacao} onValueChange={trocarFasePontuacao}>
+                    <Select
+                      value={fasePontuacao}
+                      onValueChange={trocarFasePontuacao}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -1549,7 +1739,9 @@ function EvolucaoPageContent() {
                         {FASES_ORDEM.map((f) => (
                           <SelectItem key={f} value={f}>
                             {FASE_LABELS[f]?.label || f}
-                            {f === instrucaoSelecionada?.faseAtual ? " (atual)" : ""}
+                            {f === instrucaoSelecionada?.faseAtual
+                              ? " (atual)"
+                              : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1577,7 +1769,9 @@ function EvolucaoPageContent() {
                           <TableHead className="w-16">#</TableHead>
                           <TableHead>Sigla</TableHead>
                           <TableHead>Grau</TableHead>
-                          <TableHead className="w-24 text-right">Ações</TableHead>
+                          <TableHead className="w-24 text-right">
+                            Ações
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1591,6 +1785,7 @@ function EvolucaoPageContent() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="size-9 size-9"
                                   onClick={() => abrirPontuacaoDialog(index)}
                                 >
                                   <Edit className="h-4 w-4" />
@@ -1598,6 +1793,7 @@ function EvolucaoPageContent() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="size-9 size-9"
                                   onClick={() => removerPontuacao(index)}
                                 >
                                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -1620,7 +1816,8 @@ function EvolucaoPageContent() {
                     ) : (
                       <Save className="h-4 w-4 mr-2" />
                     )}
-                    Salvar Pontuações ({FASE_LABELS[fasePontuacao]?.label || fasePontuacao})
+                    Salvar Pontuações (
+                    {FASE_LABELS[fasePontuacao]?.label || fasePontuacao})
                   </Button>
                 </TabsContent>
               </Tabs>
@@ -1630,17 +1827,24 @@ function EvolucaoPageContent() {
       </Dialog>
 
       {/* ============ Dialog Instrução Add/Edit ============ */}
-      <Dialog open={instrucaoDialogAberto} onOpenChange={setInstrucaoDialogAberto}>
+      <Dialog
+        open={instrucaoDialogAberto}
+        onOpenChange={setInstrucaoDialogAberto}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {instrucaoEditIndex !== null ? "Editar Instrução" : "Nova Instrução"}
+              {instrucaoEditIndex !== null
+                ? "Editar Instrução"
+                : "Nova Instrução"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Texto da Instrução <span className="text-danger-ink">*</span></Label>
+              <Label>
+                Texto da Instrução <span className="text-danger-ink">*</span>
+              </Label>
               <Textarea
                 value={instrucaoForm.texto}
                 onChange={(e) =>
@@ -1666,11 +1870,16 @@ function EvolucaoPageContent() {
       </Dialog>
 
       {/* ============ Dialog Pontuação Add/Edit ============ */}
-      <Dialog open={pontuacaoDialogAberto} onOpenChange={setPontuacaoDialogAberto}>
+      <Dialog
+        open={pontuacaoDialogAberto}
+        onOpenChange={setPontuacaoDialogAberto}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {pontuacaoEditIndex !== null ? "Editar Pontuação" : "Nova Pontuação"}
+              {pontuacaoEditIndex !== null
+                ? "Editar Pontuação"
+                : "Nova Pontuação"}
             </DialogTitle>
           </DialogHeader>
 
@@ -1680,14 +1889,19 @@ function EvolucaoPageContent() {
               <Select
                 value={pontuacaoForm.sigla || "SELECIONE"}
                 onValueChange={(v) =>
-                  setPontuacaoForm({ ...pontuacaoForm, sigla: v === "SELECIONE" ? "" : v })
+                  setPontuacaoForm({
+                    ...pontuacaoForm,
+                    sigla: v === "SELECIONE" ? "" : v,
+                  })
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SELECIONE" disabled>Selecione</SelectItem>
+                  <SelectItem value="SELECIONE" disabled>
+                    Selecione
+                  </SelectItem>
                   {SIGLAS.map((s) => (
                     <SelectItem key={s} value={s}>
                       {s}
@@ -1702,14 +1916,19 @@ function EvolucaoPageContent() {
               <Select
                 value={pontuacaoForm.grau || "SELECIONE"}
                 onValueChange={(v) =>
-                  setPontuacaoForm({ ...pontuacaoForm, grau: v === "SELECIONE" ? "" : v })
+                  setPontuacaoForm({
+                    ...pontuacaoForm,
+                    grau: v === "SELECIONE" ? "" : v,
+                  })
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SELECIONE" disabled>Selecione</SelectItem>
+                  <SelectItem value="SELECIONE" disabled>
+                    Selecione
+                  </SelectItem>
                   {GRAUS.map((g) => (
                     <SelectItem key={g} value={g}>
                       {g}
@@ -1735,7 +1954,13 @@ function EvolucaoPageContent() {
       </Dialog>
 
       {/* ============ Modal Critérios ============ */}
-      <Dialog open={criteriosAberto} onOpenChange={(open) => { setCriteriosAberto(open); if (!open) setInstrucaoParaCriterios(null); }}>
+      <Dialog
+        open={criteriosAberto}
+        onOpenChange={(open) => {
+          setCriteriosAberto(open);
+          if (!open) setInstrucaoParaCriterios(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
@@ -1827,7 +2052,9 @@ function EvolucaoPageContent() {
                   <SelectValue placeholder="Permanecer na fase atual" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NENHUMA">Permanecer na fase atual</SelectItem>
+                  <SelectItem value="NENHUMA">
+                    Permanecer na fase atual
+                  </SelectItem>
                   {FASES_ORDEM.filter((f) => f !== faseCriterio).map((f) => (
                     <SelectItem key={f} value={f}>
                       {FASE_LABELS[f]?.label || f}
@@ -1839,10 +2066,7 @@ function EvolucaoPageContent() {
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setCriteriosAberto(false)}
-            >
+            <Button variant="outline" onClick={() => setCriteriosAberto(false)}>
               Cancelar
             </Button>
             <Button onClick={salvarCriterios} disabled={salvandoCriterio}>
@@ -1860,8 +2084,10 @@ function EvolucaoPageContent() {
 
 export default function EvolucaoPage() {
   return (
-    <ProtectedRoute requiredPermission={{ resource: 'evolucao', action: 'VIEW' }}>
+    <ProtectedRoute
+      requiredPermission={{ resource: "evolucao", action: "VIEW" }}
+    >
       <EvolucaoPageContent />
     </ProtectedRoute>
-  )
+  );
 }

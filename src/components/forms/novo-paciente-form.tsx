@@ -866,7 +866,7 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
               )}
 
               {responsaveisArray.fields.map((item, index) => (
-                <div key={item.id} className="p-4 border rounded-lg space-y-4 relative">
+                <div key={item.id} className="rounded-2xl bg-surface-muted p-4 space-y-4 relative">
                   <Button
                     type="button"
                     variant="ghost"
@@ -1013,7 +1013,7 @@ export function NovoPacienteForm({ onSuccess }: NovoPacienteFormProps) {
               )}
 
               {conveniosArray.fields.map((item, index) => (
-                <div key={item.id} className="p-4 border rounded-lg space-y-4 relative">
+                <div key={item.id} className="rounded-2xl bg-surface-muted p-4 space-y-4 relative">
                   <Button
                     type="button"
                     variant="ghost"

@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { pacoteSchema, type PacoteFormData, type Pacote, TIPO_PACOTE_LABELS } from "@/types/pacote";
@@ -179,7 +178,7 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             {/* Dados básicos */}
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dados Básicos</p>
+              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">Dados Básicos</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="nome" render={({ field }) => (
                   <FormItem className="col-span-2">
@@ -192,7 +191,7 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
                   <FormItem>
                     <FormLabel>Tipo *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <FormControl><SelectTrigger className="w-full"><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
                         {Object.entries(TIPO_PACOTE_LABELS).map(([k, v]) => (
                           <SelectItem key={k} value={k}>{v}</SelectItem>
@@ -206,7 +205,7 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
                   <FormItem>
                     <FormLabel>Convênio (opcional)</FormLabel>
                     <Select onValueChange={(v) => field.onChange(v === "_none" ? null : v)} value={field.value ?? "_none"}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger></FormControl>
+                      <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Todos" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="_none">Todos os convênios</SelectItem>
                         {convenios.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome_fantasia || c.razao_social}</SelectItem>)}
@@ -220,7 +219,7 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
 
             {/* Valores */}
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Valores</p>
+              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">Valores</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="valor_total" render={({ field }) => (
                   <FormItem>
@@ -261,7 +260,7 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
 
             {/* Composição */}
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Composição *</p>
+              <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">Composição *</p>
               <div className="flex gap-2">
                 <Select value={selectedProc} onValueChange={setSelectedProc}>
                   <SelectTrigger className="flex-1">
@@ -305,7 +304,7 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
                         <span className="text-xs text-muted-foreground w-20 text-right">
                           {subtotal ? formatBRL(subtotal) : "—"}
                         </span>
-                        <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => remove(index)}>
+                        <Button type="button" size="icon" variant="ghost" className="size-9 text-destructive" onClick={() => remove(index)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -333,8 +332,6 @@ export function PacoteFormDialog({ pacote, open, onOpenChange, onSuccess }: Paco
                 </div>
               )}
             </div>
-
-            <Separator />
 
             <FormField control={form.control} name="observacoes" render={({ field }) => (
               <FormItem>

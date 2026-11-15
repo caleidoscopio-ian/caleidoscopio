@@ -5,9 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -29,6 +27,9 @@ import {
 import { AtribuirAvaliacaoDialog } from "@/components/forms/atribuir-avaliacao-dialog";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import {
+  Sparkles,
+  ClipboardX,
+  UserPlus,
   ClipboardCheck,
   Search,
   Plus,
@@ -37,7 +38,13 @@ import {
   Edit,
   Trash2,
 } from "lucide-react";
-import { PageHeader, Panel, StatCard } from "@/components/kit";
+import {
+  PageHeader,
+  Panel,
+  StatCard,
+  StatusPill,
+  SearchField,
+} from "@/components/kit";
 
 interface Avaliacao {
   id: string;
@@ -195,45 +202,46 @@ function AvaliacoesPageContent() {
 
           <StatCard
             tom="lavender"
-            icone={<ClipboardCheck className="text-brand" />}
+            icone={<Sparkles className="text-brand" />}
             rotulo="Aquisição de Habilidades"
             valor={<span className="text-brand">{loading ? "..." : avaliacoes.filter((a) => a.tipo === "AQUISICAO_HABILIDADES") .length}</span>}
           />
 
           <StatCard
-            tom="mint"
-            icone={<ClipboardCheck />}
+            tom="peach"
+            icone={<ClipboardX />}
             rotulo="Redução de Comportamentos"
             valor={loading ? "..." : avaliacoes.filter( (a) => a.tipo === "REDUCAO_COMPORTAMENTOS" ).length}
           />
 
           <StatCard
-            tom="peach"
-            icone={<ClipboardCheck />}
+            tom="mint"
+            icone={<UserPlus />}
             rotulo="Atribuídas"
             valor={<span className="text-success-ink">{loading ? "..." : avaliacoes.filter( (a) => a._count && a._count.atribuicoes > 0 ).length}</span>}
           />
         </div>
 
-        {/* Busca */}
-        <div className="flex items-center space-x-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome ou observação..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
+        {/* Busca — solta acima da lista, como no v2, mas na forma do kit */}
+        <SearchField
+          placeholder="Buscar por nome ou observação..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-xl"
+        />
 
         {/* Tabela */}
         <Panel
-          titulo={<>Lista de Avaliações {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredAvaliacoes.length} de {avaliacoes.length} </Badge> )}</>}
+          icone={<ClipboardCheck />}
+          titulo="Lista de Avaliações"
           subtitulo="Protocolos de avaliação cadastrados"
+          acoes={
+            !loading && (
+              <StatusPill tom="neutral">
+                {filteredAvaliacoes.length} de {avaliacoes.length}
+              </StatusPill>
+            )
+          }
         >
 
           {error && (
@@ -285,37 +293,37 @@ function AvaliacoesPageContent() {
               <TableBody>
                 {filteredAvaliacoes.map((avaliacao) => (
                   <TableRow key={avaliacao.id}>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div>{avaliacao.nome}</div>
-                        {avaliacao.observacao && (
-                          <div className="text-xs text-muted-foreground line-clamp-1">
-                            {avaliacao.observacao}
-                          </div>
-                        )}
-                      </div>
+                    <TableCell>
+                      <p className="truncate font-semibold text-ink">{avaliacao.nome}</p>
+                      {avaliacao.observacao && (
+                        <p className="line-clamp-1 text-[0.75rem] text-ink-3">
+                          {avaliacao.observacao}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          avaliacao.tipo === "AQUISICAO_HABILIDADES"
-                            ? "default"
-                            : "secondary"
+                      <StatusPill
+                        tom={
+                          avaliacao.tipo === "AQUISICAO_HABILIDADES" ? "info" : "violet"
                         }
                       >
                         {traduzirTipo(avaliacao.tipo)}
-                      </Badge>
+                      </StatusPill>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
+                      <StatusPill tom="neutral">
                         {avaliacao._count?.tarefas || 0} tarefas
-                      </Badge>
+                      </StatusPill>
                     </TableCell>
                     <TableCell>
-                      {avaliacao._count?.atribuicoes || 0} pacientes
+                      <span className="text-[0.82rem]">
+                        {avaliacao._count?.atribuicoes || 0} pacientes
+                      </span>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(avaliacao.createdAt)}
+                    <TableCell>
+                      <span className="tabular text-[0.82rem] text-ink-3">
+                        {formatDate(avaliacao.createdAt)}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

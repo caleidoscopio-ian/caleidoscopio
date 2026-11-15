@@ -14,8 +14,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { UserPlus, Loader2, Search, CheckCircle2 } from "lucide-react";
+import { UserPlus, Loader2, CheckCircle2 } from "lucide-react";
+import { SearchField } from "@/components/kit";
 import { ScrollArea } from "@/components/ui/scrollarea";
 
 interface Atividade {
@@ -193,7 +193,7 @@ export function AtribuirAtividadeDialog({
 
         <div className="space-y-4">
           {/* Informações da atividade */}
-          <div className="p-4 border rounded-lg bg-muted/30">
+          <div className="rounded-2xl bg-surface-muted p-4">
             <div className="font-medium">{atividade.nome}</div>
           </div>
 
@@ -205,15 +205,11 @@ export function AtribuirAtividadeDialog({
 
           {/* Busca de pacientes */}
           <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
+            <SearchField
                 placeholder="Buscar por nome ou CPF..."
-                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
 
             {selectedPacientes.length > 0 && (
               <div className="text-sm text-muted-foreground">

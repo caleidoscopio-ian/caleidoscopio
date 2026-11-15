@@ -8,9 +8,7 @@ import { NovoProntuarioForm } from "@/components/forms/novo-prontuario-form";
 import { EditarProntuarioForm } from "@/components/forms/editar-prontuario-form";
 import { ProntuarioDetailsDialog } from "@/components/prontuario-details-dialog";
 import { DeleteProntuarioDialog } from "@/components/delete-prontuario-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -37,7 +35,14 @@ import {
   BarChart,
 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { PageHeader, Panel, StatCard } from "@/components/kit";
+import {
+  PageHeader,
+  Panel,
+  SearchField,
+  StatCard,
+  StatusPill,
+  PersonAvatar,
+} from "@/components/kit";
 
 interface Patient {
   id: string;
@@ -264,15 +269,11 @@ function ProntuariosPageContent() {
         {/* Filtros e Busca */}
         <div className="flex items-center space-x-4">
           <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
+            <SearchField
                 placeholder="Buscar por paciente, profissional, tipo ou evolução..."
-                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
           </div>
 
           <Select
@@ -325,7 +326,15 @@ function ProntuariosPageContent() {
         {/* Tabela de Prontuários */}
         <Panel
           icone={<BarChart />}
-          titulo={<>Histórico de Atendimentos {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredRecords.length} de {medicalRecords.length} </Badge> )}</>}
+          titulo="Histórico de Atendimentos"
+          subtitulo="Evoluções clínicas registradas por sessão"
+          acoes={
+            !loading && (
+              <StatusPill tom="neutral">
+                {filteredRecords.length} de {medicalRecords.length}
+              </StatusPill>
+            )
+          }
         >
 
           {error && (
@@ -376,52 +385,49 @@ function ProntuariosPageContent() {
               <TableBody>
                 {filteredRecords.map((record) => (
                   <TableRow key={record.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {formatDate(record.sessionDate)}
+                    <TableCell>
+                      <span className="flex items-center gap-2 whitespace-nowrap">
+                        <Calendar className="size-4 shrink-0 text-ink-4" aria-hidden />
+                        <span className="tabular text-[0.82rem]">
+                          {formatDate(record.sessionDate)}
+                        </span>
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <PersonAvatar nome={record.patient.name} tamanho={32} />
+                        <span className="truncate font-semibold text-ink">
+                          {record.patient.name}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        {record.patient.name}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium">
-                          {record.professional.name}
-                        </div>
-                        <Badge variant="outline" className="text-xs">
+                      <p className="truncate">{record.professional.name}</p>
+                      {record.professional.specialty && (
+                        <StatusPill tom="violet" className="mt-1">
                           {record.professional.specialty}
-                        </Badge>
-                      </div>
+                        </StatusPill>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{record.serviceType}</Badge>
+                      <StatusPill tom="info">{record.serviceType}</StatusPill>
                     </TableCell>
                     <TableCell className="max-w-[300px]">
-                      <div className="truncate text-sm">
-                        {record.clinicalEvolution}
-                      </div>
+                      <p className="truncate text-[0.82rem]">{record.clinicalEvolution}</p>
                     </TableCell>
                     <TableCell>
                       {record.attachments.length > 0 ? (
-                        <Badge
-                          variant="outline"
-                          className="bg-brand-soft text-brand"
-                        >
+                        <StatusPill tom="info">
                           {record.attachments.length} arquivo(s)
-                        </Badge>
+                        </StatusPill>
                       ) : (
-                        <span className="text-muted-foreground text-sm">
-                          -
-                        </span>
+                        <span className="text-[0.82rem] text-ink-4">Nenhum</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDateTime(record.createdAt)}
+                    <TableCell>
+                      <span className="tabular text-[0.82rem] text-ink-3">
+                        {formatDateTime(record.createdAt)}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">

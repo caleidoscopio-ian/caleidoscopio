@@ -71,10 +71,10 @@ export function ListaDemonstrativos({ demonstrativos, onDetalhe, onExcluir }: Li
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDetalhe(d.id)} aria-label="Ver detalhes">
+                  <Button variant="ghost" size="icon" className="size-9" onClick={() => onDetalhe(d.id)} aria-label="Ver detalhes">
                     <Eye className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onExcluir(d.id)} aria-label="Excluir">
+                  <Button variant="ghost" size="icon" className="size-9 text-destructive hover:text-destructive" onClick={() => onExcluir(d.id)} aria-label="Excluir">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>

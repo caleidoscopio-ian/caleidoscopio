@@ -526,7 +526,7 @@ export default function DesignSystemPage() {
                     <TableBody>
                       {AGENDA.map((a) => (
                         <TableRow key={a.nome}>
-                          <TableCell className="font-medium">{a.nome}</TableCell>
+                          <TableCell className="font-semibold text-ink">{a.nome}</TableCell>
                           <TableCell>{a.prof}</TableCell>
                           <TableCell>{a.sala}</TableCell>
                           <TableCell className="text-right">

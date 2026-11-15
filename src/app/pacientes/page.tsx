@@ -12,7 +12,6 @@ import { DeletePatientDialog } from "@/components/delete-patient-dialog";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -27,7 +26,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { useFilial } from "@/hooks/useFilial";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { agruparPorFilial } from "@/lib/agrupar-filial";
-import { PageHeader, Panel, StatCard, PersonAvatar } from "@/components/kit";
+import { PageHeader, Panel, PersonAvatar, SearchField, StatCard, StatusPill } from "@/components/kit";
 
 interface ResponsavelData {
   id?: string;
@@ -126,86 +125,99 @@ function PacientesTable({
                 <span className="truncate font-semibold text-ink">{patient.name}</span>
               </div>
             </TableCell>
-            <TableCell>
-              {calculateAge(patient.birthDate)} anos
+            {/* Cada célula é no máximo duas linhas de UMA linha cada: o texto
+                longo corta com reticências e mostra o valor inteiro no `title`.
+                Antes "Jenifer F Granciele Almeida da Silva" quebrava em quatro
+                linhas e a linha do paciente ficava com o dobro da altura das
+                outras. */}
+            <TableCell className="whitespace-nowrap">
+              <span className="tabular">{calculateAge(patient.birthDate)} anos</span>
             </TableCell>
-            <TableCell className="font-mono text-sm">
-              {patient.cpf}
+            <TableCell className="whitespace-nowrap">
+              <span className="tabular text-[0.82rem] text-ink-3">{patient.cpf}</span>
             </TableCell>
             <TableCell>
-              <div className="text-sm">
-                {patient.profissional ? (
-                  <>
-                    <div className="font-medium">
-                      {patient.profissional.nome}
-                    </div>
-                    <div className="text-muted-foreground text-xs">
+              {patient.profissional ? (
+                <div className="max-w-[11rem] min-w-0">
+                  <p className="truncate" title={patient.profissional.nome}>
+                    {patient.profissional.nome}
+                  </p>
+                  {patient.profissional.especialidade && (
+                    <p className="truncate text-[0.75rem] text-ink-3">
                       {patient.profissional.especialidade}
-                    </div>
-                  </>
-                ) : (
-                  <Badge variant="outline">Não atribuído</Badge>
-                )}
-              </div>
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <StatusPill tom="neutral">Não atribuído</StatusPill>
+              )}
             </TableCell>
             <TableCell>
-              <div className="text-sm">
-                {patient.phone && <div>{patient.phone}</div>}
-                {patient.email && (
-                  <div className="text-muted-foreground">
-                    {patient.email}
-                  </div>
-                )}
-                {!patient.phone && !patient.email && (
-                  <span className="text-muted-foreground">-</span>
-                )}
-              </div>
+              {patient.phone || patient.email ? (
+                <div className="max-w-[12rem] min-w-0">
+                  {patient.phone && (
+                    <p className="tabular truncate">{patient.phone}</p>
+                  )}
+                  {patient.email && (
+                    <p className="truncate text-[0.75rem] text-ink-3" title={patient.email}>
+                      {patient.email}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <span className="text-ink-4">—</span>
+              )}
             </TableCell>
             <TableCell>
-              <div className="text-sm">
-                {patient.guardianName && (
-                  <div>{patient.guardianName}</div>
-                )}
-                {patient.guardianPhone && (
-                  <div className="text-muted-foreground">
-                    {patient.guardianPhone}
-                  </div>
-                )}
-                {!patient.guardianName && !patient.guardianPhone && (
-                  <span className="text-muted-foreground">-</span>
-                )}
-              </div>
+              {patient.guardianName || patient.guardianPhone ? (
+                <div className="max-w-[11rem] min-w-0">
+                  {patient.guardianName && (
+                    <p className="truncate" title={patient.guardianName}>
+                      {patient.guardianName}
+                    </p>
+                  )}
+                  {patient.guardianPhone && (
+                    <p className="tabular truncate text-[0.75rem] text-ink-3">
+                      {patient.guardianPhone}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <span className="text-ink-4">—</span>
+              )}
             </TableCell>
             <TableCell>
-              <div className="text-sm">
-                {patient.convenio ? (
-                  <>
-                    <div>{patient.convenio.nome_fantasia || patient.convenio.razao_social}</div>
-                    {patient.healthInsuranceNumber && (
-                      <div className="text-muted-foreground font-mono text-xs">
-                        {patient.healthInsuranceNumber}
-                      </div>
-                    )}
-                  </>
-                ) : patient.healthInsurance ? (
-                  <>
-                    <div>{patient.healthInsurance}</div>
-                    {patient.healthInsuranceNumber && (
-                      <div className="text-muted-foreground font-mono text-xs">
-                        {patient.healthInsuranceNumber}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Badge variant="outline">Particular</Badge>
-                )}
-              </div>
+              {patient.convenio || patient.healthInsurance ? (
+                <div className="max-w-[10rem] min-w-0">
+                  <p
+                    className="truncate"
+                    title={
+                      patient.convenio
+                        ? patient.convenio.nome_fantasia || patient.convenio.razao_social
+                        : patient.healthInsurance
+                    }
+                  >
+                    {patient.convenio
+                      ? patient.convenio.nome_fantasia || patient.convenio.razao_social
+                      : patient.healthInsurance}
+                  </p>
+                  {patient.healthInsuranceNumber && (
+                    <p className="tabular truncate text-[0.75rem] text-ink-3">
+                      {patient.healthInsuranceNumber}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <StatusPill tom="neutral">Particular</StatusPill>
+              )}
             </TableCell>
-            <TableCell className="text-sm text-muted-foreground">
-              {formatDate(patient.createdAt)}
+            <TableCell className="whitespace-nowrap">
+              <span className="tabular text-[0.82rem] text-ink-3">
+                {formatDate(patient.createdAt)}
+              </span>
             </TableCell>
             <TableCell className="text-right">
-              <div className="flex justify-end space-x-2">
+              <div className="flex flex-nowrap items-center justify-end gap-1.5">
                 <Link href={`/prontuario/${patient.id}`}>
                   <Button variant="outline" size="sm" title="Visualizar Prontuário">
                     <FileText className="h-4 w-4" />
@@ -376,15 +388,11 @@ function PacientesPageContent() {
         {/* Filtros e Busca */}
         <div className="flex items-center space-x-4">
           <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
+            <SearchField
                 placeholder="Buscar por nome, CPF ou email..."
-                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
           </div>
           <Button variant="outline" disabled>
             <Filter className="mr-2 h-4 w-4" />

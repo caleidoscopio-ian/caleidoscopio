@@ -7,6 +7,7 @@ import * as z from 'zod'
 import { KeyRound, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { ActionButton } from '@/components/kit'
 import {
   Dialog,
   DialogContent,
@@ -95,10 +96,10 @@ export function AlterarSenhaDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <KeyRound className="mr-2 h-4 w-4" />
+        <ActionButton variant="secondary" size="sm">
+          <KeyRound />
           Alterar Senha
-        </Button>
+        </ActionButton>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>

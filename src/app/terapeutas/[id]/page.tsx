@@ -6,9 +6,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -20,13 +17,16 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Banknote,
+  Calendar,
+  CalendarDays,
+  Clock,
   Pencil,
+  Phone,
   Plus,
   Trash2,
   User,
-  Calendar,
   Users,
-  Banknote,
 } from "lucide-react";
 import { formatarDataCivil } from "@/lib/datas-fuso";
 import { useToast } from "@/hooks/use-toast";
@@ -39,12 +39,16 @@ import { TIPO_VINCULO_LABELS } from "@/lib/profissional-constants";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
+  ActionButton,
+  EstadoVazio,
+  IconButton,
+  LinhaDado,
   PageHeader,
   PersonAvatar,
   Panel,
   StatCard,
-  GradeCampos,
-  CampoInfo,
+  StatusPill,
+  type TomStatus,
 } from "@/components/kit";
 
 // ─── Types locais ────────────────────────────────────────────────────────────
@@ -76,14 +80,23 @@ const STATUS_LABELS: Record<string, string> = {
   FALTA: "Falta",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  AGENDADO: "secondary",
-  CONFIRMADO: "default",
-  EM_ANDAMENTO: "default",
-  CONCLUIDO: "default",
-  CANCELADO: "destructive",
-  FALTA: "destructive",
+const TOM_STATUS: Record<string, TomStatus> = {
+  AGENDADO: "info",
+  CONFIRMADO: "success",
+  EM_ANDAMENTO: "violet",
+  CONCLUIDO: "success",
+  CANCELADO: "danger",
+  FALTA: "warning",
 };
+
+/** Contagem na aba — pílula da marca. */
+function Contagem({ n }: { n: number }) {
+  return (
+    <span className="tabular ml-1.5 rounded-full bg-brand-soft px-2 py-0.5 text-[0.7rem] font-semibold text-brand">
+      {n}
+    </span>
+  );
+}
 
 function formatValor(valor: number, tipo: string) {
   if (tipo === "PERCENTUAL") return `${valor}%`;
@@ -228,41 +241,53 @@ export default function TerapeutaDetalhePage() {
     return (
       <ProtectedRoute requiredPermission={{ resource: "terapeutas", action: "VIEW" }}>
         <MainLayout breadcrumbs={breadcrumbs}>
-          <div className="text-center py-16 text-muted-foreground">
-            Profissional não encontrado.
+          <div className="py-16">
+            <EstadoVazio
+              icone={<User />}
+              titulo="Profissional não encontrado"
+              texto="Ele pode ter sido removido ou o link está incorreto"
+              acao={
+                <ActionButton variant="secondary" onClick={() => router.push("/terapeutas")}>
+                  Voltar para profissionais
+                </ActionButton>
+              }
+            />
           </div>
         </MainLayout>
       </ProtectedRoute>
     );
   }
 
+  const vinculo = profissional.tipo_vinculo
+    ? TIPO_VINCULO_LABELS[profissional.tipo_vinculo] || profissional.tipo_vinculo
+    : null;
+
   return (
     <ProtectedRoute requiredPermission={{ resource: "terapeutas", action: "VIEW" }}>
       <MainLayout breadcrumbs={breadcrumbs}>
+        <div className="space-y-7">
         <PageHeader
-          className="mb-6"
           voltar={{ onClick: () => router.push("/terapeutas") }}
-          avatar={<PersonAvatar nome={profissional.nome} tamanho={48} />}
-          titulo={profissional.nome}
+          avatar={<PersonAvatar nome={profissional.nome} tamanho={56} />}
+          titulo={
+            <span className="inline-flex flex-wrap items-center gap-3">
+              {profissional.nome}
+              <StatusPill tom={profissional.ativo ? "success" : "danger"} ponto>
+                {profissional.ativo ? "Ativo" : "Inativo"}
+              </StatusPill>
+            </span>
+          }
+          subtitulo={
+            [profissional.especialidade || "Não classificado", vinculo].filter(Boolean).join(" · ")
+          }
           meta={
-            <>
-              {profissional.especialidade ? (
-                <Badge variant="secondary">{profissional.especialidade}</Badge>
-              ) : (
-                <Badge variant="outline">Não classificado</Badge>
-              )}
-              {profissional.tipo_vinculo && (
-                <Badge variant="outline">
-                  {TIPO_VINCULO_LABELS[profissional.tipo_vinculo] || profissional.tipo_vinculo}
-                </Badge>
-              )}
-              {!profissional.ativo && <Badge variant="destructive">Inativo</Badge>}
-            </>
+            profissional.registro_profissional ? (
+              <StatusPill tom="info">{profissional.registro_profissional}</StatusPill>
+            ) : undefined
           }
         />
 
-        {/* Stats */}
-        <div className="anim-escalonada mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
           <StatCard
             tom="blue"
             size="hero"
@@ -290,54 +315,71 @@ export default function TerapeutaDetalhePage() {
           />
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="dados">
           <TabsList>
             <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
-            <TabsTrigger value="agenda">Agenda</TabsTrigger>
+            <TabsTrigger value="agenda">
+              Agenda
+              {agendamentos.length > 0 && <Contagem n={agendamentos.length} />}
+            </TabsTrigger>
             <TabsTrigger value="grade">Grade de Horário</TabsTrigger>
-            <TabsTrigger value="pacientes">Pacientes</TabsTrigger>
-            <TabsTrigger value="repasse">Regras de Repasse</TabsTrigger>
+            <TabsTrigger value="pacientes">
+              Pacientes
+              {pacientes.length > 0 && <Contagem n={pacientes.length} />}
+            </TabsTrigger>
+            <TabsTrigger value="repasse">
+              Regras de Repasse
+              {regras.length > 0 && <Contagem n={regras.length} />}
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Tab: Dados Gerais ────────────────────────────────────────── */}
-          <TabsContent value="dados">
-            <Panel icone={<User />} titulo="Informações do Profissional">
-              <GradeCampos colunas={2}>
-                <CampoInfo rotulo="Nome" valor={profissional.nome} />
-                <CampoInfo
-                  rotulo="Especialidade"
-                  valor={profissional.especialidade}
-                  vazio="Não classificado"
-                />
-                <CampoInfo rotulo="CPF" valor={profissional.cpf} />
-                <CampoInfo
-                  rotulo="Registro profissional"
-                  valor={profissional.registro_profissional}
-                />
-                <CampoInfo rotulo="Telefone" valor={profissional.telefone} />
-                <CampoInfo rotulo="E-mail" valor={profissional.email} />
-              </GradeCampos>
-              <p className="mt-6 border-t border-hairline pt-4 text-xs text-ink-3">
-                Cadastrado em{" "}
-                {format(new Date(profissional.createdAt), "dd/MM/yyyy", { locale: ptBR })}
-              </p>
-            </Panel>
+          <TabsContent value="dados" className="mt-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <Panel icone={<User />} titulo="Identificação">
+                <LinhaDado rotulo="Nome">{profissional.nome}</LinhaDado>
+                <LinhaDado rotulo="Especialidade">
+                  {profissional.especialidade || "Não classificado"}
+                </LinhaDado>
+                <LinhaDado rotulo="Vínculo">{vinculo}</LinhaDado>
+                <LinhaDado rotulo="Registro profissional">
+                  {profissional.registro_profissional && (
+                    <span className="tabular">{profissional.registro_profissional}</span>
+                  )}
+                </LinhaDado>
+              </Panel>
+              <Panel icone={<Phone />} titulo="Contato e Cadastro">
+                <LinhaDado rotulo="Telefone">
+                  {profissional.telefone && <span className="tabular">{profissional.telefone}</span>}
+                </LinhaDado>
+                <LinhaDado rotulo="E-mail">{profissional.email}</LinhaDado>
+                <LinhaDado rotulo="CPF">
+                  {profissional.cpf && <span className="tabular">{profissional.cpf}</span>}
+                </LinhaDado>
+                <LinhaDado rotulo="Cadastrado em">
+                  <span className="tabular">
+                    {format(new Date(profissional.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                </LinhaDado>
+              </Panel>
+            </div>
           </TabsContent>
 
           {/* ── Tab: Agenda ──────────────────────────────────────────────── */}
-          <TabsContent value="agenda">
-            <Panel titulo="Últimos Agendamentos">
+          <TabsContent value="agenda" className="mt-5">
+            <Panel
+              icone={<CalendarDays />}
+              titulo="Últimos Agendamentos"
+              subtitulo="Os 20 agendamentos mais recentes do profissional"
+            >
               {agendaLoading ? (
                 <div className="space-y-2">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-full" />
+                    <Skeleton key={i} className="h-14 w-full rounded-2xl" />
                   ))}
                 </div>
               ) : agendamentos.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground text-sm">
-                  Nenhum agendamento encontrado.
-                </p>
+                <EstadoVazio icone={<CalendarDays />} titulo="Nenhum agendamento encontrado" />
               ) : (
                 <Table>
                   <TableHeader>
@@ -353,15 +395,22 @@ export default function TerapeutaDetalhePage() {
                     {agendamentos.map((a) => (
                       <TableRow key={a.id}>
                         <TableCell className="whitespace-nowrap">
-                          {format(new Date(a.data_hora), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          <span className="tabular text-sm text-ink">
+                            {format(new Date(a.data_hora), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </span>
                         </TableCell>
-                        <TableCell>{a.paciente?.nome ?? "—"}</TableCell>
-                        <TableCell>{a.procedimento?.nome ?? "—"}</TableCell>
-                        <TableCell>{a.sala?.nome ?? "—"}</TableCell>
                         <TableCell>
-                          <Badge variant={(STATUS_COLORS[a.status] ?? "secondary") as "default" | "secondary" | "destructive" | "outline"}>
+                          <div className="flex min-w-0 items-center gap-3">
+                            <PersonAvatar nome={a.paciente?.nome ?? "—"} tamanho={34} />
+                            <span className="truncate font-semibold text-ink">{a.paciente?.nome ?? "—"}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{a.procedimento?.nome ?? <span className="text-ink-4">—</span>}</TableCell>
+                        <TableCell>{a.sala?.nome ?? <span className="text-ink-4">—</span>}</TableCell>
+                        <TableCell>
+                          <StatusPill tom={TOM_STATUS[a.status] ?? "neutral"} ponto>
                             {STATUS_LABELS[a.status] ?? a.status}
-                          </Badge>
+                          </StatusPill>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -372,18 +421,16 @@ export default function TerapeutaDetalhePage() {
           </TabsContent>
 
           {/* ── Tab: Pacientes ───────────────────────────────────────────── */}
-          <TabsContent value="pacientes">
-            <Panel titulo="Pacientes Atendidos">
+          <TabsContent value="pacientes" className="mt-5">
+            <Panel icone={<Users />} titulo="Pacientes Atendidos" subtitulo="Pacientes vinculados a este profissional">
               {pacientesLoading ? (
                 <div className="space-y-2">
                   {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-full" />
+                    <Skeleton key={i} className="h-14 w-full rounded-2xl" />
                   ))}
                 </div>
               ) : pacientes.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground text-sm">
-                  Nenhum paciente vinculado.
-                </p>
+                <EstadoVazio icone={<Users />} titulo="Nenhum paciente vinculado" />
               ) : (
                 <Table>
                   <TableHeader>
@@ -395,11 +442,16 @@ export default function TerapeutaDetalhePage() {
                   <TableBody>
                     {pacientes.map((p) => (
                       <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.nome}</TableCell>
                         <TableCell>
-                          {p.data_nascimento
-                            ? formatarDataCivil(p.data_nascimento)
-                            : "—"}
+                          <div className="flex min-w-0 items-center gap-3">
+                            <PersonAvatar nome={p.nome} tamanho={34} />
+                            <span className="truncate font-semibold text-ink">{p.nome}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="tabular text-[0.82rem] text-ink-3">
+                            {p.data_nascimento ? formatarDataCivil(p.data_nascimento) : "—"}
+                          </span>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -410,146 +462,138 @@ export default function TerapeutaDetalhePage() {
           </TabsContent>
 
           {/* ── Tab: Regras de Repasse ───────────────────────────────────── */}
-          <TabsContent value="repasse">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Regras de Repasse</CardTitle>
-                <Button
-                  size="sm"
-                  onClick={() => setRegraForm({ open: true, regra: null })}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
+          <TabsContent value="repasse" className="mt-5">
+            <Panel
+              icone={<Banknote />}
+              titulo="Regras de Repasse"
+              subtitulo="Quanto o profissional recebe por atendimento"
+              acoes={
+                <ActionButton size="sm" onClick={() => setRegraForm({ open: true, regra: null })}>
+                  <Plus />
                   Nova Regra
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {regrasLoading ? (
-                  <div className="space-y-2">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                  </div>
-                ) : regras.length === 0 ? (
-                  <p className="text-center py-8 text-muted-foreground text-sm">
-                    Nenhuma regra de repasse cadastrada.
-                    <br />
-                    Clique em &ldquo;Nova Regra&rdquo; para adicionar.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Valor</TableHead>
-                        <TableHead>Convênio</TableHead>
-                        <TableHead>Procedimento</TableHead>
-                        <TableHead>Vigência</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-16"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {regras.map((regra) => {
-                        const status = getRegraStatus(regra);
-                        return (
-                          <TableRow key={regra.id} className={!regra.ativo ? "opacity-50" : ""}>
-                            <TableCell className="font-medium">
-                              {regra.descricao || <span className="text-muted-foreground italic">Sem descrição</span>}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="whitespace-nowrap">
-                                {TIPO_REPASSE_LABELS[regra.tipo] ?? regra.tipo}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-mono">
+                </ActionButton>
+              }
+            >
+              {regrasLoading ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-14 w-full rounded-2xl" />
+                  ))}
+                </div>
+              ) : regras.length === 0 ? (
+                <EstadoVazio
+                  icone={<Banknote />}
+                  titulo="Nenhuma regra de repasse cadastrada"
+                  texto="Clique em “Nova Regra” para adicionar."
+                />
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead>Convênio</TableHead>
+                      <TableHead>Procedimento</TableHead>
+                      <TableHead>Vigência</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {regras.map((regra) => {
+                      const status = getRegraStatus(regra);
+                      return (
+                        <TableRow key={regra.id} className={!regra.ativo ? "opacity-60" : ""}>
+                          <TableCell>
+                            {regra.descricao ? (
+                              <span className="font-semibold text-ink">{regra.descricao}</span>
+                            ) : (
+                              <span className="text-ink-4 italic">Sem descrição</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <StatusPill tom="violet">{TIPO_REPASSE_LABELS[regra.tipo] ?? regra.tipo}</StatusPill>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="tabular font-semibold text-ink">
                               {formatValor(Number(regra.valor), regra.tipo)}
-                            </TableCell>
-                            <TableCell>
-                              {regra.convenio
-                                ? (regra.convenio.nome_fantasia || regra.convenio.razao_social)
-                                : <span className="text-muted-foreground text-xs">Todos</span>}
-                            </TableCell>
-                            <TableCell>
-                              {regra.procedimento
-                                ? regra.procedimento.nome
-                                : <span className="text-muted-foreground text-xs">Todos</span>}
-                            </TableCell>
-                            <TableCell className="text-xs whitespace-nowrap">
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {regra.convenio ? (
+                              regra.convenio.nome_fantasia || regra.convenio.razao_social
+                            ) : (
+                              <StatusPill tom="neutral">Todos</StatusPill>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {regra.procedimento ? (
+                              regra.procedimento.nome
+                            ) : (
+                              <StatusPill tom="neutral">Todos</StatusPill>
+                            )}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <span className="tabular text-[0.82rem] text-ink-3">
                               {format(new Date(regra.vigencia_inicio), "dd/MM/yy", { locale: ptBR })}
                               {" — "}
                               {regra.vigencia_fim
                                 ? format(new Date(regra.vigencia_fim), "dd/MM/yy", { locale: ptBR })
                                 : "Sem fim"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  status === "Ativa"
-                                    ? "default"
-                                    : status === "Futura"
-                                    ? "secondary"
-                                    : "destructive"
-                                }
-                                className="text-xs"
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <StatusPill
+                              tom={status === "Ativa" ? "success" : status === "Futura" ? "info" : "neutral"}
+                              ponto
+                            >
+                              {status}
+                            </StatusPill>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-1.5">
+                              <IconButton
+                                aria-label="Editar regra"
+                                className="size-9"
+                                onClick={() => setRegraForm({ open: true, regra })}
+                                disabled={!regra.ativo}
                               >
-                                {status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-7 w-7"
-                                  onClick={() => setRegraForm({ open: true, regra })}
-                                  disabled={!regra.ativo}
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-7 w-7 text-destructive hover:text-destructive"
-                                  onClick={() => handleDesativarRegra(regra.id)}
-                                  disabled={!regra.ativo}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                                <Pencil className="size-4" />
+                              </IconButton>
+                              <IconButton
+                                aria-label="Desativar regra"
+                                className="size-9 text-danger-ink"
+                                onClick={() => handleDesativarRegra(regra.id)}
+                                disabled={!regra.ativo}
+                              >
+                                <Trash2 className="size-4" />
+                              </IconButton>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </Panel>
           </TabsContent>
 
           {/* ── Tab: Grade de Horário ───────────────────────────────────── */}
           {/* Mesmo editor do modal da taxa de ocupação, não uma segunda tela:
               a filial escolhida aqui é a que alimenta o agendamento. */}
-          <TabsContent value="grade">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Grade de Atendimento</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Dias, horários e filial em que o profissional atende. É o que a
-                  agenda usa para liberar o agendamento e o que a taxa de ocupação
-                  usa como horário disponível.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <GradeEditor
-                  endpoint={`/api/terapeutas/${id}/grade`}
-                  onSaved={fetchProfissional}
-                />
-              </CardContent>
-            </Card>
+          <TabsContent value="grade" className="mt-5">
+            <Panel
+              icone={<Clock />}
+              titulo="Grade de Atendimento"
+              subtitulo="Dias, horários e filial em que o profissional atende. É o que a agenda usa para liberar o agendamento e o que a taxa de ocupação usa como horário disponível."
+            >
+              <GradeEditor endpoint={`/api/terapeutas/${id}/grade`} onSaved={fetchProfissional} />
+            </Panel>
           </TabsContent>
         </Tabs>
+        </div>
 
         {/* Form Dialog */}
         <RegraRepasseForm

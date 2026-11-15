@@ -6,10 +6,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -19,16 +15,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Building2,
   Handshake,
-  Search,
-  Loader2,
   Eye,
   Pencil,
   Trash2,
   CheckCircle2,
   Clock,
   XCircle,
-  PauseCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NovoConvenioDialog } from "@/components/convenios/novo-convenio-dialog";
@@ -36,13 +30,24 @@ import { EditarConvenioDialog } from "@/components/convenios/editar-convenio-dia
 import { ExcluirConvenioDialog } from "@/components/convenios/excluir-convenio-dialog";
 import type { Convenio, StatusConvenio } from "@/types/convenio";
 import { TIPO_CONVENIO_LABELS } from "@/types/convenio";
-import { PageHeader, Panel } from "@/components/kit";
+import {
+  PageHeader,
+  Panel,
+  StatCard,
+  StatusPill,
+  SearchField,
+  IconButton,
+  IconTile,
+  EstadoVazio,
+  Carregando,
+  type TomStatus,
+} from "@/components/kit";
 
-const STATUS_BADGE: Record<StatusConvenio, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
-  ATIVO: { label: "Ativo", variant: "default", icon: <CheckCircle2 className="h-3 w-3" /> },
-  EM_NEGOCIACAO: { label: "Em Negociação", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
-  SUSPENSO: { label: "Suspenso", variant: "outline", icon: <PauseCircle className="h-3 w-3" /> },
-  INATIVO: { label: "Inativo", variant: "destructive", icon: <XCircle className="h-3 w-3" /> },
+const STATUS_BADGE: Record<StatusConvenio, { label: string; tom: TomStatus }> = {
+  ATIVO: { label: "Ativo", tom: "success" },
+  EM_NEGOCIACAO: { label: "Em Negociação", tom: "warning" },
+  SUSPENSO: { label: "Suspenso", tom: "neutral" },
+  INATIVO: { label: "Inativo", tom: "danger" },
 };
 
 export default function ConveniosPage() {
@@ -128,67 +133,67 @@ export default function ConveniosPage() {
             }
           />
 
-          {/* Cards de estatísticas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Panel titulo="Total">
-
-              <div className="flex items-center gap-2">
-                <Handshake className="h-5 w-5 text-muted-foreground" />
-                <span className="text-2xl font-bold">{stats.total}</span>
-              </div>
-            </Panel>
-            <Panel titulo="Ativos">
-
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-success-ink" />
-                <span className="text-2xl font-bold text-success-ink">{stats.ativos}</span>
-              </div>
-            </Panel>
-            <Panel titulo="Em Negociação">
-
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-warning-ink" />
-                <span className="text-2xl font-bold text-warning-ink">{stats.negociacao}</span>
-              </div>
-            </Panel>
-            <Panel titulo="Inativos/Suspensos">
-
-              <div className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-muted-foreground" />
-                <span className="text-2xl font-bold">{stats.inativos}</span>
-              </div>
-            </Panel>
-          </div>
-
-          {/* Busca */}
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou CNPJ..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+          {/* Fileira pastel, tons na ordem do v2 nesta tela */}
+          <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard tom="blue" icone={<Building2 />} rotulo="Total" valor={stats.total} />
+            <StatCard
+              tom="mint"
+              icone={<CheckCircle2 />}
+              rotulo="Ativos"
+              valor={stats.ativos}
+            />
+            <StatCard
+              tom="peach"
+              icone={<Clock />}
+              rotulo="Em Negociação"
+              valor={stats.negociacao}
+            />
+            <StatCard
+              tom="lavender"
+              icone={<XCircle />}
+              rotulo="Inativos/Suspensos"
+              valor={stats.inativos}
             />
           </div>
 
-          {/* Tabela */}
-          <Card>
-            <CardContent className="p-0">
+          {/* A busca mora no cabeçalho do painel, como no v2 — campo solto
+              acima da tabela era o resto da tela antiga. */}
+          <Panel
+            icone={<Building2 />}
+            titulo="Convênios e planos"
+            subtitulo={`${conveniosFiltrados.length} ${conveniosFiltrados.length === 1 ? "convênio" : "convênios"}`}
+            acoes={
+              <SearchField
+                placeholder="Buscar por nome ou CNPJ..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="hidden w-72 md:flex"
+              />
+            }
+          >
+            <div>
+              {/* No telefone o campo desce para o corpo: no cabeçalho ele
+                  espremeria o título. */}
+              <SearchField
+                placeholder="Buscar por nome ou CNPJ..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="mb-4 md:hidden"
+              />
               {loading ? (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                </div>
+                <Carregando texto="Carregando convênios..." />
               ) : conveniosFiltrados.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                  <Handshake className="h-10 w-10 mb-3 opacity-30" />
-                  <p className="font-medium">
-                    {searchTerm ? "Nenhum convênio encontrado" : "Nenhum convênio cadastrado"}
-                  </p>
-                  <p className="text-sm">
-                    {searchTerm ? "Tente outro termo de busca" : "Clique em 'Novo Convênio' para começar"}
-                  </p>
-                </div>
+                <EstadoVazio
+                  icone={<Handshake />}
+                  titulo={searchTerm ? "Nenhum convênio encontrado" : "Nenhum convênio cadastrado"}
+                  texto={
+                    searchTerm
+                      ? "Tente outro termo de busca."
+                      : "Clique em “Novo Convênio” para começar."
+                  }
+                />
               ) : (
+                <div className="scrollbar-none overflow-x-auto rounded-2xl">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -206,57 +211,68 @@ export default function ConveniosPage() {
                       return (
                         <TableRow key={convenio.id}>
                           <TableCell>
-                            <div>
-                              <p className="font-medium">{convenio.razao_social}</p>
-                              {convenio.nome_fantasia && (
-                                <p className="text-xs text-muted-foreground">{convenio.nome_fantasia}</p>
-                              )}
+                            <div className="flex min-w-0 items-center gap-3">
+                              <IconTile className="hidden size-10 rounded-[0.85rem] sm:grid">
+                                <Building2 />
+                              </IconTile>
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-ink">
+                                  {convenio.razao_social}
+                                </p>
+                                {convenio.nome_fantasia && (
+                                  <p className="truncate text-[0.75rem] text-ink-3">
+                                    {convenio.nome_fantasia}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {formatarCNPJ(convenio.cnpj)}
+                          <TableCell className="hidden md:table-cell">
+                            <span className="tabular text-[0.82rem] whitespace-nowrap">
+                              {formatarCNPJ(convenio.cnpj)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <span className="text-[0.82rem]">
+                              {TIPO_CONVENIO_LABELS[convenio.tipo]}
+                            </span>
                           </TableCell>
                           <TableCell>
-                            <span className="text-sm">{TIPO_CONVENIO_LABELS[convenio.tipo]}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={statusInfo.variant} className="gap-1">
-                              {statusInfo.icon}
+                            <StatusPill tom={statusInfo.tom} ponto>
                               {statusInfo.label}
-                            </Badge>
+                            </StatusPill>
                           </TableCell>
-                          <TableCell className="text-center">
-                            <span className="text-sm text-muted-foreground">
+                          <TableCell className="hidden text-center md:table-cell">
+                            <span className="tabular text-ink-3">
                               {convenio._count?.tabelas ?? 0}
                             </span>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => router.push(`/convenios/${convenio.id}`)}
+                            <div className="flex items-center justify-end gap-1.5">
+                              <IconButton
+                                aria-label={`Ver detalhes de ${convenio.razao_social}`}
                                 title="Ver detalhes"
+                                onClick={() => router.push(`/convenios/${convenio.id}`)}
+                                className="size-9"
                               >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setEditando(convenio)}
+                                <Eye className="size-4" aria-hidden />
+                              </IconButton>
+                              <IconButton
+                                aria-label={`Editar ${convenio.razao_social}`}
                                 title="Editar"
+                                onClick={() => setEditando(convenio)}
+                                className="size-9"
                               >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setExcluindo(convenio)}
+                                <Pencil className="size-4" aria-hidden />
+                              </IconButton>
+                              <IconButton
+                                aria-label={`Desativar ${convenio.razao_social}`}
                                 title="Desativar"
-                                className="text-destructive hover:text-destructive"
+                                onClick={() => setExcluindo(convenio)}
+                                className="size-9 hover:text-danger"
                               >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                                <Trash2 className="size-4" aria-hidden />
+                              </IconButton>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -264,9 +280,10 @@ export default function ConveniosPage() {
                     })}
                   </TableBody>
                 </Table>
+                </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
         </div>
 
         {/* Dialogs */}

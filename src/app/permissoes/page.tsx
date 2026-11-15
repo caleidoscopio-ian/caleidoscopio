@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Shield } from 'lucide-react'
+import { History as HistoryIcon, KeyRound, Shield, Users } from 'lucide-react'
 import { MainLayout } from '@/components/main-layout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -10,7 +10,7 @@ import { PermissionMatrix } from '@/components/rbac/permission-matrix'
 import { UserRoleAssignment } from '@/components/rbac/user-role-assignment'
 import { AuditLog } from '@/components/rbac/audit-log'
 import { apiGet, handleApiResponse } from '@/lib/api'
-import { PageHeader, Panel } from '@/components/kit'
+import { EstadoVazio, PageHeader, Panel } from '@/components/kit'
 
 interface Role {
   id: string
@@ -49,7 +49,7 @@ export default function PermissoesPage() {
   return (
     <ProtectedRoute requiredPermission={{ resource: 'permissoes', action: 'VIEW' }}>
       <MainLayout>
-        <div className="space-y-6">
+        <div className="space-y-7">
           <PageHeader
             icone={<Shield />}
             titulo="Gestão de Permissões"
@@ -67,8 +67,9 @@ export default function PermissoesPage() {
             </TabsList>
 
             {/* Tab: Perfis */}
-            <TabsContent value="perfis" className="mt-6">
+            <TabsContent value="perfis" className="mt-5">
               <Panel
+                icone={<Shield />}
                 titulo="Perfis de Acesso"
                 subtitulo="Crie e gerencie perfis customizados. Clique em um perfil para configurar suas permissões."
               >
@@ -80,8 +81,9 @@ export default function PermissoesPage() {
             </TabsContent>
 
             {/* Tab: Permissões */}
-            <TabsContent value="permissoes" className="mt-6">
+            <TabsContent value="permissoes" className="mt-5">
               <Panel
+                icone={<KeyRound />}
                 titulo="Matriz de Permissões"
                 subtitulo="Configure quais ações cada perfil pode realizar em cada módulo."
               >
@@ -93,16 +95,19 @@ export default function PermissoesPage() {
                     allRoles={allRoles}
                   />
                 ) : (
-                  <p className="text-center py-12 text-muted-foreground">
-                    Selecione um perfil na aba &quot;Perfis&quot; para configurar as permissões.
-                  </p>
+                  <EstadoVazio
+                    icone={<KeyRound />}
+                    titulo="Nenhum perfil selecionado"
+                    texto="Selecione um perfil na aba “Perfis” para configurar as permissões."
+                  />
                 )}
               </Panel>
             </TabsContent>
 
             {/* Tab: Usuários */}
-            <TabsContent value="usuarios" className="mt-6">
+            <TabsContent value="usuarios" className="mt-5">
               <Panel
+                icone={<Users />}
                 titulo="Atribuição de Perfis"
                 subtitulo="Atribua perfis aos usuários da clínica. A justificativa é obrigatória para auditoria."
               >
@@ -113,8 +118,9 @@ export default function PermissoesPage() {
             </TabsContent>
 
             {/* Tab: Histórico */}
-            <TabsContent value="historico" className="mt-6">
+            <TabsContent value="historico" className="mt-5">
               <Panel
+                icone={<HistoryIcon />}
                 titulo="Log de Auditoria"
                 subtitulo="Registro completo de todas as alterações de perfis. Exportável em CSV."
               >

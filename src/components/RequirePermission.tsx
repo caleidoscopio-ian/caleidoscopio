@@ -35,7 +35,7 @@ export function RequirePermission({
             <ShieldOff className="h-12 w-12 text-destructive" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">Acesso não autorizado</h2>
+            <h2 className="tabular text-2xl font-bold">Acesso não autorizado</h2>
             <p className="text-muted-foreground mt-1">
               Você não tem permissão para acessar este recurso.
             </p>

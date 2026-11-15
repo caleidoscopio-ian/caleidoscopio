@@ -85,3 +85,24 @@ export function StatusPill({
     </span>
   );
 }
+
+/**
+ * Fase de uma instrução do plano terapêutico, em pílula suave com ponto.
+ * Tinha três cópias locais (iniciar sessão, histórico, aplicar plano) — e a
+ * "Linha de Base" de duas delas era texto branco sobre `surface-muted`.
+ */
+const FASES: Record<string, { label: string; tom: TomStatus }> = {
+  LINHA_BASE: { label: "Linha de Base", tom: "neutral" },
+  INTERVENCAO: { label: "Intervenção", tom: "info" },
+  MANUTENCAO: { label: "Manutenção", tom: "success" },
+  GENERALIZACAO: { label: "Generalização", tom: "warning" },
+};
+
+export function FasePill({ fase, className }: { fase: string; className?: string }) {
+  const cfg = FASES[fase] ?? { label: fase, tom: "neutral" as TomStatus };
+  return (
+    <StatusPill tom={cfg.tom} ponto className={className}>
+      {cfg.label}
+    </StatusPill>
+  );
+}

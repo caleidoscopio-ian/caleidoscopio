@@ -306,7 +306,7 @@ export function NovaAtividadeForm({ onSuccess }: NovaAtividadeFormProps) {
               {instrucoes.map((instrucao, index) => (
                 <div
                   key={index}
-                  className="border rounded-lg p-4 space-y-3 bg-muted/30"
+                  className="rounded-2xl bg-surface-muted p-4 space-y-3"
                 >
                   <div className="flex items-start gap-2">
                     {/* Grip para reordenar */}

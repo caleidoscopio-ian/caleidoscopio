@@ -35,8 +35,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Layers, Plus, Edit, Trash2, Loader2 } from "lucide-react";
-import { Panel } from "@/components/kit";
+  Layers, Plus, Edit, Trash2, ListPlus } from "lucide-react";
+import { ActionButton, Carregando, EstadoVazio, IconButton, NumeroOrdem, Panel, StatusPill } from "@/components/kit";
 
 interface Nivel {
   id: string;
@@ -194,27 +194,25 @@ export function AbaNiveis({ avaliacaoId }: AbaNiveisProps) {
       titulo="Níveis da Avaliação"
       subtitulo="Cadastre os níveis/estágios da avaliação"
       acoes={
-        <Button onClick={handleNovo}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Nível
-          </Button>
+        <ActionButton size="sm" onClick={handleNovo}>
+          <Plus />
+          Adicionar Nível
+        </ActionButton>
       }
     >
         {loading ? (
-          <div className="text-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando níveis...</p>
-          </div>
+          <Carregando texto="Carregando níveis..." />
         ) : niveis.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">
-              Nenhum nível cadastrado ainda.
-            </p>
-            <Button onClick={handleNovo}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Primeiro Nível
-            </Button>
-          </div>
+          <EstadoVazio
+            icone={<ListPlus />}
+            titulo="Nenhum nível cadastrado ainda"
+            acao={
+              <ActionButton size="sm" onClick={handleNovo}>
+                <Plus />
+                Adicionar Primeiro Nível
+              </ActionButton>
+            }
+          />
         ) : (
           <Table>
             <TableHeader>
@@ -228,25 +226,25 @@ export function AbaNiveis({ avaliacaoId }: AbaNiveisProps) {
             <TableBody>
               {niveis.map((nivel) => (
                 <TableRow key={nivel.id}>
-                  <TableCell className="font-medium">{nivel.ordem}</TableCell>
-                  <TableCell>{nivel.descricao}</TableCell>
-                  <TableCell>{nivel.faixa_etaria || "-"}</TableCell>
+                  <TableCell>
+                    <NumeroOrdem n={nivel.ordem} />
+                  </TableCell>
+                  <TableCell className="font-semibold text-ink">{nivel.descricao}</TableCell>
+                  <TableCell>
+                    {nivel.faixa_etaria ? (
+                      <StatusPill tom="neutral">{nivel.faixa_etaria}</StatusPill>
+                    ) : (
+                      <span className="text-ink-4">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditar(nivel)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDeleteId(nivel.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                    <div className="flex justify-end gap-1.5">
+                      <IconButton aria-label="Editar" className="size-9" onClick={() => handleEditar(nivel)}>
+                        <Edit className="size-4" />
+                      </IconButton>
+                      <IconButton aria-label="Excluir" className="size-9 text-danger-ink" onClick={() => setDeleteId(nivel.id)}>
+                        <Trash2 className="size-4" />
+                      </IconButton>
                     </div>
                   </TableCell>
                 </TableRow>

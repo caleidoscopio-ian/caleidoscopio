@@ -75,9 +75,9 @@ export function ExcluirCurriculumDialog({ curriculum, onSuccess }: ExcluirCurric
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost">
-          <Trash2 className="h-4 w-4 text-danger-ink" />
-        </Button>
+        <button type="button" aria-label="Excluir plano" title="Excluir" className="grid size-9 place-items-center rounded-full bg-surface text-ink-2 shadow-[0_1px_2px_rgba(15,27,61,0.06)] transition hover:text-danger-ink focus-visible:ring-4 focus-visible:ring-brand-ring focus-visible:outline-none">
+          <Trash2 className="size-4" />
+        </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -98,7 +98,7 @@ export function ExcluirCurriculumDialog({ curriculum, onSuccess }: ExcluirCurric
           )}
 
           <div className="space-y-2">
-            <div className="p-4 border rounded-lg bg-muted/30">
+            <div className="rounded-2xl bg-surface-muted p-4">
               <div className="font-medium">{curriculum.nome}</div>
               {curriculum.descricao && (
                 <div className="text-sm text-muted-foreground mt-1">
@@ -108,7 +108,7 @@ export function ExcluirCurriculumDialog({ curriculum, onSuccess }: ExcluirCurric
             </div>
 
             {temAtividades && (
-              <div className="p-4 border border-warning-soft rounded-lg bg-warning-soft">
+              <div className="rounded-2xl bg-surface-muted p-4 border-warning-soft bg-warning-soft">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-5 w-5 text-warning-ink shrink-0 mt-0.5" />
                   <div className="text-sm text-warning-ink">

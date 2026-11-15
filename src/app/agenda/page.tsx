@@ -1373,7 +1373,7 @@ function AgendaPageContent() {
 
           {/* Recorrência: escolher o alcance da edição antes de salvar */}
           {selectedAgendamento?.serieId && (
-            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+            <div className="rounded-2xl bg-surface-muted p-3 space-y-2">
               <p className="text-sm font-medium">
                 Este agendamento faz parte de uma recorrência. Aplicar as alterações a:
               </p>

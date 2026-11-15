@@ -165,7 +165,7 @@ export function ProntuarioAnamnese({ pacienteId }: ProntuarioAnamneseProps) {
                       Anamnese - {formatDate(anamnese.createdAt)}
                     </CardTitle>
                     {anamnese.status === "FINALIZADA" ? (
-                      <Badge variant="default" className="bg-success">
+                      <Badge variant="outline" className="bg-success-soft text-success-ink">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Finalizada
                       </Badge>

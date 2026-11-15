@@ -10,8 +10,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
+import { Avatar, AvatarImage } from '@/components/ui/avatar'
+import { ActionButton, PersonAvatar } from '@/components/kit'
 import {
   Calendar,
   Clock,
@@ -209,23 +209,21 @@ export function AgendamentoDetailsDialog({
         <div className="space-y-4 sm:space-y-6">
           {/* Paciente */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            <h3 className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
               Paciente
             </h3>
-            <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/50">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={agendamento.paciente?.foto || ''} />
-                <AvatarFallback
-                  style={{
-                    backgroundColor: agendamento.paciente?.cor_agenda || '#3b82f6',
-                    color: 'white'
-                  }}
-                >
-                  {agendamento.paciente?.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-1">
-                <div className="font-semibold text-lg">{agendamento.paciente?.nome}</div>
+            <div className="rounded-2xl bg-surface-muted flex items-center gap-4 p-4">
+              {agendamento.paciente?.foto ? (
+                <Avatar className="size-14">
+                  <AvatarImage src={agendamento.paciente.foto} />
+                </Avatar>
+              ) : (
+                <PersonAvatar nome={agendamento.paciente?.nome ?? "?"} tamanho={56} />
+              )}
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="truncate text-[1.05rem] font-semibold text-ink">
+                  {agendamento.paciente?.nome}
+                </div>
                 {agendamento.paciente?.telefone && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Phone className="h-4 w-4" />
@@ -236,14 +234,12 @@ export function AgendamentoDetailsDialog({
             </div>
           </div>
 
-          <Separator />
-
           {/* Profissional */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            <h3 className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
               Profissional
             </h3>
-            <div className="p-4 border rounded-lg space-y-2">
+            <div className="rounded-2xl bg-surface-muted p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span className="font-semibold">{agendamento.profissional?.nome}</span>
@@ -260,16 +256,14 @@ export function AgendamentoDetailsDialog({
             </div>
           </div>
 
-          <Separator />
-
           {/* Data e Horário */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              <h3 className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Data
               </h3>
-              <div className="flex items-center gap-2 p-3 border rounded-lg">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
+              <div className="rounded-2xl bg-surface-muted flex items-center gap-2 p-3">
+                <Calendar className="size-5 text-brand" />
                 <div>
                   <div className="font-medium capitalize">
                     {formatDate(agendamento.data_hora)}
@@ -279,11 +273,11 @@ export function AgendamentoDetailsDialog({
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              <h3 className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Horário
               </h3>
-              <div className="flex items-center gap-2 p-3 border rounded-lg">
-                <Clock className="h-5 w-5 text-muted-foreground" />
+              <div className="rounded-2xl bg-surface-muted flex items-center gap-2 p-3">
+                <Clock className="size-5 text-brand" />
                 <div>
                   <div className="font-medium">
                     {formatTime(agendamento.data_hora)} - {calculateEndTime()}
@@ -299,11 +293,11 @@ export function AgendamentoDetailsDialog({
           {/* Sala */}
           {agendamento.salaRelacao && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              <h3 className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Local
               </h3>
-              <div className="flex items-center gap-3 p-3 border rounded-lg">
-                <MapPin className="h-5 w-5 text-muted-foreground" />
+              <div className="rounded-2xl bg-surface-muted flex items-center gap-3 p-3">
+                <MapPin className="size-5 text-brand" />
                 {agendamento.salaRelacao.cor && (
                   <div
                     className="w-4 h-4 rounded-full flex-shrink-0"
@@ -318,12 +312,12 @@ export function AgendamentoDetailsDialog({
           {/* Procedimento + Preço */}
           {agendamento.procedimento && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              <h3 className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Procedimento
               </h3>
-              <div className="p-3 border rounded-lg space-y-2">
+              <div className="rounded-2xl bg-surface-muted p-3 space-y-2">
                 <div className="flex items-center gap-3">
-                  <Stethoscope className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <Stethoscope className="size-5 text-brand flex-shrink-0" />
                   {agendamento.procedimento.cor && (
                     <div
                       className="w-3 h-3 rounded-full flex-shrink-0"
@@ -368,12 +362,12 @@ export function AgendamentoDetailsDialog({
           {/* Observações */}
           {agendamento.observacoes && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              <h3 className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Observações
               </h3>
-              <div className="p-3 border rounded-lg bg-muted/30">
+              <div className="rounded-2xl bg-surface-muted p-3">
                 <div className="flex items-start gap-2">
-                  <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <FileText className="size-5 text-brand mt-0.5" />
                   <p className="text-sm">{agendamento.observacoes}</p>
                 </div>
               </div>
@@ -500,68 +494,70 @@ export function AgendamentoDetailsDialog({
           </div>
         ) : (
         /* Ações */
-        <div className="flex flex-col gap-3 pt-4 sm:pt-6 border-t sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {onEditar && (
-              <Button
-                variant="outline"
+              <ActionButton
+                variant="secondary"
                 onClick={() => {
                   onEditar(agendamento)
                   onOpenChange(false)
                 }}
                 disabled={isLoading}
               >
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit />
                 Editar
-              </Button>
+              </ActionButton>
             )}
             {onDeletar && (
-              <Button
-                variant="outline"
+              <ActionButton
+                variant="secondary"
                 onClick={handleAbrirConfirmacaoExclusao}
                 disabled={isLoading}
-                className="text-danger-ink hover:text-danger-ink"
+                className="text-danger-ink"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 />
                 Excluir
-              </Button>
+              </ActionButton>
             )}
           </div>
 
           <div className="flex flex-wrap gap-2">
             {agendamento.status === StatusAgendamento.AGENDADO && onConfirmar && (
-              <Button
+              <ActionButton
                 onClick={handleConfirmar}
                 disabled={isLoading}
-                variant="outline"
-                className="text-success-ink hover:text-success-ink"
+                variant="secondary"
+                className="text-success-ink"
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle />
                 Confirmar
-              </Button>
+              </ActionButton>
             )}
 
             {agendamento.status === StatusAgendamento.CONFIRMADO && onIniciarAtendimento && (
-              <Button onClick={() => {
-                onIniciarAtendimento(agendamento.id)
-                onOpenChange(false)
-              }}>
-                <PlayCircle className="h-4 w-4 mr-2" />
+              <ActionButton
+                onClick={() => {
+                  onIniciarAtendimento(agendamento.id)
+                  onOpenChange(false)
+                }}
+              >
+                <PlayCircle />
                 Iniciar Atendimento
-              </Button>
+              </ActionButton>
             )}
 
             {(agendamento.status === StatusAgendamento.AGENDADO ||
               agendamento.status === StatusAgendamento.CONFIRMADO) &&
               onCancelar && (
-                <Button
+                <ActionButton
                   onClick={handleAbrirConfirmacaoCancelamento}
                   disabled={isLoading}
-                  variant="destructive"
+                  variant="danger"
                 >
-                  <XCircle className="h-4 w-4 mr-2" />
+                  <XCircle />
                   Cancelar Agendamento
-                </Button>
+                </ActionButton>
               )}
           </div>
         </div>

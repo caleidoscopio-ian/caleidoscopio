@@ -248,6 +248,7 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="size-9"
                             onClick={() => handleEditar(index)}
                           >
                             <Edit className="h-4 w-4" />
@@ -255,6 +256,7 @@ export function AbaInstrucoes({ atividadeId, onSave }: AbaInstrucoesProps) {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="size-9"
                             onClick={() => setDeleteIndex(index)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />

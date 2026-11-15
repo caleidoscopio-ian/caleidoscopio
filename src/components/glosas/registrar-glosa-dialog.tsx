@@ -268,7 +268,7 @@ export function RegistrarGlosaDialog({ open, onOpenChange, agendamento, onSucces
                   key={at.id}
                   type="button"
                   onClick={() => handleSelecionarAtendimento(at)}
-                  className="w-full text-left rounded-md border p-3 hover:bg-muted/60 transition-colors text-sm space-y-1"
+                  className="rounded-2xl bg-surface-muted w-full text-left p-3 hover:bg-muted/60 transition-colors text-sm space-y-1"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-medium">{at.paciente.nome}</span>

@@ -1,8 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { StatusPill, PersonAvatar, EstadoVazio } from "@/components/kit"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Settings2, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, LayoutGrid } from "lucide-react"
@@ -18,21 +17,46 @@ interface TabelaOcupacaoProps {
 type OrdenarPor = "nome" | "taxa" | "agendamentos" | "faltas"
 type Direcao = "asc" | "desc"
 
+/** Trilho + numero, como no v2: `h-2` em `surface-sunken`, barra na cor da
+ *  faixa e numero com largura fixa para a coluna nao dancar.
+ *
+ *  O texto usa o token `-ink`, nao a cor cheia da barra: o v2 pinta o numero
+ *  com a mesma cor do preenchimento, e ai "52%" em verde reprova no contraste
+ *  (ver a regra "Texto de status usa -ink" em frontend.md). */
 function TaxaBarra({ taxa }: { taxa: number }) {
   const pct = Math.min(Math.round(taxa * 100), 100)
-  const cor = taxa >= 1 ? "bg-danger" : taxa >= 0.8 ? "bg-warning" : taxa >= 0.5 ? "bg-success" : "bg-brand"
+  const barra =
+    taxa >= 1 ? "bg-danger" : taxa >= 0.8 ? "bg-warning" : taxa >= 0.5 ? "bg-success" : "bg-brand"
+  const texto =
+    taxa >= 1
+      ? "text-danger-ink"
+      : taxa >= 0.8
+        ? "text-warning-ink"
+        : taxa >= 0.5
+          ? "text-success-ink"
+          : "text-ink-2"
   return (
-    <div className="flex items-center gap-2 min-w-[120px]">
-      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${cor}`} style={{ width: `${pct}%` }} />
+    <div className="flex min-w-[9rem] items-center gap-2.5">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-sunken">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ${barra}`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
-      <span className={`text-xs font-medium w-10 text-right tabular-nums ${taxa >= 1 ? "text-danger-ink" : taxa >= 0.8 ? "text-warning-ink" : taxa >= 0.5 ? "text-success-ink" : "text-muted-foreground"}`}>
+      <span
+        className={`tabular flex w-12 items-center justify-end gap-1 text-[0.78rem] font-semibold ${texto}`}
+      >
         {formatarTaxa(taxa)}
-        {taxa > 1 && " ⚠"}
+        {taxa > 1 && <span title="Acima da grade cadastrada">⚠</span>}
       </span>
     </div>
   )
 }
+
+/** Acao de linha: circulo de 32px sem moldura, que so acende no hover. */
+const ACAO =
+  "grid size-8 place-items-center rounded-full text-ink-3 transition " +
+  "hover:bg-surface hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
 
 export function TabelaOcupacao({ profissionais, onConfigurarGrade }: TabelaOcupacaoProps) {
   const [ordenarPor, setOrdenarPor] = useState<OrdenarPor>("taxa")
@@ -60,7 +84,7 @@ export function TabelaOcupacao({ profissionais, onConfigurarGrade }: TabelaOcupa
 
   return (
     <TooltipProvider>
-      <div className="rounded-md border">
+      <div className="scrollbar-none overflow-x-auto rounded-2xl">
         <Table>
           <TableHeader>
             <TableRow>
@@ -92,9 +116,9 @@ export function TabelaOcupacao({ profissionais, onConfigurarGrade }: TabelaOcupa
           </TableHeader>
           <TableBody>
             {sorted.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
-                  Nenhum profissional encontrado para os filtros selecionados.
+              <TableRow className="bg-transparent">
+                <TableCell colSpan={8}>
+                  <EstadoVazio titulo="Nenhum profissional encontrado para os filtros selecionados." />
                 </TableCell>
               </TableRow>
             )}
@@ -116,77 +140,95 @@ export function TabelaOcupacao({ profissionais, onConfigurarGrade }: TabelaOcupa
                 </TableCell>
 
                 <TableCell>
-                  <div className="font-medium text-sm">{prof.nome}</div>
-                  <div className="text-xs text-muted-foreground">{prof.especialidade}</div>
-                  {!prof.tem_grade && (
-                    <Badge variant="outline" className="mt-1 text-xs text-warning-ink border-warning">
-                      grade não configurada
-                    </Badge>
-                  )}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <PersonAvatar nome={prof.nome} tamanho={36} />
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-ink">{prof.nome}</p>
+                      <p className="truncate text-[0.75rem] text-ink-3">{prof.especialidade}</p>
+                      {!prof.tem_grade && (
+                        <StatusPill tom="warning" className="mt-1">
+                          grade não configurada
+                        </StatusPill>
+                      )}
+                    </div>
+                  </div>
                 </TableCell>
 
                 <TableCell>
                   {prof.tem_grade ? (
                     <TaxaBarra taxa={prof.taxa_ocupacao} />
                   ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-
-                <TableCell className="text-right tabular-nums text-sm">{prof.total_agendamentos}</TableCell>
-
-                <TableCell className="text-right tabular-nums text-sm">
-                  {formatarMinutos(prof.minutos_agendados)}
-                </TableCell>
-
-                <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
-                  {prof.tem_grade ? formatarMinutos(prof.minutos_disponiveis) : "—"}
-                </TableCell>
-
-                <TableCell className="text-right">
-                  {prof.faltas > 0 && (
-                    <span className="text-xs font-medium text-warning-ink">{prof.faltas}</span>
-                  )}
-                  {prof.cancelamentos > 0 && (
-                    <span className="text-xs text-muted-foreground ml-1">({prof.cancelamentos} canc.)</span>
-                  )}
-                  {prof.faltas === 0 && prof.cancelamentos === 0 && (
-                    <span className="text-xs text-muted-foreground">—</span>
+                    <span className="text-ink-4">—</span>
                   )}
                 </TableCell>
 
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
+                  <span className="tabular font-medium text-ink">{prof.total_agendamentos}</span>
+                </TableCell>
+
+                <TableCell className="hidden text-right md:table-cell">
+                  <span className="tabular">{formatarMinutos(prof.minutos_agendados)}</span>
+                </TableCell>
+
+                <TableCell className="hidden text-right md:table-cell">
+                  <span className="tabular text-ink-3">
+                    {prof.tem_grade ? formatarMinutos(prof.minutos_disponiveis) : "—"}
+                  </span>
+                </TableCell>
+
+                <TableCell className="text-right">
+                  <span className="tabular whitespace-nowrap">
+                    {prof.faltas > 0 && (
+                      <span className="font-semibold text-[color:var(--kpi-peach-ink)]">
+                        {prof.faltas}
+                      </span>
+                    )}
+                    {prof.cancelamentos > 0 && (
+                      <span className="ml-1 text-[0.75rem] text-ink-3">
+                        ({prof.cancelamentos} canc.)
+                      </span>
+                    )}
+                    {prof.faltas === 0 && prof.cancelamentos === 0 && (
+                      <span className="text-ink-4">—</span>
+                    )}
+                  </span>
+                </TableCell>
+
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-0.5">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
+                        <button
+                          type="button"
+                          className={ACAO}
                           onClick={() => onConfigurarGrade(prof.id, prof.nome)}
                           aria-label={`Configurar grade de ${prof.nome}`}
                         >
-                          <Settings2 className="h-3.5 w-3.5" />
-                        </Button>
+                          <Settings2 className="size-4" aria-hidden />
+                        </button>
                       </TooltipTrigger>
                       <TooltipContent>Configurar grade</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Link href={`/agenda?profissionalId=${prof.id}`}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={`Ver agenda de ${prof.nome}`}>
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
+                        <Link
+                          href={`/agenda?profissionalId=${prof.id}`}
+                          className={ACAO}
+                          aria-label={`Ver agenda de ${prof.nome}`}
+                        >
+                          <ExternalLink className="size-4" aria-hidden />
                         </Link>
                       </TooltipTrigger>
                       <TooltipContent>Ver na agenda</TooltipContent>
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Link href="/salas/mapa-ocupacao">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Ver mapa de salas">
-                            <LayoutGrid className="h-3.5 w-3.5" />
-                          </Button>
+                        <Link
+                          href="/salas/mapa-ocupacao"
+                          className={ACAO}
+                          aria-label="Ver mapa de salas"
+                        >
+                          <LayoutGrid className="size-4" aria-hidden />
                         </Link>
                       </TooltipTrigger>
                       <TooltipContent>Ver mapa de salas</TooltipContent>

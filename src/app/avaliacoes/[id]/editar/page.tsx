@@ -4,20 +4,15 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Loader2 } from "lucide-react";
+import { AlertCircle, Save } from "lucide-react";
 import { AbaGeral } from "@/components/avaliacoes/aba-geral";
 import { AbaNiveis } from "@/components/avaliacoes/aba-niveis";
 import { AbaHabilidades } from "@/components/avaliacoes/aba-habilidades";
 import { AbaPontuacao } from "@/components/avaliacoes/aba-pontuacao";
 import { AbaTarefas } from "@/components/avaliacoes/aba-tarefas";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { PageHeader } from "@/components/kit";
+import { ActionButton, Carregando, EstadoVazio, PageHeader } from "@/components/kit";
 
 function EditarAvaliacaoPageContent() {
   const params = useParams();
@@ -87,9 +82,7 @@ function EditarAvaliacaoPageContent() {
   if (loading) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+        <Carregando texto="Carregando avaliação..." className="py-24" />
       </MainLayout>
     );
   }
@@ -97,47 +90,48 @@ function EditarAvaliacaoPageContent() {
   if (error) {
     return (
       <MainLayout breadcrumbs={breadcrumbs}>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-danger-ink mb-4">{error}</p>
-              <Button onClick={() => router.push("/avaliacoes")}>
+        <div className="py-16">
+          <EstadoVazio
+            icone={<AlertCircle />}
+            titulo={error}
+            acao={
+              <ActionButton variant="secondary" onClick={() => router.push("/avaliacoes")}>
                 Voltar para Avaliações
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              </ActionButton>
+            }
+          />
+        </div>
       </MainLayout>
     );
   }
 
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
-      <div className="space-y-6">
-        {/* Header */}
+      <div className="space-y-7">
         <PageHeader
           voltar={{ onClick: handleVoltar }}
           titulo="Editar Avaliação"
           subtitulo="Edite o protocolo de avaliação"
           acoes={
-            <Button onClick={() => router.push("/avaliacoes")}>
-              <Save className="mr-2 h-4 w-4" />
+            <ActionButton onClick={() => router.push("/avaliacoes")}>
+              <Save />
               Concluir
-            </Button>
+            </ActionButton>
           }
         />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="geral">Geral</TabsTrigger>
-            <TabsTrigger value="niveis">Níveis</TabsTrigger>
-            <TabsTrigger value="habilidades">Habilidades</TabsTrigger>
-            <TabsTrigger value="pontuacao">Pontuação</TabsTrigger>
-            <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
+          {/* Abas na largura toda, como no detalhe da avaliação do v2 */}
+          <TabsList className="w-full">
+            <TabsTrigger value="geral" className="flex-1">Geral</TabsTrigger>
+            <TabsTrigger value="niveis" className="flex-1">Níveis</TabsTrigger>
+            <TabsTrigger value="habilidades" className="flex-1">Habilidades</TabsTrigger>
+            <TabsTrigger value="pontuacao" className="flex-1">Pontuação</TabsTrigger>
+            <TabsTrigger value="tarefas" className="flex-1">Tarefas</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="geral">
+          <TabsContent value="geral" className="mt-5">
             <AbaGeral
               dados={dadosGerais}
               onChange={setDadosGerais}
@@ -145,19 +139,19 @@ function EditarAvaliacaoPageContent() {
             />
           </TabsContent>
 
-          <TabsContent value="niveis">
+          <TabsContent value="niveis" className="mt-5">
             <AbaNiveis avaliacaoId={avaliacaoId} />
           </TabsContent>
 
-          <TabsContent value="habilidades">
+          <TabsContent value="habilidades" className="mt-5">
             <AbaHabilidades avaliacaoId={avaliacaoId} />
           </TabsContent>
 
-          <TabsContent value="pontuacao">
+          <TabsContent value="pontuacao" className="mt-5">
             <AbaPontuacao avaliacaoId={avaliacaoId} />
           </TabsContent>
 
-          <TabsContent value="tarefas">
+          <TabsContent value="tarefas" className="mt-5">
             <AbaTarefas avaliacaoId={avaliacaoId} />
           </TabsContent>
         </Tabs>

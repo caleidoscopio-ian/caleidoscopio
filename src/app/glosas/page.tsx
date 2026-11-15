@@ -295,7 +295,7 @@ function GlosasContent() {
             )}
             <UploadDemonstrativo convenios={convenios} onImportado={carregarConciliacao} />
             <div className="space-y-2">
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              <h2 className="text-[1.3rem] leading-[1.25] font-semibold tracking-[-0.022em] text-ink">
                 Demonstrativos Importados
               </h2>
               <ListaDemonstrativos

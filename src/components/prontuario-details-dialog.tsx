@@ -15,8 +15,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-
 interface Patient {
   id: string
   name: string
@@ -123,8 +121,6 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
               </div>
             </div>
 
-            <Separator />
-
             {/* Seção: Dados do Atendimento */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -182,8 +178,6 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
               </div>
             </div>
 
-            <Separator />
-
             {/* Seção: Evolução Clínica */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -191,7 +185,7 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
                 Evolução Clínica
               </h3>
 
-              <div className="p-4 bg-success-soft border border-success-soft rounded-lg">
+              <div className="rounded-2xl bg-surface-muted p-4 bg-success-soft border-success-soft">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-success-ink">Descrição da Evolução</label>
                   <div className="text-sm text-success-ink leading-relaxed whitespace-pre-wrap">
@@ -204,14 +198,13 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
             {/* Seção: Observações (se houver) */}
             {record.observations && (
               <>
-                <Separator />
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />
                     Observações Adicionais
                   </h3>
 
-                  <div className="p-4 bg-warning-soft border border-warning-soft rounded-lg">
+                  <div className="rounded-2xl bg-surface-muted p-4 bg-warning-soft border-warning-soft">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-warning-ink">Observações Complementares</label>
                       <div className="text-sm text-warning-ink leading-relaxed whitespace-pre-wrap">
@@ -224,7 +217,6 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
             )}
 
             {/* Seção: Anexos */}
-            <Separator />
             <div className="space-y-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Paperclip className="h-4 w-4" />
@@ -246,8 +238,6 @@ export function ProntuarioDetailsDialog({ record }: ProntuarioDetailsDialogProps
                 </p>
               )}
             </div>
-
-            <Separator />
 
             {/* Seção: Informações do Sistema */}
             <div className="space-y-4">

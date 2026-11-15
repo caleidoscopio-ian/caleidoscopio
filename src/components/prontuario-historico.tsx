@@ -177,7 +177,7 @@ export function ProntuarioHistorico({ pacienteId }: ProntuarioHistoricoProps) {
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="font-medium">
+                      <div className="font-semibold text-ink">
                         {record.professional.name}
                       </div>
                       <Badge variant="outline" className="text-xs">

@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -23,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { FileCog, Fingerprint, Loader2, Save } from "lucide-react";
 import {
   convenioTissSchema,
   type ConvenioTissFormData,
@@ -32,7 +31,7 @@ import {
   REGIME_ATENDIMENTO_LABELS,
   CARATER_ATENDIMENTO_LABELS,
 } from "@/types/convenio";
-import { Panel } from "@/components/kit";
+import { ActionButton, Panel } from "@/components/kit";
 
 interface ConvenioTissFormProps {
   convenio: Convenio;
@@ -92,10 +91,11 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Identificação */}
         <Panel
+          icone={<Fingerprint />}
           titulo="Identificação TISS"
           subtitulo="Códigos de identificação junto à operadora"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             <FormField
               control={form.control}
               name="versao_tiss"
@@ -105,7 +105,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                   <FormControl>
                     <Input placeholder="Ex: 4.01.00" {...field} />
                   </FormControl>
-                  <FormDescription>Versão do padrão TISS da operadora</FormDescription>
+                  <FormDescription className="text-[0.75rem] text-ink-3">Versão do padrão TISS da operadora</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -119,7 +119,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                   <FormControl>
                     <Input placeholder="Código ANS" {...field} />
                   </FormControl>
-                  <FormDescription>Registro da operadora na ANS</FormDescription>
+                  <FormDescription className="text-[0.75rem] text-ink-3">Registro da operadora na ANS</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -133,7 +133,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                   <FormControl>
                     <Input placeholder="Código na operadora" {...field} />
                   </FormControl>
-                  <FormDescription>Código da clínica junto ao convênio</FormDescription>
+                  <FormDescription className="text-[0.75rem] text-ink-3">Código da clínica junto ao convênio</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -147,7 +147,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                   <FormControl>
                     <Input placeholder="Ex: LOT" {...field} />
                   </FormControl>
-                  <FormDescription>Prefixo padrão para numeração de lotes</FormDescription>
+                  <FormDescription className="text-[0.75rem] text-ink-3">Prefixo padrão para numeração de lotes</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -157,10 +157,11 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
 
         {/* Parâmetros de Guia */}
         <Panel
+          icone={<FileCog />}
           titulo="Parâmetros Padrão de Guia"
           subtitulo="Configurações aplicadas por padrão nas guias TISS"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
             <FormField
               control={form.control}
               name="tipo_guia_padrao"
@@ -169,7 +170,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                   <FormLabel>Tipo de Guia Padrão</FormLabel>
                   <Select onValueChange={(v) => field.onChange(v === "_none" ? null : v)} value={field.value || "_none"}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                     </FormControl>
@@ -180,7 +181,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>Tipo de guia mais utilizado neste convênio</FormDescription>
+                  <FormDescription className="text-[0.75rem] text-ink-3">Tipo de guia mais utilizado neste convênio</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -193,7 +194,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                   <FormLabel>Regime de Atendimento</FormLabel>
                   <Select onValueChange={(v) => field.onChange(v === "_none" ? null : v)} value={field.value || "_none"}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                     </FormControl>
@@ -204,7 +205,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>Regime padrão do atendimento</FormDescription>
+                  <FormDescription className="text-[0.75rem] text-ink-3">Regime padrão do atendimento</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -217,7 +218,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                   <FormLabel>Caráter de Atendimento</FormLabel>
                   <Select onValueChange={(v) => field.onChange(v === "_none" ? null : v)} value={field.value || "_none"}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                     </FormControl>
@@ -228,7 +229,7 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>Eletivo ou urgência/emergência</FormDescription>
+                  <FormDescription className="text-[0.75rem] text-ink-3">Eletivo ou urgência/emergência</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -237,10 +238,10 @@ export function ConvenioTissForm({ convenio, onSuccess }: ConvenioTissFormProps)
         </Panel>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          <ActionButton type="submit" disabled={loading}>
+            {loading ? <Loader2 className="animate-spin" /> : <Save />}
             Salvar Parâmetros TISS
-          </Button>
+          </ActionButton>
         </div>
       </form>
     </Form>

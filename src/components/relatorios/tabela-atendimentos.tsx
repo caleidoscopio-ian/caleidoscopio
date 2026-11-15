@@ -177,7 +177,7 @@ export function TabelaAtendimentos({ agrupados }: TabelaAtendimentosProps) {
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <p className="font-medium">{atendimento.profissional.nome}</p>
+                              <p className="font-semibold text-ink">{atendimento.profissional.nome}</p>
                               <p className="text-muted-foreground text-xs">
                                 {atendimento.profissional.especialidade}
                               </p>

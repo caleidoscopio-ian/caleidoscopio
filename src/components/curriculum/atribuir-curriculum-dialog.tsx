@@ -14,8 +14,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { UserPlus, Loader2, Search, CheckCircle2 } from "lucide-react";
+import { UserPlus, Loader2, CheckCircle2 } from "lucide-react";
+import { ActionButton, SearchField } from "@/components/kit";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Curriculum {
@@ -179,10 +179,10 @@ export function AtribuirCurriculumDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <UserPlus className="h-4 w-4 mr-2" />
+        <ActionButton variant="secondary" size="sm">
+          <UserPlus />
           Atribuir
-        </Button>
+        </ActionButton>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -194,7 +194,7 @@ export function AtribuirCurriculumDialog({
 
         <div className="space-y-4 overflow-auto flex-1">
           {/* Informações do curriculum */}
-          <div className="p-4 border rounded-lg bg-muted/30">
+          <div className="rounded-2xl bg-surface-muted p-4">
             <div className="font-medium">{curriculum.nome}</div>
             {curriculum.descricao && (
               <div className="text-sm text-muted-foreground mt-1">
@@ -211,15 +211,11 @@ export function AtribuirCurriculumDialog({
 
           {/* Busca de pacientes */}
           <div className="space-y-2">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
+            <SearchField
                 placeholder="Buscar por nome ou CPF..."
-                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
 
             {selectedPacientes.length > 0 && (
               <div className="text-sm text-muted-foreground">

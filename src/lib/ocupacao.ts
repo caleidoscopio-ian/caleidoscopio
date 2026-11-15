@@ -83,10 +83,10 @@ export function formatarMinutos(minutos: number): string {
 
 /** Cor da barra de taxa de ocupação */
 export function corTaxaOcupacao(taxa: number): string {
-  if (taxa >= 1) return 'bg-red-500'
-  if (taxa >= 0.8) return 'bg-amber-500'
-  if (taxa >= 0.5) return 'bg-green-500'
-  return 'bg-blue-400'
+  if (taxa >= 1) return 'bg-danger'
+  if (taxa >= 0.8) return 'bg-warning'
+  if (taxa >= 0.5) return 'bg-success'
+  return 'bg-brand'
 }
 
 /** Texto da taxa formatado */

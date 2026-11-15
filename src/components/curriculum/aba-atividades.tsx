@@ -318,6 +318,7 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="size-9"
                             onClick={() => handleMoverParaCima(index)}
                             disabled={index === 0}
                           >
@@ -326,6 +327,7 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="size-9"
                             onClick={() => handleMoverParaBaixo(index)}
                             disabled={
                               index === atividadesSelecionadas.length - 1
@@ -336,6 +338,7 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="size-9"
                             onClick={() => setDeleteIndex(index)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />

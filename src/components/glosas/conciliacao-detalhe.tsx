@@ -67,11 +67,11 @@ export function ConciliacaoDetalhe({ demonstrativoId, open, onOpenChange }: Conc
                 <div className="text-xs text-muted-foreground">Informado</div>
                 <div className="font-semibold">{formatBRL(dem.valor_informado_total)}</div>
               </div>
-              <div className="p-3 rounded-lg bg-success-soft border border-success-soft text-center">
+              <div className="rounded-2xl bg-surface-muted p-3 bg-success-soft border-success-soft text-center">
                 <div className="text-xs text-success-ink">Liberado</div>
                 <div className="font-semibold text-success-ink">{formatBRL(dem.valor_liberado_total)}</div>
               </div>
-              <div className="p-3 rounded-lg bg-danger-soft border border-danger-soft text-center">
+              <div className="rounded-2xl bg-surface-muted p-3 bg-danger-soft border-danger-soft text-center">
                 <div className="text-xs text-danger-ink">Glosado</div>
                 <div className="font-semibold text-danger-ink">{formatBRL(dem.valor_glosa_total)}</div>
               </div>

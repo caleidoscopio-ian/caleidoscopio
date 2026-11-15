@@ -105,12 +105,12 @@ export function ExcluirAtividadeDialog({
           )}
 
           <div className="space-y-2">
-            <div className="p-4 border rounded-lg bg-muted/30">
+            <div className="rounded-2xl bg-surface-muted p-4">
               <div className="font-medium">{atividade.nome}</div>
             </div>
 
             {(temAtribuicoes || temSessoes) && (
-              <div className="p-4 border border-warning-soft rounded-lg bg-warning-soft">
+              <div className="rounded-2xl bg-surface-muted p-4 border-warning-soft bg-warning-soft">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-5 w-5 text-warning-ink shrink-0 mt-0.5" />
                   <div className="text-sm text-warning-ink">

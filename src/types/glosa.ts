@@ -37,12 +37,12 @@ export const STATUS_GLOSA_LABEL: Record<StatusGlosa, string> = {
 };
 
 export const STATUS_GLOSA_BADGE: Record<StatusGlosa, string> = {
-  PENDENTE:   "bg-yellow-50 border-yellow-300 text-yellow-800",
-  EM_RECURSO: "bg-blue-50 border-blue-300 text-blue-800",
-  RECUPERADA: "bg-green-50 border-green-300 text-green-800",
-  PARCIAL:    "bg-teal-50 border-teal-300 text-teal-800",
-  NEGADA:     "bg-red-50 border-red-300 text-red-800",
-  ACATADA:    "bg-gray-50 border-gray-300 text-gray-700",
+  PENDENTE:   "bg-warning-soft text-warning-ink",
+  EM_RECURSO: "bg-info-soft text-info-ink",
+  RECUPERADA: "bg-success-soft text-success-ink",
+  PARCIAL:    "bg-success-soft text-success-ink",
+  NEGADA:     "bg-danger-soft text-danger-ink",
+  ACATADA:    "bg-surface-sunken text-ink-3",
 };
 
 export const CATEGORIA_GLOSA_COLOR: Record<CategoriaGlosa, string> = {

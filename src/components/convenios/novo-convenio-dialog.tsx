@@ -126,7 +126,7 @@ export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Dados Básicos */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              <h3 className="mb-3 text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Dados Básicos
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -177,7 +177,7 @@ export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
                       <FormLabel>Tipo *</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Selecione o tipo" />
                           </SelectTrigger>
                         </FormControl>
@@ -199,7 +199,7 @@ export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
                       <FormLabel>Status</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Selecione o status" />
                           </SelectTrigger>
                         </FormControl>
@@ -231,7 +231,7 @@ export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
 
             {/* Contato */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              <h3 className="mb-3 text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Contato
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -292,7 +292,7 @@ export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
 
             {/* Config Financeira */}
             <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              <h3 className="mb-3 text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                 Configurações Financeiras
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -348,7 +348,7 @@ export function NovoConvenioDialog({ onSuccess }: NovoConvenioDialogProps) {
                     <FormLabel>Filial</FormLabel>
                     <Select onValueChange={(v) => field.onChange(v === "_global" ? null : v)} value={field.value ?? "_global"}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Todas as filiais (global)" />
                         </SelectTrigger>
                       </FormControl>

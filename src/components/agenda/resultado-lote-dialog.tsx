@@ -80,7 +80,7 @@ export function ResultadoLoteDialog({ resultados, open, onOpenChange }: Props) {
 
         <div className="space-y-3 max-h-[50vh] overflow-y-auto">
           {[...porMotivo.entries()].map(([motivo, datas]) => (
-            <div key={motivo} className="rounded-md border border-warning-soft bg-warning-soft p-3">
+            <div key={motivo} className="rounded-2xl bg-surface-muted border-warning-soft bg-warning-soft p-3">
               <p className="text-sm font-medium text-warning-ink">
                 {motivo}
                 <span className="font-normal">

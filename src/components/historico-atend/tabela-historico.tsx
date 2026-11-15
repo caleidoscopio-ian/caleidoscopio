@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronLeft, ChevronRight, Clock, AlertCircle, AlertTriangle } from "lucide-react";
+import { PersonAvatar } from "@/components/kit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -112,7 +113,12 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
                     </TableCell>
 
                     {/* Paciente */}
-                    <TableCell className="font-medium">{l.paciente.nome}</TableCell>
+                    <TableCell>
+  <div className="flex min-w-0 items-center gap-2.5">
+    <PersonAvatar nome={l.paciente.nome} tamanho={32} />
+    <span className="truncate font-semibold text-ink">{l.paciente.nome}</span>
+  </div>
+</TableCell>
 
                     {/* Profissional */}
                     <TableCell>
@@ -229,7 +235,7 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
-                                variant="ghost" size="icon" className="h-7 w-7 text-danger-ink hover:text-danger-ink hover:bg-danger-soft"
+                                variant="ghost" size="icon" className="size-9 text-danger-ink hover:text-danger-ink hover:bg-danger-soft"
                                 onClick={() => onRegistrarGlosa(l)}
                                 aria-label="Registrar glosa"
                               >
@@ -255,7 +261,7 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
           </span>
           <div className="flex items-center gap-1">
             <Button
-              variant="outline" size="icon" className="h-7 w-7"
+              variant="outline" size="icon" className="size-9"
               onClick={() => onPage(page - 1)}
               disabled={page <= 1}
               aria-label="Página anterior"
@@ -266,7 +272,7 @@ export function TabelaHistorico({ linhas, total, page, pageSize, onPage, onRegis
               {page} / {totalPages}
             </span>
             <Button
-              variant="outline" size="icon" className="h-7 w-7"
+              variant="outline" size="icon" className="size-9"
               onClick={() => onPage(page + 1)}
               disabled={page >= totalPages}
               aria-label="Próxima página"

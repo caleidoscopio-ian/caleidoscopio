@@ -14,7 +14,6 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -569,7 +568,7 @@ export function NovoAgendamentoForm({
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
-                      <Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                      <Button variant="outline" className={cn("h-11 w-full justify-between rounded-xl border-hairline bg-surface-muted px-3.5 text-left font-normal text-ink shadow-none hover:bg-surface-sunken", !field.value && "text-ink-4")}>
                         {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Selecione a data</span>}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
@@ -602,7 +601,7 @@ export function NovoAgendamentoForm({
           </div>
 
           {/* Modo recorrente toggle */}
-          <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+          <div className="rounded-2xl bg-surface-muted flex items-center justify-between p-4">
             <div className="space-y-0.5">
               <div className="text-sm font-medium">Agendamento Recorrente</div>
               <div className="text-xs text-muted-foreground">Replicar em múltiplas datas</div>
@@ -614,7 +613,7 @@ export function NovoAgendamentoForm({
           </div>
 
           {modoRecorrente && (
-            <div className="space-y-4 p-4 border rounded-lg">
+            <div className="rounded-2xl bg-surface-muted space-y-4 p-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Data Limite</label>
                 <FormField control={form.control} name="dataLimite" render={({ field }) => (
@@ -622,7 +621,7 @@ export function NovoAgendamentoForm({
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                          <Button variant="outline" className={cn("h-11 w-full justify-between rounded-xl border-hairline bg-surface-muted px-3.5 text-left font-normal text-ink shadow-none hover:bg-surface-sunken", !field.value && "text-ink-4")}>
                             {field.value ? format(field.value, "dd/MM/yyyy", { locale: ptBR }) : <span>Selecione a data final</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -653,7 +652,7 @@ export function NovoAgendamentoForm({
                 </div>
               </div>
               {form.watch("dataLimite") && diasSemana.length > 0 && form.watch("data") && (
-                <div className="p-3 bg-brand-soft border border-brand-soft rounded-lg text-xs text-brand">
+                <div className="rounded-2xl bg-surface-muted p-3 bg-brand-soft border-brand-soft text-xs text-brand">
                   Recorrência:{" "}
                   <strong>{diasSemana.map((d) => ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][d]).join(", ")}</strong>
                   {" "}de {format(form.watch("data"), "dd/MM/yyyy", { locale: ptBR })} até {format(form.watch("dataLimite")!, "dd/MM/yyyy", { locale: ptBR })}.
@@ -1013,8 +1012,6 @@ export function NovoAgendamentoForm({
               <div className="font-medium">{salaNome}</div>
             </div>
 
-            <Separator />
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
               <div className="text-muted-foreground">Convênio</div>
               <div className="font-medium">
@@ -1038,7 +1035,6 @@ export function NovoAgendamentoForm({
 
             {pendingData?.status && pendingData.status !== StatusAgendamento.AGENDADO && (
               <>
-                <Separator />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
                   <div className="text-muted-foreground">Status</div>
                   <div className="font-medium">{pendingData.status}</div>
@@ -1048,7 +1044,6 @@ export function NovoAgendamentoForm({
 
             {pendingData?.observacoes && (
               <>
-                <Separator />
                 <div>
                   <div className="text-muted-foreground mb-1">Observações</div>
                   <div className="text-sm bg-muted/50 rounded px-3 py-2">{pendingData.observacoes}</div>
@@ -1058,7 +1053,6 @@ export function NovoAgendamentoForm({
 
             {modoRecorrente && pendingData?.datasAdicionais && pendingData.datasAdicionais.length > 0 && (
               <>
-                <Separator />
                 <div className="rounded-md bg-brand-soft border border-brand-soft px-3 py-2 text-xs text-brand">
                   {editandoExistente ? (
                     <>

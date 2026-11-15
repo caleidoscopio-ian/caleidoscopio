@@ -43,8 +43,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ListChecks, Plus, Edit, Trash2, Loader2 } from "lucide-react";
-import { Panel } from "@/components/kit";
+  ListChecks, Plus, Edit, Trash2, ListPlus } from "lucide-react";
+import { ActionButton, Carregando, EstadoVazio, IconButton, NumeroOrdem, Panel, StatusPill } from "@/components/kit";
 
 interface Nivel {
   id: string;
@@ -247,28 +247,26 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
       titulo="Tarefas da Avaliação"
       subtitulo="Cadastre as tarefas/perguntas da avaliação"
       acoes={
-        <Button onClick={handleNovo}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Tarefa
-          </Button>
+        <ActionButton size="sm" onClick={handleNovo}>
+          <Plus />
+          Adicionar Tarefa
+        </ActionButton>
       }
     >
         {loading ? (
-          <div className="text-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando tarefas...</p>
-          </div>
+          <Carregando texto="Carregando tarefas..." />
         ) : tarefas.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">
-              Nenhuma tarefa cadastrada. Certifique-se de cadastrar Níveis e
-              Habilidades primeiro.
-            </p>
-            <Button onClick={handleNovo}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Primeira Tarefa
-            </Button>
-          </div>
+          <EstadoVazio
+            icone={<ListPlus />}
+            titulo="Nenhuma tarefa cadastrada"
+            texto="Certifique-se de cadastrar Níveis e Habilidades primeiro."
+            acao={
+              <ActionButton size="sm" onClick={handleNovo}>
+                <Plus />
+                Adicionar Primeira Tarefa
+              </ActionButton>
+            }
+          />
         ) : (
           <Table>
             <TableHeader>
@@ -283,28 +281,38 @@ export function AbaTarefas({ avaliacaoId }: AbaTarefasProps) {
             <TableBody>
               {tarefas.map((tarefa) => (
                 <TableRow key={tarefa.id}>
-                  <TableCell className="font-medium max-w-md">
-                    <div className="line-clamp-2">{tarefa.pergunta}</div>
+                  <TableCell className="max-w-md">
+                    <div className="line-clamp-2 font-semibold text-ink">{tarefa.pergunta}</div>
                   </TableCell>
-                  <TableCell>{tarefa.nivel?.descricao || "-"}</TableCell>
-                  <TableCell>{tarefa.habilidade?.habilidade || "-"}</TableCell>
-                  <TableCell>{tarefa.numero ?? "-"}</TableCell>
+                  <TableCell>
+                    {tarefa.nivel?.descricao ? (
+                      <StatusPill tom="info">{tarefa.nivel.descricao}</StatusPill>
+                    ) : (
+                      <span className="text-ink-4">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {tarefa.habilidade?.habilidade ? (
+                      <StatusPill tom="violet">{tarefa.habilidade.habilidade}</StatusPill>
+                    ) : (
+                      <span className="text-ink-4">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {tarefa.numero != null ? (
+                      <NumeroOrdem n={tarefa.numero} />
+                    ) : (
+                      <span className="text-ink-4">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditar(tarefa)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDeleteId(tarefa.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                    <div className="flex justify-end gap-1.5">
+                      <IconButton aria-label="Editar" className="size-9" onClick={() => handleEditar(tarefa)}>
+                        <Edit className="size-4" />
+                      </IconButton>
+                      <IconButton aria-label="Excluir" className="size-9 text-danger-ink" onClick={() => setDeleteId(tarefa.id)}>
+                        <Trash2 className="size-4" />
+                      </IconButton>
                     </div>
                   </TableCell>
                 </TableRow>

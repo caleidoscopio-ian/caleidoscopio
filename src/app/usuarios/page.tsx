@@ -458,6 +458,7 @@ export default function UsuariosPage() {
 
           {/* Tabela de Usuários */}
           <Panel
+            icone={<Users />}
             titulo="Usuários da Clínica"
             subtitulo="Lista de todos os usuários cadastrados no Sistema 1"
           >

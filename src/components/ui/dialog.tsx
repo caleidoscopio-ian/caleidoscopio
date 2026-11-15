@@ -66,7 +66,11 @@ function DialogContent({
         className={cn(
           // Responsivo por padrão: nunca ultrapassa a viewport e rola quando necessário.
           // Dialogs podem sobrescrever max-h/overflow/p via className (tailwind-merge).
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[90dvh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 rounded-3xl border p-6 shadow-lg duration-200",
+          // Medido no clone do v2: `rounded-3xl border-rim bg-surface p-5 sm:p-7`,
+          // fundo **branco**. O `bg-background` do shadcn aponta para `--panel`
+          // (#f3f6fd), e era isso que deixava o modal azulado — do mesmo tom dos
+          // blocos de dentro, que perdiam o contraste.
+          "bg-surface border-rim shadow-float [&_button[role=combobox]]:w-full data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] max-h-[90dvh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 rounded-3xl border p-5 duration-200 sm:p-7",
           className
         )}
         {...props}
@@ -116,7 +120,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn("text-[1.4rem] leading-tight font-semibold text-ink", className)}
       {...props}
     />
   )

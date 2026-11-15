@@ -8,7 +8,7 @@
 // grande, KPI em gradiente, avatar por hash).
 
 export { ActionButton, IconButton, type ActionButtonProps } from "./action-button";
-export { StatusPill, tomDoStatus, type TomStatus } from "./status-pill";
+export { StatusPill, FasePill, tomDoStatus, type TomStatus } from "./status-pill";
 export {
   Panel,
   StatCard,
@@ -19,7 +19,15 @@ export {
 } from "./panel";
 export { PersonAvatar, SearchField, Segmented, iniciaisDe } from "./pessoa-avatar";
 export { PageHeader } from "./page-header";
-export { SecaoInfo, GradeCampos, CampoInfo, EstadoVazio, Carregando } from "./dados";
+export {
+  SecaoInfo,
+  GradeCampos,
+  CampoInfo,
+  LinhaDado,
+  NumeroOrdem,
+  EstadoVazio,
+  Carregando,
+} from "./dados";
 export { Trilha, ProvedorTrilha, useTrilha, type Migalha } from "./trilha";
 export {
   ProvedorMovimento,

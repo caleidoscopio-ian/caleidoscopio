@@ -13,7 +13,8 @@ import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
 import { subDays, startOfDay, endOfDay } from "date-fns"
 import type { OcupacaoResponse, OcupacaoProfissional, OcupacaoResumo } from "@/types/ocupacao-profissional"
-import { PageHeader } from "@/components/kit"
+import { PageHeader, Panel } from "@/components/kit"
+import { Users } from "lucide-react"
 
 const RESUMO_VAZIO: OcupacaoResumo = {
   taxa_media: 0,
@@ -144,18 +145,19 @@ function TaxaOcupacaoContent() {
         )}
 
         {/* Tabela */}
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Profissionais
-          </h2>
+        <Panel
+          icone={<Users />}
+          titulo="Profissionais"
+          subtitulo="Ocupação, atendimentos e faltas no período"
+        >
           {loading ? (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 rounded-lg" />
+                <Skeleton key={i} className="h-16 rounded-2xl" />
               ))}
             </div>
           ) : (
-            <>
+            <div className="space-y-3">
               <TabelaOcupacao
                 profissionais={profissionais}
                 onConfigurarGrade={(id, nome) => setGradeDialog({ id, nome })}
@@ -163,7 +165,7 @@ function TaxaOcupacaoContent() {
               {/* Quem não tem grade no período sai da tabela — e então os KPIs
                   não fecham com o que a clínica espera. A nota diz por quê. */}
               {resumo.profissionais_sem_grade > 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-ink-3">
                   {resumo.profissionais_sem_grade}{" "}
                   {resumo.profissionais_sem_grade === 1 ? "profissional" : "profissionais"} sem
                   grade nos dias selecionados {resumo.profissionais_sem_grade === 1 ? "não aparece" : "não aparecem"}
@@ -172,13 +174,13 @@ function TaxaOcupacaoContent() {
                   . Configure a grade em Profissionais para incluí-{resumo.profissionais_sem_grade === 1 ? "lo" : "los"}.
                 </p>
               )}
-            </>
+            </div>
           )}
-        </div>
+        </Panel>
 
         {/* Gráficos */}
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+        <div className="space-y-3">
+          <h2 className="text-[1.3rem] leading-[1.25] font-semibold tracking-[-0.022em] text-ink">
             Gráficos
           </h2>
           {loading ? (

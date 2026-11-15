@@ -17,51 +17,53 @@ export function ResumoHistorico({ resumo }: ResumoHistoricoProps) {
       : 0;
 
   return (
-    <div className="anim-escalonada grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      <StatCard
-        tom="blue"
-        size="sm"
-        icone={<CalendarCheck />}
-        rotulo="Atendimentos Realizados"
-        valor={<span className="text-success-ink">{resumo.total_atendimentos}</span>}
-        hint={<>de {resumo.total_registros} registros</>}
-      />
+    <div className="space-y-4">
+      {/* Linha do dinheiro: o faturado manda, o ticket acompanha */}
+      <div className="anim-escalonada grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+        <StatCard
+          tom="blue"
+          size="hero"
+          icone={<DollarSign />}
+          rotulo="Valor Total Faturado"
+          valor={formatBRL(resumo.valor_total)}
+          hint="atendimentos realizados"
+        />
+        <StatCard
+          icone={<ReceiptText />}
+          rotulo="Ticket Médio"
+          valor={formatBRL(resumo.ticket_medio)}
+          hint="por atendimento realizado"
+        />
+      </div>
 
-      <StatCard
-        tom="lavender"
-        size="sm"
-        icone={<DollarSign />}
-        rotulo="Valor Total Faturado"
-        valor={formatBRL(resumo.valor_total)}
-        hint="atendimentos realizados"
-      />
-
-      <StatCard
-        tom="mint"
-        size="sm"
-        icone={<ReceiptText />}
-        rotulo="Ticket Médio"
-        valor={formatBRL(resumo.ticket_medio)}
-        hint="por atendimento realizado"
-      />
-
-      <StatCard
-        tom="peach"
-        size="sm"
-        icone={<TrendingDown />}
-        rotulo="Faltas"
-        valor={<span className="text-warning-ink">{resumo.faltas}</span>}
-        hint="ausências no período"
-      />
-
-      <StatCard
-        tom="blue"
-        size="sm"
-        icone={<XCircle />}
-        rotulo="Cancelamentos"
-        valor={<span className="text-danger-ink">{resumo.cancelamentos}</span>}
-        hint={<>{pctAbsenteismo}% de absenteísmo total</>}
-      />
+      {/* Linha da contagem */}
+      <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard
+          tom="mint"
+          icone={<CalendarCheck />}
+          rotulo="Atendimentos Realizados"
+          valor={resumo.total_atendimentos}
+          hint={<>de {resumo.total_registros} registros</>}
+        />
+        <StatCard
+          tom="peach"
+          icone={<TrendingDown />}
+          rotulo="Faltas"
+          valor={resumo.faltas}
+          hint="ausências no período"
+        />
+        <StatCard
+          tom="lavender"
+          icone={<XCircle />}
+          rotulo="Cancelamentos"
+          valor={resumo.cancelamentos}
+          hint={
+            <span className={pctAbsenteismo >= 30 ? "text-danger-ink" : undefined}>
+              {pctAbsenteismo}% de absenteísmo total
+            </span>
+          }
+        />
+      </div>
     </div>
   );
 }

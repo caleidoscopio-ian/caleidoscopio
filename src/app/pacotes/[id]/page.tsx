@@ -6,13 +6,20 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/main-layout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageLoader } from "@/components/page-loader";
 import { PacoteFormDialog } from "@/components/pacotes/pacote-form-dialog";
-import { Pencil, Clock, Package } from "lucide-react";
+import {
+  Clock,
+  FileText,
+  ListChecks,
+  Package,
+  Pencil,
+  StickyNote,
+  Wallet,
+  History as HistoryIcon,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Pacote } from "@/types/pacote";
 import { TIPO_PACOTE_LABELS, STATUS_PACOTE_LABELS } from "@/types/pacote";
@@ -20,12 +27,23 @@ import { formatBRL, formatDuracao } from "@/types/procedimento";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
+  ActionButton,
+  EstadoVazio,
+  LinhaDado,
   PageHeader,
   Panel,
   StatCard,
-  GradeCampos,
-  CampoInfo,
+  StatusPill,
 } from "@/components/kit";
+
+/** Contagem na aba — pílula da marca, como no v2. */
+function Contagem({ n }: { n: number }) {
+  return (
+    <span className="tabular ml-1.5 rounded-full bg-brand-soft px-2 py-0.5 text-[0.7rem] font-semibold text-brand">
+      {n}
+    </span>
+  );
+}
 
 interface PacoteDetalhe extends Pacote {
   historicos?: Array<{
@@ -92,7 +110,13 @@ export default function PacoteDetalhePage() {
     return (
       <ProtectedRoute requiredPermission={{ resource: "procedimentos", action: "VIEW" }}>
         <MainLayout breadcrumbs={breadcrumbs}>
-          <p className="text-center py-16 text-muted-foreground">Pacote não encontrado.</p>
+          <div className="py-16">
+            <EstadoVazio
+              icone={<Package />}
+              titulo="Pacote não encontrado"
+              texto="Ele pode ter sido removido ou o link está incorreto"
+            />
+          </div>
         </MainLayout>
       </ProtectedRoute>
     );
@@ -107,45 +131,48 @@ export default function PacoteDetalhePage() {
   return (
     <ProtectedRoute requiredPermission={{ resource: "procedimentos", action: "VIEW" }}>
       <MainLayout breadcrumbs={breadcrumbs}>
+        <div className="space-y-7">
         <PageHeader
-          className="mb-6"
           voltar={{ onClick: () => router.push("/procedimentos") }}
           avatar={
-            pacote.cor ? (
-              <span
-                className="block size-11 rounded-[0.95rem]"
-                style={{ backgroundColor: pacote.cor }}
-              />
-            ) : undefined
+            <span
+              className="grid size-12 place-items-center rounded-2xl"
+              style={{ backgroundColor: pacote.cor || "var(--brand)" }}
+            >
+              <Package className="size-5 text-white" />
+            </span>
           }
-          titulo={pacote.nome}
-          meta={
-            <>
-              <Badge variant="outline" className="text-xs">
-                {TIPO_PACOTE_LABELS[pacote.tipo]}
-              </Badge>
-              <Badge
-                variant={pacote.status === "ATIVO" ? "default" : "destructive"}
-                className="text-xs"
+          titulo={
+            <span className="inline-flex flex-wrap items-center gap-3">
+              {pacote.nome}
+              <StatusPill
+                tom={pacote.status === "ATIVO" ? "success" : pacote.status === "ESGOTADO" ? "warning" : "neutral"}
+                ponto
               >
                 {STATUS_PACOTE_LABELS[pacote.status]}
-              </Badge>
-              {desconto > 0 && (
-                <Badge className="text-xs bg-success-soft text-success-ink">
-                  {desconto}% off
-                </Badge>
-              )}
-            </>
+              </StatusPill>
+            </span>
+          }
+          subtitulo={[
+            TIPO_PACOTE_LABELS[pacote.tipo],
+            pacote.convenio?.nome_fantasia || pacote.convenio?.razao_social,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          meta={
+            desconto > 0 ? (
+              <StatusPill tom="success">{desconto}% off</StatusPill>
+            ) : undefined
           }
           acoes={
-            <Button size="sm" onClick={() => setEditando(true)} disabled={!pacote.ativo}>
-              <Pencil className="h-4 w-4 mr-1" /> Editar
-            </Button>
+            <ActionButton variant="secondary" onClick={() => setEditando(true)} disabled={!pacote.ativo}>
+              <Pencil /> Editar
+            </ActionButton>
           }
         />
 
         {/* Stats */}
-        <div className="anim-escalonada mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
           <StatCard tom="blue" size="hero" rotulo="Valor do Pacote" valor={formatBRL(valorTotal)} />
           <StatCard
             tom="lavender"
@@ -163,40 +190,63 @@ export default function PacoteDetalhePage() {
         <Tabs defaultValue="dados">
           <TabsList>
             <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
-            <TabsTrigger value="composicao">Composição</TabsTrigger>
-            <TabsTrigger value="historico">Histórico</TabsTrigger>
+            <TabsTrigger value="composicao">
+              Composição
+              {!!pacote.procedimentos?.length && <Contagem n={pacote.procedimentos.length} />}
+            </TabsTrigger>
+            <TabsTrigger value="historico">
+              Histórico
+              {!!pacote.historicos?.length && <Contagem n={pacote.historicos.length} />}
+            </TabsTrigger>
           </TabsList>
 
           {/* Dados Gerais */}
-          <TabsContent value="dados">
-            <Panel icone={<Package />} titulo="Dados Gerais">
-              <GradeCampos colunas={2}>
-                <CampoInfo rotulo="Nome" valor={pacote.nome} />
-                <CampoInfo rotulo="Tipo" valor={TIPO_PACOTE_LABELS[pacote.tipo]} />
-                <CampoInfo rotulo="Valor total" valor={formatBRL(valorTotal)} />
-                <CampoInfo
-                  rotulo="Valor particular"
-                  valor={formatBRL(pacote.valor_particular)}
-                />
-                <CampoInfo
-                  rotulo="Convênio"
-                  valor={pacote.convenio?.nome_fantasia || pacote.convenio?.razao_social}
-                />
-                <CampoInfo
-                  rotulo="Validade"
-                  valor={pacote.validade_dias ? `${pacote.validade_dias} dias` : null}
-                />
-                <CampoInfo rotulo="Descrição" valor={pacote.descricao} larguraTotal />
-                <CampoInfo rotulo="Observações" valor={pacote.observacoes} larguraTotal />
-              </GradeCampos>
-            </Panel>
+          <TabsContent value="dados" className="mt-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <Panel icone={<Package />} titulo="Identificação">
+                <LinhaDado rotulo="Nome">{pacote.nome}</LinhaDado>
+                <LinhaDado rotulo="Tipo">{TIPO_PACOTE_LABELS[pacote.tipo]}</LinhaDado>
+                <LinhaDado rotulo="Convênio">
+                  {pacote.convenio?.nome_fantasia || pacote.convenio?.razao_social}
+                </LinhaDado>
+                <LinhaDado rotulo="Validade">
+                  {pacote.validade_dias ? `${pacote.validade_dias} dias` : null}
+                </LinhaDado>
+              </Panel>
+              <Panel icone={<Wallet />} titulo="Valores">
+                <LinhaDado rotulo="Valor total">
+                  <span className="tabular">{formatBRL(valorTotal)}</span>
+                </LinhaDado>
+                <LinhaDado rotulo="Valor particular">
+                  <span className="tabular">{formatBRL(pacote.valor_particular)}</span>
+                </LinhaDado>
+                <LinhaDado rotulo="Soma dos procedimentos">
+                  {valorOriginal ? <span className="tabular">{formatBRL(valorOriginal)}</span> : null}
+                </LinhaDado>
+                <LinhaDado rotulo="Desconto">{desconto > 0 ? `${desconto}%` : null}</LinhaDado>
+              </Panel>
+              <Panel icone={<FileText />} titulo="Descrição">
+                {pacote.descricao ? (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-ink-2">{pacote.descricao}</p>
+                ) : (
+                  <p className="text-sm text-ink-3">Nenhuma descrição</p>
+                )}
+              </Panel>
+              <Panel icone={<StickyNote />} titulo="Observações">
+                {pacote.observacoes ? (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap text-ink-2">{pacote.observacoes}</p>
+                ) : (
+                  <p className="text-sm text-ink-3">Nenhuma observação</p>
+                )}
+              </Panel>
+            </div>
           </TabsContent>
 
           {/* Composição */}
-          <TabsContent value="composicao">
-            <Panel titulo="Procedimentos do Pacote">
+          <TabsContent value="composicao" className="mt-5">
+            <Panel icone={<ListChecks />} titulo="Procedimentos do Pacote">
               {!pacote.procedimentos?.length ? (
-                <p className="text-center py-8 text-sm text-muted-foreground">Nenhum procedimento neste pacote.</p>
+                <EstadoVazio icone={<ListChecks />} titulo="Pacote vazio" texto="Nenhum procedimento neste pacote" />
               ) : (
                 <>
                   <Table>
@@ -218,28 +268,33 @@ export default function PacoteDetalhePage() {
                         return (
                           <TableRow key={item.id}>
                             <TableCell>
-                              {item.procedimento?.cor && (
-                                <span className="h-4 w-4 rounded block" style={{ backgroundColor: item.procedimento.cor }} />
-                              )}
+                              <span
+                                className="block size-3 rounded-full"
+                                style={{ backgroundColor: item.procedimento?.cor || "var(--ink-4)" }}
+                              />
                             </TableCell>
-                            <TableCell className="font-medium">{item.procedimento?.nome ?? "—"}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {formatDuracao(item.procedimento?.duracao_padrao ?? null)}
+                            <TableCell className="font-semibold text-ink">{item.procedimento?.nome ?? "—"}</TableCell>
+                            <TableCell>
+                              <span className="tabular text-[0.82rem] text-ink-3">
+                                {formatDuracao(item.procedimento?.duracao_padrao ?? null)}
+                              </span>
                             </TableCell>
-                            <TableCell className="font-mono">{item.quantidade}×</TableCell>
-                            <TableCell>{formatBRL(item.procedimento?.valor ?? null)}</TableCell>
-                            <TableCell className="font-medium">{formatBRL(subtotal)}</TableCell>
+                            <TableCell>
+                              <StatusPill tom="info">{item.quantidade}×</StatusPill>
+                            </TableCell>
+                            <TableCell className="tabular">{formatBRL(item.procedimento?.valor ?? null)}</TableCell>
+                            <TableCell className="tabular font-semibold text-ink">{formatBRL(subtotal)}</TableCell>
                           </TableRow>
                         );
                       })}
                     </TableBody>
                   </Table>
                   {valorOriginal && (
-                    <div className="mt-4 rounded-md bg-muted/50 p-3 text-sm space-y-1">
-                      <div className="flex justify-between text-muted-foreground">
+                    <div className="mt-4 space-y-1.5 rounded-2xl bg-surface-muted p-4 text-sm">
+                      <div className="flex justify-between text-ink-3">
                         <span>Soma dos procedimentos:</span><span>{formatBRL(valorOriginal)}</span>
                       </div>
-                      <div className="flex justify-between font-semibold">
+                      <div className="flex justify-between font-semibold text-ink">
                         <span>Valor do pacote:</span><span>{formatBRL(valorTotal)}</span>
                       </div>
                       {desconto > 0 && (
@@ -256,32 +311,42 @@ export default function PacoteDetalhePage() {
           </TabsContent>
 
           {/* Histórico */}
-          <TabsContent value="historico">
-            <Panel titulo="Histórico de Alterações">
+          <TabsContent value="historico" className="mt-5">
+            <Panel icone={<HistoryIcon />} titulo="Histórico de Alterações">
               {!pacote.historicos?.length ? (
-                <p className="text-center py-8 text-sm text-muted-foreground">Nenhum histórico registrado.</p>
+                <EstadoVazio icone={<Clock />} titulo="Nenhum histórico registrado" />
               ) : (
-                <div className="space-y-3">
+                <ol className="relative space-y-4 before:absolute before:top-3 before:bottom-3 before:left-[7px] before:w-px before:bg-hairline">
                   {pacote.historicos.map((h) => (
-                    <div key={h.id} className="flex gap-3 text-sm">
-                      <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <div>
-                        <div className="flex gap-2 items-center">
-                          <Badge variant="outline" className="text-xs">{h.tipo_alteracao}</Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(h.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                            {" · "}{h.usuario_nome}
-                          </span>
+                    <li key={h.id} className="relative pl-8">
+                      <span
+                        aria-hidden
+                        className="absolute top-5 left-0 size-[15px] rounded-full border-[3px] border-surface bg-brand shadow-[0_0_0_1px_var(--hairline)]"
+                      />
+                      <div className="rounded-2xl bg-surface-muted p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <StatusPill tom="info">{h.tipo_alteracao}</StatusPill>
+                            {h.descricao && (
+                              <p className="mt-2 text-sm whitespace-pre-wrap text-ink-2">{h.descricao}</p>
+                            )}
+                          </div>
+                          <div className="shrink-0 text-[0.75rem] text-ink-3 sm:text-right">
+                            <p className="font-medium text-ink-2">{h.usuario_nome}</p>
+                            <p className="tabular">
+                              {format(new Date(h.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-muted-foreground mt-0.5">{h.descricao}</p>
                       </div>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ol>
               )}
             </Panel>
           </TabsContent>
         </Tabs>
+        </div>
 
         <PacoteFormDialog
           pacote={pacote}

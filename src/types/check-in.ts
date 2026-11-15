@@ -6,12 +6,12 @@ export type CheckInAction = 'confirmar' | 'checkin' | 'iniciar' | 'finalizar' | 
 export const STATUS_LABELS = STATUS_AGENDAMENTO_LABELS
 
 export const STATUS_BADGE: Record<StatusAgendamento, string> = {
-  [StatusAgendamento.AGENDADO]:       'bg-blue-100 text-blue-700 border-blue-200',
-  [StatusAgendamento.CONFIRMADO]:     'bg-green-100 text-green-700 border-green-200',
-  [StatusAgendamento.EM_ATENDIMENTO]: 'bg-amber-100 text-amber-700 border-amber-200',
-  [StatusAgendamento.ATENDIDO]:       'bg-purple-100 text-purple-700 border-purple-200',
-  [StatusAgendamento.FALTOU]:         'bg-gray-100 text-gray-700 border-gray-200',
-  [StatusAgendamento.CANCELADO]:      'bg-red-100 text-red-700 border-red-200',
+  [StatusAgendamento.AGENDADO]:       'bg-info-soft text-info-ink',
+  [StatusAgendamento.CONFIRMADO]:     'bg-success-soft text-success-ink',
+  [StatusAgendamento.EM_ATENDIMENTO]: 'bg-warning-soft text-warning-ink',
+  [StatusAgendamento.ATENDIDO]:       'bg-violet-soft text-violet-ink',
+  [StatusAgendamento.FALTOU]:         'bg-surface-sunken text-ink-3',
+  [StatusAgendamento.CANCELADO]:      'bg-danger-soft text-danger-ink',
 }
 
 export interface AgendamentoCheckIn extends Agendamento {

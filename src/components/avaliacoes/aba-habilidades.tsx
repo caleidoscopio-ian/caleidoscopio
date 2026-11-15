@@ -35,8 +35,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Brain, Plus, Edit, Trash2, Loader2 } from "lucide-react";
-import { Panel } from "@/components/kit";
+  Brain, Plus, Edit, Trash2, ListPlus } from "lucide-react";
+import { ActionButton, Carregando, EstadoVazio, IconButton, NumeroOrdem, Panel } from "@/components/kit";
 
 interface Habilidade {
   id: string;
@@ -192,27 +192,25 @@ export function AbaHabilidades({ avaliacaoId }: AbaHabilidadesProps) {
       titulo="Habilidades da Avaliação"
       subtitulo="Cadastre as habilidades que serão avaliadas"
       acoes={
-        <Button onClick={handleNovo}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Habilidade
-          </Button>
+        <ActionButton size="sm" onClick={handleNovo}>
+          <Plus />
+          Adicionar Habilidade
+        </ActionButton>
       }
     >
         {loading ? (
-          <div className="text-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando habilidades...</p>
-          </div>
+          <Carregando texto="Carregando habilidades..." />
         ) : habilidades.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">
-              Nenhuma habilidade cadastrada ainda.
-            </p>
-            <Button onClick={handleNovo}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Primeira Habilidade
-            </Button>
-          </div>
+          <EstadoVazio
+            icone={<ListPlus />}
+            titulo="Nenhuma habilidade cadastrada ainda"
+            acao={
+              <ActionButton size="sm" onClick={handleNovo}>
+                <Plus />
+                Adicionar Primeira Habilidade
+              </ActionButton>
+            }
+          />
         ) : (
           <Table>
             <TableHeader>
@@ -225,26 +223,18 @@ export function AbaHabilidades({ avaliacaoId }: AbaHabilidadesProps) {
             <TableBody>
               {habilidades.map((habilidade) => (
                 <TableRow key={habilidade.id}>
-                  <TableCell className="font-medium">
-                    {habilidade.ordem}
+                  <TableCell>
+                    <NumeroOrdem n={habilidade.ordem} />
                   </TableCell>
-                  <TableCell>{habilidade.habilidade}</TableCell>
+                  <TableCell className="font-semibold text-ink">{habilidade.habilidade}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditar(habilidade)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDeleteId(habilidade.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                    <div className="flex justify-end gap-1.5">
+                      <IconButton aria-label="Editar" className="size-9" onClick={() => handleEditar(habilidade)}>
+                        <Edit className="size-4" />
+                      </IconButton>
+                      <IconButton aria-label="Excluir" className="size-9 text-danger-ink" onClick={() => setDeleteId(habilidade.id)}>
+                        <Trash2 className="size-4" />
+                      </IconButton>
                     </div>
                   </TableCell>
                 </TableRow>

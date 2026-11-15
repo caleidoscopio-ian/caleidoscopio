@@ -4,9 +4,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { MainLayout } from "@/components/main-layout";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -15,13 +12,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BookMarked, Search, Plus, Loader2, Edit } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  Edit,
+  Layers,
+  ListChecks,
+  Plus,
+  Search,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { VisualizarCurriculumDialog } from "@/components/curriculum/visualizar-curriculum-dialog";
 import { ExcluirCurriculumDialog } from "@/components/curriculum/excluir-curriculum-dialog";
 import { AtribuirCurriculumDialog } from "@/components/curriculum/atribuir-curriculum-dialog";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { PageHeader, Panel, StatCard } from "@/components/kit";
+import {
+  ActionButton,
+  Carregando,
+  EstadoVazio,
+  PageHeader,
+  Panel,
+  SearchField,
+  StatCard,
+  StatusPill,
+} from "@/components/kit";
 
 interface Curriculum {
   id: string;
@@ -113,152 +127,153 @@ function CurriculumPageContent() {
     return new Date(dateString).toLocaleDateString("pt-BR");
   };
 
+  const totalAtividades = curriculums.reduce((acc, c) => acc + (c._count?.atividades || 0), 0);
+  const mediaAtividades = curriculums.length > 0 ? Math.round(totalAtividades / curriculums.length) : 0;
+
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
-      <div className="space-y-6">
-        {/* Header */}
+      <div className="space-y-7">
         <PageHeader
           titulo="Plano Terapêutico"
           subtitulo="Gerencie conjuntos de atividades organizadas"
           acoes={
-            <Button onClick={() => router.push("/curriculum/novo")}>
-              <Plus className="mr-2 h-4 w-4" />
+            <ActionButton onClick={() => router.push("/curriculum/novo")}>
+              <Plus />
               Novo Plano Terapêutico
-            </Button>
+            </ActionButton>
           }
         />
 
-        {/* Estatísticas */}
-        <div className="anim-escalonada grid gap-4 sm:grid-cols-3">
+        <div className="anim-escalonada grid gap-4 sm:grid-cols-3 xl:grid-cols-[1.25fr_1fr_1fr]">
           <StatCard
             tom="blue"
-            icone={<BookMarked />}
+            size="hero"
+            icone={<BookOpen />}
             rotulo="Total de Planos"
             valor={loading ? "..." : curriculums.length}
+            hint="Planos cadastrados"
           />
-
+          <StatCard
+            tom="lavender"
+            icone={<ListChecks />}
+            rotulo="Total de Atividades"
+            valor={loading ? "..." : totalAtividades}
+            hint="Somando todos os planos"
+          />
           <StatCard
             tom="mint"
-            icone={<BookMarked className="text-brand" />}
-            rotulo="Total de Atividades"
-            valor={<span className="text-brand">{loading ? "..." : curriculums.reduce( (acc, c) => acc + (c._count?.atividades || 0), 0 )}</span>}
-          />
-
-          <StatCard
-            tom="peach"
-            icone={<BookMarked />}
+            icone={<BarChart3 />}
             rotulo="Média de Atividades"
-            valor={<span className="text-success-ink">{loading ? "..." : curriculums.length > 0 ? Math.round( curriculums.reduce( (acc, c) => acc + (c._count?.atividades || 0), 0 ) / curriculums.length ) : 0}</span>}
+            valor={loading ? "..." : mediaAtividades}
+            hint="Por plano terapêutico"
           />
         </div>
 
-        {/* Busca */}
-        <div className="flex items-center space-x-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome ou descrição..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Tabela */}
         <Panel
-          titulo={<>Lista de Planos Terapêuticos {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredCurriculums.length} de {curriculums.length} </Badge> )}</>}
+          icone={<Layers />}
+          titulo={
+            <span className="inline-flex items-center gap-2">
+              Lista de Planos Terapêuticos
+              {!loading && (
+                <span className="tabular rounded-full bg-surface-sunken px-2 py-0.5 text-[0.72rem] font-medium text-ink-3">
+                  {filteredCurriculums.length} de {curriculums.length}
+                </span>
+              )}
+            </span>
+          }
           subtitulo="Planos Terapêuticos cadastrados na clínica"
+          acoes={
+            <SearchField
+              placeholder="Buscar por nome ou descrição..."
+              aria-label="Buscar planos terapêuticos"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-72"
+            />
+          }
         >
-
-          {error && (
-            <div className="text-center py-8">
-              <div className="text-danger-ink mb-4">{error}</div>
-              <Button onClick={fetchCurriculums} variant="outline">
-                Tentar Novamente
-              </Button>
-            </div>
-          )}
-
-          {loading && !error && (
-            <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                Carregando planos...
-              </p>
-            </div>
-          )}
-
-          {!loading && !error && curriculums.length === 0 && (
-            <div className="text-center py-8">
-              <BookMarked className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">
-                Nenhum plano terapêutico encontrado
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Comece criando o primeiro plano terapêutico.
-              </p>
-              <Button onClick={() => router.push("/curriculum/novo")}>
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Plano Terapêutico
-              </Button>
-            </div>
-          )}
-
-          {!loading && !error && filteredCurriculums.length > 0 && (
+          {error ? (
+            <EstadoVazio
+              icone={<BookOpen />}
+              titulo="Erro ao carregar planos"
+              texto={error}
+              acao={
+                <ActionButton variant="secondary" size="sm" onClick={fetchCurriculums}>
+                  Tentar Novamente
+                </ActionButton>
+              }
+            />
+          ) : loading ? (
+            <Carregando texto="Carregando planos..." />
+          ) : curriculums.length === 0 ? (
+            <EstadoVazio
+              icone={<BookOpen />}
+              titulo="Nenhum plano terapêutico encontrado"
+              texto="Comece criando o primeiro plano terapêutico."
+              acao={
+                <ActionButton size="sm" onClick={() => router.push("/curriculum/novo")}>
+                  <Plus />
+                  Novo Plano Terapêutico
+                </ActionButton>
+              }
+            />
+          ) : filteredCurriculums.length === 0 ? (
+            <EstadoVazio
+              icone={<Search />}
+              titulo="Nenhum resultado encontrado"
+              texto="Tente ajustar os termos da sua busca."
+            />
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Descrição</TableHead>
+                  <TableHead className="hidden md:table-cell">Descrição</TableHead>
                   <TableHead>Atividades</TableHead>
-                  <TableHead>Criado em</TableHead>
+                  <TableHead className="hidden md:table-cell">Criado em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCurriculums.map((curriculum) => (
                   <TableRow key={curriculum.id}>
-                    <TableCell className="font-medium">
-                      {curriculum.nome}
+                    <TableCell>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
+                          <BookOpen className="size-4" />
+                        </span>
+                        <span className="font-semibold text-ink">{curriculum.nome}</span>
+                      </div>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-md">
-                      {curriculum.descricao
-                        ? curriculum.descricao.length > 100
-                          ? `${curriculum.descricao.substring(0, 100)}...`
-                          : curriculum.descricao
-                        : "-"}
+                    <TableCell className="hidden max-w-md md:table-cell">
+                      {curriculum.descricao ? (
+                        <span className="line-clamp-2 text-sm text-ink-3">{curriculum.descricao}</span>
+                      ) : (
+                        <span className="text-ink-4">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
+                      <StatusPill tom="info">
                         {curriculum._count?.atividades || 0} atividades
-                      </Badge>
+                      </StatusPill>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(curriculum.createdAt)}
+                    <TableCell className="hidden md:table-cell">
+                      <span className="tabular text-[0.82rem] text-ink-3">{formatDate(curriculum.createdAt)}</span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
+                      <div className="flex flex-nowrap items-center justify-end gap-1.5">
                         <VisualizarCurriculumDialog curriculum={curriculum} />
-                        <AtribuirCurriculumDialog
-                          curriculum={curriculum}
-                          onSuccess={fetchCurriculums}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            router.push(`/curriculum/editar/${curriculum.id}`)
-                          }
+                        <AtribuirCurriculumDialog curriculum={curriculum} onSuccess={fetchCurriculums} />
+                        <button
+                          type="button"
+                          aria-label={`Editar ${curriculum.nome}`}
+                          title="Editar"
+                          onClick={() => router.push(`/curriculum/editar/${curriculum.id}`)}
+                          className="grid size-9 place-items-center rounded-full bg-surface text-ink-2 shadow-[0_1px_2px_rgba(15,27,61,0.06)] transition hover:text-brand focus-visible:ring-4 focus-visible:ring-brand-ring focus-visible:outline-none"
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <ExcluirCurriculumDialog
-                          curriculum={curriculum}
-                          onSuccess={fetchCurriculums}
-                        />
+                          <Edit className="size-4" />
+                        </button>
+                        <ExcluirCurriculumDialog curriculum={curriculum} onSuccess={fetchCurriculums} />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -266,21 +281,6 @@ function CurriculumPageContent() {
               </TableBody>
             </Table>
           )}
-
-          {!loading &&
-            !error &&
-            curriculums.length > 0 &&
-            filteredCurriculums.length === 0 && (
-              <div className="text-center py-8">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">
-                  Nenhum resultado encontrado
-                </h3>
-                <p className="text-muted-foreground">
-                  Tente ajustar os termos da sua busca.
-                </p>
-              </div>
-            )}
         </Panel>
       </div>
     </MainLayout>

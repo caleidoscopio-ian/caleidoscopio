@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, Search, X } from "lucide-react";
+import { SearchField } from "@/components/kit";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -140,16 +140,15 @@ export function FiltrosHistorico({
         </Popover>
 
         {/* Busca paciente */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar paciente..."
-            value={pacienteBusca}
-            onChange={(e) => setPacienteBusca(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleFiltrar(); }}
-            className="pl-8 h-9 w-44"
-          />
-        </div>
+        <SearchField
+          placeholder="Buscar paciente..."
+          value={pacienteBusca}
+          onChange={(e) => setPacienteBusca(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleFiltrar();
+          }}
+          className="h-9 w-44"
+        />
 
         {/* Profissional */}
         <Select value={profissionalId ?? "_todos"} onValueChange={(v) => setProfissionalId(v === "_todos" ? null : v)}>

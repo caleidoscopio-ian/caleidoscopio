@@ -20,14 +20,16 @@ const GRADIENTES = [
   "from-[#ffb8c9] to-[#e8577a]",
 ] as const;
 
+// Nome ausente (campo errado numa tela, dado ainda carregando) cai em "?" em
+// vez de derrubar a página inteira: um avatar não vale um erro de runtime.
 function indiceDoNome(nome: string): number {
   let h = 0;
   for (let i = 0; i < nome.length; i++) h = (h * 31 + nome.charCodeAt(i)) >>> 0;
   return h % GRADIENTES.length;
 }
 
-export function iniciaisDe(nome: string): string {
-  const partes = nome.trim().split(/\s+/).filter(Boolean);
+export function iniciaisDe(nome?: string | null): string {
+  const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
   if (partes.length === 0) return "?";
   if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
@@ -38,23 +40,24 @@ export function PersonAvatar({
   tamanho = 40,
   className,
 }: {
-  nome: string;
+  nome?: string | null;
   tamanho?: number;
   className?: string;
 }) {
+  const nomeSeguro = nome ?? "";
   return (
     <span
       className={cn(
         "grid shrink-0 place-items-center rounded-full bg-gradient-to-br font-semibold text-white",
         "ring-2 ring-surface shadow-[0_2px_8px_rgba(15,27,61,0.14)]",
-        GRADIENTES[indiceDoNome(nome)],
+        GRADIENTES[indiceDoNome(nomeSeguro)],
         className
       )}
       style={{ width: tamanho, height: tamanho, fontSize: Math.round(tamanho * 0.36) }}
-      title={nome}
+      title={nomeSeguro || undefined}
       aria-hidden
     >
-      {iniciaisDe(nome)}
+      {iniciaisDe(nomeSeguro)}
     </span>
   );
 }

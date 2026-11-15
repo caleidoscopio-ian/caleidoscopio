@@ -46,6 +46,21 @@ branco no escuro. Use:
 `tools/migrar-cores-v2.mjs` faz a troca em lote (simula por padrão) se aparecer
 código novo com cor crua.
 
+### Cor crua também mora em `.ts`
+
+A migração de cores varreu `.tsx` e deixou **24 cores cruas** nos mapas de
+status, que vivem em arquivos de tipo:
+
+```ts
+// src/types/agendamento.ts, src/types/check-in.ts, src/types/glosa.ts,
+// src/types/conciliacao.ts, src/lib/ocupacao.ts
+[StatusAgendamento.CANCELADO]: 'bg-red-50 border-red-300 text-red-800',  // ERRADO
+[StatusAgendamento.CANCELADO]: 'bg-danger-soft text-danger-ink',          // certo
+```
+
+Ao procurar cor crua, varrer `.ts` junto: constante de estilo não vive só onde
+há JSX.
+
 ### Texto de status usa `-ink`, preenchimento usa a cor
 
 O v2 usa o mesmo token para preencher (ícone, ponto, gráfico) e para texto
@@ -58,7 +73,7 @@ e `--danger-ink`, escurecidos só o suficiente para passar. **Texto sempre no
 
 `@/components/kit` é a camada de identidade: `ActionButton`, `IconButton`,
 `Panel`, `StatCard`, `StatusPill`, `IconTile`, `PersonAvatar`, `SearchField`,
-`Segmented`, `PageHeader`, `Trilha`. `@/components/ui` (shadcn) continua servindo
+`Segmented`, `PageHeader`, `Trilha`, `LinhaDado`, `NumeroOrdem`, `FasePill`. `@/components/ui` (shadcn) continua servindo
 formulário, tabela e diálogo — e foi **ajustado** para a linguagem do v2
 (pílula, raio 28px no `Card`, foco em `brand-ring`).
 
@@ -234,8 +249,8 @@ por `aria-controls`; `Segmented` é controle de filtro. A única diferença visu
 
 ### Ficha de dados: seção com chip, campo com microetiqueta
 
-Para tela de detalhe (prontuário, convênio, procedimento, ficha do
-profissional), três peças do kit:
+Para ficha longa (prontuário, anamnese), três peças do kit — ficha curta de
+detalhe usa `LinhaDado`, ver "Tela de detalhe" abaixo:
 
 ```tsx
 <SecaoInfo icone={<User />} titulo="Informações Pessoais">
@@ -343,6 +358,84 @@ estado em vez do dado.
 > divisória de 1px** em vez de faixas. São linhas hierárquicas que abrem e
 > fecham em três níveis, e 6px de respiro entre elas desmancha a leitura de
 > pai e filho. A tipografia do cabeçalho é a mesma das outras.
+
+### Tela de detalhe: painéis curtos com `LinhaDado`
+
+Conferido no detalhe de convênio do v2 e aplicado a procedimento, pacote e
+profissional:
+
+```tsx
+<PageHeader
+  voltar={{ onClick: () => router.push("/convenios") }}
+  titulo={<span className="inline-flex flex-wrap items-center gap-3">
+    {nome}<StatusPill tom="success" ponto>Ativo</StatusPill>
+  </span>}
+  subtitulo="Unimed · 43.202.472/0001-30"
+  acoes={<ActionButton variant="secondary"><Pencil />Editar</ActionButton>}
+/>
+<Tabs>…<TabsTrigger>Anexos <Contagem n={3} /></TabsTrigger>…</Tabs>
+<div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+  <Panel icone={<Building2 />} titulo="Identificação">
+    <LinhaDado rotulo="Tipo">Plano de Saúde</LinhaDado>   {/* rótulo ink-3 à esquerda, valor ink à direita */}
+  </Panel>
+</div>
+```
+
+- **Status mora ao lado do título**, não numa linha de badges abaixo.
+- **Contagem da aba** é pílula `bg-brand-soft text-brand`, não `(3)` no texto.
+- **Toda aba de conteúdo é um `Panel` com ícone** — `<h2>` solto acima de uma
+  tabela era o que fazia a aba parecer de outro sistema.
+- **Histórico é linha do tempo**: trilho `before:w-px bg-hairline`, ponto
+  `bg-brand` com borda branca, cartão `bg-surface-muted`.
+- `LinhaDado` é para ficha curta (4-6 dados por painel); ficha longa em grade
+  continua `GradeCampos` + `CampoInfo`.
+- Ordem, número de tarefa e posição usam `NumeroOrdem` (círculo branco sobre a
+  faixa), não `font-medium` solto na célula.
+
+### Modal: branco por fora, azulado por dentro
+
+`DialogContent` é `bg-surface` (o v2 mediu branco). O conteúdo agrupado vai em
+bloco `rounded-2xl bg-surface-muted` — **nunca o contrário**, que era o estado
+anterior (modal `--panel` azulado com cartões brancos).
+
+- seção = microetiqueta (`text-[0.72rem] tracking-wide text-ink-4 uppercase`),
+  sem `<Separator />` entre seções;
+- campo de formulário é **preenchido** (`bg-surface-muted`, borda `hairline`),
+  input 44px e select 36px como no v2;
+- número de resumo = cartão branco `bg-surface/80` sobre faixa em gradiente
+  `var(--kpi-blue-from) → var(--kpi-lavender-to)`;
+- **um modal por tela**, controlado por estado, não um `<Dialog>` por linha da
+  tabela — com 200 sessões eram 200 árvores de diálogo montadas.
+
+`tools/modais-v2.mjs` aplica o interior em lote (simula por padrão).
+
+### Tela de aplicação: conteúdo à esquerda, progresso à direita
+
+Sessão em andamento (plano terapêutico, avaliação) não é página de listagem:
+o terapeuta está com a criança na frente e precisa ver **onde está** sem rolar.
+`grid xl:grid-cols-[minmax(0,1fr)_22rem]`, com a coluna lateral em
+`xl:sticky xl:top-6 xl:self-start`.
+
+- ações de navegação (Anterior / Salvar e Próxima) moram no **`rodape` do
+  `Panel`** da instrução atual — fim do conteúdo, onde o dedo já está;
+- progresso é o **único** `Panel variant="night"` da tela;
+- item da lista lateral: círculo numerado, ✓ em verde quando concluído,
+  `bg-brand` quando atual; fase em `FasePill` (`@/components/kit`);
+- botão de resposta que vale como acerto/erro é verde/vermelho **pela sigla**,
+  nunca por posição — o destaque não pode contradizer o cálculo.
+
+### Lista longa: paginação no rodapé do painel
+
+"1 a 8 de 48" à esquerda em `text-ink-3`, `IconButton` ‹ › com "1 / 6" à
+direita. 8 itens em seleção (iniciar sessão), 12 em histórico. Busca nova
+volta para a página 1.
+
+### Ação de linha: círculo branco
+
+Sobre a faixa `surface-muted`, a ação de ícone é `size-9 rounded-full
+bg-surface` (ou `IconButton className="size-9"`); a ação com texto é
+`ActionButton variant="secondary" size="sm"`. Botão `ghost` sem fundo some
+na faixa.
 
 ### Lista dentro de painel: hairline, não caixa por item
 

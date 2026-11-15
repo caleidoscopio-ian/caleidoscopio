@@ -1,9 +1,9 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, RefreshCw, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { RefreshCw, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { SearchField } from "@/components/kit";
 import { format, addDays, parseISO } from "date-fns";
 
 interface Profissional { id: string; nome: string }
@@ -56,15 +56,12 @@ export function CheckInFiltersBar({
           <CalendarDays className="h-4 w-4" />
         </Button>
       </div>
-      <div className="relative flex-1 min-w-[180px]">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar paciente..."
-          className="pl-9"
-          value={filters.search}
-          onChange={(e) => set({ search: e.target.value })}
-        />
-      </div>
+      <SearchField
+        placeholder="Buscar paciente..."
+        value={filters.search}
+        onChange={(e) => set({ search: e.target.value })}
+        className="min-w-[180px] flex-1"
+      />
       <Select value={filters.profissionalId || "_all"} onValueChange={(v) => set({ profissionalId: v === "_all" ? "" : v })}>
         <SelectTrigger className="w-44">
           <SelectValue placeholder="Profissional" />

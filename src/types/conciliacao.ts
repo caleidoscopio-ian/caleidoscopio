@@ -7,9 +7,9 @@ export const STATUS_CONCILIACAO_LABEL: Record<StatusConciliacao, string> = {
 };
 
 export const STATUS_CONCILIACAO_BADGE: Record<StatusConciliacao, string> = {
-  CONCILIADO:       "bg-green-50 border-green-300 text-green-800",
-  CONCILIADO_GLOSA: "bg-amber-50 border-amber-300 text-amber-800",
-  NAO_ENCONTRADO:   "bg-red-50 border-red-300 text-red-800",
+  CONCILIADO:       "bg-success-soft text-success-ink",
+  CONCILIADO_GLOSA: "bg-warning-soft text-warning-ink",
+  NAO_ENCONTRADO:   "bg-danger-soft text-danger-ink",
 };
 
 export interface DemonstrativoResumo {

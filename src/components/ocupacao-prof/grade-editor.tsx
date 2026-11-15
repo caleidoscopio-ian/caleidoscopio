@@ -262,7 +262,7 @@ export function GradeEditor({
                   </Select>
                 )}
                 {podeEditar && (
-                  <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => removerBloco(bloco._key)}>
+                  <Button type="button" variant="ghost" size="icon" className="size-9 text-destructive hover:text-destructive" onClick={() => removerBloco(bloco._key)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 )}

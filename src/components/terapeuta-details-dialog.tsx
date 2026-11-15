@@ -24,8 +24,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-
 interface Professional {
   id: string;
   name: string;
@@ -85,7 +83,7 @@ export function TerapeutaDetailsDialog({
         <div className="space-y-6">
           {/* Header com Nome e Especialidade */}
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold">{professional.name}</h2>
+            <h2 className="tabular text-2xl font-bold">{professional.name}</h2>
             <div className="flex justify-center gap-2">
               <Badge variant="outline" className="bg-brand-soft text-brand">
                 {professional.specialty}
@@ -95,8 +93,6 @@ export function TerapeutaDetailsDialog({
               </Badge>
             </div>
           </div>
-
-          <Separator />
 
           {/* Seção: Dados Pessoais */}
           <div className="space-y-4">
@@ -128,8 +124,6 @@ export function TerapeutaDetailsDialog({
               )}
             </div>
           </div>
-
-          <Separator />
 
           {/* Seção: Contato */}
           <div className="space-y-4">
@@ -165,8 +159,6 @@ export function TerapeutaDetailsDialog({
             </div>
           </div>
 
-          <Separator />
-
           {/* Seção: Especialidade */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -200,8 +192,6 @@ export function TerapeutaDetailsDialog({
               )}
             </div>
           </div>
-
-          <Separator />
 
           {/* Seção: Informações do Sistema */}
           <div className="space-y-4">

@@ -253,7 +253,11 @@ export function ProntuarioDiagnostico({
     if (hipotese) {
       return <Badge variant="secondary">Hipótese Diagnóstica</Badge>;
     }
-    return <Badge variant="default">Diagnóstico Confirmado</Badge>;
+    return (
+      <Badge variant="outline" className="bg-brand-soft text-brand">
+        Diagnóstico Confirmado
+      </Badge>
+    );
   };
 
   // Calcular estatísticas

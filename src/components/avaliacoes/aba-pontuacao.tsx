@@ -42,8 +42,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Target, Plus, Edit, Trash2, Loader2 } from "lucide-react";
-import { Panel } from "@/components/kit";
+  Target, Plus, Edit, Trash2, ListPlus } from "lucide-react";
+import { ActionButton, Carregando, EstadoVazio, IconButton, NumeroOrdem, Panel } from "@/components/kit";
 
 interface Pontuacao {
   id: string;
@@ -231,27 +231,25 @@ export function AbaPontuacao({ avaliacaoId }: AbaPontuacaoProps) {
       titulo="Sistema de Pontuação"
       subtitulo="Defina a escala de pontuação da avaliação"
       acoes={
-        <Button onClick={handleNovo}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Pontuação
-          </Button>
+        <ActionButton size="sm" onClick={handleNovo}>
+          <Plus />
+          Adicionar Pontuação
+        </ActionButton>
       }
     >
         {loading ? (
-          <div className="text-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando pontuações...</p>
-          </div>
+          <Carregando texto="Carregando pontuações..." />
         ) : pontuacoes.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground mb-4">
-              Nenhuma pontuação cadastrada ainda.
-            </p>
-            <Button onClick={handleNovo}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Primeira Pontuação
-            </Button>
-          </div>
+          <EstadoVazio
+            icone={<ListPlus />}
+            titulo="Nenhuma pontuação cadastrada ainda"
+            acao={
+              <ActionButton size="sm" onClick={handleNovo}>
+                <Plus />
+                Adicionar Primeira Pontuação
+              </ActionButton>
+            }
+          />
         ) : (
           <Table>
             <TableHeader>
@@ -265,29 +263,23 @@ export function AbaPontuacao({ avaliacaoId }: AbaPontuacaoProps) {
             <TableBody>
               {pontuacoes.map((pontuacao) => (
                 <TableRow key={pontuacao.id}>
-                  <TableCell className="font-medium">
-                    {pontuacao.ordem}
-                  </TableCell>
-                  <TableCell>{traduzirTipo(pontuacao.tipo)}</TableCell>
                   <TableCell>
-                    {pontuacao.valor === -1 ? "N/A" : `${pontuacao.valor}%`}
+                    <NumeroOrdem n={pontuacao.ordem} />
+                  </TableCell>
+                  <TableCell className="font-medium text-ink">{traduzirTipo(pontuacao.tipo)}</TableCell>
+                  <TableCell>
+                    <span className="tabular font-semibold text-brand">
+                      {pontuacao.valor === -1 ? "N/A" : `${pontuacao.valor}%`}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditar(pontuacao)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDeleteId(pontuacao.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                    <div className="flex justify-end gap-1.5">
+                      <IconButton aria-label="Editar" className="size-9" onClick={() => handleEditar(pontuacao)}>
+                        <Edit className="size-4" />
+                      </IconButton>
+                      <IconButton aria-label="Excluir" className="size-9 text-danger-ink" onClick={() => setDeleteId(pontuacao.id)}>
+                        <Trash2 className="size-4" />
+                      </IconButton>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -234,7 +234,7 @@ export function MapaFiliais({ onFilialSelect, filialSelecionada }: MapaFiliaisPr
 
               {filial.proximosAtendimentos.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">
                     Próximos
                   </p>
                   {filial.proximosAtendimentos.map((ag, i) => (

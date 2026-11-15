@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -55,9 +54,9 @@ export function VisualizarCurriculumDialog({ curriculum }: VisualizarCurriculumD
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost">
-          <Eye className="h-4 w-4" />
-        </Button>
+        <button type="button" aria-label="Visualizar plano" title="Visualizar" className="grid size-9 place-items-center rounded-full bg-surface text-ink-2 shadow-[0_1px_2px_rgba(15,27,61,0.06)] transition hover:text-brand focus-visible:ring-4 focus-visible:ring-brand-ring focus-visible:outline-none">
+          <Eye className="size-4" />
+        </button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
@@ -93,7 +92,7 @@ export function VisualizarCurriculumDialog({ curriculum }: VisualizarCurriculumD
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Total de Atividades</label>
-                  <p className="text-2xl font-bold">{curriculum.atividades?.length || 0}</p>
+                  <p className="tabular text-2xl font-bold">{curriculum.atividades?.length || 0}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Criado em</label>
@@ -112,7 +111,7 @@ export function VisualizarCurriculumDialog({ curriculum }: VisualizarCurriculumD
                   {curriculum.atividades.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3 border rounded-lg bg-muted/30"
+                      className="rounded-2xl bg-surface-muted p-3"
                     >
                       <div className="flex items-center gap-3">
                         <Badge variant="secondary" className="shrink-0">

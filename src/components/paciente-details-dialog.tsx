@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/hooks/useAuth'
 
 const SEXO_LABELS: Record<string, string> = {
@@ -220,7 +219,7 @@ export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDia
         <div className="space-y-6">
           {/* Header com Nome e Status */}
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold">{patient.name}</h2>
+            <h2 className="tabular text-2xl font-bold">{patient.name}</h2>
             <div className="flex justify-center gap-2">
               <Badge variant="secondary">{age} anos</Badge>
               <Badge variant="outline" className="bg-success-soft text-success-ink">
@@ -228,8 +227,6 @@ export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDia
               </Badge>
             </div>
           </div>
-
-          <Separator />
 
           {/* Seção: Dados Pessoais */}
           <div className="space-y-4">
@@ -260,8 +257,6 @@ export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDia
               )}
             </div>
           </div>
-
-          <Separator />
 
           {/* Seção: Contato */}
           <div className="space-y-4">
@@ -305,8 +300,6 @@ export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDia
             </div>
           </div>
 
-          <Separator />
-
           {/* Seção: Responsáveis */}
           {(responsaveis.length > 0 || patient.guardianName || patient.guardianPhone) && (
             <>
@@ -319,7 +312,7 @@ export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDia
                 {responsaveis.length > 0 ? (
                   <div className="space-y-3">
                     {responsaveis.map((r, i) => (
-                      <div key={r.id || i} className="p-3 border rounded-lg bg-muted/30 space-y-1">
+                      <div key={r.id || i} className="rounded-2xl bg-surface-muted p-3 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <User className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">{r.nome}</span>
@@ -364,7 +357,6 @@ export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDia
                   </div>
                 )}
               </div>
-              <Separator />
             </>
           )}
 
@@ -432,8 +424,6 @@ export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDia
             </div>
           </div>
 
-          <Separator />
-
           {/* Seção: Terapeuta Responsável */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -472,8 +462,6 @@ export function PacienteDetailsDialog({ patient, onSuccess }: PacienteDetailsDia
               </p>
             )}
           </div>
-
-          <Separator />
 
           {/* Seção: Informações do Sistema */}
           <div className="space-y-4">

@@ -31,7 +31,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   History,
@@ -44,11 +43,25 @@ import {
   CheckCircle2,
   AlertCircle,
   Play,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scrollarea";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { isTentativaCorreta } from "@/lib/pontuacao";
-import { PageHeader, Panel, StatCard } from "@/components/kit";
+import {
+  ActionButton,
+  Carregando,
+  EstadoVazio,
+  IconButton,
+  PageHeader,
+  Panel,
+  PersonAvatar,
+  SearchField,
+  StatCard,
+  FasePill,
+  StatusPill,
+  type TomStatus,
+} from "@/components/kit";
 
 interface Paciente {
   id: string;
@@ -132,20 +145,41 @@ interface Sessao {
   avaliacao?: any;
 }
 
-// ============ Constantes de fase ============
-const FASE_CONFIG: Record<string, { label: string; color: string }> = {
-  LINHA_BASE:    { label: "Linha de Base", color: "bg-surface-muted" },
-  INTERVENCAO:   { label: "Intervenção",   color: "bg-brand" },
-  MANUTENCAO:    { label: "Manutenção",    color: "bg-success" },
-  GENERALIZACAO: { label: "Generalização", color: "bg-warning" },
+
+const TOM_STATUS_SESSAO: Record<string, TomStatus> = {
+  EM_ANDAMENTO: "warning",
+  FINALIZADA: "success",
+  CANCELADA: "danger",
 };
 
-function FaseBadge({ fase, size = "sm" }: { fase: string; size?: "sm" | "xs" }) {
-  const cfg = FASE_CONFIG[fase] || { label: fase, color: "bg-surface-muted" };
+/** Sessões por página (o v2 usa 12). */
+const POR_PAGINA = 12;
+
+/** Microetiqueta de seção do modal. */
+function Rotulo({ children }: { children: React.ReactNode }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-white font-medium ${cfg.color} ${size === "xs" ? "text-[10px]" : "text-xs"}`}>
-      {cfg.label}
-    </span>
+    <p className="text-[0.72rem] font-medium tracking-wide text-ink-4 uppercase">{children}</p>
+  );
+}
+
+/** Um número do "Resumo do Desempenho": cartão branco sobre a faixa em gradiente. */
+function NumeroResumo({
+  valor,
+  rotulo,
+  apoio,
+  cor,
+}: {
+  valor: React.ReactNode;
+  rotulo: string;
+  apoio: React.ReactNode;
+  cor: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-surface/80 px-2 py-3 text-center">
+      <p className={`tabular text-[1.9rem] leading-none font-bold tracking-tight ${cor}`}>{valor}</p>
+      <p className="mt-1.5 text-xs font-medium text-ink-2">{rotulo}</p>
+      <p className="text-[0.7rem] text-ink-3">{apoio}</p>
+    </div>
   );
 }
 
@@ -160,6 +194,9 @@ function HistoricoSessoesPageContent() {
   const [statusFiltro, setStatusFiltro] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
   const [sessaoDetalhes, setSessaoDetalhes] = useState<Sessao | null>(null);
+  // Um modal só para a tela, não um por linha
+  const [detalhesAberto, setDetalhesAberto] = useState(false);
+  const [pagina, setPagina] = useState(1);
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
@@ -330,6 +367,22 @@ function HistoricoSessoesPageContent() {
     });
   };
 
+  // Filtro novo volta para a primeira página
+  useEffect(() => {
+    setPagina(1);
+  }, [searchTerm, pacienteFiltro, statusFiltro]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filteredSessoes.length / POR_PAGINA));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const inicioPagina = (paginaAtual - 1) * POR_PAGINA;
+  const sessoesDaPagina = filteredSessoes.slice(inicioPagina, inicioPagina + POR_PAGINA);
+
+  const abrirDetalhes = (sessao: Sessao) => {
+    setSessaoDetalhes(null);
+    setDetalhesAberto(true);
+    fetchSessaoDetalhes(sessao.id, sessao.tipo);
+  };
+
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR", {
       day: "2-digit",
@@ -451,30 +504,31 @@ function HistoricoSessoesPageContent() {
     return statuses[status] || { label: status, variant: "outline" };
   };
 
+  const est = sessaoDetalhes?.tipo === "CURRICULUM" ? calcularEstatisticasCurriculum(sessaoDetalhes) : null;
+  const estAv =
+    sessaoDetalhes?.tipo === "AVALIACAO" && sessaoDetalhes.respostas?.length
+      ? calcularEstatisticasAvaliacao(sessaoDetalhes)
+      : null;
+
   return (
     <MainLayout breadcrumbs={breadcrumbs}>
-      <div className="space-y-6">
-        {/* Header */}
+      <div className="space-y-7">
         <PageHeader
           titulo="Histórico de Sessões"
           subtitulo="Visualize e acompanhe todas as sessões realizadas"
         />
 
-        {/* Filtros */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por paciente, plano terapêutico/avaliação ou terapeuta..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
+        {/* Filtros acima dos KPIs — posição medida no clone do v2 */}
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <SearchField
+            placeholder="Buscar por paciente, plano terapêutico/avaliação ou terapeuta..."
+            aria-label="Buscar sessões"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1"
+          />
           <Select value={pacienteFiltro} onValueChange={setPacienteFiltro}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="h-11 w-full rounded-full border-rim bg-surface/80 text-sm md:w-[14rem]">
               <SelectValue placeholder="Todos os pacientes" />
             </SelectTrigger>
             <SelectContent>
@@ -487,7 +541,7 @@ function HistoricoSessoesPageContent() {
             </SelectContent>
           </Select>
           <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="h-11 w-full rounded-full border-rim bg-surface/80 text-sm md:w-[11rem]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -499,7 +553,6 @@ function HistoricoSessoesPageContent() {
           </Select>
         </div>
 
-        {/* Estatísticas Gerais */}
         <div className="anim-escalonada grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.25fr_1fr_1fr_1fr]">
           <StatCard
             tom="blue"
@@ -508,21 +561,18 @@ function HistoricoSessoesPageContent() {
             rotulo="Total de Sessões"
             valor={loading ? "..." : sessoes.length}
           />
-
-          <StatCard
-            tom="lavender"
-            icone={<CheckCircle2 />}
-            rotulo="Finalizadas"
-            valor={<span className="text-success-ink">{loading ? "..." : sessoes.filter((s) => s.status === "FINALIZADA").length}</span>}
-          />
-
           <StatCard
             tom="mint"
-            icone={<Clock className="text-brand" />}
-            rotulo="Em Andamento"
-            valor={<span className="text-brand">{loading ? "..." : sessoes.filter((s) => s.status === "EM_ANDAMENTO").length}</span>}
+            icone={<CheckCircle2 />}
+            rotulo="Finalizadas"
+            valor={loading ? "..." : sessoes.filter((s) => s.status === "FINALIZADA").length}
           />
-
+          <StatCard
+            tom="lavender"
+            icone={<Clock />}
+            rotulo="Em Andamento"
+            valor={loading ? "..." : sessoes.filter((s) => s.status === "EM_ANDAMENTO").length}
+          />
           <StatCard
             tom="peach"
             icone={<TrendingUp />}
@@ -531,593 +581,454 @@ function HistoricoSessoesPageContent() {
           />
         </div>
 
-        {/* Tabela de Sessões */}
         <Panel
-          titulo={<>Sessões Registradas {!loading && ( <Badge variant="secondary" className="ml-2"> {filteredSessoes.length} </Badge> )}</>}
+          icone={<History />}
+          titulo={
+            <span className="inline-flex items-center gap-2">
+              Sessões Registradas
+              {!loading && (
+                <span className="tabular rounded-full bg-surface-sunken px-2 py-0.5 text-[0.72rem] font-semibold text-ink-2">
+                  {filteredSessoes.length}
+                </span>
+              )}
+            </span>
+          }
           subtitulo="Lista completa de sessões realizadas"
         >
-
-          {error && (
-            <div className="text-center py-8">
-              <AlertCircle className="h-12 w-12 text-danger-ink mx-auto mb-4" />
-              <div className="text-danger-ink mb-4">{error}</div>
-              <Button onClick={fetchSessoes} variant="outline">
-                Tentar Novamente
-              </Button>
-            </div>
-          )}
-
-          {loading && !error && (
-            <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Carregando sessões...</p>
-            </div>
-          )}
-
-          {!loading && !error && filteredSessoes.length === 0 && (
-            <div className="text-center py-8">
-              <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">
-                Nenhuma sessão encontrada
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {sessoes.length === 0
+          {error ? (
+            <EstadoVazio
+              icone={<AlertCircle />}
+              titulo="Erro ao carregar sessões"
+              texto={error}
+              acao={
+                <ActionButton variant="secondary" size="sm" onClick={fetchSessoes}>
+                  Tentar Novamente
+                </ActionButton>
+              }
+            />
+          ) : loading ? (
+            <Carregando texto="Carregando sessões..." />
+          ) : filteredSessoes.length === 0 ? (
+            <EstadoVazio
+              icone={<History />}
+              titulo="Nenhuma sessão encontrada"
+              texto={
+                sessoes.length === 0
                   ? "Ainda não há sessões registradas."
-                  : "Nenhuma sessão corresponde aos filtros selecionados."}
-              </p>
-              {sessoes.length === 0 && (
-                <Button onClick={() => router.push("/iniciar-sessao")}>
-                  Iniciar Nova Sessão
-                </Button>
-              )}
-            </div>
-          )}
-
-          {!loading && !error && filteredSessoes.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Curriculum/Avaliação</TableHead>
-                  <TableHead>Terapeuta</TableHead>
-                  <TableHead>Data/Hora</TableHead>
-                  <TableHead>Duração</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSessoes.map((sessao) => {
-                  const status = traduzirStatus(sessao.status);
-                  const tipoSessao = getTipoSessaoLabel(sessao);
-                  return (
-                    <TableRow key={sessao.id}>
-                      <TableCell className="font-medium">
-                        {sessao.paciente.nome}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            sessao.tipo === "AVALIACAO" ? "default" : "secondary"
-                          }
-                          className="text-xs"
-                        >
-                          {tipoSessao}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">
-                          {sessao.tipo === "CURRICULUM"
-                            ? sessao.curriculum?.nome
-                            : (sessao.avaliacao?.nome || sessao.atividade?.nome)}
-                        </div>
-                      </TableCell>
-                      <TableCell>{sessao.profissional.nome}</TableCell>
-                      <TableCell className="text-sm">
-                        {formatDateTime(sessao.iniciada_em)}
-                      </TableCell>
-                      <TableCell>
-                        {calcularDuracao(
-                          sessao.iniciada_em,
-                          sessao.finalizada_em
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={status.variant as any}>
-                          {status.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {sessao.status === "EM_ANDAMENTO" && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => {
-                                if (sessao.tipo === "CURRICULUM") {
-                                  router.push(`/aplicar-curriculum/${sessao.id}`);
-                                } else if (sessao.tipo === "AVALIACAO") {
-                                  router.push(`/aplicar-avaliacao/${sessao.id}`);
-                                }
-                              }}
-                            >
-                              <Play className="h-4 w-4 mr-1" />
-                              Continuar
-                            </Button>
-                          )}
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
+                  : "Nenhuma sessão corresponde aos filtros selecionados."
+              }
+              acao={
+                sessoes.length === 0 ? (
+                  <ActionButton size="sm" onClick={() => router.push("/iniciar-sessao")}>
+                    Iniciar Nova Sessão
+                  </ActionButton>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="space-y-3">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="hidden md:table-cell">Curriculum/Avaliação</TableHead>
+                    <TableHead className="hidden md:table-cell">Terapeuta</TableHead>
+                    <TableHead className="hidden md:table-cell">Data/Hora</TableHead>
+                    <TableHead className="hidden md:table-cell">Duração</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">
+                      <span className="sr-only">Ações</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sessoesDaPagina.map((sessao) => {
+                    const status = traduzirStatus(sessao.status);
+                    return (
+                      <TableRow key={sessao.id}>
+                        <TableCell>
+                          <div className="flex min-w-0 items-center gap-3">
+                            <PersonAvatar nome={sessao.paciente.nome} tamanho={34} />
+                            <span className="font-medium text-ink">{sessao.paciente.nome}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <StatusPill tom={sessao.tipo === "AVALIACAO" ? "violet" : "info"}>
+                            {getTipoSessaoLabel(sessao)}
+                          </StatusPill>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <span className="font-medium text-ink-2">
+                            {sessao.tipo === "CURRICULUM"
+                              ? sessao.curriculum?.nome
+                              : sessao.avaliacao?.nome || sessao.atividade?.nome}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">{sessao.profissional.nome}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <span className="tabular text-sm whitespace-nowrap">
+                            {formatDateTime(sessao.iniciada_em)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <span className="tabular whitespace-nowrap">
+                            {calcularDuracao(sessao.iniciada_em, sessao.finalizada_em)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <StatusPill tom={TOM_STATUS_SESSAO[sessao.status] ?? "neutral"} ponto>
+                            {status.label}
+                          </StatusPill>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {sessao.status === "EM_ANDAMENTO" && (
+                              <ActionButton
                                 size="sm"
-                                variant="ghost"
-                                onClick={() => fetchSessaoDetalhes(sessao.id, sessao.tipo)}
+                                onClick={() => {
+                                  if (sessao.tipo === "CURRICULUM") {
+                                    router.push(`/aplicar-curriculum/${sessao.id}`);
+                                  } else if (sessao.tipo === "AVALIACAO") {
+                                    router.push(`/aplicar-avaliacao/${sessao.id}`);
+                                  }
+                                }}
                               >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-3xl max-h-[90vh]">
-                              <DialogHeader>
-                                <DialogTitle>Detalhes da Sessão</DialogTitle>
-                                <DialogDescription>
-                                  Informações completas e avaliações
-                                </DialogDescription>
-                              </DialogHeader>
-                              {sessaoDetalhes &&
-                                sessaoDetalhes.id === sessao.id && (
-                                  <ScrollArea className="max-h-[calc(90vh-150px)] pr-4">
-                                    <div className="space-y-4">
-                                      {/* Informações da Sessão */}
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                          <label className="text-sm font-medium text-muted-foreground">
-                                            Paciente
-                                          </label>
-                                          <p className="font-medium">
-                                            {sessaoDetalhes.paciente.nome}
-                                          </p>
-                                        </div>
-                                        <div>
-                                          <label className="text-sm font-medium text-muted-foreground">
-                                            Terapeuta
-                                          </label>
-                                          <p className="font-medium">
-                                            {sessaoDetalhes.profissional.nome}
-                                          </p>
-                                        </div>
-                                        <div>
-                                          <label className="text-sm font-medium text-muted-foreground">
-                                            {sessaoDetalhes.tipo === "CURRICULUM"
-                                              ? "Plano Terapêutico"
-                                              : "Avaliação"}
-                                          </label>
-                                          <p className="font-medium">
-                                            {sessaoDetalhes.tipo === "CURRICULUM"
-                                              ? sessaoDetalhes.curriculum?.nome
-                                              : (sessaoDetalhes.avaliacao?.nome || sessaoDetalhes.atividade?.nome)}
-                                          </p>
-                                        </div>
-                                        <div>
-                                          <label className="text-sm font-medium text-muted-foreground">
-                                            Tipo
-                                          </label>
-                                          <div className="mt-1">
-                                            <Badge
-                                              variant={
-                                                sessaoDetalhes.tipo === "CURRICULUM"
-                                                  ? "default"
-                                                  : "secondary"
-                                              }
-                                            >
-                                              {getTipoSessaoLabel(sessaoDetalhes)}
-                                            </Badge>
-                                          </div>
-                                        </div>
-                                        <div className="col-span-2">
-                                          <label className="text-sm font-medium text-muted-foreground">
-                                            Status
-                                          </label>
-                                          <div className="mt-1">
-                                            <Badge
-                                              variant={
-                                                traduzirStatus(
-                                                  sessaoDetalhes.status
-                                                ).variant as any
-                                              }
-                                            >
-                                              {
-                                                traduzirStatus(
-                                                  sessaoDetalhes.status
-                                                ).label
-                                              }
-                                            </Badge>
-                                          </div>
-                                        </div>
-                                      </div>
+                                <Play />
+                                Continuar
+                              </ActionButton>
+                            )}
+                            <button
+                              type="button"
+                              aria-label={`Ver detalhes da sessão de ${sessao.paciente.nome}`}
+                              title="Ver detalhes"
+                              onClick={() => abrirDetalhes(sessao)}
+                              className="grid size-9 place-items-center rounded-full bg-surface text-ink-2 shadow-[0_1px_2px_rgba(15,27,61,0.06)] transition hover:text-brand focus-visible:ring-4 focus-visible:ring-brand-ring focus-visible:outline-none"
+                            >
+                              <Eye className="size-4" />
+                            </button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
 
-                                      {/* Resumo do Desempenho - CURRICULUM */}
-                                      {sessaoDetalhes.tipo === "CURRICULUM" && (
-                                        <div className="space-y-3">
-                                          <label className="text-sm font-medium text-muted-foreground">
-                                            Resumo do Desempenho
-                                          </label>
-                                          <div className="p-4 bg-gradient-to-r from-brand-soft to-violet-soft rounded-lg border">
-                                            <div className="grid grid-cols-4 gap-4 text-center">
-                                              <div>
-                                                <p className="text-3xl font-bold text-brand">
-                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).totalInstrucoes}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground mt-1">Instruções</p>
-                                                <p className="text-xs text-muted-foreground">na sessão</p>
-                                              </div>
-                                              <div>
-                                                <p className="text-3xl font-bold text-success-ink">
-                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).avancaram}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground mt-1">Avançaram</p>
-                                                <p className="text-xs text-muted-foreground">de fase</p>
-                                              </div>
-                                              <div>
-                                                <p className="text-3xl font-bold text-danger-ink">
-                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).regrediram}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground mt-1">Regrediram</p>
-                                                <p className="text-xs text-muted-foreground">de fase</p>
-                                              </div>
-                                              <div>
-                                                <p className="text-3xl font-bold text-violet-ink">
-                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).percentAcerto}%
-                                                </p>
-                                                <p className="text-xs text-muted-foreground mt-1">Acerto</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                  ({calcularEstatisticasCurriculum(sessaoDetalhes).tentativasCorretas}/
-                                                  {calcularEstatisticasCurriculum(sessaoDetalhes).totalTentativas})
-                                                </p>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      )}
-
-                                      {/* Estatísticas - AVALIAÇÕES */}
-                                      {sessaoDetalhes.tipo === "AVALIACAO" &&
-                                        sessaoDetalhes.respostas &&
-                                        sessaoDetalhes.respostas.length > 0 && (
-                                          <div className="space-y-3">
-                                            <label className="text-sm font-medium text-muted-foreground">
-                                              Resumo do Desempenho
-                                            </label>
-                                            <div className="p-4 bg-gradient-to-r from-success-soft to-brand-soft rounded-lg border">
-                                              <div className="grid grid-cols-4 gap-4 text-center">
-                                                <div>
-                                                  <p className="text-3xl font-bold text-brand">
-                                                    {
-                                                      calcularEstatisticasAvaliacao(
-                                                        sessaoDetalhes
-                                                      ).media
-                                                    }%
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground mt-1">
-                                                    Média Geral
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground">
-                                                    (pontuação)
-                                                  </p>
-                                                </div>
-                                                <div>
-                                                  <p className="text-3xl font-bold text-success-ink">
-                                                    {
-                                                      calcularEstatisticasAvaliacao(
-                                                        sessaoDetalhes
-                                                      ).respondidas
-                                                    }
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground mt-1">
-                                                    Respondidas
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground">
-                                                    (de{" "}
-                                                    {
-                                                      calcularEstatisticasAvaliacao(
-                                                        sessaoDetalhes
-                                                      ).total
-                                                    })
-                                                  </p>
-                                                </div>
-                                                <div>
-                                                  <p className="text-3xl font-bold text-warning-ink">
-                                                    {
-                                                      calcularEstatisticasAvaliacao(
-                                                        sessaoDetalhes
-                                                      ).naoAplicavel
-                                                    }
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground mt-1">
-                                                    N/A
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground">
-                                                    (não aplicável)
-                                                  </p>
-                                                </div>
-                                                <div>
-                                                  <p className="text-3xl font-bold text-violet-ink">
-                                                    {
-                                                      calcularEstatisticasAvaliacao(
-                                                        sessaoDetalhes
-                                                      ).total
-                                                    }
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground mt-1">
-                                                    Total
-                                                  </p>
-                                                  <p className="text-xs text-muted-foreground">
-                                                    tarefas
-                                                  </p>
-                                                </div>
-                                              </div>
-                                            </div>
-
-                                            {/* Distribuição de Pontuações */}
-                                            <div className="p-4 bg-muted/30 rounded-lg">
-                                              <p className="text-sm font-medium mb-3">
-                                                Distribuição de Pontuações
-                                              </p>
-                                              <div className="space-y-2">
-                                                {[100, 75, 50, 25, 0, -1].map(
-                                                  (pontuacao) => {
-                                                    const count =
-                                                      sessaoDetalhes.respostas!.filter(
-                                                        (r: any) => r.pontuacao === pontuacao
-                                                      ).length;
-                                                    const percentage =
-                                                      (count /
-                                                        sessaoDetalhes
-                                                          .respostas!
-                                                          .length) *
-                                                      100;
-                                                    return (
-                                                      <div
-                                                        key={pontuacao}
-                                                        className="flex items-center gap-3"
-                                                      >
-                                                        <span className="text-xs font-medium w-16">
-                                                          {pontuacao === -1 ? "N/A" : `${pontuacao}%`}:
-                                                        </span>
-                                                        <div className="flex-1 h-6 bg-surface-sunken rounded-full overflow-hidden">
-                                                          <div
-                                                            className={`h-full ${
-                                                              pontuacao === 100
-                                                                ? "bg-success"
-                                                                : pontuacao === 75
-                                                                  ? "bg-brand"
-                                                                  : pontuacao === 50
-                                                                    ? "bg-warning"
-                                                                    : pontuacao ===
-                                                                        25
-                                                                      ? "bg-warning"
-                                                                      : pontuacao === 0
-                                                                        ? "bg-danger"
-                                                                        : "bg-surface-muted"
-                                                            }`}
-                                                            style={{
-                                                              width: `${percentage}%`,
-                                                            }}
-                                                          />
-                                                        </div>
-                                                        <span className="text-xs font-medium w-16 text-right">
-                                                          {count} (
-                                                          {percentage.toFixed(
-                                                            0
-                                                          )}
-                                                          %)
-                                                        </span>
-                                                      </div>
-                                                    );
-                                                  }
-                                                )}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        )}
-
-                                      {/* Respostas de Avaliações (para sessões tipo AVALIACAO) */}
-                                      {sessaoDetalhes.tipo === "AVALIACAO" &&
-                                        sessaoDetalhes.respostas &&
-                                        sessaoDetalhes.respostas.length > 0 && (
-                                          <div>
-                                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                              Respostas das Tarefas
-                                            </label>
-                                            <div className="space-y-2">
-                                              {sessaoDetalhes.respostas.map(
-                                                (resposta: any) => (
-                                                  <div
-                                                    key={resposta.id}
-                                                    className="rounded-2xl bg-surface-muted p-3.5"
-                                                  >
-                                                    <div className="flex items-start gap-3">
-                                                      <Badge variant="secondary">
-                                                        {resposta.tarefa.ordem}
-                                                      </Badge>
-                                                      <div className="flex-1">
-                                                        <p className="text-sm font-medium mb-1">
-                                                          {resposta.tarefa.pergunta}
-                                                        </p>
-                                                        <div className="flex items-center gap-2 text-xs flex-wrap">
-                                                          <Badge
-                                                            variant={
-                                                              resposta.pontuacao !== null &&
-                                                              resposta.pontuacao !== -1
-                                                                ? "default"
-                                                                : "outline"
-                                                            }
-                                                          >
-                                                            {resposta.pontuacao === -1
-                                                              ? "N/A"
-                                                              : resposta.pontuacao !== null
-                                                                ? `${resposta.pontuacao}%`
-                                                                : "Não respondida"}
-                                                          </Badge>
-                                                        </div>
-                                                        {resposta.observacao && (
-                                                          <p className="text-xs text-muted-foreground mt-2">
-                                                            Obs: {resposta.observacao}
-                                                          </p>
-                                                        )}
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                )
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-
-                                      {/* Instruções da Sessão (para sessões tipo CURRICULUM) */}
-                                      {sessaoDetalhes.tipo === "CURRICULUM" &&
-                                        sessaoDetalhes.instrucoesSelecionadas &&
-                                        sessaoDetalhes.instrucoesSelecionadas.length > 0 && (
-                                          <div className="space-y-3">
-                                            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                              Instruções da Sessão
-                                            </label>
-                                            {sessaoDetalhes.atividadesClone?.map((clone) => {
-                                              const instrucaoIdsDessaAtv = new Set(
-                                                (sessaoDetalhes.instrucoesSelecionadas || [])
-                                                  .filter((s) => s.atividadeCloneId === clone.id)
-                                                  .map((s) => s.instrucaoId)
-                                              );
-                                              const instrucoes = clone.instrucoes.filter((i) =>
-                                                instrucaoIdsDessaAtv.has(i.id)
-                                              );
-                                              if (instrucoes.length === 0) return null;
-                                              const FASE_ORDER = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
-                                              return (
-                                                <div key={clone.id} className="border rounded-lg overflow-hidden">
-                                                  <div className="px-4 py-2 bg-muted/50 font-medium text-sm">
-                                                    {clone.nome}
-                                                  </div>
-                                                  <div className="divide-y">
-                                                    {instrucoes.map((instrucao) => {
-                                                      const hist = sessaoDetalhes.historicoFasesSessao?.find(
-                                                        (h) => h.instrucaoId === instrucao.id
-                                                      );
-                                                      const avsInstrucao = (
-                                                        (sessaoDetalhes.avaliacoes || []) as AvaliacaoCurriculum[]
-                                                      )
-                                                        .filter((av) => av.instrucaoId === instrucao.id)
-                                                        .sort((a, b) => a.tentativa - b.tentativa);
-                                                      const ponts = (instrucao.pontuacoes || [])
-                                                        .filter((p) => p.fase === instrucao.faseAtual)
-                                                        .sort((a, b) => a.ordem - b.ordem);
-                                                      const corretas = avsInstrucao.filter((av) =>
-                                                        isTentativaCorreta(av.nota, ponts)
-                                                      ).length;
-                                                      const percentInstrucao =
-                                                        avsInstrucao.length > 0
-                                                          ? Math.round((corretas / avsInstrucao.length) * 100)
-                                                          : null;
-                                                      const avancou =
-                                                        hist &&
-                                                        FASE_ORDER.indexOf(hist.faseNova) >
-                                                          FASE_ORDER.indexOf(hist.faseAnterior);
-                                                      const regrediu =
-                                                        hist &&
-                                                        FASE_ORDER.indexOf(hist.faseNova) <
-                                                          FASE_ORDER.indexOf(hist.faseAnterior);
-                                                      return (
-                                                        <div key={instrucao.id} className="p-3 space-y-2">
-                                                          <div className="flex items-start justify-between gap-2">
-                                                            <p className="text-sm font-medium flex-1">
-                                                              {instrucao.texto}
-                                                            </p>
-                                                            <div className="flex items-center gap-1 flex-shrink-0">
-                                                              {hist ? (
-                                                                <>
-                                                                  <FaseBadge fase={hist.faseAnterior} size="xs" />
-                                                                  <span className="text-xs text-muted-foreground">→</span>
-                                                                  <FaseBadge fase={hist.faseNova} size="xs" />
-                                                                  {avancou && (
-                                                                    <span className="text-success-ink text-xs font-bold">↑</span>
-                                                                  )}
-                                                                  {regrediu && (
-                                                                    <span className="text-danger-ink text-xs font-bold">↓</span>
-                                                                  )}
-                                                                </>
-                                                              ) : (
-                                                                <FaseBadge fase={instrucao.faseAtual} size="xs" />
-                                                              )}
-                                                            </div>
-                                                          </div>
-                                                          {avsInstrucao.length > 0 && (
-                                                            <div className="flex items-center gap-1 flex-wrap">
-                                                              <span className="text-xs text-muted-foreground mr-1">
-                                                                Tentativas:
-                                                              </span>
-                                                              {avsInstrucao.map((av) => {
-                                                                const sigla = ponts[av.nota]?.sigla ?? String(av.nota);
-                                                                const isCorreto = isTentativaCorreta(av.nota, ponts);
-                                                                return (
-                                                                  <Badge
-                                                                    key={av.id}
-                                                                    variant={isCorreto ? "default" : "outline"}
-                                                                    className={`text-xs font-bold ${isCorreto ? "bg-success hover:bg-success" : ""}`}
-                                                                  >
-                                                                    {sigla}
-                                                                  </Badge>
-                                                                );
-                                                              })}
-                                                              {percentInstrucao !== null && (
-                                                                <span className="text-xs text-muted-foreground ml-2">
-                                                                  {percentInstrucao}% acerto
-                                                                </span>
-                                                              )}
-                                                            </div>
-                                                          )}
-                                                          {avsInstrucao.some((av) => av.observacao) && (
-                                                            <p className="text-xs text-muted-foreground">
-                                                              Obs:{" "}
-                                                              {avsInstrucao.find((av) => av.observacao)?.observacao}
-                                                            </p>
-                                                          )}
-                                                        </div>
-                                                      );
-                                                    })}
-                                                  </div>
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
-                                        )}
-
-                                      {/* Observações Gerais */}
-                                      {sessaoDetalhes.observacoes_gerais && (
-                                        <div>
-                                          <label className="text-sm font-medium text-muted-foreground">
-                                            Observações Gerais
-                                          </label>
-                                          <p className="text-sm mt-1 p-3 bg-muted/30 rounded">
-                                            {
-                                              sessaoDetalhes.observacoes_gerais
-                                            }
-                                          </p>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </ScrollArea>
-                                )}
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+              <div className="flex items-center justify-between gap-3 px-1">
+                <p className="tabular text-[0.8rem] text-ink-3">
+                  {inicioPagina + 1} a {Math.min(inicioPagina + POR_PAGINA, filteredSessoes.length)} de{" "}
+                  {filteredSessoes.length}
+                </p>
+                {totalPaginas > 1 && (
+                  <div className="flex items-center gap-2">
+                    <IconButton
+                      aria-label="Página anterior"
+                      className="size-9"
+                      disabled={paginaAtual <= 1}
+                      onClick={() => setPagina(paginaAtual - 1)}
+                    >
+                      <ChevronLeft className="size-4" />
+                    </IconButton>
+                    <span className="tabular min-w-[3rem] text-center text-[0.8rem] text-ink-2">
+                      {paginaAtual} / {totalPaginas}
+                    </span>
+                    <IconButton
+                      aria-label="Próxima página"
+                      className="size-9"
+                      disabled={paginaAtual >= totalPaginas}
+                      onClick={() => setPagina(paginaAtual + 1)}
+                    >
+                      <ChevronRight className="size-4" />
+                    </IconButton>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </Panel>
       </div>
+
+      {/* ===== Modal: Detalhes da Sessão — anatomia medida no clone do v2 ===== */}
+      <Dialog open={detalhesAberto} onOpenChange={setDetalhesAberto}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader className="text-left">
+            <DialogTitle className="flex items-center gap-2 text-[1.3rem]">
+              <History className="size-5 text-brand" />
+              Detalhes da Sessão
+            </DialogTitle>
+            <DialogDescription className="text-ink-3">
+              Informações completas e avaliações
+            </DialogDescription>
+          </DialogHeader>
+
+          {!sessaoDetalhes ? (
+            <Carregando texto="Carregando detalhes..." />
+          ) : (
+            <div className="space-y-5">
+              {/* Identificação */}
+              <div className="grid gap-4 rounded-2xl bg-surface-muted p-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Rotulo>Paciente</Rotulo>
+                  <div className="flex items-center gap-2 font-medium text-ink">
+                    <PersonAvatar nome={sessaoDetalhes.paciente.nome} tamanho={28} />
+                    {sessaoDetalhes.paciente.nome}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Rotulo>Terapeuta</Rotulo>
+                  <div className="font-medium text-ink">{sessaoDetalhes.profissional.nome}</div>
+                </div>
+                <div className="space-y-1">
+                  <Rotulo>{sessaoDetalhes.tipo === "CURRICULUM" ? "Plano Terapêutico" : "Avaliação"}</Rotulo>
+                  <div className="font-medium text-ink">
+                    {sessaoDetalhes.tipo === "CURRICULUM"
+                      ? sessaoDetalhes.curriculum?.nome
+                      : sessaoDetalhes.avaliacao?.nome || sessaoDetalhes.atividade?.nome}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Rotulo>Tipo</Rotulo>
+                  <div>
+                    <StatusPill tom={sessaoDetalhes.tipo === "AVALIACAO" ? "violet" : "info"}>
+                      {getTipoSessaoLabel(sessaoDetalhes)}
+                    </StatusPill>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Rotulo>Status</Rotulo>
+                  <div>
+                    <StatusPill tom={TOM_STATUS_SESSAO[sessaoDetalhes.status] ?? "neutral"} ponto>
+                      {traduzirStatus(sessaoDetalhes.status).label}
+                    </StatusPill>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Rotulo>Data e duração</Rotulo>
+                  <div className="tabular font-medium text-ink">
+                    {formatDateTime(sessaoDetalhes.iniciada_em)}
+                    <span className="text-ink-3">
+                      {" · "}
+                      {calcularDuracao(sessaoDetalhes.iniciada_em, sessaoDetalhes.finalizada_em)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resumo do Desempenho — plano terapêutico */}
+              {est && (
+                <div className="space-y-2">
+                  <Rotulo>Resumo do Desempenho</Rotulo>
+                  <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[linear-gradient(115deg,var(--kpi-blue-from)_0%,var(--kpi-lavender-to)_100%)] p-2 sm:grid-cols-4">
+                    <NumeroResumo valor={est.totalInstrucoes} rotulo="Instruções" apoio="na sessão" cor="text-brand" />
+                    <NumeroResumo valor={est.avancaram} rotulo="Avançaram" apoio="de fase" cor="text-success-ink" />
+                    <NumeroResumo valor={est.regrediram} rotulo="Regrediram" apoio="de fase" cor="text-danger-ink" />
+                    <NumeroResumo
+                      valor={`${est.percentAcerto}%`}
+                      rotulo="Acerto"
+                      apoio={`(${est.tentativasCorretas}/${est.totalTentativas})`}
+                      cor="text-violet-ink"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Resumo do Desempenho — avaliação */}
+              {estAv && sessaoDetalhes.respostas && (
+                <div className="space-y-2">
+                  <Rotulo>Resumo do Desempenho</Rotulo>
+                  <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[linear-gradient(115deg,var(--kpi-mint-from)_0%,var(--kpi-blue-to)_100%)] p-2 sm:grid-cols-4">
+                    <NumeroResumo valor={`${estAv.media}%`} rotulo="Média Geral" apoio="(pontuação)" cor="text-brand" />
+                    <NumeroResumo valor={estAv.respondidas} rotulo="Respondidas" apoio={`(de ${estAv.total})`} cor="text-success-ink" />
+                    <NumeroResumo valor={estAv.naoAplicavel} rotulo="N/A" apoio="(não aplicável)" cor="text-warning-ink" />
+                    <NumeroResumo valor={estAv.total} rotulo="Total" apoio="tarefas" cor="text-violet-ink" />
+                  </div>
+
+                  <div className="rounded-2xl bg-surface-muted p-4">
+                    <p className="mb-3 text-sm font-semibold text-ink">Distribuição de Pontuações</p>
+                    <div className="space-y-2">
+                      {[100, 75, 50, 25, 0, -1].map((pontuacao) => {
+                        const count = sessaoDetalhes.respostas!.filter((r: any) => r.pontuacao === pontuacao).length;
+                        const percentage = (count / sessaoDetalhes.respostas!.length) * 100;
+                        const cor =
+                          pontuacao === 100
+                            ? "bg-success"
+                            : pontuacao === 75
+                              ? "bg-brand"
+                              : pontuacao === 50 || pontuacao === 25
+                                ? "bg-warning"
+                                : pontuacao === 0
+                                  ? "bg-danger"
+                                  : "bg-ink-4";
+                        return (
+                          <div key={pontuacao} className="flex items-center gap-3">
+                            <span className="tabular w-12 text-xs font-medium text-ink-2">
+                              {pontuacao === -1 ? "N/A" : `${pontuacao}%`}
+                            </span>
+                            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface">
+                              <div className={`h-full rounded-full ${cor}`} style={{ width: `${percentage}%` }} />
+                            </div>
+                            <span className="tabular w-16 text-right text-xs text-ink-3">
+                              {count} ({percentage.toFixed(0)}%)
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Respostas das tarefas — avaliação */}
+              {sessaoDetalhes.tipo === "AVALIACAO" &&
+                sessaoDetalhes.respostas &&
+                sessaoDetalhes.respostas.length > 0 && (
+                  <div className="space-y-2">
+                    <Rotulo>Respostas das Tarefas</Rotulo>
+                    <ul className="space-y-2">
+                      {sessaoDetalhes.respostas.map((resposta: any) => (
+                        <li key={resposta.id} className="rounded-2xl bg-surface-muted p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="tabular grid size-7 shrink-0 place-items-center rounded-full bg-surface text-xs font-semibold text-ink-2">
+                              {resposta.tarefa.ordem}
+                            </span>
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                              <p className="text-sm font-medium text-ink">{resposta.tarefa.pergunta}</p>
+                              <StatusPill
+                                tom={
+                                  resposta.pontuacao === null
+                                    ? "neutral"
+                                    : resposta.pontuacao === -1
+                                      ? "warning"
+                                      : "info"
+                                }
+                              >
+                                {resposta.pontuacao === -1
+                                  ? "N/A"
+                                  : resposta.pontuacao !== null
+                                    ? `${resposta.pontuacao}%`
+                                    : "Não respondida"}
+                              </StatusPill>
+                              {resposta.observacao && (
+                                <p className="text-xs text-ink-3">Obs: {resposta.observacao}</p>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              {/* Instruções da sessão — plano terapêutico */}
+              {sessaoDetalhes.tipo === "CURRICULUM" &&
+                sessaoDetalhes.instrucoesSelecionadas &&
+                sessaoDetalhes.instrucoesSelecionadas.length > 0 && (
+                  <div className="space-y-2">
+                    <Rotulo>Instruções da Sessão</Rotulo>
+                    <div className="space-y-3">
+                      {sessaoDetalhes.atividadesClone?.map((clone) => {
+                        const instrucaoIdsDessaAtv = new Set(
+                          (sessaoDetalhes.instrucoesSelecionadas || [])
+                            .filter((s) => s.atividadeCloneId === clone.id)
+                            .map((s) => s.instrucaoId)
+                        );
+                        const instrucoes = clone.instrucoes.filter((i) => instrucaoIdsDessaAtv.has(i.id));
+                        if (instrucoes.length === 0) return null;
+                        const FASE_ORDER = ["LINHA_BASE", "INTERVENCAO", "MANUTENCAO", "GENERALIZACAO"];
+                        return (
+                          <div key={clone.id} className="overflow-hidden rounded-2xl bg-surface-muted">
+                            <p className="px-4 py-2.5 text-sm font-semibold text-ink">{clone.nome}</p>
+                            <ul className="divide-y divide-hairline border-t border-hairline bg-surface/70">
+                              {instrucoes.map((instrucao) => {
+                                const hist = sessaoDetalhes.historicoFasesSessao?.find(
+                                  (h) => h.instrucaoId === instrucao.id
+                                );
+                                const avsInstrucao = ((sessaoDetalhes.avaliacoes || []) as AvaliacaoCurriculum[])
+                                  .filter((av) => av.instrucaoId === instrucao.id)
+                                  .sort((a, b) => a.tentativa - b.tentativa);
+                                const ponts = (instrucao.pontuacoes || [])
+                                  .filter((p) => p.fase === instrucao.faseAtual)
+                                  .sort((a, b) => a.ordem - b.ordem);
+                                const corretas = avsInstrucao.filter((av) => isTentativaCorreta(av.nota, ponts)).length;
+                                const percentInstrucao =
+                                  avsInstrucao.length > 0 ? Math.round((corretas / avsInstrucao.length) * 100) : null;
+                                const avancou =
+                                  hist && FASE_ORDER.indexOf(hist.faseNova) > FASE_ORDER.indexOf(hist.faseAnterior);
+                                const regrediu =
+                                  hist && FASE_ORDER.indexOf(hist.faseNova) < FASE_ORDER.indexOf(hist.faseAnterior);
+                                const obs = avsInstrucao.find((av) => av.observacao)?.observacao;
+                                return (
+                                  <li key={instrucao.id} className="space-y-2 px-4 py-3">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                      <p className="flex-1 text-sm font-medium text-ink">{instrucao.texto}</p>
+                                      <div className="flex shrink-0 flex-wrap items-center gap-1">
+                                        {hist ? (
+                                          <>
+                                            <FasePill fase={hist.faseAnterior} />
+                                            <span className="text-xs text-ink-3">→</span>
+                                            <FasePill fase={hist.faseNova} />
+                                            {avancou && (
+                                              <span className="text-xs font-bold text-success-ink" aria-label="avançou">↑</span>
+                                            )}
+                                            {regrediu && (
+                                              <span className="text-xs font-bold text-danger-ink" aria-label="regrediu">↓</span>
+                                            )}
+                                          </>
+                                        ) : (
+                                          <FasePill fase={instrucao.faseAtual} />
+                                        )}
+                                      </div>
+                                    </div>
+                                    {avsInstrucao.length > 0 && (
+                                      <div className="flex flex-wrap items-center gap-1">
+                                        <span className="mr-1 text-xs text-ink-3">Tentativas:</span>
+                                        {avsInstrucao.map((av) => {
+                                          const sigla = ponts[av.nota]?.sigla ?? String(av.nota);
+                                          const isCorreto = isTentativaCorreta(av.nota, ponts);
+                                          return (
+                                            <span
+                                              key={av.id}
+                                              className={
+                                                isCorreto
+                                                  ? "inline-grid min-w-7 place-items-center rounded-full bg-success px-2 py-0.5 text-xs font-bold text-white"
+                                                  : "inline-grid min-w-7 place-items-center rounded-full border border-hairline bg-surface px-2 py-0.5 text-xs font-bold text-ink-2"
+                                              }
+                                            >
+                                              {sigla}
+                                            </span>
+                                          );
+                                        })}
+                                        {percentInstrucao !== null && (
+                                          <span className="ml-2 text-xs text-ink-3">{percentInstrucao}% acerto</span>
+                                        )}
+                                      </div>
+                                    )}
+                                    {obs && <p className="text-xs text-ink-3">Obs: {obs}</p>}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              {/* Observações gerais */}
+              {sessaoDetalhes.observacoes_gerais && (
+                <div className="space-y-2">
+                  <Rotulo>Observações Gerais</Rotulo>
+                  <p className="rounded-2xl bg-surface-muted p-4 text-sm whitespace-pre-wrap text-ink-2">
+                    {sessaoDetalhes.observacoes_gerais}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

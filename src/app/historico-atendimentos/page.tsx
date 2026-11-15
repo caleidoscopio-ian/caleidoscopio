@@ -10,7 +10,7 @@ import { RegistrarGlosaDialog } from "@/components/glosas/registrar-glosa-dialog
 import type { AgendamentoParaGlosa } from "@/components/glosas/registrar-glosa-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { FileDown, FileText } from "lucide-react";
+import { FileDown, FileText, ReceiptText } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { subDays, startOfDay, endOfDay } from "date-fns";
@@ -18,7 +18,7 @@ import type {
   HistoricoResponse, HistoricoResumo, AtendimentoHistorico, HistoricoFiltros,
 } from "@/types/historico-atendimento";
 import { StatusAgendamento } from "@/types/agendamento";
-import { PageHeader } from "@/components/kit";
+import { PageHeader, Panel } from "@/components/kit";
 
 const RESUMO_VAZIO: HistoricoResumo = {
   total_atendimentos: 0,
@@ -258,19 +258,19 @@ function HistoricoContent() {
         )}
 
         {/* Tabela */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Registros
-            </h2>
-            {!loading && total > 0 && (
-              <span className="text-xs text-muted-foreground">{total} registro(s) encontrado(s)</span>
-            )}
-          </div>
+        <Panel
+          icone={<ReceiptText />}
+          titulo="Registros"
+          subtitulo={
+            loading
+              ? "Atendimentos do período"
+              : `${total} registro(s) encontrado(s)`
+          }
+        >
           {loading ? (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 rounded" />
+                <Skeleton key={i} className="h-14 rounded-2xl" />
               ))}
             </div>
           ) : (
@@ -293,7 +293,7 @@ function HistoricoContent() {
               }
             />
           )}
-        </div>
+        </Panel>
       </div>
 
       {/* Dialog de glosa acionado pelo atalho */}
