@@ -145,13 +145,30 @@ export async function POST(request: NextRequest) {
         profissionalId: profissional.id,
         status: "EM_ANDAMENTO",
       },
+      include: {
+        avaliacao: { select: { nome: true, _count: { select: { tarefas: true } } } },
+        profissional: { select: { nome: true } },
+        _count: { select: { respostas: { where: { pontuacao: { not: null } } } } },
+      },
     });
 
+    // Devolve QUAL sessão bloqueia: a tela oferece continuar ou encerrar, em vez
+    // de só uma mensagem de erro que a pessoa não tem como resolver
     if (sessaoEmAndamento) {
       return NextResponse.json(
         {
+          success: false,
+          codigo: "SESSAO_EM_ANDAMENTO",
           error:
-            "Já existe uma sessão de avaliação em andamento com este paciente. Finalize a sessão atual antes de iniciar outra.",
+            "Já existe uma sessão de avaliação em andamento com este paciente. Continue ou encerre a sessão atual antes de iniciar outra.",
+          sessaoEmAndamento: {
+            id: sessaoEmAndamento.id,
+            nome: sessaoEmAndamento.avaliacao.nome,
+            iniciadaEm: sessaoEmAndamento.iniciada_em,
+            profissional: sessaoEmAndamento.profissional.nome,
+            feitas: sessaoEmAndamento._count.respostas,
+            total: sessaoEmAndamento.avaliacao._count.tarefas,
+          },
         },
         { status: 409 }
       );
@@ -434,6 +451,7 @@ export async function PUT(request: NextRequest) {
       pontuacao,
       observacao,
       finalizar,
+      cancelar,
       observacoes_gerais,
     } = body;
 
@@ -460,6 +478,24 @@ export async function PUT(request: NextRequest) {
         { error: "Sessão não encontrada ou não pertence a esta clínica" },
         { status: 404 }
       );
+    }
+
+    // Encerrar sem concluir: a sessão vira CANCELADA (fica no histórico, as
+    // respostas são preservadas). Só sessão em andamento pode ser encerrada.
+    if (cancelar) {
+      const { count } = await prisma.sessaoAvaliacao.updateMany({
+        where: { id: sessaoId, status: "EM_ANDAMENTO", paciente: { tenantId: user.tenant.id } },
+        data: { status: "CANCELADA", finalizada_em: new Date() },
+      });
+
+      if (count === 0) {
+        return NextResponse.json(
+          { success: false, error: "Esta sessão já foi finalizada ou encerrada" },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json({ success: true, message: "Sessão encerrada" });
     }
 
     // Se for para salvar resposta de uma tarefa

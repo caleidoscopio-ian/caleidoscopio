@@ -370,6 +370,32 @@ Reativar também roda `clonarAtividadesFaltantes`: o currículo pode ter mudado
 enquanto o plano estava fora, e o paciente volta com o histórico antigo **mais**
 o que entrou no currículo nesse meio tempo.
 
+## Sessão em andamento: dizer QUAL, e encerrar não é finalizar
+
+Iniciar sessão para um paciente que já tem uma aberta respondia só um 409 com
+texto, que a tela de Iniciar Sessão jogava numa faixa de erro no topo da
+página — fora da vista de quem clicou. Parecia que o botão não fazia nada.
+
+- **O bloqueio devolve a sessão que bloqueia.** `POST /api/sessoes-avaliacao`
+  responde 409 com `codigo: "SESSAO_EM_ANDAMENTO"` e `sessaoEmAndamento`
+  (id, nome, início, profissional, feitas/total). O plano é conferido **antes**
+  de abrir a seleção de instruções (`GET /api/sessoes-curriculum?status=EM_ANDAMENTO`)
+  e o `POST` continua devolvendo `existente: true` como rede de segurança.
+  A tela abre um modal com **Continuar** ou **Encerrar e iniciar nova**.
+- **Encerrar = `CANCELADA`, nunca `FINALIZADA`.** `/finalizar` do plano exige
+  todas as tentativas avaliadas e recalcula a evolução de fase — finalizar
+  uma sessão pela metade daria 400 ou, pior, contaria dado parcial. A
+  evolução lê só `FINALIZADA`, então a cancelada fica no histórico sem
+  efeito. Rotas: `PUT /api/sessoes-avaliacao` com `cancelar: true` e
+  `POST /api/sessoes-curriculum/cancelar`, ambas com `edit_sessions`.
+- **O update é condicional** (`updateMany` com `status: EM_ANDAMENTO`): duas
+  abas encerrando e finalizando ao mesmo tempo não rebaixam uma sessão que
+  acabou de ser finalizada. `count === 0` responde 409.
+
+Regras de bloqueio diferentes, mantidas como estavam: plano é por
+**paciente + plano**; avaliação é por **paciente + profissional** (qualquer
+avaliação).
+
 ## Tratamento de erro — `@/lib/erro-prisma`
 
 `console.error` solto num catch produz duas falhas: o usuário vê "Erro interno do

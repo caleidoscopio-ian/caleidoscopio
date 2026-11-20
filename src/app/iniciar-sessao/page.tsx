@@ -37,10 +37,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  XCircle,
 } from "lucide-react";
 import {
   AlertDialog,
-  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -53,6 +54,7 @@ import {
   Carregando,
   EstadoVazio,
   IconButton,
+  LinhaDado,
   PageHeader,
   Panel,
   PersonAvatar,
@@ -118,6 +120,32 @@ interface AvaliacaoAtribuida {
   id: string;
   atribuida_em: string;
   avaliacao: Avaliacao;
+}
+
+/**
+ * Sessão que impede iniciar outra: a de plano é por paciente + plano; a de
+ * avaliação, por paciente + profissional (regra das rotas POST).
+ */
+interface SessaoEmAndamento {
+  tipo: "curriculum" | "avaliacao";
+  id: string;
+  nome: string;
+  iniciadaEm: string;
+  profissional?: string | null;
+  /** Tentativas registradas (plano) ou tarefas respondidas (avaliação) */
+  feitas: number;
+  total?: number | null;
+  /** O plano/avaliação que a pessoa pediu para iniciar — retomado após encerrar */
+  iniciarDepois: string;
+}
+
+interface SessaoCurriculumListada {
+  id: string;
+  curriculumId: string;
+  iniciada_em: string;
+  curriculum?: { nome: string } | null;
+  profissional?: { nome: string } | null;
+  avaliacoes?: unknown[];
 }
 
 /** Pacientes por página na lista de seleção (o v2 usa 8). */
@@ -186,9 +214,9 @@ function IniciarSessaoPageContent() {
 
   // Erros e dialogs
   const [error, setError] = useState<string | null>(null);
-  const [sessaoExistenteDialog, setSessaoExistenteDialog] = useState(false);
-  const [sessaoExistenteId, setSessaoExistenteId] = useState<string | null>(null);
-  const [sessaoExistenteMensagem, setSessaoExistenteMensagem] = useState("");
+  const [emAndamento, setEmAndamento] = useState<SessaoEmAndamento | null>(null);
+  const [encerrando, setEncerrando] = useState(false);
+  const [erroModal, setErroModal] = useState<string | null>(null);
 
   const breadcrumbs = [
     { label: "Dashboard", href: "/dashboard" },
@@ -250,12 +278,53 @@ function IniciarSessaoPageContent() {
 
   // ========== Seleção de Instruções ==========
 
+  /**
+   * Sessão do plano já em andamento para este paciente. Conferido ANTES de
+   * abrir a seleção de instruções — senão a pessoa escolhe tudo e só no fim
+   * descobre que havia uma sessão aberta. Falha na consulta não trava: o POST
+   * confere de novo e devolve a sessão existente.
+   */
+  const buscarSessaoPlanoEmAndamento = async (
+    curriculumId: string
+  ): Promise<SessaoEmAndamento | null> => {
+    if (!user || !pacienteSelecionado) return null;
+    try {
+      const params = new URLSearchParams({ pacienteId: pacienteSelecionado, status: "EM_ANDAMENTO" });
+      const res = await fetch(`/api/sessoes-curriculum?${params.toString()}`, {
+        headers: { "X-User-Data": btoa(JSON.stringify(user)), "X-Auth-Token": user.token },
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) return null;
+      const sessao = (result.data as SessaoCurriculumListada[]).find((s) => s.curriculumId === curriculumId);
+      return sessao
+        ? {
+            tipo: "curriculum",
+            id: sessao.id,
+            nome: sessao.curriculum?.nome ?? "Plano terapêutico",
+            iniciadaEm: sessao.iniciada_em,
+            profissional: sessao.profissional?.nome,
+            feitas: sessao.avaliacoes?.length ?? 0,
+            iniciarDepois: curriculumId,
+          }
+        : null;
+    } catch {
+      return null;
+    }
+  };
+
   const abrirSelecaoInstrucoes = async (curriculumId: string) => {
     if (!user || !pacienteSelecionado) return;
     try {
       setLoadingInstrucoes(true);
       setError(null);
       setCurriculumParaIniciar(curriculumId);
+
+      const existente = await buscarSessaoPlanoEmAndamento(curriculumId);
+      if (existente) {
+        setEmAndamento(existente);
+        return;
+      }
+
       setDialogSelecaoOpen(true);
       setInstrucoesSelecionadas(new Set());
 
@@ -350,9 +419,16 @@ function IniciarSessaoPageContent() {
       setDialogSelecaoOpen(false);
 
       if (result.existente) {
-        setSessaoExistenteId(result.data.id);
-        setSessaoExistenteMensagem(result.message || "Já existe uma sessão em andamento.");
-        setSessaoExistenteDialog(true);
+        // Aberta por outra pessoa entre a conferência e o envio
+        setEmAndamento({
+          tipo: "curriculum",
+          id: result.data.id,
+          nome: result.data.curriculum?.nome ?? "Plano terapêutico",
+          iniciadaEm: result.data.iniciada_em,
+          profissional: result.data.profissional?.nome,
+          feitas: result.data.avaliacoes?.length ?? 0,
+          iniciarDepois: curriculumParaIniciar,
+        });
       } else {
         router.push(`/aplicar-curriculum/${result.data.id}`);
       }
@@ -380,12 +456,78 @@ function IniciarSessaoPageContent() {
         body: JSON.stringify({ pacienteId: pacienteSelecionado, avaliacaoId }),
       });
       const result = await res.json();
+      // Já existe avaliação aberta: antes isso virava uma faixa de erro no topo
+      // da página, fora da vista de quem clicou — parecia que nada acontecia
+      if (res.status === 409 && result.sessaoEmAndamento) {
+        setEmAndamento({ tipo: "avaliacao", ...result.sessaoEmAndamento, iniciarDepois: avaliacaoId });
+        return;
+      }
       if (!res.ok) throw new Error(result.error || "Erro ao iniciar avaliação");
       if (result.success) router.push(`/aplicar-avaliacao/${result.data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao iniciar avaliação");
     } finally {
       setIniciandoSessao(false);
+    }
+  };
+
+  // ========== Sessão em andamento ==========
+
+  const fecharEmAndamento = () => {
+    if (encerrando) return;
+    setEmAndamento(null);
+    setErroModal(null);
+  };
+
+  const continuarEmAndamento = () => {
+    if (!emAndamento) return;
+    const destino =
+      emAndamento.tipo === "avaliacao"
+        ? `/aplicar-avaliacao/${emAndamento.id}`
+        : `/aplicar-curriculum/${emAndamento.id}`;
+    setEmAndamento(null);
+    router.push(destino);
+  };
+
+  /** Encerra a sessão aberta (vira CANCELADA) e retoma o que a pessoa pediu. */
+  const encerrarEIniciarNova = async () => {
+    if (!emAndamento || !user) return;
+    const alvo = emAndamento;
+    try {
+      setEncerrando(true);
+      setErroModal(null);
+      const headers = {
+        "Content-Type": "application/json",
+        "X-User-Data": btoa(JSON.stringify(user)),
+        "X-Auth-Token": user.token,
+      };
+      const res =
+        alvo.tipo === "avaliacao"
+          ? await fetch("/api/sessoes-avaliacao", {
+              method: "PUT",
+              headers,
+              body: JSON.stringify({ sessaoId: alvo.id, cancelar: true }),
+            })
+          : await fetch("/api/sessoes-curriculum/cancelar", {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ sessaoId: alvo.id }),
+            });
+      const result = await res.json();
+
+      // 409 = já foi finalizada/encerrada em outro lugar: não bloqueia mais
+      if (!res.ok && res.status !== 409) {
+        setErroModal(result.error || "Não foi possível encerrar a sessão");
+        return;
+      }
+
+      setEmAndamento(null);
+      if (alvo.tipo === "avaliacao") await iniciarAvaliacao(alvo.iniciarDepois);
+      else await abrirSelecaoInstrucoes(alvo.iniciarDepois);
+    } catch {
+      setErroModal("Não foi possível encerrar a sessão. Verifique a conexão e tente novamente.");
+    } finally {
+      setEncerrando(false);
     }
   };
 
@@ -863,31 +1005,85 @@ function IniciarSessaoPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Alert Dialog - Sessão Existente */}
-      <AlertDialog open={sessaoExistenteDialog} onOpenChange={setSessaoExistenteDialog}>
+      {/* Alert Dialog - Sessão/avaliação já em andamento: continuar ou encerrar */}
+      <AlertDialog open={emAndamento !== null} onOpenChange={(aberto) => !aberto && fecharEmAndamento()}>
         <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-brand" />
-              Sessão em Andamento
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-base pt-2">
-              {sessaoExistenteMensagem}
-            </AlertDialogDescription>
-            <div className="pt-2 text-sm text-muted-foreground">
-              Você será direcionado para continuar esta sessão de onde parou.
-            </div>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction
-              onClick={() => {
-                setSessaoExistenteDialog(false);
-                if (sessaoExistenteId) router.push(`/aplicar-curriculum/${sessaoExistenteId}`);
-              }}
-            >
-              Continuar Sessão
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          {emAndamento && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <Clock className="size-5 text-warning-ink" />
+                  {emAndamento.tipo === "avaliacao" ? "Avaliação em andamento" : "Sessão em andamento"}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {pacienteAtual?.name ?? "Este paciente"} já tem{" "}
+                  {emAndamento.tipo === "avaliacao" ? "uma avaliação" : "uma sessão deste plano"} em
+                  andamento. Continue de onde parou ou encerre para iniciar uma nova.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <div className="rounded-2xl bg-surface-muted px-4 py-3">
+                <LinhaDado rotulo={emAndamento.tipo === "avaliacao" ? "Avaliação" : "Plano"}>
+                  {emAndamento.nome}
+                </LinhaDado>
+                <LinhaDado rotulo="Iniciada em">
+                  <span className="tabular">
+                    {new Date(emAndamento.iniciadaEm).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </LinhaDado>
+                {emAndamento.profissional && (
+                  <LinhaDado rotulo="Profissional">{emAndamento.profissional}</LinhaDado>
+                )}
+                <LinhaDado rotulo="Progresso">
+                  <span className="tabular">
+                    {emAndamento.tipo === "avaliacao"
+                      ? `${emAndamento.feitas} de ${emAndamento.total ?? 0} tarefas respondidas`
+                      : `${emAndamento.feitas} tentativa(s) registrada(s)`}
+                  </span>
+                </LinhaDado>
+              </div>
+
+              <p className="text-xs text-ink-3">
+                Encerrar não apaga nada: a sessão fica no Histórico de Sessões como
+                Cancelada
+                {emAndamento.tipo === "curriculum" ? " e não conta para a evolução de fase" : ""}.
+              </p>
+
+              {erroModal && (
+                <p role="alert" className="flex items-center gap-2 rounded-2xl bg-danger-soft px-4 py-3 text-sm text-danger-ink">
+                  <AlertCircle className="size-4 shrink-0" />
+                  {erroModal}
+                </p>
+              )}
+
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={encerrando}>Voltar</AlertDialogCancel>
+                <ActionButton variant="danger" onClick={encerrarEIniciarNova} disabled={encerrando}>
+                  {encerrando ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Encerrando...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle />
+                      Encerrar e iniciar nova
+                    </>
+                  )}
+                </ActionButton>
+                <ActionButton onClick={continuarEmAndamento} disabled={encerrando}>
+                  <Play />
+                  Continuar
+                </ActionButton>
+              </AlertDialogFooter>
+            </>
+          )}
         </AlertDialogContent>
       </AlertDialog>
     </MainLayout>

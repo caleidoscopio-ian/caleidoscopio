@@ -424,6 +424,21 @@ o terapeuta está com a criança na frente e precisa ver **onde está** sem rola
 - botão de resposta que vale como acerto/erro é verde/vermelho **pela sigla**,
   nunca por posição — o destaque não pode contradizer o cálculo.
 
+**Avaliação longa se aplica por nível › atividade** (AVA-01). O VB-MAPP tem
+150 tarefas; uma grade de "Tarefa 1…150" não orienta ninguém. A lógica mora
+em `@/lib/filtro-tarefas-avaliacao` (funções puras), não na tela:
+
+- a "Atividade" da tela é a **habilidade** da avaliação (OUVINTE, MANDO), e
+  depende do Nível — as opções saem das tarefas, não do cadastro (o VB-MAPP
+  tem 16 habilidades cadastradas e 13 em uso);
+- dimensão que a avaliação não usa **some** (Socially Savvy não tem nível);
+- a numeração e o Anterior/Próxima são **dentro do filtro**; no fim da
+  atividade, o Próxima vira "Próxima: TATO" e segue para o grupo seguinte —
+  percorrer só com Próxima visita cada tarefa uma vez;
+- a tela abre no **primeiro grupo com tarefa sem resposta**;
+- "Finalizar" fica sempre visível sob a lista; o progresso mostra a seleção e
+  o total.
+
 ### Lista longa: paginação no rodapé do painel
 
 "1 a 8 de 48" à esquerda em `text-ink-3`, `IconButton` ‹ › com "1 / 6" à
