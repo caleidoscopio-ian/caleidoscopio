@@ -55,6 +55,7 @@ interface Professional {
   ufRegistro?: string | null;
   roomAccess: string[];
   filialId?: string | null;
+  usuarioId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

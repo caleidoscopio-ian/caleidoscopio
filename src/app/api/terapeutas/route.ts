@@ -10,6 +10,8 @@ import {
 import { TipoVinculoProfissional, EspecialidadeClinica, FuncaoAdministrativa, ConselhoProfissional } from "@prisma/client";
 import { resolverProfissionalIdsDaFilial } from "@/lib/filial-profissionais";
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { propagarIdentidadeAoManager } from "@/lib/sincronizar-usuario-manager";
+import { normalizarEmail, normalizarEmailOpcional } from "@/lib/email";
 
 // Deriva o texto legado de "especialidade" a partir dos campos estruturados
 function derivarEspecialidadeLegado(
@@ -315,7 +317,7 @@ export async function POST(request: NextRequest) {
       name,
       cpf,
       phone,
-      email,
+      email: emailBruto,
       roomAccess,
       filialId,
       tipoVinculo,
@@ -327,6 +329,8 @@ export async function POST(request: NextRequest) {
       numeroRegistro,
       ufRegistro,
     } = body;
+    // E-mail sempre em minúsculas (mesmo formato do login no Manager)
+    const email = typeof emailBruto === "string" ? normalizarEmail(emailBruto) : emailBruto;
 
     // Validações básicas
     if (!name) {
@@ -375,7 +379,7 @@ export async function POST(request: NextRequest) {
       const existingEmail = await prisma.profissional.findFirst({
         where: {
           tenantId: user.tenant.id,
-          email: email,
+          email: { equals: email, mode: "insensitive" },
           ativo: true,
         },
       });
@@ -524,7 +528,7 @@ export async function PUT(request: NextRequest) {
       name,
       cpf,
       phone,
-      email,
+      email: emailBruto,
       roomAccess,
       tipoVinculo,
       especialidadeClinica,
@@ -535,6 +539,8 @@ export async function PUT(request: NextRequest) {
       numeroRegistro,
       ufRegistro,
     } = body;
+    // E-mail sempre em minúsculas (mesmo formato do login no Manager)
+    const email = typeof emailBruto === "string" ? normalizarEmail(emailBruto) : emailBruto;
 
     // Validações básicas
     if (!id || !name) {
@@ -580,11 +586,11 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar se email já existe em outro profissional da mesma clínica
-    if (email && email !== existingProfessional.email) {
+    if (email && email !== normalizarEmailOpcional(existingProfessional.email)) {
       const duplicateEmail = await prisma.profissional.findFirst({
         where: {
           tenantId: user.tenant.id,
-          email: email,
+          email: { equals: email, mode: "insensitive" },
           ativo: true,
           id: { not: id },
         },
@@ -596,6 +602,50 @@ export async function PUT(request: NextRequest) {
           { status: 409 }
         );
       }
+    }
+
+    // Profissional com login vinculado: e-mail e nome vivem no Manager (fonte da
+    // verdade). Grava lá PRIMEIRO; se o Manager recusar, nada é salvo aqui.
+    const emailInformado = email;
+    let emailFinal = emailInformado;
+    if (existingProfessional.usuarioId) {
+      const emailMudou =
+        emailInformado !== undefined &&
+        (emailInformado || null) !== normalizarEmailOpcional(existingProfessional.email);
+      const nomeMudou = name !== existingProfessional.nome;
+
+      if (emailMudou) {
+        if (!emailInformado) {
+          return NextResponse.json(
+            { error: "O e-mail de login não pode ficar em branco" },
+            { status: 400 }
+          );
+        }
+        // Trocar o e-mail troca a credencial de acesso — exige gestão de usuários
+        if (!await hasPermission(user, "edit_usuarios")) {
+          return NextResponse.json(
+            { error: "Sem permissão para alterar o e-mail de login deste usuário" },
+            { status: 403 }
+          );
+        }
+      }
+
+      const propagacao = await propagarIdentidadeAoManager(
+        existingProfessional.usuarioId,
+        {
+          ...(emailMudou ? { email: emailInformado } : {}),
+          ...(nomeMudou ? { name } : {}),
+        },
+        user.token
+      );
+      if (!propagacao.ok) {
+        return NextResponse.json(
+          { error: propagacao.error },
+          { status: propagacao.status }
+        );
+      }
+      // Grava localmente o valor exatamente como ficou no Manager
+      if (emailMudou && propagacao.usuario) emailFinal = propagacao.usuario.email;
     }
 
     console.log(`✏️ Atualizando terapeuta "${name}" na clínica "${user.tenant.name}"`);
@@ -645,7 +695,7 @@ export async function PUT(request: NextRequest) {
         nome: name,
         cpf: cpf,
         telefone: phone,
-        email: email,
+        email: emailFinal,
         ...(tipoVinculo !== undefined ? { tipo_vinculo: tipoVinculo } : {}),
         ...(especialidadeClinica !== undefined ? { especialidade_clinica: especialidadeClinica || null } : {}),
         ...(customizada ? { especialidadeCustomizadaId: customizada.id } : {}),

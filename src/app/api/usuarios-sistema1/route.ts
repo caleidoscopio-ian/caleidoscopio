@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
-import { managerClient } from "@/lib/manager-client";
 import { prisma } from "@/lib/prisma";
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { sincronizarEmailsDoTenant } from "@/lib/sincronizar-usuario-manager";
 
 // GET - Buscar usuários do Sistema 1 com informações de vínculo do Sistema 2
 export async function GET(request: NextRequest) {
@@ -43,6 +43,10 @@ export async function GET(request: NextRequest) {
     console.log(
       `🔍 Listando profissionais do Sistema 2 para tenant: ${user.tenant.id}`
     );
+
+    // O e-mail exibido tem de ser o do login (Manager). Realinha a cópia local
+    // antes de listar; se o Manager estiver fora, segue com a cópia local.
+    await sincronizarEmailsDoTenant(user.tenant.id, user.token);
 
     // Buscar todos os profissionais do Sistema 2
     const profissionais = await prisma.profissional.findMany({

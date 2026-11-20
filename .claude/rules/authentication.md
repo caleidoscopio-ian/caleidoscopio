@@ -116,3 +116,42 @@ if (!await hasPermission(user, 'manage_rooms')) { ... } // autorizar ação
 
 No frontend, o `isAdmin` do `FilialProvider`/`useFilial` vem de `/api/me/filial`
 (campo `isAdmin`, calculado pelo RBAC) — não do `user.role` do SSO.
+
+## Identidade no servidor vem do token, nunca do corpo
+
+`POST /api/auth/set-cookie` recebe **só o token** e obtém usuário, clínica e
+perfil via `managerClient.getSSOTokenUser(token)`. Antes ele aceitava
+`userId`/`tenantId`/`ssoRole` do navegador sem validar e rodava o bootstrap
+RBAC com eles — qualquer um criava `UsuarioRole` + profissional para um id
+arbitrário, com o perfil que escolhesse. Rota que precisa saber **quem é** o
+usuário fora do `getAuthenticatedUser` usa `getSSOTokenUser`.
+
+## Identidade do usuário (e-mail, nome) — o Manager é a fonte da verdade
+
+O Sistema 1 autentica, então **e-mail e nome valem o que está no Manager**.
+`profissional.email` e `profissional.nome` são cópias locais. Cadastro e edição
+continuam no App, mas toda alteração passa pelo Manager primeiro
+(`@/lib/sincronizar-usuario-manager`):
+
+| Direção | Quando | O que faz |
+|---|---|---|
+| App → Manager | `PUT /api/terapeutas` e `PUT /api/terapeutas/[id]` | `propagarIdentidadeAoManager` grava no Manager **antes** do banco local; se o Manager recusar (e-mail em uso → 409), nada é salvo |
+| Manager → App | login (`/api/auth/set-cookie`) e `GET /api/usuarios-sistema1` | `sincronizarEmailsDoTenant` realinha **só o e-mail** local pelo Manager |
+
+- **Só o e-mail volta do Manager.** O e-mail do Manager é, por definição, o que
+  funciona no login. O nome é editado no App; realinhá-lo pela leitura
+  desfaria a edição (havia 1 caso assim quando a regra entrou).
+- **Trocar o e-mail de login exige `edit_usuarios`**, além do `edit_professionals`
+  da ficha: muda a credencial de acesso. Profissional sem `usuarioId` (sem
+  login) continua com e-mail só local.
+- **E-mail sempre minúsculo.** Todo ponto que recebe e-mail normaliza com
+  `normalizarEmail` (`@/lib/email`, existe nos dois projetos) antes de gravar.
+  As **buscas** (login, validate-access, unicidade) usam `filtroEmail` no
+  Manager, que ignora a caixa, para não travar quem ainda tem registro antigo
+  com maiúsculas. No App, `ssoLogin` normaliza antes de enviar.
+- Rotas SSO do Manager: `PUT /api/users/[id]/update-with-sso` (email/nome, grava
+  `AuditLog`) e `GET /api/users/list-with-sso` (usuários da clínica do token —
+  nunca de um `tenantId` vindo da requisição). O `GET /api/users` do Manager
+  exige cookie de sessão do próprio Manager e não serve ao App.
+- Falha do Manager na **leitura** nunca derruba tela nem login (segue com a
+  cópia local); na **escrita** bloqueia, com 502.

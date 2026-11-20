@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthenticatedUser, hasPermission } from '@/lib/auth/server'
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { propagarIdentidadeAoManager } from "@/lib/sincronizar-usuario-manager";
+import { normalizarEmailOpcional } from "@/lib/email";
 
 export async function GET(
   request: NextRequest,
@@ -100,13 +102,42 @@ export async function PUT(
       }
     }
 
+    // Profissional com login vinculado: e-mail e nome vivem no Manager (fonte da
+    // verdade). Grava lá PRIMEIRO; se o Manager recusar, nada é salvo aqui.
+    // E-mail sempre em minúsculas (mesmo formato do login no Manager)
+    let emailFinal: string | null = normalizarEmailOpcional(email)
+    if (existing.usuarioId) {
+      const emailMudou = emailFinal !== normalizarEmailOpcional(existing.email)
+      const nomeMudou = name !== existing.nome
+
+      if (emailMudou) {
+        if (!emailFinal) {
+          return NextResponse.json({ success: false, error: 'O e-mail de login não pode ficar em branco' }, { status: 400 })
+        }
+        // Trocar o e-mail troca a credencial de acesso — exige gestão de usuários
+        if (!await hasPermission(user, 'edit_usuarios')) {
+          return NextResponse.json({ success: false, error: 'Sem permissão para alterar o e-mail de login deste usuário' }, { status: 403 })
+        }
+      }
+
+      const propagacao = await propagarIdentidadeAoManager(
+        existing.usuarioId,
+        { ...(emailMudou && emailFinal ? { email: emailFinal } : {}), ...(nomeMudou ? { name } : {}) },
+        user.token
+      )
+      if (!propagacao.ok) {
+        return NextResponse.json({ success: false, error: propagacao.error }, { status: propagacao.status })
+      }
+      if (emailMudou && propagacao.usuario) emailFinal = propagacao.usuario.email
+    }
+
     const updated = await prisma.profissional.update({
       where: { id },
       data: {
         nome: name,
         cpf: cpf || null,
         telefone: phone || null,
-        email: email || null,
+        email: emailFinal,
         especialidade: specialty,
         registro_profissional: professionalRegistration || null,
         salas_acesso: roomAccess || [],

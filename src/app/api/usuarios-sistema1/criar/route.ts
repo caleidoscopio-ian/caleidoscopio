@@ -3,6 +3,7 @@ import { getAuthenticatedUser, hasPermission } from "@/lib/auth/server";
 import { managerClient } from "@/lib/manager-client";
 import { prisma } from "@/lib/prisma";
 import { registrarErroApi } from "@/lib/erro-prisma";
+import { normalizarEmail } from "@/lib/email";
 
 // POST - Criar usuário no Sistema 1 e profissional vinculado no Sistema 2
 export async function POST(request: NextRequest) {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       // Dados do usuário (Sistema 1)
-      email,
+      email: emailBruto,
       name,
       password,
       role,
@@ -52,6 +53,8 @@ export async function POST(request: NextRequest) {
       telefone,
       salas_acesso,
     } = body;
+    // E-mail de login sempre em minúsculas — vale para o Manager e para a cópia local
+    const email = typeof emailBruto === "string" ? normalizarEmail(emailBruto) : emailBruto;
 
     // Validações
     if (!email || !name || !password) {

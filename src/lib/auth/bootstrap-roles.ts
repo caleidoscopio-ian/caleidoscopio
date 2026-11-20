@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
+import { normalizarEmail } from '@/lib/email'
 
 // ─── Mapa SSO role → role local ──────────────────────────────────────────────
 
@@ -306,7 +307,7 @@ async function ensureProfissional(
   }
 
   const nome = userInfo?.name || 'Usuário'
-  const email = userInfo?.email || undefined
+  const email = userInfo?.email ? normalizarEmail(userInfo.email) : undefined
   const normalizedRole = ssoRole.toUpperCase()
   const especialidade = especialidadeMap[normalizedRole] || 'Profissional'
   const tipoVinculo = tipoVinculoMap[normalizedRole] || 'PROFISSIONAL_CLINICO'

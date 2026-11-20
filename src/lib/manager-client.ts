@@ -3,6 +3,7 @@
 // Seguindo protocolo REAL conforme análise do Sistema 1
 
 import { registrarExpiracao } from "@/lib/sessao-token";
+import { normalizarEmail } from "@/lib/email";
 
 // URL base do Sistema 1 (Manager)
 const MANAGER_API_URL =
@@ -97,6 +98,22 @@ interface ValidateTokenResponse {
     };
   };
   error?: string;
+}
+
+// Dados de identidade de um usuário no Sistema 1 (fonte da verdade)
+export interface UsuarioManager {
+  id: string;
+  email: string;
+  name: string;
+  isActive: boolean;
+}
+
+// Erro de chamada ao Sistema 1 que preserva o status HTTP (ex: 409 e-mail em uso)
+export class ManagerRequestError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "ManagerRequestError";
+  }
 }
 
 class ManagerClient {
@@ -202,6 +219,31 @@ class ManagerClient {
   }
 
   // Validar token SSO existente (conforme protocolo real)
+  // Valida o token SSO no Sistema 1 e devolve o usuário DONO do token.
+  // Usar sempre que o servidor precisar de identidade confiável — nunca os
+  // dados de usuário enviados pelo navegador. Retorna null se inválido.
+  async getSSOTokenUser(
+    token: string
+  ): Promise<NonNullable<ValidateTokenResponse["user"]> | null> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/products/sso/${this.productSlug}?token=${encodeURIComponent(token)}`,
+        {
+          ...DEFAULT_FETCH_OPTIONS,
+        }
+      );
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data: ValidateTokenResponse = await response.json();
+      return data.valid === true && data.user ? data.user : null;
+    } catch {
+      return null;
+    }
+  }
+
   async validateSSOToken(token: string): Promise<boolean> {
     try {
       const response = await fetch(
@@ -223,7 +265,10 @@ class ManagerClient {
   }
 
   // Processo completo SSO conforme protocolo REAL do Sistema 1
-  async ssoLogin(credentials: LoginCredentials) {
+  async ssoLogin(rawCredentials: LoginCredentials) {
+    // E-mail de login é sempre minúsculo — "Ana@Clinica.com" entra igual
+    const credentials = { ...rawCredentials, email: normalizarEmail(rawCredentials.email) };
+
     // ETAPA 1: Autenticar no Sistema Manager
     const loginResult = await this.authenticateUser(credentials);
     if (!loginResult?.success || !loginResult?.user) {
@@ -317,7 +362,7 @@ class ManagerClient {
       {
         ...DEFAULT_FETCH_OPTIONS,
         method: "POST",
-        body: JSON.stringify(userData),
+        body: JSON.stringify({ ...userData, email: normalizarEmail(userData.email) }),
       }
     );
 
@@ -388,6 +433,56 @@ class ManagerClient {
     }
 
     return data;
+  }
+
+  // Atualizar dados de identidade (email/nome) no Sistema 1 — fonte da verdade.
+  // Quem chama grava aqui primeiro e só depois na cópia local (profissional).
+  async updateUser(
+    userId: string,
+    data: { email?: string; name?: string },
+    ssoToken: string
+  ): Promise<UsuarioManager> {
+    const response = await fetch(
+      `${this.baseUrl}/api/users/${userId}/update-with-sso?token=${ssoToken}`,
+      {
+        ...DEFAULT_FETCH_OPTIONS,
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
+
+    const body = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new ManagerRequestError(
+        body.error || "Erro ao atualizar usuário no Sistema 1",
+        response.status
+      );
+    }
+
+    return body.user as UsuarioManager;
+  }
+
+  // Listar os usuários da clínica de quem chama (dados de identidade do Sistema 1)
+  async listUsers(ssoToken: string): Promise<UsuarioManager[]> {
+    const response = await fetch(
+      `${this.baseUrl}/api/users/list-with-sso?token=${ssoToken}`,
+      {
+        ...DEFAULT_FETCH_OPTIONS,
+        method: "GET",
+      }
+    );
+
+    const body = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new ManagerRequestError(
+        body.error || "Erro ao listar usuários do Sistema 1",
+        response.status
+      );
+    }
+
+    return (body.users ?? []) as UsuarioManager[];
   }
 
   // Limpar sessão (usar no logout) - apenas placeholder, cookies são gerenciados automaticamente

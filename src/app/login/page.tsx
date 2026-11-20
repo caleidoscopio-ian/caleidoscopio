@@ -89,14 +89,8 @@ export default function LoginPage() {
       const cookieResponse = await fetch("/api/auth/set-cookie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: ssoResult.token,
-          userId: ssoResult.user.id,
-          tenantId: ssoResult.tenant.id,
-          ssoRole: ssoResult.user.role,
-          userName: ssoResult.user.name,
-          userEmail: ssoResult.user.email,
-        }),
+        // Só o token: o servidor obtém a identidade validando-o no Manager
+        body: JSON.stringify({ token: ssoResult.token }),
       });
 
       if (!cookieResponse.ok) {

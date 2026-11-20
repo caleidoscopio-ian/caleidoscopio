@@ -18,6 +18,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -91,6 +92,7 @@ interface Professional {
   conselho?: string | null
   numeroRegistro?: string | null
   ufRegistro?: string | null
+  usuarioId?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -425,6 +427,11 @@ export function EditarTerapeutaForm({ professional, onSuccess }: EditarTerapeuta
                           {...field}
                         />
                       </FormControl>
+                      {professional.usuarioId && (
+                        <FormDescription>
+                          Este é o e-mail de login do usuário. Alterá-lo muda o acesso ao sistema.
+                        </FormDescription>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
