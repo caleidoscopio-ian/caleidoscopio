@@ -267,7 +267,7 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="qtd_alvos_sessao">Quantidade de Instruções</Label>
+              <Label htmlFor="qtd_alvos_sessao">Quantidade de Alvo</Label>
               <Input
                 id="qtd_alvos_sessao"
                 type="number"
@@ -285,7 +285,7 @@ export function AbaGeral({ atividadeId, onSave }: AbaGeralProps) {
 
             <div className="grid gap-2">
               <Label htmlFor="qtd_tentativas_alvo">
-                Quantidade de Tentativas por Instrução
+                Quantidade de Tentativas por Alvo
               </Label>
               <Input
                 id="qtd_tentativas_alvo"

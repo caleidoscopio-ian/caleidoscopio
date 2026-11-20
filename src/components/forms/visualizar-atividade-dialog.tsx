@@ -180,7 +180,7 @@ export function VisualizarAtividadeDialog({ atividade }: VisualizarAtividadeDial
                             <span className="text-sm font-medium ml-2">{pontuacao.sigla}</span>
                           </div>
                           <div>
-                            <span className="text-xs text-muted-foreground">Grau:</span>
+                            <span className="text-xs text-muted-foreground">Grau de Intrusividade:</span>
                             <span className="text-sm font-medium ml-2">{pontuacao.grau}</span>
                           </div>
                         </div>

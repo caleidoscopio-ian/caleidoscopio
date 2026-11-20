@@ -226,7 +226,7 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
                   <TableRow>
                     <TableHead className="w-20">Ordem</TableHead>
                     <TableHead>Sigla</TableHead>
-                    <TableHead>Grau</TableHead>
+                    <TableHead>Grau de Intrusividade</TableHead>
                     <TableHead>Passo de Dicas</TableHead>
                     <TableHead className="w-24 text-right">Ações</TableHead>
                   </TableRow>
@@ -348,7 +348,7 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
 
             <div className="grid gap-2">
               <Label htmlFor="grau">
-                Grau <span className="text-red-500">*</span>
+                Grau de Intrusividade <span className="text-red-500">*</span>
               </Label>
               <Select
                 value={formData.grau}
@@ -357,7 +357,7 @@ export function AbaPontuacao({ atividadeId, onSave }: AbaPontuacaoProps) {
                 }
               >
                 <SelectTrigger id="grau">
-                  <SelectValue placeholder="Selecione o grau" />
+                  <SelectValue placeholder="Selecione o grau de intrusividade" />
                 </SelectTrigger>
                 <SelectContent>
                   {GRAUS.map((grau) => (

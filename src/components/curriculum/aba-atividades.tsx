@@ -2,12 +2,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -63,6 +64,12 @@ interface AbaAtividadesProps {
   onSave: () => void;
 }
 
+// O Select do Radix não aceita value vazio — sentinela para "sem filtro"
+const TODOS = "__todos__";
+
+const ordenarPtBr = (valores: Iterable<string>) =>
+  [...new Set(valores)].sort((a, b) => a.localeCompare(b, "pt-BR"));
+
 export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
   const { user } = useAuth();
   const [atividadesDisponiveis, setAtividadesDisponiveis] = useState<
@@ -76,6 +83,67 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
   const [saving, setSaving] = useState(false);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [atividadeParaAdicionar, setAtividadeParaAdicionar] = useState("");
+  const [filtroProtocolo, setFiltroProtocolo] = useState(TODOS);
+  const [filtroHabilidade, setFiltroHabilidade] = useState(TODOS);
+
+  // Só o que ainda não está no plano — e as opções dos filtros saem daqui,
+  // para nunca oferecer um protocolo/habilidade que resulte em lista vazia
+  const atividadesNaoAdicionadas = useMemo(
+    () =>
+      atividadesDisponiveis.filter(
+        (a) => !atividadesSelecionadas.some((s) => s.atividadeId === a.id)
+      ),
+    [atividadesDisponiveis, atividadesSelecionadas]
+  );
+
+  const opcoesProtocolo = useMemo(
+    () =>
+      ordenarPtBr(
+        atividadesNaoAdicionadas.flatMap((a) => (a.protocolo ? [a.protocolo] : []))
+      ),
+    [atividadesNaoAdicionadas]
+  );
+
+  const doProtocolo = useMemo(
+    () =>
+      filtroProtocolo === TODOS
+        ? atividadesNaoAdicionadas
+        : atividadesNaoAdicionadas.filter((a) => a.protocolo === filtroProtocolo),
+    [atividadesNaoAdicionadas, filtroProtocolo]
+  );
+
+  // Habilidade depende do protocolo ("Escrita" existe em mais de um)
+  const opcoesHabilidade = useMemo(
+    () => ordenarPtBr(doProtocolo.flatMap((a) => (a.habilidade ? [a.habilidade] : []))),
+    [doProtocolo]
+  );
+
+  const atividadesFiltradas = useMemo(
+    () =>
+      filtroHabilidade === TODOS
+        ? doProtocolo
+        : doProtocolo.filter((a) => a.habilidade === filtroHabilidade),
+    [doProtocolo, filtroHabilidade]
+  );
+
+  const filtroAtivo = filtroProtocolo !== TODOS || filtroHabilidade !== TODOS;
+
+  // Filtro aplica na hora: escolha que deixou de valer é descartada, para a
+  // tela nunca mostrar um valor selecionado que a lista não contém
+  useEffect(() => {
+    if (filtroHabilidade !== TODOS && !opcoesHabilidade.includes(filtroHabilidade)) {
+      setFiltroHabilidade(TODOS);
+    }
+  }, [opcoesHabilidade, filtroHabilidade]);
+
+  useEffect(() => {
+    if (
+      atividadeParaAdicionar &&
+      !atividadesFiltradas.some((a) => a.id === atividadeParaAdicionar)
+    ) {
+      setAtividadeParaAdicionar("");
+    }
+  }, [atividadesFiltradas, atividadeParaAdicionar]);
 
   useEffect(() => {
     if (curriculumId) {
@@ -377,30 +445,72 @@ export function AbaAtividades({ curriculumId, onSave }: AbaAtividadesProps) {
               Selecione uma atividade para adicionar ao plano
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Select
-              value={atividadeParaAdicionar}
-              onValueChange={setAtividadeParaAdicionar}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma atividade" />
-              </SelectTrigger>
-              <SelectContent>
-                {atividadesDisponiveis
-                  .filter(
-                    (a) =>
-                      !atividadesSelecionadas.some(
-                        (s) => s.atividadeId === a.id
-                      )
-                  )
-                  .map((atividade) => (
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="filtro-protocolo">Protocolo</Label>
+                <Select value={filtroProtocolo} onValueChange={setFiltroProtocolo}>
+                  <SelectTrigger id="filtro-protocolo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={TODOS}>Todos os protocolos</SelectItem>
+                    {opcoesProtocolo.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="filtro-habilidade">Habilidade</Label>
+                <Select value={filtroHabilidade} onValueChange={setFiltroHabilidade}>
+                  <SelectTrigger id="filtro-habilidade">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={TODOS}>Todas as habilidades</SelectItem>
+                    {opcoesHabilidade.map((h) => (
+                      <SelectItem key={h} value={h}>
+                        {h}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <p className="text-xs text-ink-3" aria-live="polite">
+              {atividadesNaoAdicionadas.length === 0
+                ? "Todas as atividades da clínica já estão neste plano"
+                : filtroAtivo
+                  ? `Exibindo ${atividadesFiltradas.length} de ${atividadesNaoAdicionadas.length} atividades disponíveis`
+                  : `Exibindo todas as ${atividadesNaoAdicionadas.length} atividades disponíveis`}
+            </p>
+
+            <div className="grid gap-2">
+              <Label htmlFor="atividade-adicionar">Atividade</Label>
+              <Select
+                value={atividadeParaAdicionar}
+                onValueChange={setAtividadeParaAdicionar}
+                disabled={atividadesFiltradas.length === 0}
+              >
+                <SelectTrigger id="atividade-adicionar">
+                  <SelectValue placeholder="Selecione uma atividade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {atividadesFiltradas.map((atividade) => (
                     <SelectItem key={atividade.id} value={atividade.id}>
                       {atividade.nome}
+                      {atividade.habilidade && ` · ${atividade.habilidade}`}
                       {atividade.protocolo && ` (${atividade.protocolo})`}
                     </SelectItem>
                   ))}
-              </SelectContent>
-            </Select>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>

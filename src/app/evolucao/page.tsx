@@ -761,7 +761,7 @@ function EvolucaoPageContent() {
 
   const salvarPontuacaoLocal = () => {
     if (!pontuacaoForm.sigla || !pontuacaoForm.grau) {
-      alert("Sigla e grau são obrigatórios");
+      alert("Sigla e grau de intrusividade são obrigatórios");
       return;
     }
 
@@ -1768,7 +1768,7 @@ function EvolucaoPageContent() {
                         <TableRow>
                           <TableHead className="w-16">#</TableHead>
                           <TableHead>Sigla</TableHead>
-                          <TableHead>Grau</TableHead>
+                          <TableHead>Grau de Intrusividade</TableHead>
                           <TableHead className="w-24 text-right">
                             Ações
                           </TableHead>
@@ -1912,7 +1912,7 @@ function EvolucaoPageContent() {
             </div>
 
             <div className="space-y-2">
-              <Label>Grau</Label>
+              <Label>Grau de Intrusividade</Label>
               <Select
                 value={pontuacaoForm.grau || "SELECIONE"}
                 onValueChange={(v) =>
